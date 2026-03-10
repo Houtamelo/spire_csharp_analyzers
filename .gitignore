@@ -1,0 +1,32 @@
+# Build outputs
+bin/
+obj/
+out/
+
+# NuGet
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+.nuget/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+*.userprefs
+*.csproj.user
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test results
+TestResults/
+*.trx
+
+# Feedback transcripts (can be large, local-only)
+feedback/transcripts/
+feedback/archived/
