@@ -2,6 +2,8 @@
 bin/
 obj/
 out/
+**/bin/
+**/obj/
 
 # NuGet
 *.nupkg
@@ -27,6 +29,16 @@ Thumbs.db
 TestResults/
 *.trx
 
-# Feedback transcripts (can be large, local-only)
+# Feedback (local-only)
 feedback/transcripts/
 feedback/archived/
+feedback/skill-usage.log
+
+# User-local Claude Code settings (not tracked)
+.claude/settings.local.json
+
+# Project-local temp files
+tmp/
+
+# Session reviews (local-only)
+session-reviews/*.md

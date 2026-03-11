@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "microsoft-learn": {
+      "type": "http",
+      "url": "https://learn.microsoft.com/api/mcp"
+    },
+    "sherlock": {
+      "type": "stdio",
+      "command": "sherlock-mcp",
+      "env": {
+        "DOTNET_ROOT": "/usr/lib/dotnet"
+      }
+    }
+  }
+}
