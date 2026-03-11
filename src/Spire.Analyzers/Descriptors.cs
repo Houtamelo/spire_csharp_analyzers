@@ -15,4 +15,17 @@ internal static class Descriptors
                    + "bypassing any required initialization. Use an empty array or provide an explicit initializer.",
         helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE001.md"
     );
+
+    public static readonly DiagnosticDescriptor SPIRE002_MustBeInitOnFieldlessType = new(
+        id: "SPIRE002",
+        title: "[MustBeInit] on fieldless type has no effect",
+        messageFormat: "[MustBeInit] on type '{0}' has no effect because it has no instance fields",
+        category: "Correctness",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "The [MustBeInit] attribute marks types whose default value is considered uninitialized. "
+                   + "A type with no instance fields has only one possible value (the default), so the attribute serves no purpose. "
+                   + "Note that auto-properties generate backing fields and do count; non-auto (computed) properties do not.",
+        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE002.md"
+    );
 }
