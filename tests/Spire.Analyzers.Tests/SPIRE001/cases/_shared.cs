@@ -21,3 +21,21 @@ public struct PlainStruct
 {
     public int Value;
 }
+
+[MustBeInit]
+public struct EmptyMustInitStruct { }
+
+[MustBeInit]
+public record struct EmptyMustInitRecordStruct;
+
+[MustBeInit]
+public struct MustInitStructWithNonAutoProperty
+{
+    public int Value { get => 42; }
+}
+
+[MustBeInit]
+public struct MustInitStructWithAutoProperty
+{
+    public int Value { get; set; }
+}
