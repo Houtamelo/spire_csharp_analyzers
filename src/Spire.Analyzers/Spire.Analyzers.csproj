@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+
+    <!-- NuGet package metadata -->
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <PackageId>Spire.Analyzers</PackageId>
+    <Description>Roslyn analyzers for C# struct correctness and performance pitfalls.</Description>
+    <PackageTags>roslyn;analyzer;struct;csharp;code-analysis</PackageTags>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" PrivateAssets="all" />
+    <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Spire.Analyzers.Utils\Spire.Analyzers.Utils.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+  <!-- Place analyzer and utility DLLs in the correct NuGet path -->
+  <ItemGroup>
+    <None Include="$(OutputPath)\$(AssemblyName).dll"
+          PackagePath="analyzers/dotnet/cs"
+          Pack="true"
+          Visible="false" />
+    <None Include="$(OutputPath)\Spire.Analyzers.Utils.dll"
+          PackagePath="analyzers/dotnet/cs"
+          Pack="true"
+          Visible="false" />
+  </ItemGroup>
+</Project>
