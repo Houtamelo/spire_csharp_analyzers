@@ -1,6 +1,7 @@
 # Plan 002: Agent Tooling & Setup
 
-**Status**: Draft
+**Status**: Superseded
+**Superseded by**: Plan 009 (TDD with Agent Teams) — test conventions, agent roles, skill workflows, and hooks were redesigned. The deliverables from this plan were all created but have since evolved.
 **Goal**: Define all the tools, documentation, and instructions needed so that any future Claude Code agent can work on this project effectively without prior context.
 
 ---
@@ -15,7 +16,7 @@ The single most important file. Every agent session loads this automatically. Mu
 
 - **Project overview**: What this is, what it replaces, the rule ID prefix
 - **Build & test commands**: Exact commands to build, test, and pack
-- **Project structure**: Where analyzers, code fixes, tests, and docs live
+- **Project structure**: Where analyzers, tests, and docs live
 - **Coding conventions**: Naming, patterns, and anti-patterns specific to Roslyn analyzers
 - **Rule creation checklist**: Step-by-step process for adding a new rule (files to create, patterns to follow)
 - **References to deeper docs**: `@` imports to plans, architecture docs, and rule templates
@@ -30,7 +31,7 @@ Rules that activate only when the agent is working on files matching specific pa
 ```yaml
 ---
 paths:
-  - "src/Analyzer/**/*.cs"
+  - "src/Spire.Analyzers/**/*.cs"
 ---
 ```
 Contents:
@@ -41,19 +42,6 @@ Contents:
 - Target `netstandard2.0` — no C# features beyond what netstandard2.0 supports at runtime
 - All dependencies must use `PrivateAssets="all"`
 
-#### `codefix-conventions.md`
-```yaml
----
-paths:
-  - "src/CodeFixes/**/*.cs"
----
-```
-Contents:
-- Every code fix must inherit `CodeFixProvider` and be decorated with `[ExportCodeFixProvider]`
-- Must override `FixableDiagnosticIds` returning the matched analyzer's ID(s)
-- Must override `GetFixAllProvider()` returning `WellKnownFixAllProviders.BatchFixer`
-- Register fixes via `context.RegisterCodeFix(CodeAction.Create(...))`
-
 #### `test-conventions.md`
 ```yaml
 ---
@@ -63,12 +51,11 @@ paths:
 ```
 Contents:
 - Use `Microsoft.CodeAnalysis.CSharp.Analyzer.Testing` with xUnit
-- Use project-level `Verifiers.cs` helper (wraps `CSharpAnalyzerVerifier` and `CSharpCodeFixVerifier`)
+- Use project-level `Verifiers.cs` helper (wraps `CSharpAnalyzerVerifier`)
 - Test method naming: `{Scenario}_Should{Not}Report{DiagnosticId}`
 - Every analyzer must have:
   - At least 3 positive tests (code that should NOT trigger)
   - At least 3 negative tests (code that SHOULD trigger)
-  - Code fix tests if a fix exists (before/after pairs)
 - Embed test source code as string literals, use `[|...|]` markup for expected diagnostic spans
 - Test against both `struct` and `record struct` where applicable
 
@@ -80,7 +67,7 @@ paths:
 ---
 ```
 Contents:
-- One `.md` file per rule, named after the rule ID (e.g., `SA0001.md`)
+- One `.md` file per rule, named after the rule ID (e.g., `SAS001.md`)
 - Standard template: Title, Severity, Category, Description, Examples (violating + compliant), How to Fix, Configuration, When to Suppress
 
 ### 3. Custom Skills (`.claude/skills/`)
@@ -89,21 +76,20 @@ Contents:
 ```yaml
 ---
 name: new-rule
-description: Scaffold all files needed for a new analyzer rule. Creates the analyzer, code fix, tests, and documentation.
+description: Scaffold all files needed for a new analyzer rule. Creates the analyzer, tests, and documentation.
 user-invocable: true
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 argument-hint: [RuleId] [RuleTitle]
 ---
 ```
 Workflow:
-1. Parse `$ARGUMENTS` for rule ID (e.g., `SA0005`) and title
+1. Parse `$ARGUMENTS` for rule ID (e.g., `SAS005`) and title
 2. Read the template files from `.claude/skills/new-rule/templates/`
-3. Create: `src/Analyzer/Rules/{Category}/{RuleId}Analyzer.cs`
-4. Create: `src/CodeFixes/Rules/{Category}/{RuleId}CodeFixProvider.cs`
-5. Create: `tests/{RuleId}Tests.cs`
-6. Create: `docs/rules/{RuleId}.md`
-7. Register the new diagnostic ID in the central descriptor registry
-8. Run `dotnet build` to verify compilation
+3. Create: `src/Spire.Analyzers/Analyzers/{RuleId}Analyzer.cs`
+4. Create: `tests/Spire.Analyzers.Tests/{RuleId}Tests.cs`
+5. Create: `docs/rules/{RuleId}.md`
+6. Register the new diagnostic ID in the central descriptor registry
+7. Run `dotnet build` to verify compilation
 
 #### `/test` — Build & Run Tests
 ```yaml
@@ -134,9 +120,8 @@ Workflow:
 1. Check analyzer file exists and has `DiagnosticDescriptor`
 2. Check test file exists with positive and negative tests
 3. Check documentation file exists with required sections
-4. Check code fix exists (warn if missing, don't fail)
-5. Run tests for that rule
-6. Report pass/fail summary
+4. Run tests for that rule
+5. Report pass/fail summary
 
 ### 4. Custom Agents (`.claude/agents/`)
 
@@ -177,8 +162,6 @@ Prompt:
 - Read the analyzer source to understand what it detects
 - Add edge case tests: generics, nested structs, partial classes, record structs, ref structs
 - Ensure both positive (no diagnostic) and negative (diagnostic reported) coverage
-- Test code fixes if they exist
-
 #### `researcher`
 ```yaml
 ---
@@ -266,8 +249,7 @@ Prompt:
 Pre-written boilerplate files with placeholders (`{{RULE_ID}}`, `{{RULE_TITLE}}`, `{{CATEGORY}}`) that the `/new-rule` skill fills in:
 
 - `AnalyzerTemplate.cs` — DiagnosticAnalyzer boilerplate with descriptor, Initialize(), and analysis method
-- `CodeFixTemplate.cs` — CodeFixProvider boilerplate
-- `TestTemplate.cs` — Test class with positive/negative/codefix test stubs
+- `TestTemplate.cs` — Test class with positive/negative test stubs
 - `DocTemplate.md` — Rule documentation template
 
 ### 8. Documentation Structure
@@ -275,18 +257,18 @@ Pre-written boilerplate files with placeholders (`{{RULE_ID}}`, `{{RULE_TITLE}}`
 ```
 docs/
 ├── rules/
-│   ├── SA0001.md          # Per-rule documentation
-│   ├── SA0002.md
+│   ├── SAS001.md           # Per-rule documentation
+│   ├── SAS002.md
 │   └── ...
-├── architecture.md         # How the analyzer works internally
-└── contributing.md         # How to add new rules (for agents and humans)
+├── architecture.md          # How the analyzer works internally
+└── contributing.md          # How to add new rules (for agents and humans)
 ```
 
 `contributing.md` is especially important — it's the step-by-step guide that agents follow when implementing rules. It should mirror the `/new-rule` skill workflow but in prose form.
 
 ### 9. Feedback Loop System
 
-The goal: automatically capture what agents did, so a dedicated doc-maintainer can identify and fix documentation/skill issues. Agents don't need to do anything — transcripts are captured by hooks. They *can* voluntarily annotate via `/feedback`, but the automatic pipeline is the primary mechanism.
+The goal: automatically capture what agents did, so a dedicated doc-maintainer can identify and fix documentation/skill issues. Agents don't need to do anything — transcripts are captured by hooks automatically.
 
 **Design informed by**: Plan 003 research (claude-diary, Spotify Honk, /insights, claude-code-auto-memory, known hook bugs).
 
@@ -572,7 +554,7 @@ When implementing this plan, create files in this order:
 1. **Solution & projects** — `dotnet new` commands, .csproj files, Directory.Build.props
 2. **CLAUDE.md** — Immediately, so subsequent agent work follows conventions
 3. **`.claude/rules/`** — Path-specific conventions for analyzers, tests, docs
-4. **Template files** — Analyzer, code fix, test, and doc templates
+4. **Template files** — Analyzer, test, and doc templates
 5. **Skills** — `/new-rule`, `/test`, `/verify-rule`, `/maintain-docs`
 6. **Agents** — `analyzer-implementer`, `test-writer`, `researcher`, `doc-maintainer`
 7. **Settings & hooks** — Permissions, formatting hooks, SubagentStop + SessionEnd capture hooks
@@ -587,9 +569,9 @@ When implementing this plan, create files in this order:
 After setup is complete, verify by:
 1. Run `dotnet build` — solution compiles
 2. Run `dotnet test` — test infrastructure works (even with zero rules)
-3. Run `/new-rule SA0001 "Test Rule"` — scaffolding creates all expected files
-4. Run `/verify-rule SA0001` — validation passes
-5. Run `/test SA0001` — tests execute (even if they're stubs)
+3. Run `/new-rule SAS001 "Test Rule"` — scaffolding creates all expected files
+4. Run `/verify-rule SAS001` — validation passes
+5. Run `/test SAS001` — tests execute (even if they're stubs)
 6. Verify capture hook works — trigger a subagent, check that `feedback/transcripts/` and `feedback/*.md` are created
 7. Run `/maintain-docs` — processes reports, updates issue tracker
 8. A fresh Claude Code session loads CLAUDE.md and can navigate the project without additional context
