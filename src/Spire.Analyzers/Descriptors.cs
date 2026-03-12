@@ -54,4 +54,17 @@ internal static class Descriptors
                    + "constructor that initializes the struct's fields.",
         helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE004.md"
     );
+
+    public static readonly DiagnosticDescriptor SPIRE005_ActivatorCreateInstanceOfMustBeInitStruct = new(
+        id: "SPIRE005",
+        title: "Activator.CreateInstance on [MustBeInit] struct produces a default instance",
+        messageFormat: "Activator.CreateInstance produces a default instance of struct '{0}' marked with [MustBeInit]",
+        category: "Correctness",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "Activator.CreateInstance<T>() and Activator.CreateInstance(typeof(T)) produce default (zeroed) "
+                   + "instances of value types, bypassing any required initialization. When T is a struct marked with "
+                   + "[MustBeInit], this defeats the purpose of the attribute.",
+        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE005.md"
+    );
 }
