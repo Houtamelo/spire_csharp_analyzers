@@ -67,4 +67,16 @@ internal static class Descriptors
                    + "[MustBeInit], this defeats the purpose of the attribute.",
         helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE005.md"
     );
+
+    public static readonly DiagnosticDescriptor SPIRE006_ClearOfMustBeInitElements = new(
+        id: "SPIRE006",
+        title: "Clearing array or span of [MustBeInit] struct produces default instances",
+        messageFormat: "{0} zeros elements of struct '{1}' marked with [MustBeInit]",
+        category: "Correctness",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "Array.Clear and Span<T>.Clear() reset elements to default(T). When T is a struct marked with "
+                   + "[MustBeInit], this produces uninitialized instances, defeating the purpose of the attribute.",
+        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE006.md"
+    );
 }
