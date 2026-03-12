@@ -38,6 +38,7 @@ Example: `/new-rule {RuleId} "Large struct passed by value"`
    - Uses `[Theory]` + `[InlineData]` with `TestCaseLoader.LoadCase`
 9. Create docs: `docs/rules/{RuleId}.md`
    - Replace `{{RULE_ID}}`, `{{RULE_TITLE}}`
+   - Follow `docs/style-guide.md` for documentation style
 
 ## Verify
 

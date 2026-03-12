@@ -41,11 +41,22 @@ The step-by-step process for adding a new rule.
 - `.claude/skills/test/SKILL.md` — steps 8, 11 (run tests)
 - `.claude/skills/syntax-tree/SKILL.md` — AST investigation during research/implementation
 
+## Documentation style
+How all documentation (code comments, markdown, rule docs) should be written.
+- `docs/style-guide.md` — canonical style guide (all agents must read this)
+- `CLAUDE.md` — "Documentation Style" section (summary for agent context)
+- `.claude/rules/documentation-conventions.md` — rule loaded when editing docs/rules/
+- `.claude/agents/analyzer-implementer.md` — reads style guide in step 1
+- `.claude/agents/code-reviewer.md` — enforces style guide in convention checks
+- `.claude/agents/test-case-writer.md` — reads style guide in step 1
+- `.claude/agents/doc-maintainer.md` — reads style guide in step 1
+- `.claude/skills/new-rule/SKILL.md` — references style guide in step 9
+- `.claude/skills/new-rule/templates/DocTemplate.md` — rule docs template
+
 ## Documentation maintenance and propagation
 Session capture, feedback processing, doc updates, cross-file consistency, change history.
 - `.claude/docs/cross-references.md` — this file; groups related files
 - `.claude/rules/cross-reference-check.md` — rule that reminds to check this map
-- `.claude/rules/documentation-conventions.md` — required sections for rule docs
 - `.claude/skills/update-docs/SKILL.md` — propagates changes across related files
 - `.claude/skills/update-history/SKILL.md` — triggers history-keeper agent
 - `.claude/hooks/capture-session.sh` — captures transcripts/summaries

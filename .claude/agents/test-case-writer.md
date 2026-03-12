@@ -19,7 +19,7 @@ The lead gives you a **list of test cases to create**. Each case has a file name
 
 ## Your workflow
 
-1. Read the shared preamble in `tests/Spire.Analyzers.Tests/{RuleId}/cases/_shared.cs` for available types.
+1. Read `docs/style-guide.md` for documentation style, then read the shared preamble in `tests/Spire.Analyzers.Tests/{RuleId}/cases/_shared.cs` for available types.
 2. Read the descriptor in `src/Spire.Analyzers/Descriptors.cs` for the diagnostic ID.
 3. Read the coverage matrix section assigned to you for the full case list.
 4. For each case in the list:

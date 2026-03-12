@@ -20,7 +20,7 @@ The lead has already implemented an analyzer (via the `analyzer-implementer` age
 
 ## Your workflow
 
-1. Read `.claude/rules/analyzer-conventions.md` for project conventions.
+1. Read `.claude/rules/analyzer-conventions.md` and `docs/style-guide.md` for project conventions and documentation style.
 2. Read the rule description provided by the lead.
 3. Read all implementation files (analyzer, any helpers in `src/Spire.Analyzers.Utils/`).
 4. Read test cases in the test folder to understand what scenarios are covered.
@@ -30,7 +30,7 @@ The lead has already implemented an analyzer (via the `analyzer-implementer` age
 ## What to check
 
 ### Convention compliance
-Check the implementation against every convention in `.claude/rules/analyzer-conventions.md`.
+Check the implementation against every convention in `.claude/rules/analyzer-conventions.md` and `docs/style-guide.md`. Flag violations of the documentation style guide (verbose XML docs on internal code, unnecessary comments, emojis, etc.).
 
 ### Code quality
 - Unnecessary allocations in hot paths (per-operation callbacks)

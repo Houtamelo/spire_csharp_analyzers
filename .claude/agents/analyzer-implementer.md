@@ -14,7 +14,7 @@ The lead has already written tests and added the descriptor to `Descriptors.cs`.
 
 ## Your workflow
 
-1. Read `CLAUDE.md` and `.claude/rules/analyzer-conventions.md` for project conventions
+1. Read `CLAUDE.md`, `.claude/rules/analyzer-conventions.md`, and `docs/style-guide.md` for project conventions and documentation style
 2. Read the test file in `tests/Spire.Analyzers.Tests/{RuleId}/{RuleId}Tests.cs` to understand what the analyzer must detect
 3. Read the test case files in `tests/Spire.Analyzers.Tests/{RuleId}/cases/` to understand each scenario
 4. Read the descriptor in `src/Spire.Analyzers/Descriptors.cs` to get the diagnostic ID and message

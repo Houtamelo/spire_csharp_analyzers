@@ -37,6 +37,14 @@ docs/rules/                      # Per-rule docs (SPIRE001.md, ...)
 plans/                            # Design plans (read before implementing)
 ```
 
+## Documentation Style
+
+- Concise, clear, pragmatic. No fluff, no emojis.
+- Code is self-documenting — comments explain **why**, not **what**.
+- Only public API gets XML doc tags (`<summary>`, `<param>`, etc.). Internal code uses plain `///` without XML tags.
+- Markdown: minimal formatting, avoid excessive headers/sections. Keep token count low.
+- Full style guidelines are at `docs/style-guide.md`.
+
 ## Analyzer Conventions
 
 See `.claude/rules/analyzer-conventions.md` for the full list of conventions, constraints, and the descriptor pattern.
