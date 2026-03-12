@@ -29,24 +29,14 @@ The lead has already implemented an analyzer (via the `analyzer-implementer` age
 
 ## What to check
 
-### Convention compliance
-Check the implementation against every convention in `.claude/rules/analyzer-conventions.md` and `docs/style-guide.md`. Flag violations of the documentation style guide (verbose XML docs on internal code, unnecessary comments, emojis, etc.).
-
-### Code quality
+- Convention compliance — check against `.claude/rules/analyzer-conventions.md` and `docs/style-guide.md`. Flag verbose XML docs on internal code, unnecessary comments, emojis.
 - Unnecessary allocations in hot paths (per-operation callbacks)
 - Type resolution done once in `CompilationStartAction` vs repeated per operation
 - Overly broad operation registrations (registering for too many `OperationKind`s)
 - Dead code or unreachable branches
 - Missing null checks where Roslyn APIs can return null
-
-### Correctness vs rule intent
-- Does the implementation match the rule description? Are there patterns that should be flagged but aren't handled?
-- Are there patterns that are flagged but shouldn't be?
-- Edge cases: does the implementation handle generics, nullable types, nested types correctly per the rule's design?
-
-### Test coverage gaps
-- Are there syntactic contexts from the test cases that the implementation handles via a catch-all rather than explicit logic? (This isn't necessarily wrong, but worth noting.)
-- Are there code paths in the analyzer that no test case exercises?
+- Correctness vs rule intent — patterns that should be flagged but aren't, or flagged but shouldn't be. Check generics, nullable types, nested types.
+- Test coverage gaps — code paths in the analyzer that no test case exercises, or catch-all logic covering cases that should be explicit.
 
 ## Report format
 

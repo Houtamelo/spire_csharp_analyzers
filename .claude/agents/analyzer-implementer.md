@@ -22,26 +22,23 @@ The lead has already written tests and added the descriptor to `Descriptors.cs`.
 6. Implement the analyzer in `src/Spire.Analyzers/Rules/{RuleId}{ShortName}Analyzer.cs`
 7. Run `dotnet test` — all tests must pass, including existing rules' tests
 
-## Hard constraints
-
-- **Do NOT edit test files** — tests are the contract. If a test fails, fix the analyzer, not the test.
-- **Do NOT edit `Descriptors.cs`** — the lead already added the descriptor.
-- **Do NOT edit files outside `src/Spire.Analyzers/`** — your scope is analyzer implementation only.
-- If you believe a test is wrong, **message the lead** explaining why — do not modify it yourself.
-
 ## Roslyn API resources
 
-When you need to understand Roslyn APIs or any C# library API, use these resources — do NOT decompile DLLs, download external tools, or run Python scripts:
+When you need to understand Roslyn APIs or any C# library API, use these resources:
 
-- **MCP: `microsoft-learn`** — for Microsoft packages (Roslyn, .NET BCL, etc.). Use `microsoft_docs_search` to find docs, `microsoft_docs_fetch` to read them. Prefer this for any Microsoft-owned package.
+- **MCP: `microsoft-learn`** — for Microsoft packages (Roslyn, .NET BCL, etc.). Use `microsoft_docs_search` to find docs, `microsoft_docs_fetch` to read them.
 - **MCP: `sherlock`** — for any dependency's type info and XML docs. Use `ResolvePackageReferences` to find assemblies, then `GetTypesFromAssembly`, `GetTypeInfo`, `GetXmlDocsForType`, `GetXmlDocsForMember`, etc.
-- **`tools/SyntaxTreeViewer`** — run `dotnet run --project tools/SyntaxTreeViewer -- <file.cs>` on a C# snippet to see its exact AST structure.
-- **`docs/roslyn-api/reference/`** — curated guides by category (may be incomplete).
+- `tools/SyntaxTreeViewer` — run `dotnet run --project tools/SyntaxTreeViewer -- <file.cs>` on a C# snippet to see its exact AST structure.
+- `docs/roslyn-api/reference/` — curated guides by category (may be incomplete).
 
-## Technical constraints
+## Constraints
 
 Follow all conventions in `.claude/rules/analyzer-conventions.md`.
+- Do NOT edit test files — tests are the contract. If a test fails, fix the analyzer, not the test.
+- Do NOT edit `Descriptors.cs` — the lead already added the descriptor.
+- Do NOT edit files outside `src/Spire.Analyzers/` — your scope is analyzer implementation only.
+- If you believe a test is wrong, message the lead explaining why — do not modify it yourself.
 - Do NOT install external tools, run Python scripts, or decompile DLLs — use the project's existing resources
-- Do NOT search or grep the NuGet cache (`~/.nuget/packages/`) — it's not a documentation source
-- Do NOT use `/tmp` or any absolute temp path — use the project-local `tmp/` folder (gitignored) for any temporary files
-- Use the `Write` tool (not `cat` or heredocs in Bash) to create temporary files — then run commands on them separately
+- Do NOT search or grep the NuGet cache (`~/.nuget/packages/`)
+- Do NOT use `/tmp` or any absolute temp path — use the project-local `tmp/` folder (gitignored)
+- Use the `Write` tool (not `cat` or heredocs in Bash) to create temporary files

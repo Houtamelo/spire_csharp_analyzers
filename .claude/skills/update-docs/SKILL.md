@@ -12,7 +12,7 @@ Change description: `$ARGUMENTS`
 
 ## Step 1: Read the cross-reference map
 
-Read `.claude/docs/cross-references.md` to understand which files are grouped together.
+Read `.claude/rules/cross-reference-check.md` to understand which files are grouped together.
 
 ## Step 2: Identify affected groups
 

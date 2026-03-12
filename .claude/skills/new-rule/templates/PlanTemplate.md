@@ -3,8 +3,6 @@
 **Status**: Ready for implementation
 **Goal**: {{ONE_SENTENCE_GOAL}}
 
----
-
 ## Overview
 
 **ID**: {{RULE_ID}}
@@ -17,8 +15,6 @@
 ### What this rule does
 
 {{DESCRIPTION — what the rule detects and why it matters. Include C# semantics context.}}
-
----
 
 ## What {{RULE_ID}} Detects
 
@@ -41,8 +37,6 @@
 | Code | Why excluded |
 |------|-------------|
 | `{{example code}}` | {{reason}} |
-
----
 
 ## Implementation Notes
 

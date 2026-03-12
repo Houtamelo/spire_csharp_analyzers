@@ -1,6 +1,13 @@
+Be extremely concise. No filler, no pleasantries, no explanations unless asked.
+Respond like a terminal: short, direct, factual. Omit transitions and summaries.
+
+---
+
+**Project Context**
+
 # Spire.Analyzers
 
-Roslyn-based C# analyzer for struct correctness and performance pitfalls. Replaces ErrorProne.NET.Structs.
+Roslyn-based C# analyzer
 
 - **Package**: `Spire.Analyzers`
 - **Rule prefix**: `SPIRE` (SPIRE001, SPIRE002, ...)
