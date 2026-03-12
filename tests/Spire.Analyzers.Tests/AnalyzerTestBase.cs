@@ -33,13 +33,13 @@ public abstract class AnalyzerTestBase<TAnalyzer> where TAnalyzer : DiagnosticAn
     [TestCaseDiscovery("should_fail")]
     public async Task ShouldFail(string caseName)
     {
-        var (source, expectedLines) = LoadAndParse(caseName);
+        var (caseSource, sharedSource, expectedLines) = LoadAndParse(caseName);
 
         if (expectedLines.Count == 0)
             throw new InvalidOperationException(
                 $"File {caseName}.cs is marked should_fail but has no error markers");
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await GetAnalyzerDiagnosticsAsync(caseSource, sharedSource);
         var ruleDiagnostics = diagnostics.Where(d => d.Id == RuleId).ToList();
 
         var diagnosticLines = ruleDiagnostics
@@ -67,13 +67,13 @@ public abstract class AnalyzerTestBase<TAnalyzer> where TAnalyzer : DiagnosticAn
     [TestCaseDiscovery("should_pass")]
     public async Task ShouldPass(string caseName)
     {
-        var (source, expectedLines) = LoadAndParse(caseName);
+        var (caseSource, sharedSource, expectedLines) = LoadAndParse(caseName);
 
         if (expectedLines.Count > 0)
             throw new InvalidOperationException(
                 $"File {caseName}.cs is marked should_pass but contains error markers on line(s) {FormatLines(expectedLines)}");
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await GetAnalyzerDiagnosticsAsync(caseSource, sharedSource);
         var ruleDiagnostics = diagnostics.Where(d => d.Id == RuleId).ToList();
 
         if (ruleDiagnostics.Count > 0)
@@ -86,13 +86,13 @@ public abstract class AnalyzerTestBase<TAnalyzer> where TAnalyzer : DiagnosticAn
         }
     }
 
-    private (string source, List<int> expectedDiagnosticLines) LoadAndParse(string caseName)
+    private (string caseSource, string? sharedSource, List<int> expectedDiagnosticLines) LoadAndParse(string caseName)
     {
         var casesDir = Path.Combine(AppContext.BaseDirectory, RuleId, "cases");
         var sharedPath = Path.Combine(casesDir, "_shared.cs");
         var casePath = Path.Combine(casesDir, $"{caseName}.cs");
 
-        var sharedContent = File.Exists(sharedPath) ? File.ReadAllText(sharedPath) : "";
+        var sharedContent = File.Exists(sharedPath) ? File.ReadAllText(sharedPath) : null;
         var caseContent = File.ReadAllText(casePath);
 
         // Parse header (line 1)
@@ -103,22 +103,7 @@ public abstract class AnalyzerTestBase<TAnalyzer> where TAnalyzer : DiagnosticAn
                 $"File {caseName}.cs is missing //@ should_fail or //@ should_pass header on line 1. " +
                 $"Found: \"{firstLine}\"");
 
-        // Compute line offset: shared content + separator newline
-        int offset;
-        if (sharedContent.Length == 0)
-        {
-            offset = 0;
-        }
-        else
-        {
-            offset = 1; // separator newline
-            foreach (var c in sharedContent)
-            {
-                if (c == '\n') offset++;
-            }
-        }
-
-        // Parse error markers from case file lines
+        // Parse error markers — line numbers are relative to the case file (no offset needed)
         var expectedLines = new List<int>();
         for (int i = 0; i < caseLines.Length; i++)
         {
@@ -126,20 +111,16 @@ public abstract class AnalyzerTestBase<TAnalyzer> where TAnalyzer : DiagnosticAn
             var marker = ParseErrorMarker(caseLines[i]);
 
             if (marker == MarkerKind.ThisLine)
-                expectedLines.Add(offset + lineNumber);
+                expectedLines.Add(lineNumber);
             else if (marker == MarkerKind.PreviousLine)
-                expectedLines.Add(offset + lineNumber - 1);
+                expectedLines.Add(lineNumber - 1);
         }
 
-        // Combine shared + case
-        var combined = sharedContent.Length == 0
-            ? caseContent
-            : sharedContent + "\n" + caseContent;
+        // Strip comments from each file independently
+        var strippedCase = StripComments(caseContent);
+        var strippedShared = sharedContent != null ? StripComments(sharedContent) : null;
 
-        // Strip all comments (preserving line structure)
-        var stripped = StripComments(combined);
-
-        return (stripped, expectedLines);
+        return (strippedCase, strippedShared, expectedLines);
     }
 
     private enum MarkerKind { None, ThisLine, PreviousLine }
@@ -207,23 +188,52 @@ public abstract class AnalyzerTestBase<TAnalyzer> where TAnalyzer : DiagnosticAn
         return refs.Add(AnalyzerAssemblyReference);
     }
 
-    private static async Task<ImmutableArray<Diagnostic>> GetAnalyzerDiagnosticsAsync(string source)
+    private static async Task<ImmutableArray<Diagnostic>> GetAnalyzerDiagnosticsAsync(
+        string caseSource, string? sharedSource)
     {
         var references = await CachedReferences.Value;
-        var syntaxTree = CSharpSyntaxTree.ParseText(source,
-            CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest));
+        var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest);
+
+        var caseTree = CSharpSyntaxTree.ParseText(caseSource, parseOptions, path: "case.cs");
+
+        var trees = new List<SyntaxTree> { caseTree };
+        if (sharedSource != null)
+            trees.Add(CSharpSyntaxTree.ParseText(sharedSource, parseOptions, path: "_shared.cs"));
 
         var compilation = CSharpCompilation.Create(
             "TestAssembly",
-            new[] { syntaxTree },
+            trees,
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        // Fail fast if the test code doesn't compile
+        var compilerErrors = compilation.GetDiagnostics()
+            .Where(d => d.Severity == DiagnosticSeverity.Error)
+            .ToList();
+
+        if (compilerErrors.Count > 0)
+        {
+            var errorMessages = string.Join(Environment.NewLine,
+                compilerErrors.Select(d =>
+                {
+                    var span = d.Location.GetLineSpan();
+                    return $"  {span.Path}({span.StartLinePosition.Line + 1}): {d.Id}: {d.GetMessage()}";
+                }));
+
+            throw new InvalidOperationException(
+                $"Test code has compilation errors:{Environment.NewLine}{errorMessages}");
+        }
 
         var analyzer = new TAnalyzer();
         var compilationWithAnalyzers = compilation.WithAnalyzers(
             ImmutableArray.Create<DiagnosticAnalyzer>(analyzer));
 
-        return await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync();
+        var allDiagnostics = await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync();
+
+        // Only return diagnostics from the case file, not from _shared.cs
+        return allDiagnostics
+            .Where(d => d.Location.SourceTree == caseTree || d.Location == Location.None)
+            .ToImmutableArray();
     }
 
     private static string FormatLines(IEnumerable<int> lines)

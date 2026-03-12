@@ -1,7 +1,9 @@
-using System;
-using System.Buffers;
-using System.Collections.Immutable;
-using Spire.Analyzers;
+global using System;
+global using System.Buffers;
+global using System.Collections.Generic;
+global using System.Collections.Immutable;
+global using System.Threading.Tasks;
+global using Spire.Analyzers;
 
 [MustBeInit]
 public struct MustInitStruct

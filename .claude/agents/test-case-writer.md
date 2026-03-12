@@ -36,7 +36,8 @@ Read `docs/test-case-format.md` for the full format reference (headers, error ma
 
 - **Write exactly the cases in your assigned list** — no more, no less.
 - **Don't merge cases** — each case file tests exactly one scenario.
-- **Case files must compile in isolation** (with the shared preamble prepended). No dependencies between case files.
+- **Case files must compile in isolation** (with `_shared.cs` as a separate syntax tree in the same compilation). No dependencies between case files.
+- **Case files can have their own `using` directives** — they are separate compilation units from `_shared.cs`.
 - **Don't invent rule behavior** — if you're unsure how the code should behave (trigger or not), message the lead instead of guessing.
 - **Do NOT edit `Descriptors.cs`** — the lead already added the descriptor.
 - **Do NOT edit the test runner** — cases are discovered automatically from files.

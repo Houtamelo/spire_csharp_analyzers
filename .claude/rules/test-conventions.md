@@ -20,8 +20,10 @@ paths:
 - Each test case is a **single `.cs` file** in `{RuleId}/cases/` — adding a test = adding one file
 - No `[InlineData]` entries, no test runner edits needed
 - Cases are discovered at runtime by `AnalyzerTestBase<TAnalyzer>`
-- Shared type definitions go in `cases/_shared.cs` (prepended automatically)
-- Case files are excluded from compilation, read at runtime
+- Shared type definitions and `global using` directives go in `cases/_shared.cs` (compiled as a separate syntax tree in the same compilation)
+- Usings in `_shared.cs` must be `global using` so they apply to all case files
+- Case files can have their own `using` directives freely
+- Case files are excluded from project compilation, read at runtime by the test framework
 
 ### File format
 

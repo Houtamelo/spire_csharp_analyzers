@@ -1,0 +1,125 @@
+using System.Collections.Immutable;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Operations;
+
+namespace Spire.Analyzers.Rules;
+
+[DiagnosticAnalyzer(LanguageNames.CSharp)]
+public sealed class SPIRE003DefaultOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
+{
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
+        ImmutableArray.Create(Descriptors.SPIRE003_DefaultOfMustBeInitStruct);
+
+    public override void Initialize(AnalysisContext context)
+    {
+        context.EnableConcurrentExecution();
+        context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
+
+        context.RegisterCompilationStartAction(compilationContext =>
+        {
+            var mustBeInitType = compilationContext.Compilation
+                .GetTypeByMetadataName("Spire.Analyzers.MustBeInitAttribute");
+
+            if (mustBeInitType is null)
+                return;
+
+            compilationContext.RegisterOperationAction(
+                operationContext => AnalyzeDefaultValue(operationContext, mustBeInitType),
+                OperationKind.DefaultValue);
+        });
+    }
+
+    private static void AnalyzeDefaultValue(
+        OperationAnalysisContext context,
+        INamedTypeSymbol mustBeInitType)
+    {
+        var operation = (IDefaultValueOperation)context.Operation;
+
+        // Get the type being defaulted
+        var type = operation.Type as INamedTypeSymbol;
+        if (type is null)
+            return;
+
+        // Must be a struct
+        if (type.TypeKind != TypeKind.Struct)
+            return;
+
+        // Must have [MustBeInit] attribute
+        if (!HasMustBeInitAttribute(type, mustBeInitType))
+            return;
+
+        // Must have at least one instance field (auto-property backing fields count)
+        if (!HasInstanceFields(type))
+            return;
+
+        // Skip if inside an equality/inequality binary operation (x == default, x != default)
+        if (IsInsideEqualityComparison(operation))
+            return;
+
+        // Skip if inside an is-pattern (s is default(T))
+        if (IsInsideIsPattern(operation))
+            return;
+
+        context.ReportDiagnostic(
+            Diagnostic.Create(
+                Descriptors.SPIRE003_DefaultOfMustBeInitStruct,
+                operation.Syntax.GetLocation(),
+                type.Name));
+    }
+
+    private static bool HasMustBeInitAttribute(INamedTypeSymbol type, INamedTypeSymbol mustBeInitType)
+    {
+        foreach (var attr in type.GetAttributes())
+        {
+            if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, mustBeInitType))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool HasInstanceFields(INamedTypeSymbol type)
+    {
+        foreach (var member in type.GetMembers())
+        {
+            if (member is IFieldSymbol { IsStatic: false })
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsInsideEqualityComparison(IDefaultValueOperation operation)
+    {
+        // Walk up through conversions to find the effective parent
+        IOperation? parent = operation.Parent;
+
+        // Skip implicit conversions wrapping the default value
+        while (parent is IConversionOperation { IsImplicit: true })
+            parent = parent.Parent;
+
+        if (parent is IBinaryOperation binary)
+        {
+            return binary.OperatorKind == BinaryOperatorKind.Equals
+                || binary.OperatorKind == BinaryOperatorKind.NotEquals;
+        }
+
+        return false;
+    }
+
+    private static bool IsInsideIsPattern(IDefaultValueOperation operation)
+    {
+        // Walk up through conversions and constant patterns to find if we're in a pattern match
+        IOperation? parent = operation.Parent;
+
+        while (parent is IConversionOperation { IsImplicit: true })
+            parent = parent.Parent;
+
+        // default(T) inside a constant pattern: IConstantPatternOperation -> IIsPatternOperation
+        if (parent is IConstantPatternOperation)
+            parent = parent.Parent;
+
+        return parent is IIsPatternOperation;
+    }
+}

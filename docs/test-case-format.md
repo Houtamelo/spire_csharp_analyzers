@@ -3,6 +3,18 @@
 Each test case is a self-contained `.cs` file in `tests/Spire.Analyzers.Tests/{RuleId}/cases/`.
 Cases are discovered automatically at runtime — **no test runner edits needed**.
 
+## Compilation model
+
+`_shared.cs` and each case file are compiled as **separate syntax trees** in the same Roslyn compilation.
+This means:
+
+- Types defined in `_shared.cs` are visible to case files (same compilation).
+- `using` directives in `_shared.cs` must be `global using` so they apply to all syntax trees.
+- Case files **can** have their own `using` directives — they won't conflict with `_shared.cs`.
+- Diagnostics are only checked in the case file, not in `_shared.cs`.
+- Error marker line numbers are relative to the case file (no offset computation needed).
+- **Compilation errors fail the test immediately** — if the combined code (case + `_shared.cs`) has C# compiler errors, the test fails with a clear message listing the errors instead of silently producing no diagnostics. This prevents false passes from invalid test code.
+
 ## should_fail (detection) case
 
 ```csharp

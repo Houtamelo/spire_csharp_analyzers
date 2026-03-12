@@ -28,4 +28,30 @@ internal static class Descriptors
                    + "Note that auto-properties generate backing fields and do count; non-auto (computed) properties do not.",
         helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE002.md"
     );
+
+    public static readonly DiagnosticDescriptor SPIRE003_DefaultOfMustBeInitStruct = new(
+        id: "SPIRE003",
+        title: "default(T) where T is a [MustBeInit] struct produces an uninitialized instance",
+        messageFormat: "default value of struct '{0}' marked with [MustBeInit] bypasses required initialization",
+        category: "Correctness",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "Structs marked with [MustBeInit] require explicit initialization. Using default(T) or the default "
+                   + "literal produces an uninitialized instance, defeating the purpose of the attribute.",
+        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE003.md"
+    );
+
+    public static readonly DiagnosticDescriptor SPIRE004_NewOfMustBeInitStructWithoutCtor = new(
+        id: "SPIRE004",
+        title: "new T() on [MustBeInit] struct without parameterless constructor is equivalent to default(T)",
+        messageFormat: "'new {0}()' is equivalent to 'default({0})' because '{0}' has no user-defined parameterless constructor",
+        category: "Correctness",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "For structs without a user-defined parameterless constructor, 'new T()' produces the same "
+                   + "default (zeroed) instance as 'default(T)'. When the struct is marked with [MustBeInit], "
+                   + "this bypasses required initialization. Use a constructor with parameters or add a parameterless "
+                   + "constructor that initializes the struct's fields.",
+        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE004.md"
+    );
 }
