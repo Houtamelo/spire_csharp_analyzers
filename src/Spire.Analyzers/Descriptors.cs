@@ -79,4 +79,17 @@ internal static class Descriptors
                    + "[MustBeInit], this produces uninitialized instances, defeating the purpose of the attribute.",
         helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE006.md"
     );
+
+    public static readonly DiagnosticDescriptor SPIRE007_UnsafeSkipInitOfMustBeInitStruct = new(
+        id: "SPIRE007",
+        title: "Unsafe.SkipInit on [MustBeInit] struct leaves it uninitialized",
+        messageFormat: "Unsafe.SkipInit leaves struct '{0}' marked with [MustBeInit] completely uninitialized",
+        category: "Correctness",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "Unsafe.SkipInit<T>(out T) bypasses zero-initialization entirely, leaving the value as "
+                   + "whatever was previously in that memory location. When T is a struct marked with [MustBeInit], "
+                   + "this is worse than default — the instance contains garbage data.",
+        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE007.md"
+    );
 }

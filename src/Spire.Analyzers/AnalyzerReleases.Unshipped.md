@@ -8,3 +8,4 @@ SPIRE003 | Correctness | Error | default(T) where T is a [MustBeInit] struct pro
 SPIRE004 | Correctness | Error | new T() on [MustBeInit] struct without parameterless constructor is equivalent to default(T)
 SPIRE005 | Correctness | Error | Activator.CreateInstance on [MustBeInit] struct produces a default instance
 SPIRE006 | Correctness | Error | Clearing array or span of [MustBeInit] struct produces default instances
+SPIRE007 | Correctness | Error | Unsafe.SkipInit on [MustBeInit] struct leaves it uninitialized
