@@ -83,7 +83,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         var elementType = arrayType.ElementType;
 
         // Check if element type has [MustBeInit]
-        if (!IsDiagnosticTarget(elementType, mustBeInitType))
+        if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
             return;
 
         context.ReportDiagnostic(
@@ -165,7 +165,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
                 return;
         }
 
-        if (!IsDiagnosticTarget(elementType, mustBeInitType))
+        if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
             return;
 
         context.ReportDiagnostic(
@@ -194,7 +194,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         if (OperationUtilities.IsKnownToBeZero(operation.Arguments[1].Value))
             return;
 
-        if (!IsDiagnosticTarget(elementType, mustBeInitType))
+        if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
             return;
 
         context.ReportDiagnostic(
@@ -222,7 +222,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         if (OperationUtilities.IsKnownToBeZero(operation.Arguments[0].Value))
             return;
 
-        if (!IsDiagnosticTarget(elementType, mustBeInitType))
+        if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
             return;
 
         context.ReportDiagnostic(
@@ -251,7 +251,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         if (OperationUtilities.IsKnownToBeZero(operation.Arguments[0].Value))
             return;
 
-        if (!IsDiagnosticTarget(elementType, mustBeInitType))
+        if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
             return;
 
         context.ReportDiagnostic(
@@ -295,7 +295,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         if (OperationUtilities.IsKnownToBeZero(operation.Value))
             return;
 
-        if (!IsDiagnosticTarget(elementType, mustBeInitType))
+        if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
             return;
 
         context.ReportDiagnostic(
@@ -331,7 +331,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
             return;
 
         // Check if element type has [MustBeInit]
-        if (!IsDiagnosticTarget(elementType, mustBeInitType))
+        if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
             return;
 
         context.ReportDiagnostic(
@@ -341,30 +341,4 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
                 elementType.Name));
     }
 
-    private static bool HasMustBeInitAttribute(ITypeSymbol type, INamedTypeSymbol mustBeInitType)
-    {
-        foreach (var attr in type.GetAttributes())
-        {
-            if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, mustBeInitType))
-                return true;
-        }
-
-        return false;
-    }
-
-    private static bool HasInstanceFields(ITypeSymbol type)
-    {
-        foreach (var member in type.GetMembers())
-        {
-            if (member is IFieldSymbol field && !field.IsStatic)
-                return true;
-        }
-
-        return false;
-    }
-
-    private static bool IsDiagnosticTarget(ITypeSymbol type, INamedTypeSymbol mustBeInitType)
-    {
-        return HasMustBeInitAttribute(type, mustBeInitType) && HasInstanceFields(type);
-    }
 }

@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Spire.Analyzers.Utils;
 
 namespace Spire.Analyzers.Rules;
 
@@ -52,12 +53,8 @@ public sealed class SPIRE002MustBeInitOnFieldlessTypeAnalyzer : DiagnosticAnalyz
         if (mustBeInitAttr is null)
             return;
 
-        // Check if the type has any instance fields (includes auto-property backing fields)
-        foreach (var member in type.GetMembers())
-        {
-            if (member is IFieldSymbol { IsStatic: false })
-                return;
-        }
+        if (MustBeInitChecks.HasInstanceFields(type))
+            return;
 
         // Determine location: prefer the attribute application syntax, fall back to type declaration
         Location location;

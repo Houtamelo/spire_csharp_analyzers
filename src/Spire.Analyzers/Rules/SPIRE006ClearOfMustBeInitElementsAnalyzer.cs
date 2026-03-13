@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
+using Spire.Analyzers.Utils;
 
 namespace Spire.Analyzers.Rules;
 
@@ -70,10 +71,10 @@ public sealed class SPIRE006ClearOfMustBeInitElementsAnalyzer : DiagnosticAnalyz
         if (namedElement.TypeKind != TypeKind.Struct)
             return;
 
-        if (!HasMustBeInitAttribute(namedElement, mustBeInitType))
+        if (!MustBeInitChecks.HasMustBeInitAttribute(namedElement, mustBeInitType))
             return;
 
-        if (!HasInstanceFields(namedElement))
+        if (!MustBeInitChecks.HasInstanceFields(namedElement))
             return;
 
         context.ReportDiagnostic(
@@ -146,25 +147,4 @@ public sealed class SPIRE006ClearOfMustBeInitElementsAnalyzer : DiagnosticAnalyz
         return true;
     }
 
-    private static bool HasMustBeInitAttribute(INamedTypeSymbol type, INamedTypeSymbol mustBeInitType)
-    {
-        foreach (var attr in type.GetAttributes())
-        {
-            if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, mustBeInitType))
-                return true;
-        }
-
-        return false;
-    }
-
-    private static bool HasInstanceFields(INamedTypeSymbol type)
-    {
-        foreach (var member in type.GetMembers())
-        {
-            if (member is IFieldSymbol { IsStatic: false })
-                return true;
-        }
-
-        return false;
-    }
 }

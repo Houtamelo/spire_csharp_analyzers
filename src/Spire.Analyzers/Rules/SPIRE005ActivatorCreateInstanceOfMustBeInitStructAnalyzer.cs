@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
+using Spire.Analyzers.Utils;
 
 namespace Spire.Analyzers.Rules;
 
@@ -92,10 +93,10 @@ public sealed class SPIRE005ActivatorCreateInstanceOfMustBeInitStructAnalyzer : 
         if (namedTarget.TypeKind != TypeKind.Struct)
             return;
 
-        if (!HasMustBeInitAttribute(namedTarget, mustBeInitType))
+        if (!MustBeInitChecks.HasMustBeInitAttribute(namedTarget, mustBeInitType))
             return;
 
-        if (!HasInstanceFields(namedTarget))
+        if (!MustBeInitChecks.HasInstanceFields(namedTarget))
             return;
         if (argsParamIndex.HasValue)
         {
@@ -192,25 +193,4 @@ public sealed class SPIRE005ActivatorCreateInstanceOfMustBeInitStructAnalyzer : 
         }
     }
 
-    private static bool HasMustBeInitAttribute(INamedTypeSymbol type, INamedTypeSymbol mustBeInitType)
-    {
-        foreach (var attr in type.GetAttributes())
-        {
-            if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, mustBeInitType))
-                return true;
-        }
-
-        return false;
-    }
-
-    private static bool HasInstanceFields(INamedTypeSymbol type)
-    {
-        foreach (var member in type.GetMembers())
-        {
-            if (member is IFieldSymbol { IsStatic: false })
-                return true;
-        }
-
-        return false;
-    }
 }

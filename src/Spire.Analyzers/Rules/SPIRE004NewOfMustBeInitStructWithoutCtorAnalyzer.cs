@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
+using Spire.Analyzers.Utils;
 
 namespace Spire.Analyzers.Rules;
 
@@ -52,11 +53,11 @@ public sealed class SPIRE004NewOfMustBeInitStructWithoutCtorAnalyzer : Diagnosti
             return;
 
         // Must have [MustBeInit] attribute
-        if (!HasMustBeInitAttribute(type, mustBeInitType))
+        if (!MustBeInitChecks.HasMustBeInitAttribute(type, mustBeInitType))
             return;
 
         // Must have at least one instance field (auto-property backing fields count)
-        if (!HasInstanceFields(type))
+        if (!MustBeInitChecks.HasInstanceFields(type))
             return;
 
         // Skip if the struct has a user-defined parameterless constructor
@@ -72,28 +73,6 @@ public sealed class SPIRE004NewOfMustBeInitStructWithoutCtorAnalyzer : Diagnosti
                 Descriptors.SPIRE004_NewOfMustBeInitStructWithoutCtor,
                 operation.Syntax.GetLocation(),
                 type.Name));
-    }
-
-    private static bool HasMustBeInitAttribute(INamedTypeSymbol type, INamedTypeSymbol mustBeInitType)
-    {
-        foreach (var attr in type.GetAttributes())
-        {
-            if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, mustBeInitType))
-                return true;
-        }
-
-        return false;
-    }
-
-    private static bool HasInstanceFields(INamedTypeSymbol type)
-    {
-        foreach (var member in type.GetMembers())
-        {
-            if (member is IFieldSymbol { IsStatic: false })
-                return true;
-        }
-
-        return false;
     }
 
     private static bool HasUserDefinedParameterlessCtor(INamedTypeSymbol type)
