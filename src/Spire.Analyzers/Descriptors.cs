@@ -92,4 +92,17 @@ internal static class Descriptors
                    + "this is worse than default — the instance contains garbage data.",
         helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE007.md"
     );
+
+    public static readonly DiagnosticDescriptor SPIRE008_GetUninitializedObjectOfMustBeInitStruct = new(
+        id: "SPIRE008",
+        title: "RuntimeHelpers.GetUninitializedObject on [MustBeInit] struct bypasses all constructors",
+        messageFormat: "RuntimeHelpers.GetUninitializedObject produces an uninitialized instance of struct '{0}' marked with [MustBeInit]",
+        category: "Correctness",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "RuntimeHelpers.GetUninitializedObject(Type) bypasses all constructors and field initializers, "
+                   + "producing a completely uninitialized instance. When the type is a struct marked with [MustBeInit], "
+                   + "this defeats the purpose of the attribute.",
+        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE008.md"
+    );
 }

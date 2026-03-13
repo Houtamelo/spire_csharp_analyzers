@@ -9,3 +9,4 @@ SPIRE004 | Correctness | Error | new T() on [MustBeInit] struct without paramete
 SPIRE005 | Correctness | Error | Activator.CreateInstance on [MustBeInit] struct produces a default instance
 SPIRE006 | Correctness | Error | Clearing array or span of [MustBeInit] struct produces default instances
 SPIRE007 | Correctness | Error | Unsafe.SkipInit on [MustBeInit] struct leaves it uninitialized
+SPIRE008 | Correctness | Error | RuntimeHelpers.GetUninitializedObject on [MustBeInit] struct bypasses all constructors
