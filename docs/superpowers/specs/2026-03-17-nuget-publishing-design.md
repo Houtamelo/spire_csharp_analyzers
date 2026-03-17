@@ -46,7 +46,7 @@ Trigger: tag push matching `v*`.
 
 Steps:
 1. Checkout
-2. Setup .NET SDK (`dotnet-version: 10.0.x`)
+2. Setup .NET SDK (`dotnet-version: 10.0.x`). Remove this step once runners ship with 10+.
 3. Run `tools/check-tag-version.sh` — uses `dotnet msbuild -getProperty:Version` for accurate version resolution. Fail if tag version != resolved version.
 4. `dotnet restore`
 5. `dotnet build -c Release`
