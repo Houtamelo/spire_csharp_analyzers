@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Optional pre-push hook — validates tag version matches .csproj.
+# Install: git config core.hooksPath tools/git-hooks
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && cd ../.. && pwd)"
+
+while read local_ref local_sha remote_ref remote_sha; do
+    # Only check tag pushes
+    if [[ "$local_ref" == refs/tags/v* ]]; then
+        TAG_NAME="${local_ref#refs/tags/}"
+        echo "Validating tag $TAG_NAME..."
+        "$SCRIPT_DIR/tools/check-tag-version.sh" "$TAG_NAME"
+    fi
+done
