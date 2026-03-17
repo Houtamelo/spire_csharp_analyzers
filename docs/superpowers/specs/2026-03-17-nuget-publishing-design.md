@@ -13,6 +13,7 @@ Publish `Spire.Analyzers` to NuGet via GitHub Actions on tag push, with a local 
 - **Local script:** Dry-run only — build, test, pack, inspect. Never pushes.
 - **Tag-version validation:** Shared script used by CI (hard gate) and optional local pre-push hook.
 - **License:** MIT.
+- **Source Link / symbol packages:** Out of scope for now.
 
 ## Package Metadata
 
@@ -29,6 +30,8 @@ Add to `src/Spire.Analyzers/Spire.Analyzers.csproj`:
 <PackageReadmeFile>README.md</PackageReadmeFile>
 ```
 
+Remove `<GeneratePackageOnBuild>true</GeneratePackageOnBuild>` — CI and local script use explicit `dotnet pack` instead.
+
 Add README to package:
 
 ```xml
@@ -43,13 +46,13 @@ Trigger: tag push matching `v*`.
 
 Steps:
 1. Checkout
-2. Setup .NET SDK
-3. Run `tools/check-tag-version.sh` — fail if tag version != `.csproj` version
+2. Setup .NET SDK (`dotnet-version: 10.0.x`)
+3. Run `tools/check-tag-version.sh` — uses `dotnet msbuild -getProperty:Version` for accurate version resolution. Fail if tag version != resolved version.
 4. `dotnet restore`
 5. `dotnet build -c Release`
 6. `dotnet test -c Release`
 7. `dotnet pack -c Release --no-build`
-8. `dotnet nuget push` to `nuget.org` using `NUGET_API_KEY` secret
+8. `dotnet nuget push src/Spire.Analyzers/bin/Release/Spire.Analyzers.*.nupkg --skip-duplicate` to `nuget.org` using `NUGET_API_KEY` secret
 
 ## Version Validation Script
 
@@ -57,7 +60,7 @@ File: `tools/check-tag-version.sh`
 
 Takes tag name as argument (e.g., `v1.2.3`):
 1. Strip `v` prefix → `1.2.3`
-2. Extract `<Version>` from `src/Spire.Analyzers/Spire.Analyzers.csproj`
+2. Extract version — prefer `dotnet msbuild -getProperty:Version` (accurate, handles `VersionPrefix`/`VersionSuffix`). Fall back to grep if SDK unavailable (local pre-push hook).
 3. Compare. Exit 1 on mismatch, printing both values.
 
 Used by CI workflow and optionally by local pre-push hook.
@@ -101,7 +104,7 @@ Setup: `git config core.hooksPath tools/git-hooks`
 
 | File | Change |
 |------|--------|
-| `src/Spire.Analyzers/Spire.Analyzers.csproj` | Add version, metadata, README item group |
+| `src/Spire.Analyzers/Spire.Analyzers.csproj` | Add version, metadata, README item group; remove `GeneratePackageOnBuild` |
 
 ## Release Workflow
 
