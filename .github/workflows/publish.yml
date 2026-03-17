@@ -1,0 +1,46 @@
+name: Publish to NuGet
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Install .NET 10+ SDK. Remove this step once runners ship with it.
+      # If .NET 10 is still in preview, add: include-prerelease: true
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Validate tag matches .csproj version
+        run: ./tools/check-tag-version.sh "${GITHUB_REF_NAME}"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build -c Release --no-restore
+
+      - name: Test
+        run: dotnet test -c Release --no-build
+
+      - name: Pack
+        run: dotnet pack src/Spire.Analyzers/ -c Release --no-build
+
+      - name: Push to NuGet
+        run: >
+          dotnet nuget push
+          src/Spire.Analyzers/bin/Release/Spire.Analyzers.*.nupkg
+          --source https://api.nuget.org/v3/index.json
+          --api-key ${{ secrets.NUGET_API_KEY }}
+          --skip-duplicate
