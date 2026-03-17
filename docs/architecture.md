@@ -1,6 +1,6 @@
 # Architecture — Spire.Analyzers
 
-Roslyn `DiagnosticAnalyzer` package for C# struct correctness and performance pitfalls.
+Roslyn `DiagnosticAnalyzer` package for C# struct correctness.
 
 ## Runtime Model
 
