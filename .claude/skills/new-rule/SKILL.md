@@ -35,7 +35,7 @@ Example: `/new-rule {RuleId} "Large struct passed by value"`
    - Include shared type definitions relevant to the rule
 8. Create test runner from template: `tests/Spire.Analyzers.Tests/{RuleId}/{RuleId}Tests.cs`
    - Replace `{{RULE_ID}}`, `{{ANALYZER_TYPE}}`
-   - Uses `[Theory]` + `[InlineData]` with `TestCaseLoader.LoadCase`
+   - Inherits `AnalyzerTestBase<TAnalyzer>` — cases discovered at runtime, no `[InlineData]` needed
 9. Create docs: `docs/rules/{RuleId}.md`
    - Replace `{{RULE_ID}}`, `{{RULE_TITLE}}`
    - Follow `docs/style-guide.md` for documentation style

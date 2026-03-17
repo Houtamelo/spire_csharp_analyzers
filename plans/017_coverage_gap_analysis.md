@@ -101,9 +101,6 @@ in the default state.
 
 **Complexity:** Low-Medium. Need to resolve the element type from the array/span.
 
-**Open question:** Is this worth flagging? Users may intentionally clear arrays they'll
-re-fill. Could be noisy. Consider making this a Warning rather than Error.
-
 ---
 
 ### P2 — `Unsafe.SkipInit<T>`
