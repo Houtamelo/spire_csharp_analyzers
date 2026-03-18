@@ -52,17 +52,6 @@ public class ClassPathTests
         Assert.NotNull(errType);
         Assert.True(errType.IsSealed);
 
-        // Verify factory methods
-        var newOk = unionType.GetMembers("NewOk")
-            .OfType<IMethodSymbol>().SingleOrDefault();
-        Assert.NotNull(newOk);
-        Assert.True(newOk.IsStatic);
-        Assert.Single(newOk.Parameters);
-
-        var newErr = unionType.GetMembers("NewErr")
-            .OfType<IMethodSymbol>().SingleOrDefault();
-        Assert.NotNull(newErr);
-        Assert.True(newErr.IsStatic);
     }
 
     [Fact]
@@ -110,11 +99,6 @@ public class ClassPathTests
             .OfType<IPropertySymbol>().ToList();
         Assert.Empty(props);
 
-        // Fieldless factory method should have no parameters
-        var newNone = unionType.GetMembers("NewNone")
-            .OfType<IMethodSymbol>().SingleOrDefault();
-        Assert.NotNull(newNone);
-        Assert.Empty(newNone.Parameters);
     }
 
     [Fact]
@@ -160,13 +144,6 @@ public class ClassPathTests
             .OfType<IPropertySymbol>().ToList();
         Assert.Equal(2, props.Count);
 
-        // Rect should have Deconstruct with 2 out params
-        var deconstruct = rectType.GetMembers("Deconstruct")
-            .OfType<IMethodSymbol>().SingleOrDefault();
-        Assert.NotNull(deconstruct);
-        Assert.Equal(2, deconstruct.Parameters.Length);
-        Assert.All(deconstruct.Parameters,
-            p => Assert.Equal(RefKind.Out, p.RefKind));
     }
 
     [Fact]
@@ -205,11 +182,6 @@ public class ClassPathTests
         Assert.NotNull(unionType.GetTypeMembers("Start").SingleOrDefault());
         Assert.NotNull(unionType.GetTypeMembers("Stop").SingleOrDefault());
 
-        // Factory methods exist
-        Assert.NotNull(unionType.GetMembers("NewStart")
-            .OfType<IMethodSymbol>().SingleOrDefault());
-        Assert.NotNull(unionType.GetMembers("NewStop")
-            .OfType<IMethodSymbol>().SingleOrDefault());
     }
 
     [Fact]

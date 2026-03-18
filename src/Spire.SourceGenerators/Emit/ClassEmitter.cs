@@ -1,4 +1,3 @@
-using System.Linq;
 using Spire.SourceGenerators.Model;
 
 namespace Spire.SourceGenerators.Emit;
@@ -26,34 +25,14 @@ internal static class ClassEmitter
         sb.AppendLine($"{union.AccessibilityKeyword} abstract partial class {unionType}");
         sb.OpenBrace();
 
-        // Private parameterless ctor prevents external subclassing
+        // Private ctor prevents external subclassing
         sb.AppendLine($"private {union.TypeName}() {{ }}");
         sb.AppendLine();
 
-        // Variant classes — re-declare as sealed partial
+        // Variant classes — just re-declare as sealed partial
         foreach (var variant in union.Variants)
         {
-            sb.AppendLine($"public sealed partial class {variant.Name}");
-            sb.OpenBrace();
-
-            // Deconstruct method for variants with fields
-            if (!variant.Fields.IsEmpty)
-            {
-                var deconstructParams = string.Join(", ", variant.Fields
-                    .Select(f => $"out {f.TypeFullName} {f.Name}"));
-                var deconstructBody = string.Join(" ", variant.Fields
-                    .Select(f => $"{f.Name} = {ToPascalCase(f.Name)};"));
-                sb.AppendLine($"public void Deconstruct({deconstructParams}) {{ {deconstructBody} }}");
-            }
-
-            sb.CloseBrace();
-            sb.AppendLine();
-        }
-
-        // Factory methods
-        foreach (var variant in union.Variants)
-        {
-            EmitFactoryMethod(sb, variant, unionType);
+            sb.AppendLine($"public sealed partial class {variant.Name};");
         }
 
         sb.CloseBrace(); // type
@@ -64,32 +43,9 @@ internal static class ClassEmitter
         return sb.ToString();
     }
 
-    private static void EmitFactoryMethod(
-        SourceBuilder sb, VariantInfo variant, string unionType)
-    {
-        if (variant.Fields.IsEmpty)
-        {
-            sb.AppendLine($"public static {unionType} New{variant.Name}() => new {variant.Name}();");
-            return;
-        }
-
-        var paramList = string.Join(", ", variant.Fields
-            .Select(f => $"{f.TypeFullName} {f.Name}"));
-        var argList = string.Join(", ", variant.Fields
-            .Select(f => f.Name));
-        sb.AppendLine($"public static {unionType} New{variant.Name}({paramList}) => new {variant.Name}({argList});");
-    }
-
     private static string FormatTypeParams(EquatableArray<string> typeParameters)
     {
         if (typeParameters.Length == 0) return "";
         return "<" + string.Join(", ", typeParameters) + ">";
-    }
-
-    private static string ToPascalCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        if (char.IsUpper(name[0])) return name;
-        return char.ToUpperInvariant(name[0]) + name.Substring(1);
     }
 }
