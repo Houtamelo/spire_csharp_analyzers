@@ -67,7 +67,25 @@ internal static class UnionParser
             .Select(m => ParseVariant(m))
             .ToImmutableArray();
 
-        if (variants.Length == 0) return null;
+        if (variants.Length == 0)
+        {
+            return new UnionDeclaration(
+                Namespace: typeSymbol.ContainingNamespace.IsGlobalNamespace
+                    ? ""
+                    : typeSymbol.ContainingNamespace.ToDisplayString(),
+                TypeName: typeSymbol.Name,
+                AccessibilityKeyword: AccessibilityToKeyword(typeSymbol.DeclaredAccessibility),
+                DeclarationKeyword: declKind,
+                IsReadonly: syntax.Modifiers.Any(m => m.IsKind(SyntaxKind.ReadOnlyKeyword)),
+                Strategy: strategy,
+                TypeParameters: new EquatableArray<string>(typeSymbol.TypeParameters
+                    .Select(tp => tp.Name).ToImmutableArray()),
+                Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
+                Diagnostic: new UnionDiagnostic(
+                    "SPIRE_DU003",
+                    "No [Variant] methods found on discriminated union type.",
+                    IsError: false));
+        }
 
         var typeParams = typeSymbol.TypeParameters
             .Select(tp => tp.Name)

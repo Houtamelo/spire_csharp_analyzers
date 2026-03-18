@@ -31,6 +31,18 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
         context.RegisterSourceOutput(unions, static (ctx, union) =>
         {
             if (union is null) return;
+
+            // Report diagnostic if present
+            if (union.Diagnostic is { } diag)
+            {
+                var descriptor = Diagnostics.GetDescriptor(diag);
+                ctx.ReportDiagnostic(
+                    Microsoft.CodeAnalysis.Diagnostic.Create(descriptor, Location.None));
+
+                // Don't emit source for error diagnostics
+                if (diag.IsError) return;
+            }
+
             var source = Emit(union);
             // Include arity to avoid collisions: Option vs Option<T>
             var arity = union.TypeParameters.Length > 0
