@@ -61,14 +61,17 @@ internal static class UnionParser
         var isGeneric = typeSymbol.TypeParameters.Length > 0;
         var strategy = ResolveStrategy(declKind, layout, isGeneric);
 
-        var variants = typeSymbol.GetMembers()
-            .OfType<IMethodSymbol>()
-            .Where(m => m.IsStatic && HasVariantAttribute(m))
-            .Select(m => ParseVariant(m))
-            .ToImmutableArray();
+        // Record/class paths discover variants as nested types inheriting from the parent.
+        // Struct paths discover variants as [Variant] static methods.
+        var variants = (declKind == "record" || declKind == "class")
+            ? DiscoverNestedTypeVariants(typeSymbol)
+            : DiscoverMethodVariants(typeSymbol);
 
         if (variants.Length == 0)
         {
+            var hint = (declKind == "record" || declKind == "class")
+                ? "No nested variant types found inheriting from the union type."
+                : "No [Variant] methods found on discriminated union type.";
             return new UnionDeclaration(
                 Namespace: typeSymbol.ContainingNamespace.IsGlobalNamespace
                     ? ""
@@ -83,7 +86,7 @@ internal static class UnionParser
                 Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
                 Diagnostic: new UnionDiagnostic(
                     "SPIRE_DU003",
-                    "No [Variant] methods found on discriminated union type.",
+                    hint,
                     IsError: false));
         }
 
@@ -155,13 +158,33 @@ internal static class UnionParser
         };
     }
 
+    /// Discovers variants from [Variant] static methods (struct path).
+    private static ImmutableArray<VariantInfo> DiscoverMethodVariants(INamedTypeSymbol typeSymbol)
+    {
+        return typeSymbol.GetMembers()
+            .OfType<IMethodSymbol>()
+            .Where(m => m.IsStatic && HasVariantAttribute(m))
+            .Select(m => ParseMethodVariant(m))
+            .ToImmutableArray();
+    }
+
+    /// Discovers variants from nested types that inherit from the parent (record/class path).
+    private static ImmutableArray<VariantInfo> DiscoverNestedTypeVariants(INamedTypeSymbol typeSymbol)
+    {
+        return typeSymbol.GetTypeMembers()
+            .Where(nested => SymbolEqualityComparer.Default.Equals(
+                nested.BaseType?.OriginalDefinition, typeSymbol.OriginalDefinition))
+            .Select(nested => ParseNestedTypeVariant(nested))
+            .ToImmutableArray();
+    }
+
     private static bool HasVariantAttribute(IMethodSymbol method)
     {
         return method.GetAttributes().Any(a =>
             a.AttributeClass?.Name == "VariantAttribute");
     }
 
-    private static VariantInfo ParseVariant(IMethodSymbol method)
+    private static VariantInfo ParseMethodVariant(IMethodSymbol method)
     {
         var fields = method.Parameters
             .Select(p => new FieldInfo(
@@ -174,6 +197,33 @@ internal static class UnionParser
 
         return new VariantInfo(
             Name: method.Name,
+            Fields: new EquatableArray<FieldInfo>(fields));
+    }
+
+    /// Extracts variant info from a nested type's primary constructor parameters.
+    private static VariantInfo ParseNestedTypeVariant(INamedTypeSymbol nestedType)
+    {
+        // Find the primary constructor (the one with parameters, or the parameterless one).
+        // For positional records `record Some(T Value)`, the compiler generates a ctor
+        // with matching parameters.
+        var primaryCtor = nestedType.Constructors
+            .Where(c => !c.IsImplicitlyDeclared || c.Parameters.Length > 0)
+            .OrderByDescending(c => c.Parameters.Length)
+            .FirstOrDefault();
+
+        var fields = primaryCtor is null
+            ? ImmutableArray<FieldInfo>.Empty
+            : primaryCtor.Parameters
+                .Select(p => new FieldInfo(
+                    Name: p.Name,
+                    TypeFullName: p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                    IsUnmanaged: p.Type.IsUnmanagedType,
+                    IsReferenceType: p.Type.IsReferenceType,
+                    KnownSize: ComputeKnownSize(p.Type)))
+                .ToImmutableArray();
+
+        return new VariantInfo(
+            Name: nestedType.Name,
             Fields: new EquatableArray<FieldInfo>(fields));
     }
 
