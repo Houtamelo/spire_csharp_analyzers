@@ -2,11 +2,16 @@
   <Folder Name="/src/">
     <Project Path="src/Spire.Analyzers/Spire.Analyzers.csproj" />
     <Project Path="src/Spire.Analyzers.Utils/Spire.Analyzers.Utils.csproj" />
+    <Project Path="src/Spire.SourceGenerators/Spire.SourceGenerators.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Spire.Analyzers.Tests/Spire.Analyzers.Tests.csproj" />
+    <Project Path="tests/Spire.SourceGenerators.Tests/Spire.SourceGenerators.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/SyntaxTreeViewer/SyntaxTreeViewer.csproj" />
+  </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Spire.Benchmarks/Spire.Benchmarks.csproj" />
   </Folder>
 </Solution>
