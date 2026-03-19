@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
@@ -28,10 +29,12 @@ internal static class GeneratorTestHelper
     public static GeneratorDriverRunResult RunGenerator(
         string source,
         out Compilation outputCompilation,
-        out ImmutableArray<Diagnostic> diagnostics)
+        out ImmutableArray<Diagnostic> diagnostics,
+        string path = "test.cs")
     {
         var syntaxTree = CSharpSyntaxTree.ParseText(source,
-            CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest));
+            CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest),
+            path: path);
 
         var compilation = CSharpCompilation.Create(
             "TestAssembly",
@@ -47,6 +50,23 @@ internal static class GeneratorTestHelper
                 out diagnostics);
 
         return driver.GetRunResult();
+    }
+
+    public static string? GetUnionGeneratedSource(GeneratorDriverRunResult result)
+    {
+        var excludedHints = new HashSet<string>
+        {
+            "DiscriminatedUnionAttribute.g.cs",
+            "VariantAttribute.g.cs",
+            "Layout.g.cs",
+        };
+
+        var unionResult = result.GeneratedTrees
+            .Where(t => !excludedHints.Contains(System.IO.Path.GetFileName(t.FilePath)))
+            .Select(t => t.GetText().ToString())
+            .FirstOrDefault();
+
+        return unionResult;
     }
 
     public static void AssertNoCompilationErrors(Compilation compilation)
