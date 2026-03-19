@@ -20,7 +20,7 @@ internal sealed class SwitchCoverage
     }
 }
 
-/// Extracts variant coverage from switch patterns on struct discriminated unions.
+/// Extracts variant coverage from switch patterns on discriminated unions (struct, record, and class).
 internal static class PatternAnalyzer
 {
     public static SwitchCoverage AnalyzeExpression(
@@ -103,14 +103,24 @@ internal static class PatternAnalyzer
                 return true;
 
             case IDeclarationPatternOperation declPattern:
-                // `var x` is a wildcard — the declared type matches the input type
+                // `null` pattern check — not a variant match
                 if (declPattern.MatchesNull)
-                    return true;
-                // If it's `var x` with no specific type narrowing, it's a catch-all
+                    return false;
+                // `var x` is a wildcard — the declared type matches the input type
                 if (declPattern.InputType is not null &&
                     SymbolEqualityComparer.Default.Equals(
                         declPattern.InputType, declPattern.MatchedType))
                     return true;
+                // Record/class union: `Option<int>.Some some` — type narrows to a variant
+                if (info.IsRecordOrClassUnion && declPattern.MatchedType is INamedTypeSymbol declMatchedType)
+                {
+                    var variantName = TryGetRecordClassVariant(declMatchedType, info);
+                    if (variantName is not null)
+                    {
+                        variants.Add(variantName);
+                        return false;
+                    }
+                }
                 return false;
 
             case IRecursivePatternOperation recursive:
@@ -121,6 +131,19 @@ internal static class PatternAnalyzer
 
             case INegatedPatternOperation:
                 // `not X` does not positively cover a variant
+                return false;
+
+            case ITypePatternOperation typePattern:
+                // Record/class union: bare type pattern `Option<int>.None =>` (no binding, no properties)
+                if (info.IsRecordOrClassUnion && typePattern.MatchedType is INamedTypeSymbol typeMatchedType)
+                {
+                    var variantName = TryGetRecordClassVariant(typeMatchedType, info);
+                    if (variantName is not null)
+                    {
+                        variants.Add(variantName);
+                        return false;
+                    }
+                }
                 return false;
 
             case IConstantPatternOperation constant:
@@ -135,7 +158,19 @@ internal static class PatternAnalyzer
     private static bool HandleRecursivePattern(
         IRecursivePatternOperation recursive, UnionTypeInfo info, List<string> variants)
     {
-        // Deconstruction pattern: (Shape.Kind.Circle, double r)
+        // Record/class union: `Option<int>.Some { Value: var v }` or just `Option<int>.None`
+        // The MatchedType tells us which variant is being matched.
+        if (info.IsRecordOrClassUnion && recursive.MatchedType is INamedTypeSymbol matchedType)
+        {
+            var variantName = TryGetRecordClassVariant(matchedType, info);
+            if (variantName is not null)
+            {
+                variants.Add(variantName);
+                return false;
+            }
+        }
+
+        // Struct union: Deconstruction pattern: (Shape.Kind.Circle, double r)
         // The first subpattern identifies the variant (Kind enum value).
         // Delegate to CollectVariants so or-patterns, and-patterns, etc. are handled.
         if (!recursive.DeconstructionSubpatterns.IsEmpty)
@@ -144,7 +179,7 @@ internal static class PatternAnalyzer
             return CollectVariants(firstSub, info, variants);
         }
 
-        // Property pattern: { tag: Shape.Kind.Circle }
+        // Struct union: Property pattern: { tag: Shape.Kind.Circle }
         // Find the tag member and delegate its pattern to CollectVariants.
         if (!recursive.PropertySubpatterns.IsEmpty)
         {
@@ -240,5 +275,19 @@ internal static class PatternAnalyzer
     private static INamedTypeSymbol? GetKindEnumType(UnionTypeInfo info)
     {
         return info.KindEnumType;
+    }
+
+    /// For record/class unions, resolves a matched type to a variant name.
+    /// Compares using OriginalDefinition so generic instantiations are handled correctly.
+    private static string? TryGetRecordClassVariant(INamedTypeSymbol matchedType, UnionTypeInfo info)
+    {
+        var originalMatched = matchedType.OriginalDefinition;
+        for (int i = 0; i < info.VariantTypes.Length; i++)
+        {
+            if (SymbolEqualityComparer.Default.Equals(
+                    originalMatched, info.VariantTypes[i].OriginalDefinition))
+                return info.VariantNames[i];
+        }
+        return null;
     }
 }

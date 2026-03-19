@@ -43,7 +43,7 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
         if (subjectType is null) return;
 
         var unionInfo = UnionTypeInfo.TryCreate(subjectType, duAttr);
-        if (unionInfo is null || !unionInfo.IsStructUnion) return;
+        if (unionInfo is null) return;
 
         var coverage = PatternAnalyzer.AnalyzeExpression(switchOp, unionInfo);
         ReportDiagnostics(ctx, subjectType, unionInfo, coverage, switchOp.Syntax.GetLocation());
@@ -57,7 +57,7 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
         if (subjectType is null) return;
 
         var unionInfo = UnionTypeInfo.TryCreate(subjectType, duAttr);
-        if (unionInfo is null || !unionInfo.IsStructUnion) return;
+        if (unionInfo is null) return;
 
         var coverage = PatternAnalyzer.AnalyzeStatement(switchOp, unionInfo);
         ReportDiagnostics(ctx, subjectType, unionInfo, coverage, switchOp.Syntax.GetLocation());
