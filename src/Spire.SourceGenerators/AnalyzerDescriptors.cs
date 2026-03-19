@@ -37,4 +37,20 @@ internal static class AnalyzerDescriptors
         category: "Correctness",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor SPIRE013_WrongVariantFieldAccess = new(
+        id: "SPIRE013",
+        title: "Accessing another variant's field",
+        messageFormat: "'{0}' belongs to variant '{1}', not '{2}'",
+        category: "Correctness",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor SPIRE014_UnguardedFieldAccess = new(
+        id: "SPIRE014",
+        title: "Accessing variant field without tag guard",
+        messageFormat: "Accessing variant field '{0}' without a tag guard",
+        category: "Correctness",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
 }

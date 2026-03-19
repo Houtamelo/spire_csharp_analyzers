@@ -94,7 +94,7 @@ internal static class PatternAnalyzer
     }
 
     /// Collects variant names from a pattern. Returns true if the pattern is a wildcard.
-    private static bool CollectVariants(
+    internal static bool CollectVariants(
         IPatternOperation pattern, UnionTypeInfo info, List<string> variants)
     {
         switch (pattern)
