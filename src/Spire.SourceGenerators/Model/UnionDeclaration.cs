@@ -6,10 +6,18 @@ internal enum EmitStrategy { Record, Class, Overlap, BoxedFields, BoxedTuple }
 
 /// Carries a diagnostic ID + message for the generator to report.
 /// Simpler than passing Roslyn DiagnosticDescriptor through the equatable model.
+/// Location fields allow reconstructing a Location on the reporting side.
 internal sealed record UnionDiagnostic(
     string Id,
     string Message,
-    bool IsError
+    bool IsError,
+    string FilePath,
+    int StartOffset,
+    int Length,
+    int StartLine,
+    int StartColumn,
+    int EndLine,
+    int EndColumn
 ) : IEquatable<UnionDiagnostic>;
 
 internal sealed record UnionDeclaration(

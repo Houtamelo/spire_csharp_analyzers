@@ -36,8 +36,14 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
             if (union.Diagnostic is { } diag)
             {
                 var descriptor = Diagnostics.GetDescriptor(diag);
+                var location = Location.Create(
+                    diag.FilePath,
+                    new Microsoft.CodeAnalysis.Text.TextSpan(diag.StartOffset, diag.Length),
+                    new Microsoft.CodeAnalysis.Text.LinePositionSpan(
+                        new Microsoft.CodeAnalysis.Text.LinePosition(diag.StartLine, diag.StartColumn),
+                        new Microsoft.CodeAnalysis.Text.LinePosition(diag.EndLine, diag.EndColumn)));
                 ctx.ReportDiagnostic(
-                    Microsoft.CodeAnalysis.Diagnostic.Create(descriptor, Location.None));
+                    Microsoft.CodeAnalysis.Diagnostic.Create(descriptor, location));
 
                 // Don't emit source for error diagnostics
                 if (diag.IsError) return;

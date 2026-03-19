@@ -33,10 +33,11 @@ internal static class UnionParser
                 Strategy: EmitStrategy.Overlap,
                 TypeParameters: new EquatableArray<string>(ImmutableArray<string>.Empty),
                 Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
-                Diagnostic: new UnionDiagnostic(
+                Diagnostic: CreateDiagnostic(
+                    syntax,
                     "SPIRE_DU001",
                     "Nested type declarations are not supported for [DiscriminatedUnion]",
-                    IsError: true));
+                    isError: true));
         }
 
         // Reject ref structs
@@ -51,10 +52,11 @@ internal static class UnionParser
                 Strategy: EmitStrategy.Overlap,
                 TypeParameters: new EquatableArray<string>(ImmutableArray<string>.Empty),
                 Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
-                Diagnostic: new UnionDiagnostic(
+                Diagnostic: CreateDiagnostic(
+                    syntax,
                     "SPIRE_DU002",
                     "ref struct is not supported for [DiscriminatedUnion]",
-                    IsError: true));
+                    isError: true));
         }
 
         var layout = GetLayout(ctx.Attributes);
@@ -76,20 +78,22 @@ internal static class UnionParser
                 TypeParameters: new EquatableArray<string>(typeSymbol.TypeParameters
                     .Select(tp => tp.Name).ToImmutableArray()),
                 Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
-                Diagnostic: new UnionDiagnostic(
+                Diagnostic: CreateDiagnostic(
+                    syntax,
                     "SPIRE_DU005",
                     "Generic structs cannot use Overlap layout (CLR restriction); use BoxedFields or BoxedTuple",
-                    IsError: true));
+                    isError: true));
         }
 
         // Warn when Layout is explicitly set on record/class (it's ignored)
         UnionDiagnostic? layoutWarning = null;
         if ((declKind == "record" || declKind == "class") && layout != 0)
         {
-            layoutWarning = new UnionDiagnostic(
+            layoutWarning = CreateDiagnostic(
+                syntax,
                 "SPIRE_DU004",
                 "Layout parameter is ignored for record/class discriminated unions",
-                IsError: false);
+                isError: false);
         }
 
         // Record/class paths discover variants as nested types inheriting from the parent.
@@ -115,10 +119,11 @@ internal static class UnionParser
                 TypeParameters: new EquatableArray<string>(typeSymbol.TypeParameters
                     .Select(tp => tp.Name).ToImmutableArray()),
                 Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
-                Diagnostic: new UnionDiagnostic(
+                Diagnostic: CreateDiagnostic(
+                    syntax,
                     "SPIRE_DU003",
                     hint,
-                    IsError: false));
+                    isError: false));
         }
 
         var typeParams = typeSymbol.TypeParameters
@@ -288,6 +293,24 @@ internal static class UnionParser
             SpecialType.System_UIntPtr => 8,
             _ => null,
         };
+    }
+
+    private static UnionDiagnostic CreateDiagnostic(
+        TypeDeclarationSyntax syntax, string id, string message, bool isError)
+    {
+        var location = syntax.Identifier.GetLocation();
+        var lineSpan = location.GetLineSpan();
+        return new UnionDiagnostic(
+            Id: id,
+            Message: message,
+            IsError: isError,
+            FilePath: lineSpan.Path ?? "",
+            StartOffset: location.SourceSpan.Start,
+            Length: location.SourceSpan.Length,
+            StartLine: lineSpan.StartLinePosition.Line,
+            StartColumn: lineSpan.StartLinePosition.Character,
+            EndLine: lineSpan.EndLinePosition.Line,
+            EndColumn: lineSpan.EndLinePosition.Character);
     }
 
     private static string AccessibilityToKeyword(Accessibility accessibility)
