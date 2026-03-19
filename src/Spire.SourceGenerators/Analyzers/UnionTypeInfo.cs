@@ -12,12 +12,19 @@ internal sealed class UnionTypeInfo
     public ImmutableArray<string> VariantNames { get; }
     /// For record/class unions: the variant type symbols (for type pattern matching).
     public ImmutableArray<INamedTypeSymbol> VariantTypes { get; }
+    /// For struct unions: the nested Kind enum type (for constant pattern matching).
+    public INamedTypeSymbol? KindEnumType { get; }
 
-    private UnionTypeInfo(bool isStruct, ImmutableArray<string> names, ImmutableArray<INamedTypeSymbol> types)
+    private UnionTypeInfo(
+        bool isStruct,
+        ImmutableArray<string> names,
+        ImmutableArray<INamedTypeSymbol> types,
+        INamedTypeSymbol? kindEnumType = null)
     {
         IsStructUnion = isStruct;
         VariantNames = names;
         VariantTypes = types;
+        KindEnumType = kindEnumType;
     }
 
     /// Returns a UnionTypeInfo if the type has [DiscriminatedUnion] and valid variant structure, null otherwise.
@@ -47,7 +54,7 @@ internal sealed class UnionTypeInfo
             .Select(f => f.Name)
             .ToImmutableArray();
 
-        return new UnionTypeInfo(true, names, ImmutableArray<INamedTypeSymbol>.Empty);
+        return new UnionTypeInfo(true, names, ImmutableArray<INamedTypeSymbol>.Empty, kindEnum);
     }
 
     private static UnionTypeInfo? TryCreateRecordOrClass(ITypeSymbol type)
