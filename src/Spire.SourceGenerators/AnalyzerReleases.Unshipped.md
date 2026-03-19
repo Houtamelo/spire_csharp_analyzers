@@ -7,3 +7,5 @@ SPIRE_DU002 | SourceGeneration | Error | ref struct not supported for [Discrimin
 SPIRE_DU003 | SourceGeneration | Warning | No [Variant] methods found
 SPIRE_DU004 | SourceGeneration | Warning | Layout parameter is ignored for record/class discriminated unions
 SPIRE_DU005 | SourceGeneration | Error | Generic structs cannot use Overlap layout (CLR restriction)
+SPIRE009 | Correctness | Error | Switch does not handle all variants of discriminated union
+SPIRE010 | Correctness | Warning | Switch uses wildcard instead of exhaustive variant matching
