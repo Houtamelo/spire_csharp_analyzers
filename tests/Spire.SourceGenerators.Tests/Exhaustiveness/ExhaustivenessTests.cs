@@ -10,7 +10,9 @@ public class ExhaustivenessTests : GeneratorAnalyzerTestBase
     protected override string Category => "Exhaustiveness";
 
     protected override ImmutableArray<DiagnosticAnalyzer> GetAnalyzers()
-        => ImmutableArray.Create<DiagnosticAnalyzer>(new ExhaustivenessAnalyzer());
+        => ImmutableArray.Create<DiagnosticAnalyzer>(
+            new ExhaustivenessAnalyzer(),
+            new CS8509Suppressor());
 
     protected override bool IsRelevantDiagnostic(Diagnostic d)
         => d.Id == "SPIRE009" || d.Id == "SPIRE010";
