@@ -20,6 +20,8 @@ internal static class BoxedFieldsEmitter
             sb.OpenBrace();
         }
 
+        sb.OpenContainingTypes(union.ContainingTypes);
+
         var typeParams = FormatTypeParams(union.TypeParameters);
         var unionType = union.TypeName + typeParams;
         var readonlyMod = union.IsReadonly ? "readonly " : "";
@@ -52,6 +54,8 @@ internal static class BoxedFieldsEmitter
         DeconstructEmitter.EmitBoxedFieldsDeconstructs(sb, union.Variants);
 
         sb.CloseBrace(); // type
+
+        sb.CloseContainingTypes(union.ContainingTypes);
 
         if (hasNamespace)
             sb.CloseBrace(); // namespace

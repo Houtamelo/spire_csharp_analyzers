@@ -6,14 +6,6 @@ namespace Spire.SourceGenerators;
 
 internal static class Diagnostics
 {
-    private static readonly DiagnosticDescriptor NestedTypeNotSupported = new(
-        id: "SPIRE_DU001",
-        title: "Nested type not supported for [DiscriminatedUnion]",
-        messageFormat: "Nested type declarations are not supported for [DiscriminatedUnion]",
-        category: "SourceGeneration",
-        defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
-
     private static readonly DiagnosticDescriptor RefStructNotSupported = new(
         id: "SPIRE_DU002",
         title: "ref struct not supported for [DiscriminatedUnion]",
@@ -48,7 +40,6 @@ internal static class Diagnostics
 
     private static readonly Dictionary<string, DiagnosticDescriptor> DescriptorMap = new()
     {
-        ["SPIRE_DU001"] = NestedTypeNotSupported,
         ["SPIRE_DU002"] = RefStructNotSupported,
         ["SPIRE_DU003"] = NoVariantsFound,
         ["SPIRE_DU004"] = LayoutIgnoredForRecordClass,

@@ -28,6 +28,8 @@ internal static class OverlapEmitter
             sb.OpenBrace();
         }
 
+        sb.OpenContainingTypes(union.ContainingTypes);
+
         var readonlyMod = union.IsReadonly ? "readonly " : "";
 
         sb.AppendLine("[global::Spire.Analyzers.MustBeInit]");
@@ -66,6 +68,8 @@ internal static class OverlapEmitter
         EmitDeconstructs(sb, union.Variants, layout);
 
         sb.CloseBrace(); // type
+
+        sb.CloseContainingTypes(union.ContainingTypes);
 
         if (hasNamespace)
             sb.CloseBrace(); // namespace

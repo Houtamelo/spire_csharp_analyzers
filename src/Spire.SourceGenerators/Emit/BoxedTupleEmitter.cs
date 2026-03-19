@@ -20,6 +20,8 @@ internal static class BoxedTupleEmitter
             sb.OpenBrace();
         }
 
+        sb.OpenContainingTypes(union.ContainingTypes);
+
         var typeParams = FormatTypeParams(union.TypeParameters);
         var unionType = union.TypeName + typeParams;
         var readonlyMod = union.IsReadonly ? "readonly " : "";
@@ -48,6 +50,8 @@ internal static class BoxedTupleEmitter
         EmitDeconstruct(sb);
 
         sb.CloseBrace(); // type
+
+        sb.CloseContainingTypes(union.ContainingTypes);
 
         if (hasNamespace)
             sb.CloseBrace(); // namespace

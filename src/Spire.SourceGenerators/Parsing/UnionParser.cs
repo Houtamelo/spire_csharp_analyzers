@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
@@ -21,25 +22,6 @@ internal static class UnionParser
         var declKind = GetDeclarationKind(syntax);
         if (declKind is null) return null;
 
-        // Reject nested types
-        if (typeSymbol.ContainingType is not null)
-        {
-            return new UnionDeclaration(
-                Namespace: "",
-                TypeName: typeSymbol.Name,
-                AccessibilityKeyword: AccessibilityToKeyword(typeSymbol.DeclaredAccessibility),
-                DeclarationKeyword: declKind,
-                IsReadonly: false,
-                Strategy: EmitStrategy.Overlap,
-                TypeParameters: new EquatableArray<string>(ImmutableArray<string>.Empty),
-                Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
-                Diagnostic: CreateDiagnostic(
-                    syntax,
-                    "SPIRE_DU001",
-                    "Nested type declarations are not supported for [DiscriminatedUnion]",
-                    isError: true));
-        }
-
         // Reject ref structs
         if (typeSymbol.IsRefLikeType)
         {
@@ -52,6 +34,7 @@ internal static class UnionParser
                 Strategy: EmitStrategy.Overlap,
                 TypeParameters: new EquatableArray<string>(ImmutableArray<string>.Empty),
                 Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
+                ContainingTypes: new EquatableArray<ContainingTypeInfo>(ImmutableArray<ContainingTypeInfo>.Empty),
                 Diagnostic: CreateDiagnostic(
                     syntax,
                     "SPIRE_DU002",
@@ -78,6 +61,7 @@ internal static class UnionParser
                 TypeParameters: new EquatableArray<string>(typeSymbol.TypeParameters
                     .Select(tp => tp.Name).ToImmutableArray()),
                 Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
+                ContainingTypes: new EquatableArray<ContainingTypeInfo>(ImmutableArray<ContainingTypeInfo>.Empty),
                 Diagnostic: CreateDiagnostic(
                     syntax,
                     "SPIRE_DU005",
@@ -119,6 +103,7 @@ internal static class UnionParser
                 TypeParameters: new EquatableArray<string>(typeSymbol.TypeParameters
                     .Select(tp => tp.Name).ToImmutableArray()),
                 Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
+                ContainingTypes: new EquatableArray<ContainingTypeInfo>(ImmutableArray<ContainingTypeInfo>.Empty),
                 Diagnostic: CreateDiagnostic(
                     syntax,
                     "SPIRE_DU003",
@@ -141,7 +126,38 @@ internal static class UnionParser
             Strategy: strategy,
             TypeParameters: new EquatableArray<string>(typeParams),
             Variants: new EquatableArray<VariantInfo>(variants),
+            ContainingTypes: new EquatableArray<ContainingTypeInfo>(GetContainingTypes(typeSymbol)),
             Diagnostic: layoutWarning);
+    }
+
+    /// Walks up the ContainingType chain and returns the nesting wrappers
+    /// from outermost to innermost.
+    private static ImmutableArray<ContainingTypeInfo> GetContainingTypes(INamedTypeSymbol typeSymbol)
+    {
+        var chain = new List<ContainingTypeInfo>();
+        var current = typeSymbol.ContainingType;
+        while (current is not null)
+        {
+            string keyword;
+            if (current.IsStatic)
+                keyword = "static class";
+            else if (current.IsRecord && current.IsValueType)
+                keyword = "record struct";
+            else if (current.IsRecord)
+                keyword = "record";
+            else if (current.IsValueType)
+                keyword = "struct";
+            else
+                keyword = "class";
+
+            chain.Add(new ContainingTypeInfo(
+                AccessibilityKeyword: AccessibilityToKeyword(current.DeclaredAccessibility),
+                Keyword: keyword,
+                Name: current.Name));
+            current = current.ContainingType;
+        }
+        chain.Reverse(); // outermost first
+        return chain.ToImmutableArray();
     }
 
     /// Returns "struct", "record", or "class".

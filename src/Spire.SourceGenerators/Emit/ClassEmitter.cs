@@ -19,6 +19,8 @@ internal static class ClassEmitter
             sb.OpenBrace();
         }
 
+        sb.OpenContainingTypes(union.ContainingTypes);
+
         var typeParams = FormatTypeParams(union.TypeParameters);
         var unionType = union.TypeName + typeParams;
 
@@ -36,6 +38,8 @@ internal static class ClassEmitter
         }
 
         sb.CloseBrace(); // type
+
+        sb.CloseContainingTypes(union.ContainingTypes);
 
         if (hasNamespace)
             sb.CloseBrace(); // namespace

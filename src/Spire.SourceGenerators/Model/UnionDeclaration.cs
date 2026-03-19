@@ -20,6 +20,13 @@ internal sealed record UnionDiagnostic(
     int EndColumn
 ) : IEquatable<UnionDiagnostic>;
 
+/// A containing type in the nesting chain (outermost first).
+internal sealed record ContainingTypeInfo(
+    string AccessibilityKeyword,
+    string Keyword,
+    string Name
+) : IEquatable<ContainingTypeInfo>;
+
 internal sealed record UnionDeclaration(
     string Namespace,
     string TypeName,
@@ -29,6 +36,8 @@ internal sealed record UnionDeclaration(
     EmitStrategy Strategy,
     EquatableArray<string> TypeParameters,
     EquatableArray<VariantInfo> Variants,
+    /// Containing types from outermost to innermost (empty if top-level).
+    EquatableArray<ContainingTypeInfo> ContainingTypes,
     /// Optional diagnostic to report (e.g., Layout on record, Overlap on generic).
     /// If IsError, no source is emitted for this union.
     UnionDiagnostic? Diagnostic
