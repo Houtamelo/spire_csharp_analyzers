@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -63,15 +64,31 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
         if (IsInsidePropertySubpattern(fieldRefOp))
             return;
 
-        // Walk parent chain to determine if there's a tag guard
-        if (HasTagGuard(fieldRefOp))
-            return;
+        // Walk parent chain to find a guard and extract guarded variants
+        var guardResult = FindGuard(fieldRefOp, info);
 
-        // No guard found — report SPIRE014
+        if (!guardResult.HasGuard)
+        {
+            // No guard found — report SPIRE014
+            ctx.ReportDiagnostic(Diagnostic.Create(
+                AnalyzerDescriptors.SPIRE014_UnguardedFieldAccess,
+                fieldRefOp.Syntax.GetLocation(),
+                field.Name));
+            return;
+        }
+
+        // Guard found — check if the field's variant is in the guarded set
+        if (guardResult.GuardedVariants.Contains(owningVariant))
+            return; // Correct variant — no diagnostic
+
+        // Wrong variant — report SPIRE013
+        var guardedDisplay = string.Join(", ", guardResult.GuardedVariants);
         ctx.ReportDiagnostic(Diagnostic.Create(
-            AnalyzerDescriptors.SPIRE014_UnguardedFieldAccess,
+            AnalyzerDescriptors.SPIRE013_WrongVariantFieldAccess,
             fieldRefOp.Syntax.GetLocation(),
-            field.Name));
+            field.Name,
+            owningVariant,
+            guardedDisplay));
     }
 
     private static bool HasEditorBrowsableNever(IFieldSymbol field)
@@ -100,40 +117,108 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
         return false;
     }
 
-    /// Walks the parent chain to find a tag guard (switch arm, switch case, or if-condition).
-    private static bool HasTagGuard(IFieldReferenceOperation fieldRefOp)
+    /// Result of finding a guard in the parent chain.
+    private readonly struct GuardResult
+    {
+        public static readonly GuardResult NoGuard = new(ImmutableHashSet<string>.Empty, false);
+
+        public ImmutableHashSet<string> GuardedVariants { get; }
+        public bool HasGuard { get; }
+
+        private GuardResult(ImmutableHashSet<string> guardedVariants, bool hasGuard)
+        {
+            GuardedVariants = guardedVariants;
+            HasGuard = hasGuard;
+        }
+
+        public static GuardResult WithVariants(IEnumerable<string> variants)
+            => new(variants.ToImmutableHashSet(), true);
+    }
+
+    /// Walks the parent chain to find a tag guard and extract guarded variants.
+    private static GuardResult FindGuard(IFieldReferenceOperation fieldRefOp, UnionTypeInfo info)
     {
         var current = fieldRefOp.Parent;
         while (current is not null)
         {
             switch (current)
             {
-                case ISwitchExpressionArmOperation:
-                    // Inside a switch expression arm — guarded by the arm's pattern
-                    return true;
+                case ISwitchExpressionArmOperation arm:
+                {
+                    var variants = new List<string>();
+                    PatternAnalyzer.CollectVariants(arm.Pattern, info, variants);
+                    return GuardResult.WithVariants(variants);
+                }
 
-                case ISwitchCaseOperation:
-                    // Inside a switch statement case — guarded by the case clause
-                    return true;
+                case ISwitchCaseOperation switchCase:
+                {
+                    var variants = new List<string>();
+                    foreach (var clause in switchCase.Clauses)
+                    {
+                        if (clause is IPatternCaseClauseOperation patternClause)
+                            PatternAnalyzer.CollectVariants(patternClause.Pattern, info, variants);
+                    }
+                    return GuardResult.WithVariants(variants);
+                }
 
                 case IConditionalOperation conditional:
-                    // Inside an if-statement — check if the condition guards the field access
-                    // and the field access is in the WhenTrue branch
                     if (IsInWhenTrueBranch(fieldRefOp, conditional) &&
                         ConditionReferencesUnionVariable(conditional.Condition, fieldRefOp))
-                        return true;
+                    {
+                        var variants = ExtractVariantsFromCondition(conditional.Condition, info);
+                        return GuardResult.WithVariants(variants);
+                    }
                     break;
 
                 // Stop at method/lambda scope boundaries
                 case IMethodBodyOperation:
                 case IAnonymousFunctionOperation:
-                    return false;
+                    return GuardResult.NoGuard;
             }
 
             current = current.Parent;
         }
 
-        return false;
+        return GuardResult.NoGuard;
+    }
+
+    /// Extracts guarded variant names from an if-condition.
+    private static List<string> ExtractVariantsFromCondition(IOperation condition, UnionTypeInfo info)
+    {
+        var variants = new List<string>();
+
+        switch (condition)
+        {
+            case IIsPatternOperation isPattern:
+                PatternAnalyzer.CollectVariants(isPattern.Pattern, info, variants);
+                break;
+
+            case IBinaryOperation binary when
+                binary.OperatorKind == BinaryOperatorKind.Equals:
+                // tag == Kind.X or Kind.X == tag — extract the Kind constant
+                TryExtractKindVariant(binary.LeftOperand, info, variants);
+                TryExtractKindVariant(binary.RightOperand, info, variants);
+                break;
+        }
+
+        return variants;
+    }
+
+    /// Tries to resolve an operation to a Kind enum constant and map it to a variant name.
+    private static void TryExtractKindVariant(IOperation operand, UnionTypeInfo info, List<string> variants)
+    {
+        if (info.KindEnumType is null)
+            return;
+
+        // The operand might be a field reference like Shape.Kind.Circle
+        if (operand is IFieldReferenceOperation fieldRef &&
+            SymbolEqualityComparer.Default.Equals(fieldRef.Field.ContainingType, info.KindEnumType) &&
+            fieldRef.Field.HasConstantValue &&
+            fieldRef.Field.ConstantValue is int ordinal &&
+            ordinal >= 0 && ordinal < info.VariantNames.Length)
+        {
+            variants.Add(info.VariantNames[ordinal]);
+        }
     }
 
     /// Checks whether the field reference operation is within the WhenTrue branch of a conditional.
