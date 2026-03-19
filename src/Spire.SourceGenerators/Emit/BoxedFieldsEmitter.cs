@@ -24,6 +24,7 @@ internal static class BoxedFieldsEmitter
         var unionType = union.TypeName + typeParams;
         var readonlyMod = union.IsReadonly ? "readonly " : "";
 
+        sb.AppendLine("[global::Spire.Analyzers.MustBeInit]");
         sb.AppendLine($"{union.AccessibilityKeyword} {readonlyMod}partial {union.DeclarationKeyword} {unionType}");
         sb.OpenBrace();
 

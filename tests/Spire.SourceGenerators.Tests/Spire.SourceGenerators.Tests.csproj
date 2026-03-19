@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Spire.SourceGenerators\Spire.SourceGenerators.csproj" />
+    <ProjectReference Include="..\..\src\Spire.Analyzers\Spire.Analyzers.csproj" />
   </ItemGroup>
 
   <ItemGroup>

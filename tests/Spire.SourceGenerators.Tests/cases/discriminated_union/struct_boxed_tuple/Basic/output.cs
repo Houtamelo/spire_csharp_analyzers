@@ -3,6 +3,7 @@
 
 namespace TestNs
 {
+    [global::Spire.Analyzers.MustBeInit]
     internal partial struct Shape
     {
         public enum Kind

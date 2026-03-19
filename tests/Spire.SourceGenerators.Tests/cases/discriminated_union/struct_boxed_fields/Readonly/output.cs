@@ -3,6 +3,7 @@
 
 namespace TestNs
 {
+    [global::Spire.Analyzers.MustBeInit]
     internal readonly partial struct Immutable
     {
         public enum Kind

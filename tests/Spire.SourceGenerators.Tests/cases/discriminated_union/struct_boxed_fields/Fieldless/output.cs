@@ -3,6 +3,7 @@
 
 namespace TestNs
 {
+    [global::Spire.Analyzers.MustBeInit]
     internal partial struct Token
     {
         public enum Kind

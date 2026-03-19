@@ -6,6 +6,7 @@ using System.ComponentModel;
 
 namespace TestNs
 {
+    [global::Spire.Analyzers.MustBeInit]
     [StructLayout(LayoutKind.Explicit)]
     internal partial struct Drawing
     {

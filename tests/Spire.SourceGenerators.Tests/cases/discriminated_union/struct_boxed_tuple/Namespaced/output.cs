@@ -3,6 +3,7 @@
 
 namespace My.Deep.Namespace
 {
+    [global::Spire.Analyzers.MustBeInit]
     internal partial struct Result
     {
         public enum Kind
