@@ -130,9 +130,14 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
             if (SymbolEqualityComparer.Default.Equals(actualType, deconstructParamType))
                 continue;
 
+            var properties = ImmutableDictionary.CreateBuilder<string, string?>();
+            properties.Add("ExpectedType", expectedType.ToDisplayString());
+            properties.Add("FieldIndex", fieldIndex.ToString());
+
             ctx.ReportDiagnostic(Diagnostic.Create(
                 AnalyzerDescriptors.SPIRE011_FieldTypeMismatch,
                 subpattern.Syntax.GetLocation(),
+                properties.ToImmutable(),
                 resolvedVariant ?? containingType.Name,
                 fieldIndex,
                 expectedType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),

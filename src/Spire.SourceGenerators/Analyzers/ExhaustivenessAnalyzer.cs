@@ -75,17 +75,22 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
 
         var missingStr = string.Join(", ", missing.Select(v => $"'{v}'"));
 
+        var properties = ImmutableDictionary.CreateBuilder<string, string?>();
+        properties.Add("MissingVariants", string.Join(",", missing));
+
         if (coverage.HasWildcard)
         {
             ctx.ReportDiagnostic(Diagnostic.Create(
                 AnalyzerDescriptors.SPIRE010_WildcardInsteadOfExhaustive,
-                location, subjectType.Name, missingStr));
+                location, properties.ToImmutable(),
+                subjectType.Name, missingStr));
         }
         else
         {
             ctx.ReportDiagnostic(Diagnostic.Create(
                 AnalyzerDescriptors.SPIRE009_SwitchNotExhaustive,
-                location, subjectType.Name, missingStr));
+                location, properties.ToImmutable(),
+                subjectType.Name, missingStr));
         }
     }
 }
