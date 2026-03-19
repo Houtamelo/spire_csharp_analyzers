@@ -21,4 +21,20 @@ internal static class AnalyzerDescriptors
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: "Switch covers all variants via a wildcard/discard arm instead of explicit variant matching.");
+
+    public static readonly DiagnosticDescriptor SPIRE011_FieldTypeMismatch = new(
+        id: "SPIRE011",
+        title: "Discriminated union pattern field type mismatch",
+        messageFormat: "Variant '{0}' field {1} is '{2}', not '{3}'",
+        category: "Correctness",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor SPIRE012_FieldCountMismatch = new(
+        id: "SPIRE012",
+        title: "Discriminated union pattern field count mismatch",
+        messageFormat: "Variant '{0}' has {1} field(s), not {2}",
+        category: "Correctness",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 }
