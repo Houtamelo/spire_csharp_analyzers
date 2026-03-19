@@ -108,7 +108,7 @@ internal static class BoxedFieldsEmitter
                 ctorArgs += ", " + string.Join(", ", args);
             }
 
-            sb.AppendLine($"public static {unionType} New{variant.Name}({typedParams})");
+            sb.AppendLine($"public static partial {unionType} {variant.Name}({typedParams})");
             sb.AppendLine($"    => new {unionType}({ctorArgs});");
         }
     }

@@ -99,7 +99,7 @@ internal static class BoxedTupleEmitter
                 payloadArg = $"({tupleElements})";
             }
 
-            sb.AppendLine($"public static {unionType} New{variant.Name}({typedParams})");
+            sb.AppendLine($"public static partial {unionType} {variant.Name}({typedParams})");
             sb.AppendLine($"    => new {unionType}(Kind.{variant.Name}, {payloadArg});");
         }
     }

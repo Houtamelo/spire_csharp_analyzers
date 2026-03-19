@@ -284,7 +284,7 @@ internal static class OverlapEmitter
             var typedParams = string.Join(", ",
                 variant.Fields.Select(f => $"{f.TypeFullName} {f.Name}"));
 
-            sb.AppendLine($"public static {union.TypeName} New{variant.Name}({typedParams})");
+            sb.AppendLine($"public static partial {union.TypeName} {variant.Name}({typedParams})");
             sb.OpenBrace();
             sb.AppendLine($"var s = new {union.TypeName}(Kind.{variant.Name});");
 
