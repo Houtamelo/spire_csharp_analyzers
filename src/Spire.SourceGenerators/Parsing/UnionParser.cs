@@ -61,6 +61,37 @@ internal static class UnionParser
         var isGeneric = typeSymbol.TypeParameters.Length > 0;
         var strategy = ResolveStrategy(declKind, layout, isGeneric);
 
+        // Reject Overlap on generic struct (CLR restriction)
+        if (strategy == EmitStrategy.Overlap && isGeneric)
+        {
+            return new UnionDeclaration(
+                Namespace: typeSymbol.ContainingNamespace.IsGlobalNamespace
+                    ? ""
+                    : typeSymbol.ContainingNamespace.ToDisplayString(),
+                TypeName: typeSymbol.Name,
+                AccessibilityKeyword: AccessibilityToKeyword(typeSymbol.DeclaredAccessibility),
+                DeclarationKeyword: declKind,
+                IsReadonly: syntax.Modifiers.Any(m => m.IsKind(SyntaxKind.ReadOnlyKeyword)),
+                Strategy: strategy,
+                TypeParameters: new EquatableArray<string>(typeSymbol.TypeParameters
+                    .Select(tp => tp.Name).ToImmutableArray()),
+                Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
+                Diagnostic: new UnionDiagnostic(
+                    "SPIRE_DU005",
+                    "Generic structs cannot use Overlap layout (CLR restriction); use BoxedFields or BoxedTuple",
+                    IsError: true));
+        }
+
+        // Warn when Layout is explicitly set on record/class (it's ignored)
+        UnionDiagnostic? layoutWarning = null;
+        if ((declKind == "record" || declKind == "class") && layout != 0)
+        {
+            layoutWarning = new UnionDiagnostic(
+                "SPIRE_DU004",
+                "Layout parameter is ignored for record/class discriminated unions",
+                IsError: false);
+        }
+
         // Record/class paths discover variants as nested types inheriting from the parent.
         // Struct paths discover variants as [Variant] static methods.
         var variants = (declKind == "record" || declKind == "class")
@@ -105,7 +136,7 @@ internal static class UnionParser
             Strategy: strategy,
             TypeParameters: new EquatableArray<string>(typeParams),
             Variants: new EquatableArray<VariantInfo>(variants),
-            Diagnostic: null);
+            Diagnostic: layoutWarning);
     }
 
     /// Returns "struct", "record", or "class".

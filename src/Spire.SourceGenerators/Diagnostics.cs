@@ -30,11 +30,29 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    private static readonly DiagnosticDescriptor LayoutIgnoredForRecordClass = new(
+        id: "SPIRE_DU004",
+        title: "Layout parameter ignored for record/class discriminated unions",
+        messageFormat: "Layout parameter is ignored for record/class discriminated unions",
+        category: "SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    private static readonly DiagnosticDescriptor OverlapOnGenericStruct = new(
+        id: "SPIRE_DU005",
+        title: "Generic structs cannot use Overlap layout",
+        messageFormat: "Generic structs cannot use Overlap layout (CLR restriction); use BoxedFields or BoxedTuple",
+        category: "SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     private static readonly Dictionary<string, DiagnosticDescriptor> DescriptorMap = new()
     {
         ["SPIRE_DU001"] = NestedTypeNotSupported,
         ["SPIRE_DU002"] = RefStructNotSupported,
         ["SPIRE_DU003"] = NoVariantsFound,
+        ["SPIRE_DU004"] = LayoutIgnoredForRecordClass,
+        ["SPIRE_DU005"] = OverlapOnGenericStruct,
     };
 
     public static DiagnosticDescriptor GetDescriptor(UnionDiagnostic diag)
