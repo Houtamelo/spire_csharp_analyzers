@@ -20,7 +20,7 @@ namespace TestNs
             this._f0 = f0;
         }
 
-        public static Internal NewX(int v)
+        public static partial Internal X(int v)
             => new Internal(Kind.X, v);
 
         public void Deconstruct(out Kind kind, out int v)

@@ -6,7 +6,7 @@ namespace TestNs
     [DiscriminatedUnion(Layout.Overlap)]
     partial struct Wrapper<T> //~ ERROR
     {
-        [Variant] static partial void Some(T value);
-        [Variant] static partial void None();
+        [Variant] public static partial Wrapper<T> Some(T value);
+        [Variant] public static partial Wrapper<T> None();
     }
 }

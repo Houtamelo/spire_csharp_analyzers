@@ -32,13 +32,13 @@ namespace My.Deep.Namespace
             this.tag = tag;
         }
 
-        public static Result NewOk(int value)
+        public static partial Result Ok(int value)
         {
             var s = new Result(Kind.Ok);
             Unsafe.AsRef(in s.ok_value) = value;
             return s;
         }
-        public static Result NewErr(string message)
+        public static partial Result Err(string message)
         {
             var s = new Result(Kind.Err);
             Unsafe.AsRef(in s.err_message) = message;

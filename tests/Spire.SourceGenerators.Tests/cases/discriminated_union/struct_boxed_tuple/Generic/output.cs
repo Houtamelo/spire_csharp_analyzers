@@ -21,9 +21,9 @@ namespace TestNs
             this._payload = payload;
         }
 
-        public static Option<T> NewSome(T value)
+        public static partial Option<T> Some(T value)
             => new Option<T>(Kind.Some, value);
-        public static Option<T> NewNone()
+        public static partial Option<T> None()
             => new Option<T>(Kind.None, null);
 
         public void Deconstruct(out Kind kind, out object? payload)

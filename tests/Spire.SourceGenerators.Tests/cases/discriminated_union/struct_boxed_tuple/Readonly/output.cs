@@ -21,9 +21,9 @@ namespace TestNs
             this._payload = payload;
         }
 
-        public static Immutable NewA(int x)
+        public static partial Immutable A(int x)
             => new Immutable(Kind.A, x);
-        public static Immutable NewB(string y)
+        public static partial Immutable B(string y)
             => new Immutable(Kind.B, y);
 
         public void Deconstruct(out Kind kind, out object? payload)

@@ -5,7 +5,7 @@ namespace TestNs
     [DiscriminatedUnion]
     partial struct Option<T>
     {
-        [Variant] static partial void Some(T value);
-        [Variant] static partial void None();
+        [Variant] public static partial Option<T> Some(T value);
+        [Variant] public static partial Option<T> None();
     }
 }

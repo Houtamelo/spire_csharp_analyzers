@@ -32,13 +32,13 @@ namespace TestNs
             this.tag = tag;
         }
 
-        public static Immutable NewA(int x)
+        public static partial Immutable A(int x)
         {
             var s = new Immutable(Kind.A);
             Unsafe.AsRef(in s.a_x) = x;
             return s;
         }
-        public static Immutable NewB(string y)
+        public static partial Immutable B(string y)
         {
             var s = new Immutable(Kind.B);
             Unsafe.AsRef(in s.b_y) = y;

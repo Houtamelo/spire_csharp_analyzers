@@ -5,8 +5,8 @@ namespace TestNs
     [DiscriminatedUnion(Layout.BoxedFields)]
     partial struct Token
     {
-        [Variant] static partial void Ident(string name);
-        [Variant] static partial void Number(int value);
-        [Variant] static partial void Eof();
+        [Variant] public static partial Token Ident(string name);
+        [Variant] public static partial Token Number(int value);
+        [Variant] public static partial Token Eof();
     }
 }

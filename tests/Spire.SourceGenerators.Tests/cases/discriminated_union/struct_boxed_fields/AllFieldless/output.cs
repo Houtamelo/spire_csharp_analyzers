@@ -20,11 +20,11 @@ namespace TestNs
             this.tag = tag;
         }
 
-        public static Light NewRed()
+        public static partial Light Red()
             => new Light(Kind.Red);
-        public static Light NewYellow()
+        public static partial Light Yellow()
             => new Light(Kind.Yellow);
-        public static Light NewGreen()
+        public static partial Light Green()
             => new Light(Kind.Green);
 
         public void Deconstruct(out Kind kind, out object? _f0)

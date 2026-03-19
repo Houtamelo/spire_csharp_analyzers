@@ -7,7 +7,7 @@ namespace TestNs
     [DiscriminatedUnion]
     partial struct Drawing
     {
-        [Variant] static partial void Dot(Point location);
-        [Variant] static partial void Line(Point start, Point end);
+        [Variant] public static partial Drawing Dot(Point location);
+        [Variant] public static partial Drawing Line(Point start, Point end);
     }
 }

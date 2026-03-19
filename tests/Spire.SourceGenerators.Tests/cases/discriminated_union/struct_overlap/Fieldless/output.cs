@@ -33,19 +33,19 @@ namespace TestNs
             this.tag = tag;
         }
 
-        public static Token NewIdent(string name)
+        public static partial Token Ident(string name)
         {
             var s = new Token(Kind.Ident);
             Unsafe.AsRef(in s.ident_name) = name;
             return s;
         }
-        public static Token NewNumber(int value)
+        public static partial Token Number(int value)
         {
             var s = new Token(Kind.Number);
             Unsafe.AsRef(in s.number_value) = value;
             return s;
         }
-        public static Token NewEof()
+        public static partial Token Eof()
         {
             var s = new Token(Kind.Eof);
             return s;

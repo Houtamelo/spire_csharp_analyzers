@@ -5,8 +5,8 @@ namespace TestNs
     [DiscriminatedUnion(Layout.BoxedFields)]
     partial struct Shape
     {
-        [Variant] static partial void Circle(double radius);
-        [Variant] static partial void Rectangle(float width, float height);
-        [Variant] static partial void Square(int sideLength);
+        [Variant] public static partial Shape Circle(double radius);
+        [Variant] public static partial Shape Rectangle(float width, float height);
+        [Variant] public static partial Shape Square(int sideLength);
     }
 }

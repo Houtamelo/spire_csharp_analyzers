@@ -32,13 +32,13 @@ namespace TestNs
             this.tag = tag;
         }
 
-        public static Drawing NewDot(global::TestNs.Point location)
+        public static partial Drawing Dot(global::TestNs.Point location)
         {
             var s = new Drawing(Kind.Dot);
             Unsafe.AsRef(in s._obj_0) = location;
             return s;
         }
-        public static Drawing NewLine(global::TestNs.Point start, global::TestNs.Point end)
+        public static partial Drawing Line(global::TestNs.Point start, global::TestNs.Point end)
         {
             var s = new Drawing(Kind.Line);
             Unsafe.AsRef(in s._obj_0) = start;

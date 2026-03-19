@@ -32,13 +32,13 @@ namespace TestNs
             this.tag = tag;
         }
 
-        public static Message NewText(string content)
+        public static partial Message Text(string content)
         {
             var s = new Message(Kind.Text);
             Unsafe.AsRef(in s.text_content) = content;
             return s;
         }
-        public static Message NewError(object detail)
+        public static partial Message Error(object detail)
         {
             var s = new Message(Kind.Error);
             Unsafe.AsRef(in s.error_detail) = detail;

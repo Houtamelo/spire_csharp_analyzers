@@ -5,7 +5,7 @@ namespace TestNs
     [DiscriminatedUnion]
     partial struct Message
     {
-        [Variant] static partial void Text(string content);
-        [Variant] static partial void Error(object detail);
+        [Variant] public static partial Message Text(string content);
+        [Variant] public static partial Message Error(object detail);
     }
 }

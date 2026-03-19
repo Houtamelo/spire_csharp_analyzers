@@ -6,6 +6,6 @@ namespace TestNs
     [DiscriminatedUnion]
     ref partial struct Foo //~ ERROR
     {
-        [Variant] static partial void A(int x);
+        [Variant] public static partial Foo A(int x);
     }
 }

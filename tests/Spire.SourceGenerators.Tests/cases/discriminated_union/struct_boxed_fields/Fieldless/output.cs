@@ -22,11 +22,11 @@ namespace TestNs
             this._f0 = f0;
         }
 
-        public static Token NewIdent(string name)
+        public static partial Token Ident(string name)
             => new Token(Kind.Ident, name);
-        public static Token NewNumber(int value)
+        public static partial Token Number(int value)
             => new Token(Kind.Number, value);
-        public static Token NewEof()
+        public static partial Token Eof()
             => new Token(Kind.Eof, null);
 
         public void Deconstruct(out Kind kind, out object? f0)

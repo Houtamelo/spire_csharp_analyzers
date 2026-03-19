@@ -36,14 +36,14 @@ namespace TestNs
             this.tag = tag;
         }
 
-        public static Event NewClick(int x, int y, string target)
+        public static partial Event Click(int x, int y, string target)
         {
             var s = new Event(Kind.Click);
             Unsafe.AsRef(in s.click) = (x, y);
             Unsafe.AsRef(in s.click_target) = target;
             return s;
         }
-        public static Event NewHover(float posX, float posY)
+        public static partial Event Hover(float posX, float posY)
         {
             var s = new Event(Kind.Hover);
             Unsafe.AsRef(in s.hover) = (posX, posY);

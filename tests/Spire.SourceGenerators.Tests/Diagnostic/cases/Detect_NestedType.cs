@@ -8,7 +8,7 @@ namespace TestNs
         [DiscriminatedUnion]
         partial struct Inner //~ ERROR
         {
-            [Variant] static partial void A(int x);
+            [Variant] public static partial Inner A(int x);
         }
     }
 }

@@ -24,11 +24,11 @@ namespace TestNs
             this._f1 = f1;
         }
 
-        public static Shape NewCircle(double radius)
+        public static partial Shape Circle(double radius)
             => new Shape(Kind.Circle, radius, null);
-        public static Shape NewRectangle(float width, float height)
+        public static partial Shape Rectangle(float width, float height)
             => new Shape(Kind.Rectangle, width, height);
-        public static Shape NewSquare(int sideLength)
+        public static partial Shape Square(int sideLength)
             => new Shape(Kind.Square, sideLength, null);
 
         public void Deconstruct(out Kind kind, out object? f0)

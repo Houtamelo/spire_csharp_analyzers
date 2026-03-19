@@ -37,19 +37,19 @@ namespace TestNs
             this.tag = tag;
         }
 
-        public static Shape NewCircle(double radius)
+        public static partial Shape Circle(double radius)
         {
             var s = new Shape(Kind.Circle);
             Unsafe.AsRef(in s.circle_radius) = radius;
             return s;
         }
-        public static Shape NewRectangle(float width, float height)
+        public static partial Shape Rectangle(float width, float height)
         {
             var s = new Shape(Kind.Rectangle);
             Unsafe.AsRef(in s.rectangle) = (width, height);
             return s;
         }
-        public static Shape NewSquare(int sideLength)
+        public static partial Shape Square(int sideLength)
         {
             var s = new Shape(Kind.Square);
             Unsafe.AsRef(in s.square_sideLength) = sideLength;

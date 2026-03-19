@@ -21,9 +21,9 @@ namespace My.Deep.Namespace
             this._payload = payload;
         }
 
-        public static Result NewOk(int value)
+        public static partial Result Ok(int value)
             => new Result(Kind.Ok, value);
-        public static Result NewErr(string message)
+        public static partial Result Err(string message)
             => new Result(Kind.Err, message);
 
         public void Deconstruct(out Kind kind, out object? payload)
