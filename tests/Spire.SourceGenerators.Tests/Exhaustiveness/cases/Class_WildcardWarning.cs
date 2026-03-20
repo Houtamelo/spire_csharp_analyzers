@@ -1,5 +1,5 @@
-//@ should_fail
-// Wildcard covers Err
+//@ should_pass
+// Wildcard covers Err — no diagnostic (refactoring only)
 using Spire;
 namespace TestNs
 {
@@ -19,7 +19,7 @@ namespace TestNs
     }
     class C
     {
-        int Test(Result<int, string> r) => r switch //~ ERROR
+        int Test(Result<int, string> r) => r switch
         {
             Result<int, string>.Ok => 1,
             _ => 0,

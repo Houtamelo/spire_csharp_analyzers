@@ -13,15 +13,6 @@ internal static class AnalyzerDescriptors
         isEnabledByDefault: true,
         description: "Switch expressions and statements on discriminated union types must handle all variants explicitly.");
 
-    public static readonly DiagnosticDescriptor SPIRE010_WildcardInsteadOfExhaustive = new(
-        id: "SPIRE010",
-        title: "Switch uses wildcard instead of exhaustive variant matching",
-        messageFormat: "Switch on '{0}' uses wildcard instead of exhaustive variant matching; missing: {1}",
-        category: "Correctness",
-        defaultSeverity: DiagnosticSeverity.Info,
-        isEnabledByDefault: true,
-        description: "Switch covers all variants via a wildcard/discard arm instead of explicit variant matching.");
-
     public static readonly DiagnosticDescriptor SPIRE011_FieldTypeMismatch = new(
         id: "SPIRE011",
         title: "Discriminated union pattern field type mismatch",

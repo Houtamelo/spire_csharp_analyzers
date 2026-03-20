@@ -1,5 +1,5 @@
-//@ should_fail
-// Switch statement with default clause covering missing variant — SPIRE010
+//@ should_pass
+// Switch statement with default clause covering missing variants — no diagnostic
 using Spire;
 namespace TestNs
 {
@@ -15,7 +15,7 @@ namespace TestNs
     {
         void Test(Shape s)
         {
-            switch (s) //~ ERROR
+            switch (s)
             {
                 case (Shape.Kind.Circle, double r):
                     break;

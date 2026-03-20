@@ -20,6 +20,5 @@ public class CodeFixTests : CodeFixTestBase
     protected override ImmutableArray<CodeFixProvider> GetCodeFixes()
         => ImmutableArray.Create<CodeFixProvider>(
             new AddMissingArmsCodeFix(),
-            new ExpandWildcardCodeFix(),
             new FixFieldTypeCodeFix());
 }

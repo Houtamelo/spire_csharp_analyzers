@@ -1,5 +1,5 @@
-//@ should_fail
-// var pattern is a wildcard catch-all — SPIRE010 (same as discard)
+//@ should_pass
+// var pattern is a wildcard catch-all — no diagnostic (refactoring only)
 using Spire;
 namespace TestNs
 {
@@ -12,7 +12,7 @@ namespace TestNs
 
     class Consumer
     {
-        int Test(Shape s) => s switch //~ ERROR
+        int Test(Shape s) => s switch
         {
             var x => 0,
         };

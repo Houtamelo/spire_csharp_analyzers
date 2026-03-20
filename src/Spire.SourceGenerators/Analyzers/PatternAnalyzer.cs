@@ -103,10 +103,13 @@ internal static class PatternAnalyzer
                 return true;
 
             case IDeclarationPatternOperation declPattern:
+                // `var x` is always a wildcard (MatchesNull=true, MatchedType=null).
+                // Must check BEFORE MatchesNull guard.
+                if (declPattern.Syntax is Microsoft.CodeAnalysis.CSharp.Syntax.VarPatternSyntax)
+                    return true;
                 // `null` pattern check — not a variant match
                 if (declPattern.MatchesNull)
                     return false;
-                // `var x` is a wildcard — the declared type matches the input type
                 if (declPattern.InputType is not null &&
                     SymbolEqualityComparer.Default.Equals(
                         declPattern.InputType, declPattern.MatchedType))
@@ -158,6 +161,11 @@ internal static class PatternAnalyzer
     private static bool HandleRecursivePattern(
         IRecursivePatternOperation recursive, UnionTypeInfo info, List<string> variants)
     {
+        // `var x` on a type with Deconstruct may produce a recursive pattern.
+        if (recursive.Syntax is Microsoft.CodeAnalysis.CSharp.Syntax.VarPatternSyntax
+            or Microsoft.CodeAnalysis.CSharp.Syntax.DiscardPatternSyntax)
+            return true;
+
         // Record/class union: `Option<int>.Some { Value: var v }` or just `Option<int>.None`
         // The MatchedType tells us which variant is being matched.
         if (info.IsRecordOrClassUnion && recursive.MatchedType is INamedTypeSymbol matchedType)
@@ -172,7 +180,8 @@ internal static class PatternAnalyzer
 
         // Struct union: Deconstruction pattern: (Shape.Kind.Circle, double r)
         // The first subpattern identifies the variant (Kind enum value).
-        // Delegate to CollectVariants so or-patterns, and-patterns, etc. are handled.
+        // If the first subpattern is a wildcard (discard/var), the entire pattern is a wildcard
+        // (e.g., `var x` on a struct with Deconstruct becomes `(var _, var _)`).
         if (!recursive.DeconstructionSubpatterns.IsEmpty)
         {
             var firstSub = recursive.DeconstructionSubpatterns[0];

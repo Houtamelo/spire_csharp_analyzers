@@ -1,5 +1,5 @@
-//@ should_fail
-// Empty switch with wildcard — all variants missing — SPIRE010
+//@ should_pass
+// Empty switch with wildcard — all variants covered by wildcard, no diagnostic
 using Spire;
 namespace TestNs
 {
@@ -13,7 +13,7 @@ namespace TestNs
 
     class Consumer
     {
-        int Test(Shape s) => s switch //~ ERROR
+        int Test(Shape s) => s switch
         {
             _ => 0,
         };

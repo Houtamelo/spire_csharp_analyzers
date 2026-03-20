@@ -1,5 +1,5 @@
-//@ should_fail
-// Wildcard covers missing variants — SPIRE010
+//@ should_pass
+// Wildcard covers missing variants — no diagnostic (refactoring only)
 using Spire;
 namespace TestNs
 {
@@ -13,7 +13,7 @@ namespace TestNs
 
     class Consumer
     {
-        int Test(Shape s) => s switch //~ ERROR
+        int Test(Shape s) => s switch
         {
             (Shape.Kind.Circle, double r) => 1,
             _ => 0,

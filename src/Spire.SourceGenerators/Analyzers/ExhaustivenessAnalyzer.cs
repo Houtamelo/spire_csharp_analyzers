@@ -11,8 +11,7 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
         ImmutableArray.Create(
-            AnalyzerDescriptors.SPIRE009_SwitchNotExhaustive,
-            AnalyzerDescriptors.SPIRE010_WildcardInsteadOfExhaustive);
+            AnalyzerDescriptors.SPIRE009_SwitchNotExhaustive);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -78,19 +77,13 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
         var properties = ImmutableDictionary.CreateBuilder<string, string?>();
         properties.Add("MissingVariants", string.Join(",", missing));
 
+        // Wildcard covers the missing variants — no error (refactoring handles it)
         if (coverage.HasWildcard)
-        {
-            ctx.ReportDiagnostic(Diagnostic.Create(
-                AnalyzerDescriptors.SPIRE010_WildcardInsteadOfExhaustive,
-                location, properties.ToImmutable(),
-                subjectType.Name, missingStr));
-        }
-        else
-        {
-            ctx.ReportDiagnostic(Diagnostic.Create(
-                AnalyzerDescriptors.SPIRE009_SwitchNotExhaustive,
-                location, properties.ToImmutable(),
-                subjectType.Name, missingStr));
-        }
+            return;
+
+        ctx.ReportDiagnostic(Diagnostic.Create(
+            AnalyzerDescriptors.SPIRE009_SwitchNotExhaustive,
+            location, properties.ToImmutable(),
+            subjectType.Name, missingStr));
     }
 }
