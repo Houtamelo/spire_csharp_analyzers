@@ -264,8 +264,20 @@ internal static class PatternAnalyzer
         if (!valueOp.ConstantValue.HasValue)
             return null;
 
+        // The constant value's type matches the Kind enum's underlying type
+        // (byte, ushort, or uint depending on variant count).
         var value = valueOp.ConstantValue.Value;
-        if (value is int ordinal && ordinal >= 0 && ordinal < info.VariantNames.Length)
+        int ordinal;
+        switch (value)
+        {
+            case byte b: ordinal = b; break;
+            case ushort u: ordinal = u; break;
+            case int i: ordinal = i; break;
+            case uint ui: ordinal = (int)ui; break;
+            default: return null;
+        }
+
+        if (ordinal >= 0 && ordinal < info.VariantNames.Length)
             return info.VariantNames[ordinal];
 
         return null;

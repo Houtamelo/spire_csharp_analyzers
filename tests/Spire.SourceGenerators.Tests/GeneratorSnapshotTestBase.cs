@@ -77,6 +77,9 @@ public sealed class SnapshotCaseDiscoveryAttribute : DataAttribute
             }
 
             var relativePath = Path.GetRelativePath(casesDir, leafDir);
+            // Skip JSON-specific test cases (handled by JsonStjSnapshotTests / JsonNsjSnapshotTests)
+            if (relativePath.Contains("json_stj") || relativePath.Contains("json_nsj"))
+                continue;
             yield return new object[] { relativePath };
         }
     }

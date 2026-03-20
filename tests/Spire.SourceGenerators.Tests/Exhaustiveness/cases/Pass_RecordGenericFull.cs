@@ -4,10 +4,10 @@ using Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]
-    partial record Either<L, R>
+    public partial record Either<L, R>
     {
-        partial record Left(L Value) : Either<L, R>;
-        partial record Right(R Value) : Either<L, R>;
+        public partial record Left(L Value) : Either<L, R>;
+        public partial record Right(R Value) : Either<L, R>;
     }
     class C
     {

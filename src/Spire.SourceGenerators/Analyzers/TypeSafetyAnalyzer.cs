@@ -178,10 +178,22 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
             return null;
 
         var value = valueOp.ConstantValue.Value;
-        if (value is int ordinal && ordinal >= 0 && ordinal < unionInfo.VariantNames.Length)
+        if (TryGetOrdinal(value, out int ordinal) && ordinal >= 0 && ordinal < unionInfo.VariantNames.Length)
             return unionInfo.VariantNames[ordinal];
 
         return null;
+    }
+
+    private static bool TryGetOrdinal(object? value, out int ordinal)
+    {
+        switch (value)
+        {
+            case byte b: ordinal = b; return true;
+            case ushort u: ordinal = u; return true;
+            case int i: ordinal = i; return true;
+            case uint ui: ordinal = (int)ui; return true;
+            default: ordinal = 0; return false;
+        }
     }
 
     /// Gets the actual field types for a variant from its factory method.

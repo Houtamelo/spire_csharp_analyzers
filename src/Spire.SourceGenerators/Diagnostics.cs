@@ -38,12 +38,39 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    private static readonly DiagnosticDescriptor SystemTextJsonNotReferenced = new(
+        id: "SPIRE_DU006",
+        title: "System.Text.Json not referenced",
+        messageFormat: "System.Text.Json not referenced but Json includes SystemTextJson",
+        category: "SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    private static readonly DiagnosticDescriptor NewtonsoftJsonNotReferenced = new(
+        id: "SPIRE_DU007",
+        title: "Newtonsoft.Json not referenced",
+        messageFormat: "Newtonsoft.Json not referenced but Json includes NewtonsoftJson",
+        category: "SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    private static readonly DiagnosticDescriptor RefStructJsonNotSupported = new(
+        id: "SPIRE_DU008",
+        title: "ref struct cannot use JSON generation",
+        messageFormat: "ref struct cannot use JSON generation (ref structs cannot be generic type arguments)",
+        category: "SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     private static readonly Dictionary<string, DiagnosticDescriptor> DescriptorMap = new()
     {
         ["SPIRE_DU002"] = RefStructNotSupported,
         ["SPIRE_DU003"] = NoVariantsFound,
         ["SPIRE_DU004"] = LayoutIgnoredForRecordClass,
         ["SPIRE_DU005"] = OverlapOnGenericStruct,
+        ["SPIRE_DU006"] = SystemTextJsonNotReferenced,
+        ["SPIRE_DU007"] = NewtonsoftJsonNotReferenced,
+        ["SPIRE_DU008"] = RefStructJsonNotSupported,
     };
 
     public static DiagnosticDescriptor GetDescriptor(UnionDiagnostic diag)

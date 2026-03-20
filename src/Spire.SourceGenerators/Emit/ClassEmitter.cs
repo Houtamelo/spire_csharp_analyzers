@@ -24,7 +24,8 @@ internal static class ClassEmitter
         var typeParams = FormatTypeParams(union.TypeParameters);
         var unionType = union.TypeName + typeParams;
 
-        sb.AppendLine($"{union.AccessibilityKeyword} abstract partial class {unionType}");
+        var accessMod = string.IsNullOrEmpty(union.AccessibilityKeyword) ? "" : union.AccessibilityKeyword + " ";
+        sb.AppendLine($"{accessMod}abstract partial class {unionType}");
         sb.OpenBrace();
 
         // Private ctor prevents external subclassing
@@ -34,7 +35,8 @@ internal static class ClassEmitter
         // Variant classes — just re-declare as sealed partial
         foreach (var variant in union.Variants)
         {
-            sb.AppendLine($"public sealed partial class {variant.Name};");
+            var variantAccess = string.IsNullOrEmpty(variant.AccessibilityKeyword) ? "" : variant.AccessibilityKeyword + " ";
+            sb.AppendLine($"{variantAccess}sealed partial class {variant.Name};");
         }
 
         sb.CloseBrace(); // type

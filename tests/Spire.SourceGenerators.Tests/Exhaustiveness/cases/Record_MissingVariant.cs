@@ -4,10 +4,10 @@ using Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]
-    partial record Option<T>
+    public partial record Option<T>
     {
-        partial record Some(T Value) : Option<T>;
-        partial record None() : Option<T>;
+        public partial record Some(T Value) : Option<T>;
+        public partial record None() : Option<T>;
     }
     class C
     {

@@ -8,9 +8,9 @@ namespace TestNs
 {
     [global::Spire.Analyzers.MustBeInit]
     [StructLayout(LayoutKind.Explicit)]
-    internal partial struct Message
+    partial struct Message
     {
-        public enum Kind
+        public enum Kind : byte
         {
             Text,
             Error,

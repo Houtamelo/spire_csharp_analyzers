@@ -213,11 +213,20 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
         // The operand might be a field reference like Shape.Kind.Circle
         if (operand is IFieldReferenceOperation fieldRef &&
             SymbolEqualityComparer.Default.Equals(fieldRef.Field.ContainingType, info.KindEnumType) &&
-            fieldRef.Field.HasConstantValue &&
-            fieldRef.Field.ConstantValue is int ordinal &&
-            ordinal >= 0 && ordinal < info.VariantNames.Length)
+            fieldRef.Field.HasConstantValue)
         {
-            variants.Add(info.VariantNames[ordinal]);
+            int ordinal;
+            switch (fieldRef.Field.ConstantValue)
+            {
+                case byte b: ordinal = b; break;
+                case ushort u: ordinal = u; break;
+                case int i: ordinal = i; break;
+                case uint ui: ordinal = (int)ui; break;
+                default: return;
+            }
+
+            if (ordinal >= 0 && ordinal < info.VariantNames.Length)
+                variants.Add(info.VariantNames[ordinal]);
         }
     }
 

@@ -8,9 +8,9 @@ namespace TestNs
 {
     [global::Spire.Analyzers.MustBeInit]
     [StructLayout(LayoutKind.Explicit)]
-    internal partial struct Event
+    partial struct Event
     {
-        public enum Kind
+        public enum Kind : byte
         {
             Click,
             Hover,
@@ -19,11 +19,11 @@ namespace TestNs
         [FieldOffset(0)]
         public readonly Kind tag;
 
-        [FieldOffset(4)]
+        [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly (int x, int y) click;
 
-        [FieldOffset(4)]
+        [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly (float posX, float posY) hover;
 

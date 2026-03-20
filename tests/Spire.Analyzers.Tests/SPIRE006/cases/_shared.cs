@@ -35,3 +35,15 @@ public struct PlainStruct
 
 [MustBeInit]
 public struct EmptyMustInitStruct { }
+
+#nullable enable
+
+[MustBeInit]
+public class MustInitClass
+{
+    public int Value;
+    public MustInitClass(int value) { Value = value; }
+}
+
+[MustBeInit]
+public record MustInitRecord(int Value);

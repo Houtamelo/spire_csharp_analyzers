@@ -83,11 +83,18 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
                 SyntaxFactory.ConstantPattern(
                     SyntaxFactory.ParseExpression($"{kindPrefix}.{trimmed}"))));
 
-            // Remaining elements: one discard per field
-            for (int i = 0; i < fieldCount; i++)
+            // Remaining elements: typed declaration per field
+            if (factory is not null)
             {
-                subpatterns.Add(SyntaxFactory.Subpattern(
-                    SyntaxFactory.DiscardPattern()));
+                foreach (var param in factory.Parameters)
+                {
+                    var typeName = param.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+                    subpatterns.Add(SyntaxFactory.Subpattern(
+                        SyntaxFactory.DeclarationPattern(
+                            SyntaxFactory.ParseTypeName(typeName),
+                            SyntaxFactory.SingleVariableDesignation(
+                                SyntaxFactory.Identifier(param.Name)))));
+                }
             }
 
             // Fieldless variant with shared-arity Deconstruct needs one discard

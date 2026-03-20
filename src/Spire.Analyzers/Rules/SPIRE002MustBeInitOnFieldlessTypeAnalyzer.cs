@@ -36,7 +36,7 @@ public sealed class SPIRE002MustBeInitOnFieldlessTypeAnalyzer : DiagnosticAnalyz
     {
         var type = (INamedTypeSymbol)context.Symbol;
 
-        if (type.TypeKind != TypeKind.Struct)
+        if (type.TypeKind != TypeKind.Struct && type.TypeKind != TypeKind.Class)
             return;
 
         // Find the [MustBeInit] attribute on this type

@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 using Spire.Analyzers.Utils;
@@ -42,8 +43,13 @@ public sealed class SPIRE003DefaultOfMustBeInitStructAnalyzer : DiagnosticAnalyz
         if (type is null)
             return;
 
-        // Must be a struct
-        if (type.TypeKind != TypeKind.Struct)
+        if (type.TypeKind != TypeKind.Struct && type.TypeKind != TypeKind.Class)
+            return;
+
+        // For reference types, skip if the user explicitly wrote a nullable type.
+        // Can't use operation.Type.NullableAnnotation here — Roslyn marks default(T)
+        // as Annotated for reference types since the result is always null.
+        if (type.IsReferenceType && IsNullableDefault(operation))
             return;
 
         // Must have [MustBeInit] attribute
@@ -67,6 +73,28 @@ public sealed class SPIRE003DefaultOfMustBeInitStructAnalyzer : DiagnosticAnalyz
                 Descriptors.SPIRE003_DefaultOfMustBeInitStruct,
                 operation.Syntax.GetLocation(),
                 type.Name));
+    }
+
+    /// For reference types, determines whether the default expression targets a nullable type.
+    /// For explicit default(T?): checks the syntax for NullableTypeSyntax.
+    /// For default literal: checks the inferred type's NullableAnnotation from context.
+    private static bool IsNullableDefault(IDefaultValueOperation operation)
+    {
+        // default(T?) — syntax explicitly uses nullable type
+        if (operation.Syntax is DefaultExpressionSyntax defaultExpr)
+            return defaultExpr.Type is NullableTypeSyntax;
+
+        // default literal — type inferred from assignment/return context.
+        // Walk up through implicit conversions to find the target type.
+        IOperation? parent = operation.Parent;
+        while (parent is IConversionOperation { IsImplicit: true } conv)
+        {
+            if (conv.Type is not null && MustBeInitChecks.IsNullableAnnotatedReference(conv.Type))
+                return true;
+            parent = conv.Parent;
+        }
+
+        return false;
     }
 
     private static bool IsInsideEqualityComparison(IDefaultValueOperation operation)

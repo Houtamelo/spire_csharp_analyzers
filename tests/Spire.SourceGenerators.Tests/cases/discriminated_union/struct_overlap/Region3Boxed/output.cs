@@ -8,9 +8,9 @@ namespace TestNs
 {
     [global::Spire.Analyzers.MustBeInit]
     [StructLayout(LayoutKind.Explicit)]
-    internal partial struct Drawing
+    partial struct Drawing
     {
-        public enum Kind
+        public enum Kind : byte
         {
             Dot,
             Line,
@@ -21,11 +21,11 @@ namespace TestNs
 
         [FieldOffset(8)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        readonly object? _obj_0;
+        internal readonly object? _obj_0;
 
         [FieldOffset(16)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        readonly object? _obj_1;
+        internal readonly object? _obj_1;
 
         Drawing(Kind tag) : this()
         {

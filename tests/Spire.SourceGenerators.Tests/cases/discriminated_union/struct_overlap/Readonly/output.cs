@@ -8,9 +8,9 @@ namespace TestNs
 {
     [global::Spire.Analyzers.MustBeInit]
     [StructLayout(LayoutKind.Explicit)]
-    internal readonly partial struct Immutable
+    readonly partial struct Immutable
     {
-        public enum Kind
+        public enum Kind : byte
         {
             A,
             B,
@@ -19,7 +19,7 @@ namespace TestNs
         [FieldOffset(0)]
         public readonly Kind tag;
 
-        [FieldOffset(4)]
+        [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly int a_x;
 

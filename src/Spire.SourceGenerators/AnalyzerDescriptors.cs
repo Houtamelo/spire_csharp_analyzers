@@ -18,7 +18,7 @@ internal static class AnalyzerDescriptors
         title: "Switch uses wildcard instead of exhaustive variant matching",
         messageFormat: "Switch on '{0}' uses wildcard instead of exhaustive variant matching; missing: {1}",
         category: "Correctness",
-        defaultSeverity: DiagnosticSeverity.Warning,
+        defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true,
         description: "Switch covers all variants via a wildcard/discard arm instead of explicit variant matching.");
 

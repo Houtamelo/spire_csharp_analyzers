@@ -86,6 +86,10 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
             return;
 
+        // For reference types, skip if element is nullable-annotated (T?[])
+        if (elementType.IsReferenceType && arrayType.ElementNullableAnnotation == NullableAnnotation.Annotated)
+            return;
+
         context.ReportDiagnostic(
             Diagnostic.Create(
                 Descriptors.SPIRE001_ArrayOfMustBeInitStruct,
@@ -168,6 +172,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
             return;
 
+        // typeof() never carries nullable annotations — always flag
         context.ReportDiagnostic(
             Diagnostic.Create(
                 Descriptors.SPIRE001_ArrayOfMustBeInitStruct,
@@ -195,6 +200,9 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
             return;
 
         if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
+            return;
+
+        if (MustBeInitChecks.IsNullableAnnotatedReference(elementType))
             return;
 
         context.ReportDiagnostic(
@@ -225,6 +233,9 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
             return;
 
+        if (MustBeInitChecks.IsNullableAnnotatedReference(elementType))
+            return;
+
         context.ReportDiagnostic(
             Diagnostic.Create(
                 Descriptors.SPIRE001_ArrayOfMustBeInitStruct,
@@ -252,6 +263,9 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
             return;
 
         if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
+            return;
+
+        if (MustBeInitChecks.IsNullableAnnotatedReference(elementType))
             return;
 
         context.ReportDiagnostic(
@@ -296,6 +310,9 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
             return;
 
         if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
+            return;
+
+        if (MustBeInitChecks.IsNullableAnnotatedReference(elementType))
             return;
 
         context.ReportDiagnostic(

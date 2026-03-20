@@ -56,21 +56,38 @@ internal static class GeneratorTestHelper
         return driver.GetRunResult();
     }
 
+    private static readonly HashSet<string> AttributeHints = new()
+    {
+        "DiscriminatedUnionAttribute.g.cs",
+        "VariantAttribute.g.cs",
+        "Layout.g.cs",
+        "JsonLibrary.g.cs",
+        "JsonNameAttribute.g.cs",
+    };
+
     public static string? GetUnionGeneratedSource(GeneratorDriverRunResult result)
     {
-        var excludedHints = new HashSet<string>
-        {
-            "DiscriminatedUnionAttribute.g.cs",
-            "VariantAttribute.g.cs",
-            "Layout.g.cs",
-        };
-
         var unionResult = result.GeneratedTrees
-            .Where(t => !excludedHints.Contains(System.IO.Path.GetFileName(t.FilePath)))
+            .Where(t =>
+            {
+                var fileName = System.IO.Path.GetFileName(t.FilePath);
+                return !AttributeHints.Contains(fileName)
+                    && !fileName.EndsWith(".Stj.g.cs")
+                    && !fileName.EndsWith(".Nsj.g.cs");
+            })
             .Select(t => t.GetText().ToString())
             .FirstOrDefault();
 
         return unionResult;
+    }
+
+    /// Gets a generated source file matching a specific hint suffix (e.g. ".Stj.g.cs").
+    public static string? GetGeneratedSource(GeneratorDriverRunResult result, string hintSuffix)
+    {
+        return result.GeneratedTrees
+            .Where(t => System.IO.Path.GetFileName(t.FilePath).EndsWith(hintSuffix))
+            .Select(t => t.GetText().ToString())
+            .FirstOrDefault();
     }
 
     public static void AssertNoCompilationErrors(Compilation compilation)

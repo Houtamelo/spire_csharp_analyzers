@@ -41,3 +41,20 @@ public struct MustInitStructWithAutoProperty
 {
     public int Value { get; set; }
 }
+
+#nullable enable
+
+[MustBeInit]
+public class MustInitClass
+{
+    public int Value;
+    public MustInitClass(int value) { Value = value; }
+}
+
+[MustBeInit]
+public record MustInitRecord(int Value);
+
+public class PlainClass
+{
+    public int Value;
+}

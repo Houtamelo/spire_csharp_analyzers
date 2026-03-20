@@ -24,7 +24,8 @@ internal static class RecordEmitter
         var typeParams = FormatTypeParams(union.TypeParameters);
         var unionType = union.TypeName + typeParams;
 
-        sb.AppendLine($"{union.AccessibilityKeyword} abstract partial record {unionType}");
+        var accessMod = string.IsNullOrEmpty(union.AccessibilityKeyword) ? "" : union.AccessibilityKeyword + " ";
+        sb.AppendLine($"{accessMod}abstract partial record {unionType}");
         sb.OpenBrace();
 
         // Private ctor prevents external subclassing
@@ -34,7 +35,8 @@ internal static class RecordEmitter
         // Variant records — just re-declare as sealed partial
         foreach (var variant in union.Variants)
         {
-            sb.AppendLine($"public sealed partial record {variant.Name};");
+            var variantAccess = string.IsNullOrEmpty(variant.AccessibilityKeyword) ? "" : variant.AccessibilityKeyword + " ";
+            sb.AppendLine($"{variantAccess}sealed partial record {variant.Name};");
         }
 
         sb.CloseBrace(); // type

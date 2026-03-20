@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+// ReSharper disable InconsistentNaming
 
 namespace Spire.Analyzers;
 
@@ -6,13 +7,14 @@ internal static class Descriptors
 {
     public static readonly DiagnosticDescriptor SPIRE001_ArrayOfMustBeInitStruct = new(
         id: "SPIRE001",
-        title: "Non-empty array of [MustBeInit] struct produces default instances",
-        messageFormat: "Non-empty array of struct '{0}' marked with [MustBeInit] will contain default (uninitialized) instances",
+        title: "Non-empty array of [MustBeInit] type produces uninitialized elements",
+        messageFormat: "Non-empty array of type '{0}' marked with [MustBeInit] will contain uninitialized elements",
         category: "Correctness",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        description: "Creating a non-empty array of a struct marked with [MustBeInit] fills all elements with default(T), "
-                   + "bypassing any required initialization. Use an empty array or provide an explicit initializer.",
+        description: "Creating a non-empty array of a type marked with [MustBeInit] fills all elements with default(T), "
+                   + "bypassing any required initialization. For structs this is a zeroed instance; for classes this is null. "
+                   + "Use an empty array or provide an explicit initializer.",
         helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE001.md"
     );
 
@@ -31,13 +33,13 @@ internal static class Descriptors
 
     public static readonly DiagnosticDescriptor SPIRE003_DefaultOfMustBeInitStruct = new(
         id: "SPIRE003",
-        title: "default(T) where T is a [MustBeInit] struct produces an uninitialized instance",
-        messageFormat: "default value of struct '{0}' marked with [MustBeInit] bypasses required initialization",
+        title: "default(T) where T is a [MustBeInit] type produces an uninitialized value",
+        messageFormat: "default value of type '{0}' marked with [MustBeInit] bypasses required initialization",
         category: "Correctness",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        description: "Structs marked with [MustBeInit] require explicit initialization. Using default(T) or the default "
-                   + "literal produces an uninitialized instance, defeating the purpose of the attribute.",
+        description: "Types marked with [MustBeInit] require explicit initialization. Using default(T) or the default "
+                   + "literal produces an uninitialized value (zeroed struct or null reference), defeating the purpose of the attribute.",
         helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE003.md"
     );
 
@@ -70,13 +72,14 @@ internal static class Descriptors
 
     public static readonly DiagnosticDescriptor SPIRE006_ClearOfMustBeInitElements = new(
         id: "SPIRE006",
-        title: "Clearing array or span of [MustBeInit] struct produces default instances",
-        messageFormat: "{0} zeros elements of struct '{1}' marked with [MustBeInit]",
+        title: "Clearing array or span of [MustBeInit] type produces uninitialized elements",
+        messageFormat: "{0} resets elements of type '{1}' marked with [MustBeInit] to their uninitialized state",
         category: "Correctness",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        description: "Array.Clear and Span<T>.Clear() reset elements to default(T). When T is a struct marked with "
-                   + "[MustBeInit], this produces uninitialized instances, defeating the purpose of the attribute.",
+        description: "Array.Clear and Span<T>.Clear() reset elements to default(T). When T is a type marked with "
+                   + "[MustBeInit], this produces uninitialized elements (zeroed structs or null references), "
+                   + "defeating the purpose of the attribute.",
         helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE006.md"
     );
 

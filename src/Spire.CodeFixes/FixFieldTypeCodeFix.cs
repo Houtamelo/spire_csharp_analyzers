@@ -42,7 +42,7 @@ public sealed class FixFieldTypeCodeFix : CodeFixProvider
         if (root is null) return document;
 
         // Find the node at the diagnostic location
-        var node = root.FindNode(diagnostic.Location.SourceSpan);
+        var node = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
 
         // Walk to find the DeclarationPatternSyntax
         var declPattern = node.AncestorsAndSelf()

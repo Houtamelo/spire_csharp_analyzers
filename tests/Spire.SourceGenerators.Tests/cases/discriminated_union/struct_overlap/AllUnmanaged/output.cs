@@ -8,9 +8,9 @@ namespace TestNs
 {
     [global::Spire.Analyzers.MustBeInit]
     [StructLayout(LayoutKind.Explicit)]
-    internal partial struct Shape
+    partial struct Shape
     {
-        public enum Kind
+        public enum Kind : byte
         {
             Circle,
             Rectangle,
@@ -20,15 +20,15 @@ namespace TestNs
         [FieldOffset(0)]
         public readonly Kind tag;
 
-        [FieldOffset(4)]
+        [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly double circle_radius;
 
-        [FieldOffset(4)]
+        [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly (float width, float height) rectangle;
 
-        [FieldOffset(4)]
+        [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly int square_sideLength;
 

@@ -8,9 +8,9 @@ namespace My.Deep.Namespace
 {
     [global::Spire.Analyzers.MustBeInit]
     [StructLayout(LayoutKind.Explicit)]
-    internal partial struct Result
+    partial struct Result
     {
-        public enum Kind
+        public enum Kind : byte
         {
             Ok,
             Err,
@@ -19,7 +19,7 @@ namespace My.Deep.Namespace
         [FieldOffset(0)]
         public readonly Kind tag;
 
-        [FieldOffset(4)]
+        [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly int ok_value;
 

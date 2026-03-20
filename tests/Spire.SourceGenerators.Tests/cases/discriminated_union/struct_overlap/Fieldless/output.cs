@@ -8,9 +8,9 @@ namespace TestNs
 {
     [global::Spire.Analyzers.MustBeInit]
     [StructLayout(LayoutKind.Explicit)]
-    internal partial struct Token
+    partial struct Token
     {
-        public enum Kind
+        public enum Kind : byte
         {
             Ident,
             Number,
@@ -20,7 +20,7 @@ namespace TestNs
         [FieldOffset(0)]
         public readonly Kind tag;
 
-        [FieldOffset(4)]
+        [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly int number_value;
 

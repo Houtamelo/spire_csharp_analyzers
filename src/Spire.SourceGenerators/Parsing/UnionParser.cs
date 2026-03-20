@@ -22,25 +22,7 @@ internal static class UnionParser
         var declKind = GetDeclarationKind(syntax);
         if (declKind is null) return null;
 
-        // Reject ref structs
-        if (typeSymbol.IsRefLikeType)
-        {
-            return new UnionDeclaration(
-                Namespace: "",
-                TypeName: typeSymbol.Name,
-                AccessibilityKeyword: AccessibilityToKeyword(typeSymbol.DeclaredAccessibility),
-                DeclarationKeyword: declKind,
-                IsReadonly: false,
-                Strategy: EmitStrategy.Overlap,
-                TypeParameters: new EquatableArray<string>(ImmutableArray<string>.Empty),
-                Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
-                ContainingTypes: new EquatableArray<ContainingTypeInfo>(ImmutableArray<ContainingTypeInfo>.Empty),
-                Diagnostic: CreateDiagnostic(
-                    syntax,
-                    "SPIRE_DU002",
-                    "ref struct is not supported for [DiscriminatedUnion]",
-                    isError: true));
-        }
+        var isRefStruct = typeSymbol.IsRefLikeType;
 
         var layout = GetLayout(ctx.Attributes);
         var isGeneric = typeSymbol.TypeParameters.Length > 0;
@@ -54,10 +36,12 @@ internal static class UnionParser
                     ? ""
                     : typeSymbol.ContainingNamespace.ToDisplayString(),
                 TypeName: typeSymbol.Name,
-                AccessibilityKeyword: AccessibilityToKeyword(typeSymbol.DeclaredAccessibility),
+                AccessibilityKeyword: ExplicitAccessibility(syntax, typeSymbol.DeclaredAccessibility),
                 DeclarationKeyword: declKind,
                 IsReadonly: syntax.Modifiers.Any(m => m.IsKind(SyntaxKind.ReadOnlyKeyword)),
+                IsRefStruct: isRefStruct,
                 Strategy: strategy,
+                GenerateDeconstruct: true,
                 TypeParameters: new EquatableArray<string>(typeSymbol.TypeParameters
                     .Select(tp => tp.Name).ToImmutableArray()),
                 Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
@@ -66,7 +50,9 @@ internal static class UnionParser
                     syntax,
                     "SPIRE_DU005",
                     "Generic structs cannot use Overlap layout (CLR restriction); use BoxedFields or BoxedTuple",
-                    isError: true));
+                    isError: true),
+                Json: JsonLibrary.None,
+                JsonDiscriminator: "kind");
         }
 
         // Warn when Layout is explicitly set on record/class (it's ignored)
@@ -96,10 +82,12 @@ internal static class UnionParser
                     ? ""
                     : typeSymbol.ContainingNamespace.ToDisplayString(),
                 TypeName: typeSymbol.Name,
-                AccessibilityKeyword: AccessibilityToKeyword(typeSymbol.DeclaredAccessibility),
+                AccessibilityKeyword: ExplicitAccessibility(syntax, typeSymbol.DeclaredAccessibility),
                 DeclarationKeyword: declKind,
                 IsReadonly: syntax.Modifiers.Any(m => m.IsKind(SyntaxKind.ReadOnlyKeyword)),
+                IsRefStruct: isRefStruct,
                 Strategy: strategy,
+                GenerateDeconstruct: true,
                 TypeParameters: new EquatableArray<string>(typeSymbol.TypeParameters
                     .Select(tp => tp.Name).ToImmutableArray()),
                 Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
@@ -108,7 +96,22 @@ internal static class UnionParser
                     syntax,
                     "SPIRE_DU003",
                     hint,
-                    isError: false));
+                    isError: false),
+                Json: JsonLibrary.None,
+                JsonDiscriminator: "kind");
+        }
+
+        var json = GetJsonLibrary(ctx.Attributes);
+        // ref struct + JSON: report error but don't block union generation
+        // (isError: false so the generator still emits the union source)
+        if (isRefStruct && json != JsonLibrary.None)
+        {
+            layoutWarning = CreateDiagnostic(
+                syntax,
+                "SPIRE_DU008",
+                "ref struct cannot use JSON generation (ref structs cannot be generic type arguments)",
+                isError: false);
+            json = JsonLibrary.None;
         }
 
         var typeParams = typeSymbol.TypeParameters
@@ -120,14 +123,18 @@ internal static class UnionParser
                 ? ""
                 : typeSymbol.ContainingNamespace.ToDisplayString(),
             TypeName: typeSymbol.Name,
-            AccessibilityKeyword: AccessibilityToKeyword(typeSymbol.DeclaredAccessibility),
+            AccessibilityKeyword: ExplicitAccessibility(syntax, typeSymbol.DeclaredAccessibility),
             DeclarationKeyword: declKind,
             IsReadonly: syntax.Modifiers.Any(m => m.IsKind(SyntaxKind.ReadOnlyKeyword)),
+            IsRefStruct: isRefStruct,
             Strategy: strategy,
+            GenerateDeconstruct: GetGenerateDeconstruct(ctx.Attributes),
             TypeParameters: new EquatableArray<string>(typeParams),
             Variants: new EquatableArray<VariantInfo>(variants),
             ContainingTypes: new EquatableArray<ContainingTypeInfo>(GetContainingTypes(typeSymbol)),
-            Diagnostic: layoutWarning);
+            Diagnostic: layoutWarning,
+            Json: json,
+            JsonDiscriminator: GetJsonDiscriminator(ctx.Attributes));
     }
 
     /// Walks up the ContainingType chain and returns the nesting wrappers
@@ -193,6 +200,78 @@ internal static class UnionParser
         return 0; // Layout.Auto
     }
 
+    /// Reads the GenerateDeconstruct named property (defaults to true).
+    private static bool GetGenerateDeconstruct(ImmutableArray<AttributeData> attributes)
+    {
+        foreach (var attr in attributes)
+        {
+            if (attr.AttributeClass?.Name != "DiscriminatedUnionAttribute")
+                continue;
+
+            foreach (var named in attr.NamedArguments)
+            {
+                if (named.Key == "GenerateDeconstruct" && named.Value.Value is bool val)
+                    return val;
+            }
+        }
+
+        return true;
+    }
+
+    /// Reads the Json flags enum named property (defaults to None).
+    private static JsonLibrary GetJsonLibrary(ImmutableArray<AttributeData> attributes)
+    {
+        foreach (var attr in attributes)
+        {
+            if (attr.AttributeClass?.Name != "DiscriminatedUnionAttribute")
+                continue;
+
+            foreach (var named in attr.NamedArguments)
+            {
+                if (named.Key == "Json" && named.Value.Value is int val)
+                    return (JsonLibrary)val;
+            }
+        }
+
+        return JsonLibrary.None;
+    }
+
+    /// Reads the JsonDiscriminator named property (defaults to "kind").
+    private static string GetJsonDiscriminator(ImmutableArray<AttributeData> attributes)
+    {
+        foreach (var attr in attributes)
+        {
+            if (attr.AttributeClass?.Name != "DiscriminatedUnionAttribute")
+                continue;
+
+            foreach (var named in attr.NamedArguments)
+            {
+                if (named.Key == "JsonDiscriminator" && named.Value.Value is string val)
+                    return val;
+            }
+        }
+
+        return "kind";
+    }
+
+    /// Reads [JsonName] attribute from a symbol and returns the Name value, or null.
+    private static string? GetJsonName(ISymbol symbol)
+    {
+        foreach (var attr in symbol.GetAttributes())
+        {
+            if (attr.AttributeClass?.Name != "JsonNameAttribute")
+                continue;
+
+            if (attr.ConstructorArguments.Length > 0 &&
+                attr.ConstructorArguments[0].Value is string name)
+            {
+                return name;
+            }
+        }
+
+        return null;
+    }
+
     /// Maps (declarationKind, layout, isGeneric) to EmitStrategy.
     private static EmitStrategy ResolveStrategy(string declKind, int layout, bool isGeneric)
     {
@@ -230,6 +309,15 @@ internal static class UnionParser
             .ToImmutableArray();
     }
 
+    /// Record copy constructor: implicitly declared, single parameter of the record's own type.
+    private static bool IsCopyConstructor(IMethodSymbol ctor, INamedTypeSymbol containingType)
+    {
+        return ctor.IsImplicitlyDeclared
+            && ctor.Parameters.Length == 1
+            && SymbolEqualityComparer.Default.Equals(
+                ctor.Parameters[0].Type, containingType);
+    }
+
     private static bool HasVariantAttribute(IMethodSymbol method)
     {
         return method.GetAttributes().Any(a =>
@@ -244,12 +332,15 @@ internal static class UnionParser
                 TypeFullName: p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 IsUnmanaged: p.Type.IsUnmanagedType,
                 IsReferenceType: p.Type.IsReferenceType,
-                KnownSize: ComputeKnownSize(p.Type)))
+                KnownSize: ComputeKnownSize(p.Type),
+                JsonName: GetJsonName(p)))
             .ToImmutableArray();
 
         return new VariantInfo(
             Name: method.Name,
-            Fields: new EquatableArray<FieldInfo>(fields));
+            Fields: new EquatableArray<FieldInfo>(fields),
+            JsonName: GetJsonName(method),
+            AccessibilityKeyword: "public");
     }
 
     /// Extracts variant info from a nested type's primary constructor parameters.
@@ -258,7 +349,9 @@ internal static class UnionParser
         // Find the primary constructor (the one with parameters, or the parameterless one).
         // For positional records `record Some(T Value)`, the compiler generates a ctor
         // with matching parameters.
+        // Exclude the record copy constructor (implicitly declared, single param of own type).
         var primaryCtor = nestedType.Constructors
+            .Where(c => !IsCopyConstructor(c, nestedType))
             .Where(c => !c.IsImplicitlyDeclared || c.Parameters.Length > 0)
             .OrderByDescending(c => c.Parameters.Length)
             .FirstOrDefault();
@@ -271,12 +364,15 @@ internal static class UnionParser
                     TypeFullName: p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                     IsUnmanaged: p.Type.IsUnmanagedType,
                     IsReferenceType: p.Type.IsReferenceType,
-                    KnownSize: ComputeKnownSize(p.Type)))
+                    KnownSize: ComputeKnownSize(p.Type),
+                    JsonName: GetJsonName(p)))
                 .ToImmutableArray();
 
         return new VariantInfo(
             Name: nestedType.Name,
-            Fields: new EquatableArray<FieldInfo>(fields));
+            Fields: new EquatableArray<FieldInfo>(fields),
+            JsonName: GetJsonName(nestedType),
+            AccessibilityKeyword: ExplicitAccessibility(nestedType));
     }
 
     /// Returns sizeof for primitives, enums (underlying type), bool, nint/nuint.
@@ -341,5 +437,28 @@ internal static class UnionParser
             Accessibility.ProtectedAndInternal => "private protected",
             _ => "internal",
         };
+    }
+
+    /// Returns the accessibility keyword only if the user explicitly wrote one.
+    /// Empty string if accessibility was implicit (C# default).
+    private static string ExplicitAccessibility(TypeDeclarationSyntax syntax, Accessibility declared)
+    {
+        bool hasExplicit = syntax.Modifiers.Any(m =>
+            m.IsKind(SyntaxKind.PublicKeyword) ||
+            m.IsKind(SyntaxKind.InternalKeyword) ||
+            m.IsKind(SyntaxKind.PrivateKeyword) ||
+            m.IsKind(SyntaxKind.ProtectedKeyword));
+        return hasExplicit ? AccessibilityToKeyword(declared) : "";
+    }
+
+    /// Returns the accessibility keyword for a symbol, only if explicit in source.
+    private static string ExplicitAccessibility(INamedTypeSymbol symbol)
+    {
+        foreach (var syntaxRef in symbol.DeclaringSyntaxReferences)
+        {
+            if (syntaxRef.GetSyntax() is TypeDeclarationSyntax typeSyntax)
+                return ExplicitAccessibility(typeSyntax, symbol.DeclaredAccessibility);
+        }
+        return AccessibilityToKeyword(symbol.DeclaredAccessibility);
     }
 }
