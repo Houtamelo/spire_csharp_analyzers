@@ -86,4 +86,9 @@ Project layout, build configuration, conventions.
 - `.claude/rules/analyzer-conventions.md` — target framework, dependencies
 - `.claude/rules/test-conventions.md` — test framework, target
 - `src/Spire.Analyzers/Spire.Analyzers.csproj`
+- `src/Spire.SourceGenerators/Spire.SourceGenerators.csproj`
+- `src/Spire.CodeFixes/Spire.CodeFixes.csproj`
 - `tests/Spire.Analyzers.Tests/Spire.Analyzers.Tests.csproj`
+- `tests/Spire.SourceGenerators.Tests/Spire.SourceGenerators.Tests.csproj`
+- `tests/Spire.BehavioralTests/Spire.BehavioralTests.csproj`
+- `benchmarks/Spire.Benchmarks/Spire.Benchmarks.csproj`
