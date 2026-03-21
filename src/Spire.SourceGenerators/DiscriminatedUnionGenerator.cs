@@ -37,7 +37,10 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
                 HasSystemTextJson: comp.GetTypeByMetadataName(
                     "System.Text.Json.Serialization.JsonConverter`1") is not null,
                 HasNewtonsoftJson: comp.GetTypeByMetadataName(
-                    "Newtonsoft.Json.JsonConverter") is not null));
+                    "Newtonsoft.Json.JsonConverter") is not null,
+                AllowsUnsafe: ((Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions)comp.Options).AllowUnsafe,
+                HasInlineArray: comp.GetTypeByMetadataName(
+                    "System.Runtime.CompilerServices.InlineArrayAttribute") is not null));
 
         var combined = unions.Combine(compilationInfo);
 
@@ -63,7 +66,18 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
                 if (diag.IsError) return;
             }
 
-            var source = Emit(union);
+            // UnsafeOverlap requires AllowUnsafe
+            if (union.Strategy == EmitStrategy.UnsafeOverlap && !compInfo.AllowsUnsafe)
+            {
+                ReportJsonDiagnostic(ctx, union,
+                    "SPIRE_DU009",
+                    "UnsafeOverlap layout requires <AllowUnsafeBlocks>true</AllowUnsafeBlocks> in the project");
+                return;
+            }
+
+            var source = union.Strategy == EmitStrategy.UnsafeOverlap
+                ? UnsafeOverlapEmitter.Emit(union, compInfo.HasInlineArray)
+                : Emit(union);
             // Include arity to avoid collisions: Option vs Option<T>
             var arity = union.TypeParameters.Length > 0
                 ? $"`{union.TypeParameters.Length}"
@@ -120,6 +134,7 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
 
     private static string Emit(UnionDeclaration union) => union.Strategy switch
     {
+        EmitStrategy.Additive => AdditiveEmitter.Emit(union),
         EmitStrategy.Record => RecordEmitter.Emit(union),
         EmitStrategy.Class => ClassEmitter.Emit(union),
         EmitStrategy.Overlap => OverlapEmitter.Emit(union),

@@ -44,7 +44,8 @@ internal static class GeneratorTestHelper
             "TestAssembly",
             new[] { syntaxTree },
             BaseReferences,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                allowUnsafe: true));
 
         var generator = new DiscriminatedUnionGenerator();
         var driver = CSharpGeneratorDriver.Create(generator)

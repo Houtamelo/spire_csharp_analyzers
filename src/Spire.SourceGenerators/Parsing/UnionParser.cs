@@ -285,6 +285,8 @@ internal static class UnionParser
             1 => EmitStrategy.Overlap,     // Overlap
             2 => EmitStrategy.BoxedFields, // BoxedFields
             3 => EmitStrategy.BoxedTuple,  // BoxedTuple
+            4 => EmitStrategy.Additive,    // Additive
+            5 => EmitStrategy.UnsafeOverlap, // UnsafeOverlap
             _ => EmitStrategy.Overlap,
         };
     }

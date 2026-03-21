@@ -12,6 +12,7 @@
   <ItemGroup>
     <Compile Remove="**/cases/**" />
     <None Include="**/cases/**" Exclude="bin/**;obj/**" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Remove="Experiment.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -62,6 +62,14 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    private static readonly DiagnosticDescriptor UnsafeOverlapRequiresUnsafe = new(
+        id: "SPIRE_DU009",
+        title: "UnsafeOverlap layout requires AllowUnsafeBlocks",
+        messageFormat: "UnsafeOverlap layout requires <AllowUnsafeBlocks>true</AllowUnsafeBlocks> in the project",
+        category: "SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     private static readonly Dictionary<string, DiagnosticDescriptor> DescriptorMap = new()
     {
         ["SPIRE_DU002"] = RefStructNotSupported,
@@ -71,6 +79,7 @@ internal static class Diagnostics
         ["SPIRE_DU006"] = SystemTextJsonNotReferenced,
         ["SPIRE_DU007"] = NewtonsoftJsonNotReferenced,
         ["SPIRE_DU008"] = RefStructJsonNotSupported,
+        ["SPIRE_DU009"] = UnsafeOverlapRequiresUnsafe,
     };
 
     public static DiagnosticDescriptor GetDescriptor(UnionDiagnostic diag)

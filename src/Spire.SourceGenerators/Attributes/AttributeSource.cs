@@ -53,6 +53,8 @@ internal static class AttributeSource
                 Overlap,
                 BoxedFields,
                 BoxedTuple,
+                Additive,
+                UnsafeOverlap,
             }
         }
         """;

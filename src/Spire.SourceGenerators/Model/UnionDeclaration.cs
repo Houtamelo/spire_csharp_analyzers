@@ -2,7 +2,7 @@ using System;
 
 namespace Spire.SourceGenerators.Model;
 
-internal enum EmitStrategy { Record, Class, Overlap, BoxedFields, BoxedTuple }
+internal enum EmitStrategy { Record, Class, Overlap, BoxedFields, BoxedTuple, Additive, UnsafeOverlap }
 
 [Flags]
 internal enum JsonLibrary
