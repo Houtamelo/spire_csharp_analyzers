@@ -29,7 +29,7 @@ internal sealed class TokenStjConverter : JsonConverter<Token>
             case Token.Kind.Number:
                 writer.WriteString("type", "Number");
                 writer.WritePropertyName("value");
-                JsonSerializer.Serialize(writer, value.number_value, options);
+                JsonSerializer.Serialize(writer, value.value, options);
                 break;
             case Token.Kind.Eof:
                 writer.WriteString("type", "Eof");

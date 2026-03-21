@@ -13,7 +13,7 @@ namespace TestNs
     {
         double Test(Shape s) => s switch
         {
-            (Shape.Kind.Circle, _) => s.circle_radius,
+            (Shape.Kind.Circle, _) => s.radius,
             _ => 0,
         };
     }

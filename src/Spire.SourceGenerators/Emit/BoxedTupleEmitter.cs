@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Spire.SourceGenerators.Model;
 
@@ -53,6 +54,10 @@ internal static class BoxedTupleEmitter
         // Single Deconstruct overload
         if (union.GenerateDeconstruct)
             EmitDeconstruct(sb);
+
+        // Public properties for pattern matching (tag switch for correct cast)
+        if (union.PublicProperties)
+            EmitProperties(sb, union.Variants);
 
         sb.CloseBrace(); // type
 
@@ -122,6 +127,75 @@ internal static class BoxedTupleEmitter
         sb.AppendLine("kind = this.tag;");
         sb.AppendLine("payload = this._payload;");
         sb.CloseBrace();
+    }
+
+    private static void EmitProperties(SourceBuilder sb, IEnumerable<VariantInfo> variants)
+    {
+        var variantList = variants.ToList();
+
+        // Collect unique property names and their type
+        var propertyFields = new Dictionary<string, string>(); // name → TypeFullName
+        foreach (var variant in variantList)
+        {
+            foreach (var field in variant.Fields)
+            {
+                if (!propertyFields.ContainsKey(field.Name))
+                    propertyFields[field.Name] = field.TypeFullName;
+            }
+        }
+
+        foreach (var kv in propertyFields)
+        {
+            var propName = kv.Key;
+            var propType = kv.Value;
+
+            // Find which variants have this field and their accessor expressions
+            var cases = new List<(string VariantName, string Accessor)>();
+            foreach (var variant in variantList)
+            {
+                int fieldIdx = -1;
+                for (int i = 0; i < variant.Fields.Length; i++)
+                {
+                    if (variant.Fields[i].Name == propName)
+                    {
+                        fieldIdx = i;
+                        break;
+                    }
+                }
+                if (fieldIdx < 0) continue;
+
+                string accessor;
+                if (variant.Fields.Length == 1)
+                {
+                    // Single-field variant: payload is the value directly
+                    accessor = $"({propType})this._payload!";
+                }
+                else
+                {
+                    // Multi-field variant: payload is a boxed ValueTuple
+                    var tupleType = "(" + string.Join(", ",
+                        variant.Fields.Select(f => f.TypeFullName)) + ")";
+                    accessor = $"(({tupleType})this._payload!).Item{fieldIdx + 1}";
+                }
+
+                cases.Add((variant.Name, accessor));
+            }
+
+            sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
+            if (cases.Count == 1)
+            {
+                sb.AppendLine($"public {propType} {propName} => {cases[0].Accessor};");
+            }
+            else
+            {
+                sb.AppendLine($"public {propType} {propName} => this.tag switch");
+                sb.OpenBrace();
+                foreach (var c in cases)
+                    sb.AppendLine($"Kind.{c.VariantName} => {c.Accessor},");
+                sb.AppendLine($"_ => default!,");
+                sb.CloseBrace(";");
+            }
+        }
     }
 
     private static string FormatTypeParams(EquatableArray<string> typeParameters)

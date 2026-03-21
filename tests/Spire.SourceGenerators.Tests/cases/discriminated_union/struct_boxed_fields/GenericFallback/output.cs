@@ -31,7 +31,17 @@ namespace TestNs
         public void Deconstruct(out Kind kind, out object? f0)
         {
             kind = this.tag;
-            f0 = this._f0;
+            switch (this.tag)
+            {
+                case Kind.Some:
+                    f0 = this._f0;
+                    break;
+                default:
+                    f0 = null;
+                    break;
+            }
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public T value => (T)this._f0!;
     }
 }

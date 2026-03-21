@@ -31,18 +31,18 @@ namespace TestNs
                 case Event.Kind.Click:
                     writer.WriteString("kind", "Click");
                     writer.WritePropertyName("x");
-                    JsonSerializer.Serialize(writer, value.click.x, options);
+                    JsonSerializer.Serialize(writer, value.x, options);
                     writer.WritePropertyName("y");
-                    JsonSerializer.Serialize(writer, value.click.y, options);
+                    JsonSerializer.Serialize(writer, value.y, options);
                     writer.WritePropertyName("target");
-                    JsonSerializer.Serialize(writer, value.click_target!, options);
+                    JsonSerializer.Serialize(writer, value.target, options);
                     break;
                 case Event.Kind.Hover:
                     writer.WriteString("kind", "Hover");
                     writer.WritePropertyName("posX");
-                    JsonSerializer.Serialize(writer, value.hover.posX, options);
+                    JsonSerializer.Serialize(writer, value.posX, options);
                     writer.WritePropertyName("posY");
-                    JsonSerializer.Serialize(writer, value.hover.posY, options);
+                    JsonSerializer.Serialize(writer, value.posY, options);
                     break;
                 default:
                     throw new JsonException($"Unknown Event variant: {value.tag}");

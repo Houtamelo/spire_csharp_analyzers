@@ -42,6 +42,7 @@ internal static class UnionParser
                 IsRefStruct: isRefStruct,
                 Strategy: strategy,
                 GenerateDeconstruct: true,
+                PublicProperties: true,
                 TypeParameters: new EquatableArray<string>(typeSymbol.TypeParameters
                     .Select(tp => tp.Name).ToImmutableArray()),
                 Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
@@ -88,6 +89,7 @@ internal static class UnionParser
                 IsRefStruct: isRefStruct,
                 Strategy: strategy,
                 GenerateDeconstruct: true,
+                PublicProperties: true,
                 TypeParameters: new EquatableArray<string>(typeSymbol.TypeParameters
                     .Select(tp => tp.Name).ToImmutableArray()),
                 Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
@@ -129,6 +131,7 @@ internal static class UnionParser
             IsRefStruct: isRefStruct,
             Strategy: strategy,
             GenerateDeconstruct: GetGenerateDeconstruct(ctx.Attributes),
+            PublicProperties: GetPublicProperties(ctx.Attributes),
             TypeParameters: new EquatableArray<string>(typeParams),
             Variants: new EquatableArray<VariantInfo>(variants),
             ContainingTypes: new EquatableArray<ContainingTypeInfo>(GetContainingTypes(typeSymbol)),
@@ -211,6 +214,24 @@ internal static class UnionParser
             foreach (var named in attr.NamedArguments)
             {
                 if (named.Key == "GenerateDeconstruct" && named.Value.Value is bool val)
+                    return val;
+            }
+        }
+
+        return true;
+    }
+
+    /// Reads the PublicProperties named property (defaults to true).
+    private static bool GetPublicProperties(ImmutableArray<AttributeData> attributes)
+    {
+        foreach (var attr in attributes)
+        {
+            if (attr.AttributeClass?.Name != "DiscriminatedUnionAttribute")
+                continue;
+
+            foreach (var named in attr.NamedArguments)
+            {
+                if (named.Key == "PublicProperties" && named.Value.Value is bool val)
                     return val;
             }
         }

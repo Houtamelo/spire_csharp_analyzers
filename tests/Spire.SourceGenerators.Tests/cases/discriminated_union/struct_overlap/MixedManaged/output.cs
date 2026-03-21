@@ -21,15 +21,23 @@ namespace TestNs
 
         [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public readonly (int x, int y) click;
+        internal readonly float _posX;
 
-        [FieldOffset(1)]
+        [FieldOffset(5)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public readonly (float posX, float posY) hover;
+        internal readonly float _posY;
 
-        [FieldOffset(16)]
+        [FieldOffset(9)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public readonly string? click_target;
+        internal readonly int _x;
+
+        [FieldOffset(13)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal readonly int _y;
+
+        [FieldOffset(24)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal readonly string? _target;
 
         Event(Kind tag) : this()
         {
@@ -39,30 +47,42 @@ namespace TestNs
         public static partial Event Click(int x, int y, string target)
         {
             var s = new Event(Kind.Click);
-            Unsafe.AsRef(in s.click) = (x, y);
-            Unsafe.AsRef(in s.click_target) = target;
+            Unsafe.AsRef(in s._x) = x;
+            Unsafe.AsRef(in s._y) = y;
+            Unsafe.AsRef(in s._target) = target;
             return s;
         }
         public static partial Event Hover(float posX, float posY)
         {
             var s = new Event(Kind.Hover);
-            Unsafe.AsRef(in s.hover) = (posX, posY);
+            Unsafe.AsRef(in s._posX) = posX;
+            Unsafe.AsRef(in s._posY) = posY;
             return s;
         }
 
         public void Deconstruct(out Kind kind, out float posX, out float posY)
         {
             kind = this.tag;
-            posX = this.hover.posX;
-            posY = this.hover.posY;
+            posX = this._posX;
+            posY = this._posY;
         }
 
         public void Deconstruct(out Kind kind, out int x, out int y, out string target)
         {
             kind = this.tag;
-            x = this.click.x;
-            y = this.click.y;
-            target = this.click_target!;
+            x = this._x;
+            y = this._y;
+            target = this._target!;
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public float posX => this._posX;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public float posY => this._posY;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int x => this._x;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int y => this._y;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string target => this._target!;
     }
 }

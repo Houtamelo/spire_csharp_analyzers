@@ -29,6 +29,8 @@ namespace TestNs
         internal object? _s0;
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal object? _s1;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal object? _s2;
 
         Event(Kind tag)
         {
@@ -36,6 +38,7 @@ namespace TestNs
             this._data = default;
             this._s0 = default!;
             this._s1 = default!;
+            this._s2 = default!;
         }
 
         public static partial Event Click(int x, int y, string target)
@@ -43,14 +46,14 @@ namespace TestNs
             var s = new Event(Kind.Click);
             Unsafe.WriteUnaligned(ref s._data[0], x);
             Unsafe.WriteUnaligned(ref Unsafe.Add(ref s._data[0], 4), y);
-            s._s0 = target;
+            s._s2 = target;
             return s;
         }
         public static partial Event Error(string message, global::System.Exception ex)
         {
             var s = new Event(Kind.Error);
-            s._s0 = message;
-            s._s1 = ex;
+            s._s1 = message;
+            s._s0 = ex;
             return s;
         }
         public static partial Event Ping()
@@ -62,8 +65,8 @@ namespace TestNs
             switch (this.tag)
             {
                 case Kind.Error:
-                    f0 = this._s0;
-                    f1 = this._s1;
+                    f0 = this._s1;
+                    f1 = this._s0;
                     break;
                 default:
                     f0 = null;
@@ -77,7 +80,17 @@ namespace TestNs
             kind = this.tag;
             x = Unsafe.ReadUnaligned<int>(ref _data[0]);
             y = Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref _data[0], 4));
-            target = (string)this._s0!;
+            target = (string)this._s2!;
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int x => Unsafe.ReadUnaligned<int>(ref _data[0]);
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int y => Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref _data[0], 4));
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string target => (string)this._s2!;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string message => (string)this._s1!;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public global::System.Exception ex => (global::System.Exception)this._s0!;
     }
 }

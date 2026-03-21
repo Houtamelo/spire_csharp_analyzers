@@ -58,4 +58,8 @@ partial struct Result<T>
         value = this._s0;
         code = Unsafe.ReadUnaligned<int>(ref _data[0]);
     }
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public T value => this._s0;
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public int code => Unsafe.ReadUnaligned<int>(ref _data[0]);
 }

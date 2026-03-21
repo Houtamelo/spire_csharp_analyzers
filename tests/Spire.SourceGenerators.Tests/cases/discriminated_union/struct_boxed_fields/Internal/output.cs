@@ -30,5 +30,7 @@ namespace TestNs
             kind = this.tag;
             v = (int)this._f0!;
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int v => (int)this._f0!;
     }
 }

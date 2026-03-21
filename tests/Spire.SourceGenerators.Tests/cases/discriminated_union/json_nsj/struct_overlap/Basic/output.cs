@@ -29,15 +29,15 @@ internal sealed class ShapeNsjConverter : JsonConverter<Shape>
                 writer.WritePropertyName("kind");
                 writer.WriteValue("Circle");
                 writer.WritePropertyName("radius");
-                serializer.Serialize(writer, value.circle_radius);
+                serializer.Serialize(writer, value.radius);
                 break;
             case Shape.Kind.Rectangle:
                 writer.WritePropertyName("kind");
                 writer.WriteValue("Rectangle");
                 writer.WritePropertyName("width");
-                serializer.Serialize(writer, value.rectangle.width);
+                serializer.Serialize(writer, value.width);
                 writer.WritePropertyName("height");
-                serializer.Serialize(writer, value.rectangle.height);
+                serializer.Serialize(writer, value.height);
                 break;
             case Shape.Kind.Point:
                 writer.WritePropertyName("kind");

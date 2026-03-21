@@ -18,23 +18,41 @@ namespace TestNs
             public readonly Kind tag;
             [EditorBrowsable(EditorBrowsableState.Never)]
             internal readonly object? _f0;
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            internal readonly object? _f1;
 
-            Token(Kind tag, object? f0)
+            Token(Kind tag, object? f0, object? f1)
             {
                 this.tag = tag;
                 this._f0 = f0;
+                this._f1 = f1;
             }
 
             public static partial Token Ident(string name)
-                => new Token(Kind.Ident, name);
+                => new Token(Kind.Ident, name, null);
             public static partial Token Number(int value)
-                => new Token(Kind.Number, value);
+                => new Token(Kind.Number, null, value);
 
             public void Deconstruct(out Kind kind, out object? f0)
             {
                 kind = this.tag;
-                f0 = this._f0;
+                switch (this.tag)
+                {
+                    case Kind.Ident:
+                        f0 = this._f0;
+                        break;
+                    case Kind.Number:
+                        f0 = this._f1;
+                        break;
+                    default:
+                        f0 = null;
+                        break;
+                }
             }
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            public string name => (string)this._f0!;
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            public int value => (int)this._f1!;
         }
     }
 }

@@ -21,6 +21,7 @@ internal static class AttributeSource
             {
                 public Layout Layout { get; }
                 public bool GenerateDeconstruct { get; set; } = true;
+                public bool PublicProperties { get; set; } = true;
                 public JsonLibrary Json { get; set; } = JsonLibrary.None;
                 public string JsonDiscriminator { get; set; } = "kind";
                 public DiscriminatedUnionAttribute(Layout layout = Layout.Auto)

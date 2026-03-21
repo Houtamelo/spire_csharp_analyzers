@@ -17,7 +17,7 @@ namespace TestNs
             {
                 if (true)
                 {
-                    return s.circle_radius;
+                    return s.radius;
                 }
             }
             return 0;

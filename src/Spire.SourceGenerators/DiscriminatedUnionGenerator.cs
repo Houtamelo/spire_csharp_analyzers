@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Spire.SourceGenerators.Attributes;
@@ -66,6 +68,10 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
                 if (diag.IsError) return;
             }
 
+            // PublicProperties: check for field name+type conflicts across variants
+            if (union.PublicProperties && HasFieldNameConflicts(ctx, union))
+                return;
+
             // UnsafeOverlap requires AllowUnsafe
             if (union.Strategy == EmitStrategy.UnsafeOverlap && !compInfo.AllowsUnsafe)
             {
@@ -130,6 +136,47 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
         var descriptor = Diagnostics.GetDescriptor(diag);
         ctx.ReportDiagnostic(
             Microsoft.CodeAnalysis.Diagnostic.Create(descriptor, Location.None));
+    }
+
+    /// Returns true if field name conflicts exist (same name, different type).
+    /// Reports SPIRE_DU010 for each conflict and prevents source emission.
+    private static bool HasFieldNameConflicts(SourceProductionContext ctx, UnionDeclaration union)
+    {
+        // Collect all (name → set of types) across all variants
+        var fieldTypes = new Dictionary<string, HashSet<string>>();
+        foreach (var variant in union.Variants)
+        {
+            foreach (var field in variant.Fields)
+            {
+                if (!fieldTypes.TryGetValue(field.Name, out var types))
+                {
+                    types = new HashSet<string>();
+                    fieldTypes[field.Name] = types;
+                }
+                types.Add(field.TypeFullName);
+            }
+        }
+
+        bool hasConflict = false;
+        foreach (var kv in fieldTypes)
+        {
+            if (kv.Value.Count <= 1) continue;
+
+            hasConflict = true;
+            var typeList = string.Join(", ", kv.Value.OrderBy(t => t));
+            var message = $"Field '{kv.Key}' has conflicting types across variants: {typeList}. " +
+                          $"Rename the field to resolve the conflict, or set PublicProperties = false.";
+
+            var diag = new UnionDiagnostic(
+                Id: "SPIRE_DU010", Message: message, IsError: true,
+                FilePath: "", StartOffset: 0, Length: 0,
+                StartLine: 0, StartColumn: 0, EndLine: 0, EndColumn: 0);
+            var descriptor = Diagnostics.GetDescriptor(diag);
+            ctx.ReportDiagnostic(
+                Microsoft.CodeAnalysis.Diagnostic.Create(descriptor, Location.None, message));
+        }
+
+        return hasConflict;
     }
 
     private static string Emit(UnionDeclaration union) => union.Strategy switch

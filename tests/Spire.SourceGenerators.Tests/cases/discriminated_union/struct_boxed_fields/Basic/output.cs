@@ -19,32 +19,57 @@ namespace TestNs
         internal readonly object? _f0;
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal readonly object? _f1;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal readonly object? _f2;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal readonly object? _f3;
 
-        Shape(Kind tag, object? f0, object? f1)
+        Shape(Kind tag, object? f0, object? f1, object? f2, object? f3)
         {
             this.tag = tag;
             this._f0 = f0;
             this._f1 = f1;
+            this._f2 = f2;
+            this._f3 = f3;
         }
 
         public static partial Shape Circle(double radius)
-            => new Shape(Kind.Circle, radius, null);
+            => new Shape(Kind.Circle, null, radius, null, null);
         public static partial Shape Rectangle(float width, float height)
-            => new Shape(Kind.Rectangle, width, height);
+            => new Shape(Kind.Rectangle, height, null, null, width);
         public static partial Shape Square(int sideLength)
-            => new Shape(Kind.Square, sideLength, null);
+            => new Shape(Kind.Square, null, null, sideLength, null);
 
         public void Deconstruct(out Kind kind, out object? f0)
         {
             kind = this.tag;
-            f0 = this._f0;
+            switch (this.tag)
+            {
+                case Kind.Circle:
+                    f0 = this._f1;
+                    break;
+                case Kind.Square:
+                    f0 = this._f2;
+                    break;
+                default:
+                    f0 = null;
+                    break;
+            }
         }
 
         public void Deconstruct(out Kind kind, out float width, out float height)
         {
             kind = this.tag;
-            width = (float)this._f0!;
-            height = (float)this._f1!;
+            width = (float)this._f3!;
+            height = (float)this._f0!;
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public double radius => (double)this._f1!;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public float width => (float)this._f3!;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public float height => (float)this._f0!;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int sideLength => (int)this._f2!;
     }
 }

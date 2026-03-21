@@ -16,7 +16,7 @@ namespace TestNs
             switch (s)
             {
                 case (Shape.Kind.Circle, _):
-                    return s.circle_radius;
+                    return s.radius;
                 default:
                     return 0;
             }

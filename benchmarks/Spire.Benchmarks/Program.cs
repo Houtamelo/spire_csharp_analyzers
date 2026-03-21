@@ -1,3 +1,7 @@
 using BenchmarkDotNet.Running;
 
-BenchmarkSwitcher.FromAssembly(typeof(Spire.Benchmarks.UnionBenchmarks).Assembly).Run(args);
+// Run all:           dotnet run -c Release
+// Single class:      dotnet run -c Release -- --filter *Construct*
+// Micro with disasm: dotnet run -c Release -- --filter *MicroConstruct*
+// JSON only:         dotnet run -c Release -- --filter *Json*
+BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);

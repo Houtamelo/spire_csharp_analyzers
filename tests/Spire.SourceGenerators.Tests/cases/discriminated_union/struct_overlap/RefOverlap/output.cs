@@ -21,11 +21,11 @@ namespace TestNs
 
         [FieldOffset(8)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public readonly string? text_content;
+        internal readonly string? _content;
 
-        [FieldOffset(8)]
+        [FieldOffset(16)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public readonly object? error_detail;
+        internal readonly object? _detail;
 
         Message(Kind tag) : this()
         {
@@ -35,13 +35,13 @@ namespace TestNs
         public static partial Message Text(string content)
         {
             var s = new Message(Kind.Text);
-            Unsafe.AsRef(in s.text_content) = content;
+            Unsafe.AsRef(in s._content) = content;
             return s;
         }
         public static partial Message Error(object detail)
         {
             var s = new Message(Kind.Error);
-            Unsafe.AsRef(in s.error_detail) = detail;
+            Unsafe.AsRef(in s._detail) = detail;
             return s;
         }
 
@@ -51,15 +51,19 @@ namespace TestNs
             switch (this.tag)
             {
                 case Kind.Text:
-                    f0 = this.text_content;
+                    f0 = this._content;
                     break;
                 case Kind.Error:
-                    f0 = this.error_detail;
+                    f0 = this._detail;
                     break;
                 default:
                     f0 = null;
                     break;
             }
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string content => this._content!;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public object detail => this._detail!;
     }
 }

@@ -70,6 +70,14 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    private static readonly DiagnosticDescriptor FieldNameTypeConflict = new(
+        id: "SPIRE_DU010",
+        title: "Field name conflict across variants",
+        messageFormat: "{0}",
+        category: "SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     private static readonly Dictionary<string, DiagnosticDescriptor> DescriptorMap = new()
     {
         ["SPIRE_DU002"] = RefStructNotSupported,
@@ -80,6 +88,7 @@ internal static class Diagnostics
         ["SPIRE_DU007"] = NewtonsoftJsonNotReferenced,
         ["SPIRE_DU008"] = RefStructJsonNotSupported,
         ["SPIRE_DU009"] = UnsafeOverlapRequiresUnsafe,
+        ["SPIRE_DU010"] = FieldNameTypeConflict,
     };
 
     public static DiagnosticDescriptor GetDescriptor(UnionDiagnostic diag)

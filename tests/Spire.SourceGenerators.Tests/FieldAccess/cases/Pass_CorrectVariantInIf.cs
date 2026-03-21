@@ -15,7 +15,7 @@ namespace TestNs
         {
             if (s.tag == Shape.Kind.Circle)
             {
-                return s.circle_radius;
+                return s.radius;
             }
             return 0;
         }

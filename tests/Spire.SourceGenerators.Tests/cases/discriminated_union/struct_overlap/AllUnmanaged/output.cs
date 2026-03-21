@@ -22,15 +22,19 @@ namespace TestNs
 
         [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public readonly double circle_radius;
+        internal readonly float _height;
 
-        [FieldOffset(1)]
+        [FieldOffset(5)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public readonly (float width, float height) rectangle;
+        internal readonly double _radius;
 
-        [FieldOffset(1)]
+        [FieldOffset(13)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public readonly int square_sideLength;
+        internal readonly int _sideLength;
+
+        [FieldOffset(17)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal readonly float _width;
 
         Shape(Kind tag) : this()
         {
@@ -40,19 +44,20 @@ namespace TestNs
         public static partial Shape Circle(double radius)
         {
             var s = new Shape(Kind.Circle);
-            Unsafe.AsRef(in s.circle_radius) = radius;
+            Unsafe.AsRef(in s._radius) = radius;
             return s;
         }
         public static partial Shape Rectangle(float width, float height)
         {
             var s = new Shape(Kind.Rectangle);
-            Unsafe.AsRef(in s.rectangle) = (width, height);
+            Unsafe.AsRef(in s._width) = width;
+            Unsafe.AsRef(in s._height) = height;
             return s;
         }
         public static partial Shape Square(int sideLength)
         {
             var s = new Shape(Kind.Square);
-            Unsafe.AsRef(in s.square_sideLength) = sideLength;
+            Unsafe.AsRef(in s._sideLength) = sideLength;
             return s;
         }
 
@@ -62,10 +67,10 @@ namespace TestNs
             switch (this.tag)
             {
                 case Kind.Circle:
-                    f0 = this.circle_radius;
+                    f0 = this._radius;
                     break;
                 case Kind.Square:
-                    f0 = this.square_sideLength;
+                    f0 = this._sideLength;
                     break;
                 default:
                     f0 = null;
@@ -76,8 +81,16 @@ namespace TestNs
         public void Deconstruct(out Kind kind, out float width, out float height)
         {
             kind = this.tag;
-            width = this.rectangle.width;
-            height = this.rectangle.height;
+            width = this._width;
+            height = this._height;
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public float height => this._height;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public double radius => this._radius;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int sideLength => this._sideLength;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public float width => this._width;
     }
 }

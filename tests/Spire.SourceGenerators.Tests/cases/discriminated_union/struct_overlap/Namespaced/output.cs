@@ -21,11 +21,11 @@ namespace My.Deep.Namespace
 
         [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public readonly int ok_value;
+        internal readonly int _value;
 
         [FieldOffset(8)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public readonly string? err_message;
+        internal readonly string? _message;
 
         Result(Kind tag) : this()
         {
@@ -35,13 +35,13 @@ namespace My.Deep.Namespace
         public static partial Result Ok(int value)
         {
             var s = new Result(Kind.Ok);
-            Unsafe.AsRef(in s.ok_value) = value;
+            Unsafe.AsRef(in s._value) = value;
             return s;
         }
         public static partial Result Err(string message)
         {
             var s = new Result(Kind.Err);
-            Unsafe.AsRef(in s.err_message) = message;
+            Unsafe.AsRef(in s._message) = message;
             return s;
         }
 
@@ -51,15 +51,19 @@ namespace My.Deep.Namespace
             switch (this.tag)
             {
                 case Kind.Ok:
-                    f0 = this.ok_value;
+                    f0 = this._value;
                     break;
                 case Kind.Err:
-                    f0 = this.err_message;
+                    f0 = this._message;
                     break;
                 default:
                     f0 = null;
                     break;
             }
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int value => this._value;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string message => this._message!;
     }
 }

@@ -33,5 +33,9 @@ namespace My.Deep.Namespace
             kind = this.tag;
             payload = this._payload;
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int value => (int)this._payload!;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string message => (string)this._payload!;
     }
 }

@@ -198,99 +198,13 @@ internal static class SystemTextJsonEmitter
     private static void EmitWriteFieldsForStructVariant(
         SourceBuilder sb, UnionDeclaration union, VariantInfo variant)
     {
-        switch (union.Strategy)
-        {
-            case EmitStrategy.Overlap:
-                EmitWriteOverlapFields(sb, union, variant);
-                break;
-            case EmitStrategy.BoxedFields:
-                EmitWriteBoxedFieldsFields(sb, variant);
-                break;
-            case EmitStrategy.BoxedTuple:
-                EmitWriteBoxedTupleFields(sb, variant);
-                break;
-        }
-    }
-
-    private static void EmitWriteOverlapFields(
-        SourceBuilder sb, UnionDeclaration union, VariantInfo variant)
-    {
-        var kindSize = OverlapLayoutComputer.KindSize(union.Variants.Length);
-        var layout = OverlapLayoutComputer.ComputeLayout(union.Variants, kindSize);
-        var vl = layout.Variants[variant.Name];
-
-        int r1Idx = 0;
-        int r2Idx = 0;
-        int r3Idx = 0;
+        // All struct strategies have public typed properties named after the field names.
+        // Use value.{fieldName} uniformly — the property getter handles internal storage access.
         foreach (var field in variant.Fields)
         {
             var jsonFieldName = field.JsonName ?? field.Name;
-            var region = FieldClassifier.Classify(field);
-            string accessExpr;
-
-            switch (region)
-            {
-                case FieldRegion.Unmanaged:
-                    if (vl.R1IsTuple)
-                        accessExpr = $"value.{vl.R1FieldName}.{field.Name}";
-                    else
-                        accessExpr = $"value.{vl.R1FieldName}";
-                    r1Idx++;
-                    break;
-                case FieldRegion.Reference:
-                    var refFieldName = OverlapLayoutComputer.ToCamelCase(variant.Name) + "_" + field.Name;
-                    accessExpr = $"value.{refFieldName}!";
-                    r2Idx++;
-                    break;
-                case FieldRegion.Boxed:
-                    var fp = vl.R3Fields[r3Idx];
-                    accessExpr = $"({field.TypeFullName})value._obj_{fp.SlotIndex}!";
-                    r3Idx++;
-                    break;
-                default:
-                    continue;
-            }
-
             sb.AppendLine($"writer.WritePropertyName(\"{jsonFieldName}\");");
-            sb.AppendLine($"JsonSerializer.Serialize(writer, {accessExpr}, options);");
-        }
-    }
-
-    private static void EmitWriteBoxedFieldsFields(SourceBuilder sb, VariantInfo variant)
-    {
-        for (int i = 0; i < variant.Fields.Length; i++)
-        {
-            var field = variant.Fields[i];
-            var jsonFieldName = field.JsonName ?? field.Name;
-            sb.AppendLine($"writer.WritePropertyName(\"{jsonFieldName}\");");
-            sb.AppendLine($"JsonSerializer.Serialize(writer, ({field.TypeFullName})value._f{i}!, options);");
-        }
-    }
-
-    private static void EmitWriteBoxedTupleFields(SourceBuilder sb, VariantInfo variant)
-    {
-        if (variant.Fields.Length == 0)
-            return;
-
-        if (variant.Fields.Length == 1)
-        {
-            var field = variant.Fields[0];
-            var jsonFieldName = field.JsonName ?? field.Name;
-            sb.AppendLine($"writer.WritePropertyName(\"{jsonFieldName}\");");
-            sb.AppendLine($"JsonSerializer.Serialize(writer, ({field.TypeFullName})value._payload!, options);");
-            return;
-        }
-
-        // Multi-field: cast payload to ValueTuple
-        var tupleType = "(" + string.Join(", ",
-            variant.Fields.Select(f => f.TypeFullName)) + ")";
-        sb.AppendLine($"var _tuple = ({tupleType})value._payload!;");
-        for (int i = 0; i < variant.Fields.Length; i++)
-        {
-            var field = variant.Fields[i];
-            var jsonFieldName = field.JsonName ?? field.Name;
-            sb.AppendLine($"writer.WritePropertyName(\"{jsonFieldName}\");");
-            sb.AppendLine($"JsonSerializer.Serialize(writer, _tuple.Item{i + 1}, options);");
+            sb.AppendLine($"JsonSerializer.Serialize(writer, value.{field.Name}, options);");
         }
     }
 

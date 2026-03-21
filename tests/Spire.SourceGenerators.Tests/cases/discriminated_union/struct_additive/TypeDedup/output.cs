@@ -18,33 +18,58 @@ partial struct Shape
     internal readonly double _s0;
     [EditorBrowsable(EditorBrowsableState.Never)]
     internal readonly double _s1;
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    internal readonly double _s2;
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    internal readonly double _s3;
 
-    Shape(Kind tag, double s0, double s1)
+    Shape(Kind tag, double s0, double s1, double s2, double s3)
     {
         this.tag = tag;
         this._s0 = s0;
         this._s1 = s1;
+        this._s2 = s2;
+        this._s3 = s3;
     }
 
     public static partial Shape Circle(double radius)
-        => new Shape(Kind.Circle, radius, default);
+        => new Shape(Kind.Circle, default, radius, default, default);
     public static partial Shape Rect(double width, double height)
-        => new Shape(Kind.Rect, width, height);
+        => new Shape(Kind.Rect, height, default, default, width);
     public static partial Shape Square(double side)
-        => new Shape(Kind.Square, side, default);
+        => new Shape(Kind.Square, default, default, side, default);
     public static partial Shape Point()
-        => new Shape(Kind.Point, default, default);
+        => new Shape(Kind.Point, default, default, default, default);
 
     public void Deconstruct(out Kind kind, out object? f0)
     {
         kind = this.tag;
-        f0 = null;
+        switch (this.tag)
+        {
+            case Kind.Circle:
+                f0 = this._s1;
+                break;
+            case Kind.Square:
+                f0 = this._s2;
+                break;
+            default:
+                f0 = null;
+                break;
+        }
     }
 
     public void Deconstruct(out Kind kind, out double width, out double height)
     {
         kind = this.tag;
-        width = this._s0;
-        height = this._s1;
+        width = this._s3;
+        height = this._s0;
     }
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public double radius => this._s1;
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public double width => this._s3;
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public double height => this._s0;
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public double side => this._s2;
 }

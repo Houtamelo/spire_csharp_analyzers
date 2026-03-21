@@ -29,6 +29,10 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
             compilationCtx.RegisterOperationAction(
                 ctx => AnalyzeFieldReference(ctx, duAttr),
                 OperationKind.FieldReference);
+
+            compilationCtx.RegisterOperationAction(
+                ctx => AnalyzePropertyReference(ctx, duAttr),
+                OperationKind.PropertyReference);
         });
     }
 
@@ -91,9 +95,59 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
             guardedDisplay));
     }
 
-    private static bool HasEditorBrowsableNever(IFieldSymbol field)
+    private static void AnalyzePropertyReference(OperationAnalysisContext ctx, INamedTypeSymbol duAttr)
     {
-        return field.GetAttributes().Any(a =>
+        var propRefOp = (IPropertyReferenceOperation)ctx.Operation;
+        var property = propRefOp.Property;
+        var containingType = property.ContainingType;
+
+        if (containingType is null || !containingType.IsValueType)
+            return;
+
+        var info = UnionTypeInfo.TryCreate(containingType, duAttr);
+        if (info is null)
+            return;
+
+        if (!HasEditorBrowsableNever(property))
+            return;
+
+        var fieldMap = VariantFieldMap.TryCreate(containingType, info);
+        if (fieldMap is null)
+            return;
+
+        var owningVariant = fieldMap.GetOwningVariant(property.Name);
+        if (owningVariant is null)
+            return;
+
+        if (IsInsidePropertySubpattern(propRefOp))
+            return;
+
+        var guardResult = FindGuard(propRefOp, info);
+
+        if (!guardResult.HasGuard)
+        {
+            ctx.ReportDiagnostic(Diagnostic.Create(
+                AnalyzerDescriptors.SPIRE014_UnguardedFieldAccess,
+                propRefOp.Syntax.GetLocation(),
+                property.Name));
+            return;
+        }
+
+        if (guardResult.GuardedVariants.Contains(owningVariant))
+            return;
+
+        var guardedDisplay = string.Join(", ", guardResult.GuardedVariants);
+        ctx.ReportDiagnostic(Diagnostic.Create(
+            AnalyzerDescriptors.SPIRE013_WrongVariantFieldAccess,
+            propRefOp.Syntax.GetLocation(),
+            property.Name,
+            owningVariant,
+            guardedDisplay));
+    }
+
+    private static bool HasEditorBrowsableNever(ISymbol symbol)
+    {
+        return symbol.GetAttributes().Any(a =>
             a.AttributeClass?.Name == "EditorBrowsableAttribute" &&
             a.ConstructorArguments.Length > 0 &&
             a.ConstructorArguments[0].Value is int val &&
@@ -136,9 +190,9 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
     }
 
     /// Walks the parent chain to find a tag guard and extract guarded variants.
-    private static GuardResult FindGuard(IFieldReferenceOperation fieldRefOp, UnionTypeInfo info)
+    private static GuardResult FindGuard(IOperation memberRefOp, UnionTypeInfo info)
     {
-        var current = fieldRefOp.Parent;
+        var current = memberRefOp.Parent;
         while (current is not null)
         {
             switch (current)
@@ -162,8 +216,8 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
                 }
 
                 case IConditionalOperation conditional:
-                    if (IsInWhenTrueBranch(fieldRefOp, conditional) &&
-                        ConditionReferencesUnionVariable(conditional.Condition, fieldRefOp))
+                    if (IsInWhenTrueBranch(memberRefOp, conditional) &&
+                        ConditionReferencesUnionVariable(conditional.Condition, memberRefOp))
                     {
                         var variants = ExtractVariantsFromCondition(conditional.Condition, info);
                         return GuardResult.WithVariants(variants);
@@ -247,11 +301,16 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
         return false;
     }
 
-    /// Checks whether the condition references the same union variable as the field access.
+    /// Checks whether the condition references the same union variable as the member access.
     /// Handles: is-pattern (s is { tag: Kind.Circle }), tag comparison (s.tag == Kind.Circle).
-    private static bool ConditionReferencesUnionVariable(IOperation condition, IFieldReferenceOperation fieldRef)
+    private static bool ConditionReferencesUnionVariable(IOperation condition, IOperation memberRef)
     {
-        var targetInstance = fieldRef.Instance;
+        var targetInstance = memberRef switch
+        {
+            IFieldReferenceOperation f => f.Instance,
+            IPropertyReferenceOperation p => p.Instance,
+            _ => null,
+        };
         if (targetInstance is null)
             return false;
 

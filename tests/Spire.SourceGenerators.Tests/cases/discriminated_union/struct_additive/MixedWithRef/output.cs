@@ -23,28 +23,40 @@ namespace TestNs
         internal readonly object? _s2;
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal readonly object? _s3;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal readonly object? _s4;
 
-        Event(Kind tag, int s0, int s1, object? s2, object? s3)
+        Event(Kind tag, int s0, int s1, object? s2, object? s3, object? s4)
         {
             this.tag = tag;
             this._s0 = s0;
             this._s1 = s1;
             this._s2 = s2;
             this._s3 = s3;
+            this._s4 = s4;
         }
 
         public static partial Event Click(int x, int y, string target)
-            => new Event(Kind.Click, x, y, target, default!);
+            => new Event(Kind.Click, x, y, default!, default!, target);
         public static partial Event Error(string message, global::System.Exception ex)
-            => new Event(Kind.Error, default, default, message, ex);
+            => new Event(Kind.Error, default, default, ex, message, default!);
         public static partial Event Ping()
-            => new Event(Kind.Ping, default, default, default!, default!);
+            => new Event(Kind.Ping, default, default, default!, default!, default!);
 
         public void Deconstruct(out Kind kind, out object? f0, out object? f1)
         {
             kind = this.tag;
-            f0 = null;
-            f1 = null;
+            switch (this.tag)
+            {
+                case Kind.Error:
+                    f0 = this._s3;
+                    f1 = this._s2;
+                    break;
+                default:
+                    f0 = null;
+                    f1 = null;
+                    break;
+            }
         }
 
         public void Deconstruct(out Kind kind, out int x, out int y, out string target)
@@ -52,7 +64,17 @@ namespace TestNs
             kind = this.tag;
             x = this._s0;
             y = this._s1;
-            target = (string)this._s2!;
+            target = (string)this._s4!;
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int x => this._s0;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int y => this._s1;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string target => (string)this._s4!;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string message => (string)this._s3!;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public global::System.Exception ex => (global::System.Exception)this._s2!;
     }
 }

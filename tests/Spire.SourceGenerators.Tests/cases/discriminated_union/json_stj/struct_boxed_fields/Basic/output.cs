@@ -30,14 +30,14 @@ internal sealed class ShapeStjConverter : JsonConverter<Shape>
             case Shape.Kind.Circle:
                 writer.WriteString("kind", "Circle");
                 writer.WritePropertyName("radius");
-                JsonSerializer.Serialize(writer, (double)value._f0!, options);
+                JsonSerializer.Serialize(writer, value.radius, options);
                 break;
             case Shape.Kind.Rectangle:
                 writer.WriteString("kind", "Rectangle");
                 writer.WritePropertyName("width");
-                JsonSerializer.Serialize(writer, (float)value._f0!, options);
+                JsonSerializer.Serialize(writer, value.width, options);
                 writer.WritePropertyName("height");
-                JsonSerializer.Serialize(writer, (float)value._f1!, options);
+                JsonSerializer.Serialize(writer, value.height, options);
                 break;
             case Shape.Kind.Point:
                 writer.WriteString("kind", "Point");

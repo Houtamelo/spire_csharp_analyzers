@@ -36,5 +36,9 @@ namespace TestNs
             kind = this.tag;
             payload = this._payload;
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string name => (string)this._payload!;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int value => (int)this._payload!;
     }
 }

@@ -16,7 +16,7 @@ partial struct Shape
 
     public readonly Kind tag;
 
-    [InlineArray(8)]
+    [InlineArray(16)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     internal struct _Buffer { internal byte _element; }
 
@@ -32,14 +32,14 @@ partial struct Shape
     public static partial Shape Circle(double radius)
     {
         var s = new Shape(Kind.Circle);
-        Unsafe.WriteUnaligned(ref s._data[0], radius);
+        Unsafe.WriteUnaligned(ref Unsafe.Add(ref s._data[0], 4), radius);
         return s;
     }
     public static partial Shape Rect(float width, float height)
     {
         var s = new Shape(Kind.Rect);
-        Unsafe.WriteUnaligned(ref s._data[0], width);
-        Unsafe.WriteUnaligned(ref Unsafe.Add(ref s._data[0], 4), height);
+        Unsafe.WriteUnaligned(ref Unsafe.Add(ref s._data[0], 12), width);
+        Unsafe.WriteUnaligned(ref s._data[0], height);
         return s;
     }
     public static partial Shape Point()
@@ -51,7 +51,7 @@ partial struct Shape
         switch (this.tag)
         {
             case Kind.Circle:
-                f0 = Unsafe.ReadUnaligned<double>(ref _data[0]);
+                f0 = Unsafe.ReadUnaligned<double>(ref Unsafe.Add(ref _data[0], 4));
                 break;
             default:
                 f0 = null;
@@ -62,7 +62,13 @@ partial struct Shape
     public void Deconstruct(out Kind kind, out float width, out float height)
     {
         kind = this.tag;
-        width = Unsafe.ReadUnaligned<float>(ref _data[0]);
-        height = Unsafe.ReadUnaligned<float>(ref Unsafe.Add(ref _data[0], 4));
+        width = Unsafe.ReadUnaligned<float>(ref Unsafe.Add(ref _data[0], 12));
+        height = Unsafe.ReadUnaligned<float>(ref _data[0]);
     }
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public double radius => Unsafe.ReadUnaligned<double>(ref Unsafe.Add(ref _data[0], 4));
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public float width => Unsafe.ReadUnaligned<float>(ref Unsafe.Add(ref _data[0], 12));
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public float height => Unsafe.ReadUnaligned<float>(ref _data[0]);
 }

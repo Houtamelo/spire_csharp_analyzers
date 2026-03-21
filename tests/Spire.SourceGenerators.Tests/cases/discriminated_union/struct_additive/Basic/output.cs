@@ -35,6 +35,21 @@ partial struct Shape
     public void Deconstruct(out Kind kind, out object? f0)
     {
         kind = this.tag;
-        f0 = null;
+        switch (this.tag)
+        {
+            case Kind.Circle:
+                f0 = this._s0;
+                break;
+            case Kind.Square:
+                f0 = this._s1;
+                break;
+            default:
+                f0 = null;
+                break;
+        }
     }
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public double radius => this._s0;
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public int sideLength => this._s1;
 }

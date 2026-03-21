@@ -6,7 +6,7 @@ Roslyn-based C# analyzer
 
 - **Package**: `Spire.Analyzers`
 - **Rule prefix**: `SPIRE` (SPIRE001, SPIRE002, ...)
-- **No code fixes** — analyzers only, no `CodeFixProvider`
+- **Code fixes** in separate `Spire.CodeFixes` project (references `Spire.SourceGenerators` for shared types)
 
 ## Build Commands
 
@@ -55,7 +55,7 @@ Key points:
 - **Analyzer targets `netstandard2.0`** — Roslyn requirement
 - **Tests target `net10.0` with LangVersion 14** (C# 14)
 - **Use `IOperation` API** as primary detection mechanism
-- **No code fixes** — diagnostics only
+- **Code fixes** live in `src/Spire.CodeFixes/` (separate project)
 
 ### File naming
 

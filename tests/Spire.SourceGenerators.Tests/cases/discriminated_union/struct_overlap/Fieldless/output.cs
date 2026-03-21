@@ -22,11 +22,11 @@ namespace TestNs
 
         [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public readonly int number_value;
+        internal readonly int _value;
 
         [FieldOffset(8)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public readonly string? ident_name;
+        internal readonly string? _name;
 
         Token(Kind tag) : this()
         {
@@ -36,20 +36,17 @@ namespace TestNs
         public static partial Token Ident(string name)
         {
             var s = new Token(Kind.Ident);
-            Unsafe.AsRef(in s.ident_name) = name;
+            Unsafe.AsRef(in s._name) = name;
             return s;
         }
         public static partial Token Number(int value)
         {
             var s = new Token(Kind.Number);
-            Unsafe.AsRef(in s.number_value) = value;
+            Unsafe.AsRef(in s._value) = value;
             return s;
         }
         public static partial Token Eof()
-        {
-            var s = new Token(Kind.Eof);
-            return s;
-        }
+            => new Token(Kind.Eof);
 
         public void Deconstruct(out Kind kind, out object? f0)
         {
@@ -57,15 +54,19 @@ namespace TestNs
             switch (this.tag)
             {
                 case Kind.Ident:
-                    f0 = this.ident_name;
+                    f0 = this._name;
                     break;
                 case Kind.Number:
-                    f0 = this.number_value;
+                    f0 = this._value;
                     break;
                 default:
                     f0 = null;
                     break;
             }
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int value => this._value;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string name => this._name!;
     }
 }

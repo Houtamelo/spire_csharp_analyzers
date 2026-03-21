@@ -21,11 +21,11 @@ namespace TestNs
 
         [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public readonly int a_x;
+        internal readonly int _x;
 
         [FieldOffset(8)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public readonly string? b_y;
+        internal readonly string? _y;
 
         Immutable(Kind tag) : this()
         {
@@ -35,13 +35,13 @@ namespace TestNs
         public static partial Immutable A(int x)
         {
             var s = new Immutable(Kind.A);
-            Unsafe.AsRef(in s.a_x) = x;
+            Unsafe.AsRef(in s._x) = x;
             return s;
         }
         public static partial Immutable B(string y)
         {
             var s = new Immutable(Kind.B);
-            Unsafe.AsRef(in s.b_y) = y;
+            Unsafe.AsRef(in s._y) = y;
             return s;
         }
 
@@ -51,15 +51,19 @@ namespace TestNs
             switch (this.tag)
             {
                 case Kind.A:
-                    f0 = this.a_x;
+                    f0 = this._x;
                     break;
                 case Kind.B:
-                    f0 = this.b_y;
+                    f0 = this._y;
                     break;
                 default:
                     f0 = null;
                     break;
             }
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int x => this._x;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string y => this._y!;
     }
 }

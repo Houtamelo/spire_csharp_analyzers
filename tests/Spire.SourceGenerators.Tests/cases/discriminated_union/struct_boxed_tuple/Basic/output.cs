@@ -36,5 +36,13 @@ namespace TestNs
             kind = this.tag;
             payload = this._payload;
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public double radius => (double)this._payload!;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public float width => (((float, float))this._payload!).Item1;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public float height => (((float, float))this._payload!).Item2;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int sideLength => (int)this._payload!;
     }
 }

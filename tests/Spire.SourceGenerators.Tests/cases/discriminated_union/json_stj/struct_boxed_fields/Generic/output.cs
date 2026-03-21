@@ -43,7 +43,7 @@ namespace TestNs
                 case Option<T>.Kind.Some:
                     writer.WriteString("kind", "Some");
                     writer.WritePropertyName("value");
-                    JsonSerializer.Serialize(writer, (T)value._f0!, options);
+                    JsonSerializer.Serialize(writer, value.value, options);
                     break;
                 case Option<T>.Kind.None:
                     writer.WriteString("kind", "None");

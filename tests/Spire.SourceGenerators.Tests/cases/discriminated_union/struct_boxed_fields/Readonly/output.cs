@@ -16,22 +16,40 @@ namespace TestNs
         public readonly Kind tag;
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal readonly object? _f0;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal readonly object? _f1;
 
-        Immutable(Kind tag, object? f0)
+        Immutable(Kind tag, object? f0, object? f1)
         {
             this.tag = tag;
             this._f0 = f0;
+            this._f1 = f1;
         }
 
         public static partial Immutable A(int x)
-            => new Immutable(Kind.A, x);
+            => new Immutable(Kind.A, x, null);
         public static partial Immutable B(string y)
-            => new Immutable(Kind.B, y);
+            => new Immutable(Kind.B, null, y);
 
         public void Deconstruct(out Kind kind, out object? f0)
         {
             kind = this.tag;
-            f0 = this._f0;
+            switch (this.tag)
+            {
+                case Kind.A:
+                    f0 = this._f0;
+                    break;
+                case Kind.B:
+                    f0 = this._f1;
+                    break;
+                default:
+                    f0 = null;
+                    break;
+            }
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int x => (int)this._f0!;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string y => (string)this._f1!;
     }
 }

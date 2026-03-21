@@ -11,6 +11,6 @@ namespace TestNs
     }
     class C
     {
-        double Test(Shape s) => s.circle_radius; //~ ERROR
+        double Test(Shape s) => s.radius; //~ ERROR
     }
 }

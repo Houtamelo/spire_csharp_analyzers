@@ -23,11 +23,11 @@ namespace TestNs
 
             [FieldOffset(1)]
             [EditorBrowsable(EditorBrowsableState.Never)]
-            public readonly double circle_radius;
+            internal readonly double _radius;
 
-            [FieldOffset(1)]
+            [FieldOffset(9)]
             [EditorBrowsable(EditorBrowsableState.Never)]
-            public readonly int square_sideLength;
+            internal readonly int _sideLength;
 
             Shape(Kind tag) : this()
             {
@@ -37,13 +37,13 @@ namespace TestNs
             public static partial Shape Circle(double radius)
             {
                 var s = new Shape(Kind.Circle);
-                Unsafe.AsRef(in s.circle_radius) = radius;
+                Unsafe.AsRef(in s._radius) = radius;
                 return s;
             }
             public static partial Shape Square(int sideLength)
             {
                 var s = new Shape(Kind.Square);
-                Unsafe.AsRef(in s.square_sideLength) = sideLength;
+                Unsafe.AsRef(in s._sideLength) = sideLength;
                 return s;
             }
 
@@ -53,16 +53,20 @@ namespace TestNs
                 switch (this.tag)
                 {
                     case Kind.Circle:
-                        f0 = this.circle_radius;
+                        f0 = this._radius;
                         break;
                     case Kind.Square:
-                        f0 = this.square_sideLength;
+                        f0 = this._sideLength;
                         break;
                     default:
                         f0 = null;
                         break;
                 }
             }
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            public double radius => this._radius;
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            public int sideLength => this._sideLength;
         }
     }
 }

@@ -21,11 +21,15 @@ namespace TestNs
 
         [FieldOffset(8)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal readonly object? _obj_0;
+        internal readonly object? _obj_end;
 
         [FieldOffset(16)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal readonly object? _obj_1;
+        internal readonly object? _obj_location;
+
+        [FieldOffset(24)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal readonly object? _obj_start;
 
         Drawing(Kind tag) : this()
         {
@@ -35,28 +39,34 @@ namespace TestNs
         public static partial Drawing Dot(global::TestNs.Point location)
         {
             var s = new Drawing(Kind.Dot);
-            Unsafe.AsRef(in s._obj_0) = location;
+            Unsafe.AsRef(in s._obj_location) = location;
             return s;
         }
         public static partial Drawing Line(global::TestNs.Point start, global::TestNs.Point end)
         {
             var s = new Drawing(Kind.Line);
-            Unsafe.AsRef(in s._obj_0) = start;
-            Unsafe.AsRef(in s._obj_1) = end;
+            Unsafe.AsRef(in s._obj_start) = start;
+            Unsafe.AsRef(in s._obj_end) = end;
             return s;
         }
 
         public void Deconstruct(out Kind kind, out global::TestNs.Point location)
         {
             kind = this.tag;
-            location = (global::TestNs.Point)this._obj_0!;
+            location = (global::TestNs.Point)this._obj_location!;
         }
 
         public void Deconstruct(out Kind kind, out global::TestNs.Point start, out global::TestNs.Point end)
         {
             kind = this.tag;
-            start = (global::TestNs.Point)this._obj_0!;
-            end = (global::TestNs.Point)this._obj_1!;
+            start = (global::TestNs.Point)this._obj_start!;
+            end = (global::TestNs.Point)this._obj_end!;
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public global::TestNs.Point end => (global::TestNs.Point)this._obj_end!;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public global::TestNs.Point location => (global::TestNs.Point)this._obj_location!;
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public global::TestNs.Point start => (global::TestNs.Point)this._obj_start!;
     }
 }
