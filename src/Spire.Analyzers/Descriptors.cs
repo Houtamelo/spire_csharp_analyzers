@@ -108,4 +108,16 @@ internal static class Descriptors
                    + "this defeats the purpose of the attribute.",
         helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE008.md"
     );
+
+    public static readonly DiagnosticDescriptor SPIRE015_ExhaustiveEnumSwitch = new(
+        id: "SPIRE015",
+        title: "Switch does not handle all members of [EnforceExhaustiveness] enum",
+        messageFormat: "Switch on '{0}' does not handle member(s): {1}",
+        category: "Correctness",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "Switch statements and expressions on enum types marked with [EnforceExhaustiveness] must "
+                   + "explicitly handle every named member. A default/discard arm does not count as coverage.",
+        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE015.md"
+    );
 }

@@ -10,3 +10,4 @@ SPIRE005 | Correctness | Error | Activator.CreateInstance on [MustBeInit] struct
 SPIRE006 | Correctness | Error | Clearing array or span of [MustBeInit] type produces uninitialized elements
 SPIRE007 | Correctness | Error | Unsafe.SkipInit on [MustBeInit] struct leaves it uninitialized
 SPIRE008 | Correctness | Error | RuntimeHelpers.GetUninitializedObject on [MustBeInit] struct bypasses all constructors
+SPIRE015 | Correctness | Error | Switch does not handle all members of [EnforceExhaustiveness] enum

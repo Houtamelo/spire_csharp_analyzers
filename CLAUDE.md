@@ -26,14 +26,26 @@ src/Spire.Analyzers/              # Analyzer (netstandard2.0)
   Descriptors.cs                  # Central DiagnosticDescriptor registry
   RequireInitializationAttribute.cs
 src/Spire.Analyzers.Utils/        # Shared utilities (netstandard2.0)
-tests/Spire.Analyzers.Tests/      # xUnit tests (net10.0, C# 14)
-  AnalyzerTestBase.cs              # Base class for all analyzer tests (discovery, parsing, verification)
-  Verifiers.cs                    # CSharpAnalyzerVerifier wrapper (legacy, kept for reference)
+src/Spire.SourceGenerators/       # Discriminated union source generator (netstandard2.0)
+  Emit/                           # Per-strategy emitters (Additive, Overlap, BoxedFields, etc.)
+  Analyzers/                      # Generator-coupled analyzers (exhaustiveness, field access, type safety)
+  Model/                          # Union declaration model types
+  Parsing/                        # Attribute parsing
+src/Spire.CodeFixes/              # Code fixes (references Spire.SourceGenerators for shared types)
+tests/Spire.Analyzers.Tests/      # Analyzer xUnit tests (net10.0, C# 14)
+  AnalyzerTestBase.cs             # Base class for all analyzer tests (discovery, parsing, verification)
   {RuleId}/                       # One folder per rule
     {RuleId}Tests.cs              # Test runner (inherits AnalyzerTestBase)
     cases/
       _shared.cs                  # Shared preamble (types, usings)
       {CaseName}.cs               # One file per test case (excluded from compilation)
+tests/Spire.SourceGenerators.Tests/ # Generator snapshot + analyzer tests (net10.0)
+  Behavioral/                     # Reflection-based behavioral tests (compile-emit-load pipeline)
+  cases/                          # Snapshot test cases (input.cs/output.cs pairs)
+tests/Spire.BehavioralTests/      # Compile-time behavioral tests (generator runs at build time)
+  Types/                          # Union definitions per strategy
+  Tests/                          # Type-safe tests with real switch/pattern matching
+benchmarks/Spire.Benchmarks/      # BenchmarkDotNet performance tests
 tools/SyntaxTreeViewer/           # AST printer (net10.0)
 docs/rules/                      # Per-rule docs (SPIRE001.md, ...)
 plans/                            # Design plans (read before implementing)
