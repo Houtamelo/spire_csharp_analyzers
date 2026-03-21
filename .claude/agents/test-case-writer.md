@@ -45,6 +45,7 @@ Read `docs/test-case-format.md` for the full format reference (headers, error ma
 - **Do NOT install external tools, run Python scripts, or decompile DLLs** — use the project's existing resources.
 - **Do NOT search or grep the NuGet cache (`~/.nuget/packages/`)**.
 - **Do NOT use `/tmp` or any absolute temp path** — use the project-local `tmp/` folder (gitignored) for any temporary files.
+- **Use sherlock via MCP tools** (`mcp__sherlock__*`), never invoke sherlock through CLI/Bash.
 - Use the `Write` tool (not `cat` or heredocs in Bash) to create temporary files — then run commands on them separately.
 - **Run `dotnet build` after writing all cases** — the test project must compile cleanly.
 - Note: tests will FAIL at this stage because no analyzer exists yet. That is expected and correct (TDD).

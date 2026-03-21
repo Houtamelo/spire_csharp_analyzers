@@ -41,4 +41,5 @@ Follow all conventions in `.claude/rules/analyzer-conventions.md`.
 - Do NOT install external tools, run Python scripts, or decompile DLLs — use the project's existing resources
 - Do NOT search or grep the NuGet cache (`~/.nuget/packages/`)
 - Do NOT use `/tmp` or any absolute temp path — use the project-local `tmp/` folder (gitignored)
+- Use sherlock via MCP tools (`mcp__sherlock__*`), never invoke sherlock through CLI/Bash
 - Use the `Write` tool (not `cat` or heredocs in Bash) to create temporary files

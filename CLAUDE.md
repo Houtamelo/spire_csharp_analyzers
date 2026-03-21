@@ -105,6 +105,15 @@ Test case file format is documented in `docs/test-case-format.md`.
 14. Run `/verify-rule {RuleId}` — confirm completeness
 15. Create docs in `docs/rules/`
 
+## Lead Delegation — IMPORTANT
+
+The lead agent **must not** write test cases or analyzer implementations directly. Always delegate to specialized sub-agents:
+- **Test cases** → `test-case-writer` agents (one per coverage matrix category)
+- **Analyzer implementation** → `analyzer-implementer` agent
+- **Coverage research** → `test-researcher` agent
+
+The lead orchestrates, reviews, and makes decisions — it does not write `.cs` files in `tests/*/cases/` or `src/*/Rules/`.
+
 ## Agent Budget
 
 When a spawned agent stops because it ran out of turns/budget before finishing its task, **spawn a new agent to continue the remaining work**. Tell the new agent what was already completed and what remains. Do NOT do the agent's remaining work inline.

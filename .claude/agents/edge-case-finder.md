@@ -44,3 +44,5 @@ Read `docs/test-case-format.md` for the full format reference (headers, error ma
 - Do NOT modify existing case files.
 - Do NOT modify the analyzer — if a test fails, report it to the lead.
 - Do NOT modify the test runner.
+- Do NOT use `/tmp` or any absolute temp path — use the project-local `tmp/` folder (gitignored) for any temporary files.
+- Use the `Write` tool (not `cat` or heredocs in Bash) to create temporary files.

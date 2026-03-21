@@ -26,3 +26,5 @@ You are a researcher investigating C# struct behavior and Roslyn analyzer patter
 ## Constraints
 
 - Verify your findings, ensure you're not making guesses, do NOT provide information unless you're certain of its validity.
+- Do NOT use `/tmp` or any absolute temp path — use the project-local `tmp/` folder (gitignored) for any temporary files.
+- Use the `Write` tool (not `cat` or heredocs in Bash) to create temporary files.

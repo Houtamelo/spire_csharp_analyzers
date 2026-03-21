@@ -68,3 +68,4 @@ Structure your report as:
 - **Be concise** — the lead will read this and decide what to act on. Don't pad the report.
 - **Don't nitpick style** — focus on correctness, conventions, and performance. Ignore formatting preferences, naming style (unless it violates project conventions), and comment density.
 - **Do NOT read files in `plans/`** unless the lead explicitly includes a plan path in the inputs.
+- **Use sherlock via MCP tools** (`mcp__sherlock__*`), never invoke sherlock through CLI/Bash.
