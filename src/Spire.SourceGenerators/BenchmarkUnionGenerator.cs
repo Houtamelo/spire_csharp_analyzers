@@ -29,7 +29,10 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
 
         var compilationInfo = context.CompilationProvider.Select(static (comp, _) =>
             new CompilationInfo(
-                HasSystemTextJson: false, HasNewtonsoftJson: false,
+                HasSystemTextJson: comp.GetTypeByMetadataName(
+                    "System.Text.Json.Serialization.JsonConverter`1") is not null,
+                HasNewtonsoftJson: comp.GetTypeByMetadataName(
+                    "Newtonsoft.Json.JsonConverter") is not null,
                 AllowsUnsafe: ((CSharpCompilationOptions)comp.Options).AllowUnsafe,
                 HasInlineArray: comp.GetTypeByMetadataName(
                     "System.Runtime.CompilerServices.InlineArrayAttribute") is not null));
@@ -53,11 +56,16 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
                 ? new[] { EmitStrategy.Additive, EmitStrategy.BoxedFields, EmitStrategy.BoxedTuple }
                 : new[] { EmitStrategy.Additive, EmitStrategy.BoxedFields, EmitStrategy.BoxedTuple, EmitStrategy.Overlap, EmitStrategy.UnsafeOverlap };
 
+            // Compute JSON flags
+            var jsonFlags = JsonLibrary.None;
+            if (compInfo.HasSystemTextJson) jsonFlags |= JsonLibrary.SystemTextJson;
+            if (compInfo.HasNewtonsoftJson) jsonFlags |= JsonLibrary.NewtonsoftJson;
+
             // Emit defining declarations (partial method signatures) + implementing declarations (emitter output)
             foreach (var strategy in layouts)
             {
                 var typeName = b.Prefix + StrategyName(strategy);
-                var union = MakeUnionDeclaration(b, typeName, "struct", strategy);
+                var union = MakeUnionDeclaration(b, typeName, "struct", strategy, jsonFlags);
 
                 // Defining declaration: partial struct with [Variant] method signatures
                 ctx.AddSource($"{typeName}.BenchDecl.g.cs", EmitStructDeclaration(b, typeName));
@@ -73,14 +81,24 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
                     source = Emit(union);
                 }
                 ctx.AddSource($"{typeName}.Bench.g.cs", source);
+
+                // JSON converters
+                if ((jsonFlags & JsonLibrary.SystemTextJson) != 0)
+                    ctx.AddSource($"{typeName}.Stj.g.cs", SystemTextJsonEmitter.Emit(union));
+                if ((jsonFlags & JsonLibrary.NewtonsoftJson) != 0)
+                    ctx.AddSource($"{typeName}.Nsj.g.cs", NewtonsoftJsonEmitter.Emit(union));
             }
 
             // Emit record (declaration + implementation)
             {
                 var typeName = b.Prefix + "Record";
                 ctx.AddSource($"{typeName}.BenchDecl.g.cs", EmitRecordDeclaration(b, typeName));
-                var union = MakeUnionDeclaration(b, typeName, "record", EmitStrategy.Record);
+                var union = MakeUnionDeclaration(b, typeName, "record", EmitStrategy.Record, jsonFlags);
                 ctx.AddSource($"{typeName}.Bench.g.cs", RecordEmitter.Emit(union));
+                if ((jsonFlags & JsonLibrary.SystemTextJson) != 0)
+                    ctx.AddSource($"{typeName}.Stj.g.cs", SystemTextJsonEmitter.Emit(union));
+                if ((jsonFlags & JsonLibrary.NewtonsoftJson) != 0)
+                    ctx.AddSource($"{typeName}.Nsj.g.cs", NewtonsoftJsonEmitter.Emit(union));
             }
 
             // Emit class (declaration + implementation)
@@ -89,6 +107,12 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
                 ctx.AddSource($"{typeName}.BenchDecl.g.cs", EmitClassDeclaration(b, typeName));
                 var union = MakeClassDeclaration(b, typeName);
                 ctx.AddSource($"{typeName}.Bench.g.cs", ClassEmitter.Emit(union));
+                // Class JSON: use same union with json flags
+                var classUnionJson = MakeUnionDeclaration(b, typeName, "class", EmitStrategy.Class, jsonFlags);
+                if ((jsonFlags & JsonLibrary.SystemTextJson) != 0)
+                    ctx.AddSource($"{typeName}.Stj.g.cs", SystemTextJsonEmitter.Emit(classUnionJson));
+                if ((jsonFlags & JsonLibrary.NewtonsoftJson) != 0)
+                    ctx.AddSource($"{typeName}.Nsj.g.cs", NewtonsoftJsonEmitter.Emit(classUnionJson));
             }
 
             // Emit benchmark classes
@@ -213,7 +237,7 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
         sb.AppendLine("{");
         foreach (var v in b.Variants)
         {
-            var paramList = string.Join(", ", v.Fields.Select(f => $"{f.TypeFullName} {Capitalize(f.Name)}"));
+            var paramList = string.Join(", ", v.Fields.Select(f => $"{f.TypeFullName} {f.Name}"));
             sb.AppendLine($"    public sealed partial record {v.Name}({paramList}) : {typeName}{tp};");
         }
         sb.AppendLine("}");
@@ -245,8 +269,9 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
             {
                 var paramList = string.Join(", ", v.Fields.Select(f => $"{f.TypeFullName} {f.Name}"));
                 var props = string.Join(" ", v.Fields.Select(f =>
-                    $"public {f.TypeFullName} {Capitalize(f.Name)} => {f.Name};"));
-                sb.AppendLine($"    public sealed partial class {v.Name}({paramList}) : {typeName}{tp} {{ {props} }}");
+                    $"public {f.TypeFullName} {f.Name} => _{f.Name};"));
+                var ctorParams = string.Join(", ", v.Fields.Select(f => $"{f.TypeFullName} _{f.Name}"));
+                sb.AppendLine($"    public sealed partial class {v.Name}({ctorParams}) : {typeName}{tp} {{ {props} }}");
             }
         }
         sb.AppendLine("}");
@@ -260,7 +285,8 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
     #region Model Construction
 
     static UnionDeclaration MakeUnionDeclaration(
-        BenchmarkDef b, string typeName, string keyword, EmitStrategy strategy)
+        BenchmarkDef b, string typeName, string keyword, EmitStrategy strategy,
+        JsonLibrary json = JsonLibrary.None)
     {
         var variants = b.Variants.Select(v => new VariantInfo(
             v.Name,
@@ -284,7 +310,7 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
             Variants: new EquatableArray<VariantInfo>(variants.ToImmutableArray()),
             ContainingTypes: new EquatableArray<ContainingTypeInfo>(ImmutableArray<ContainingTypeInfo>.Empty),
             Diagnostic: null,
-            Json: JsonLibrary.None,
+            Json: json,
             JsonDiscriminator: "kind");
     }
 
@@ -351,6 +377,8 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
         sb.AppendLine("using BenchmarkDotNet.Configs;");
         sb.AppendLine("using BenchmarkDotNet.Diagnosers;");
         sb.AppendLine("using System;");
+        if (compInfo.HasSystemTextJson)
+            sb.AppendLine("using System.Text.Json;");
         sb.AppendLine();
 
         var hasNs = b.Namespace.Length > 0;
@@ -370,6 +398,17 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
         EmitConstructBenchmark(sb, b, allTypes);
         sb.AppendLine();
         EmitCopyBenchmark(sb, b, allTypes);
+
+        if (compInfo.HasSystemTextJson)
+        {
+            sb.AppendLine();
+            EmitJsonStjBenchmark(sb, b, allTypes, refTypes);
+        }
+        if (compInfo.HasNewtonsoftJson)
+        {
+            sb.AppendLine();
+            EmitJsonNsjBenchmark(sb, b, allTypes, refTypes);
+        }
 
         if (hasNs) sb.AppendLine("}");
         return sb.ToString();
@@ -597,6 +636,102 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
         sb.AppendLine("}");
     }
 
+    static void EmitJsonStjBenchmark(StringBuilder sb, BenchmarkDef b, string[] allTypes, string[] refTypes)
+    {
+        sb.AppendLine("[MemoryDiagnoser]");
+        sb.AppendLine("[GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]");
+        sb.AppendLine("[CategoriesColumn]");
+        sb.AppendLine($"public class {b.Prefix}JsonStjBenchmarks");
+        sb.AppendLine("{");
+        sb.AppendLine("    [Params(BenchN.Default)] public int N { get; set; }");
+        sb.AppendLine("    JsonSerializerOptions _opts = null!;");
+        sb.AppendLine();
+
+        foreach (var t in allTypes)
+            sb.AppendLine($"    {t}[] _{Short(t, b.Prefix)}Arr = null!; string _{Short(t, b.Prefix)}Json = null!;");
+        sb.AppendLine();
+
+        sb.AppendLine("    [GlobalSetup] public void Setup()");
+        sb.AppendLine("    {");
+        sb.AppendLine("        _opts = new JsonSerializerOptions();");
+        foreach (var t in allTypes)
+        {
+            var sn = Short(t, b.Prefix);
+            sb.AppendLine($"        _{sn}Arr = new {t}[N]; {b.Prefix}Filler.Fill(_{sn}Arr, new Random(42), 0);");
+            sb.AppendLine($"        _{sn}Json = JsonSerializer.Serialize(_{sn}Arr, _opts);");
+        }
+        sb.AppendLine("    }");
+        sb.AppendLine();
+
+        bool first = true;
+        foreach (var t in allTypes)
+        {
+            var sn = Short(t, b.Prefix);
+            var bl = first ? "(Baseline = true, " : "(";
+            first = false;
+            sb.AppendLine($"    [BenchmarkCategory(\"STJ Serialize\"), Benchmark{bl}Description = \"{sn}\")] public string Ser_{sn}() => JsonSerializer.Serialize(_{sn}Arr, _opts);");
+        }
+        sb.AppendLine();
+
+        first = true;
+        foreach (var t in allTypes)
+        {
+            var sn = Short(t, b.Prefix);
+            var bl = first ? "(Baseline = true, " : "(";
+            first = false;
+            sb.AppendLine($"    [BenchmarkCategory(\"STJ Deserialize\"), Benchmark{bl}Description = \"{sn}\")] public {t}[]? Des_{sn}() => JsonSerializer.Deserialize<{t}[]>(_{sn}Json, _opts);");
+        }
+
+        sb.AppendLine("}");
+    }
+
+    static void EmitJsonNsjBenchmark(StringBuilder sb, BenchmarkDef b, string[] allTypes, string[] refTypes)
+    {
+        sb.AppendLine("[MemoryDiagnoser]");
+        sb.AppendLine("[GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]");
+        sb.AppendLine("[CategoriesColumn]");
+        sb.AppendLine($"public class {b.Prefix}JsonNsjBenchmarks");
+        sb.AppendLine("{");
+        sb.AppendLine("    [Params(BenchN.Default)] public int N { get; set; }");
+        sb.AppendLine();
+
+        foreach (var t in allTypes)
+            sb.AppendLine($"    {t}[] _{Short(t, b.Prefix)}Arr = null!; string _{Short(t, b.Prefix)}Json = null!;");
+        sb.AppendLine();
+
+        sb.AppendLine("    [GlobalSetup] public void Setup()");
+        sb.AppendLine("    {");
+        foreach (var t in allTypes)
+        {
+            var sn = Short(t, b.Prefix);
+            sb.AppendLine($"        _{sn}Arr = new {t}[N]; {b.Prefix}Filler.Fill(_{sn}Arr, new Random(42), 0);");
+            sb.AppendLine($"        _{sn}Json = Newtonsoft.Json.JsonConvert.SerializeObject(_{sn}Arr);");
+        }
+        sb.AppendLine("    }");
+        sb.AppendLine();
+
+        bool first = true;
+        foreach (var t in allTypes)
+        {
+            var sn = Short(t, b.Prefix);
+            var bl = first ? "(Baseline = true, " : "(";
+            first = false;
+            sb.AppendLine($"    [BenchmarkCategory(\"NSJ Serialize\"), Benchmark{bl}Description = \"{sn}\")] public string NSer_{sn}() => Newtonsoft.Json.JsonConvert.SerializeObject(_{sn}Arr);");
+        }
+        sb.AppendLine();
+
+        first = true;
+        foreach (var t in allTypes)
+        {
+            var sn = Short(t, b.Prefix);
+            var bl = first ? "(Baseline = true, " : "(";
+            first = false;
+            sb.AppendLine($"    [BenchmarkCategory(\"NSJ Deserialize\"), Benchmark{bl}Description = \"{sn}\")] public {t}[]? NDes_{sn}() => Newtonsoft.Json.JsonConvert.DeserializeObject<{t}[]>(_{sn}Json);");
+        }
+
+        sb.AppendLine("}");
+    }
+
     static void EmitStructDeconstructArms(StringBuilder sb, BenchmarkDef b, string typeName)
     {
         // Group variants by field count to determine typed vs generic Deconstruct
@@ -721,7 +856,7 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
             var numFields = v.Fields.Where(f => IsNumeric(f.TypeFullName)).ToArray();
             if (numFields.Length == 0) continue;
 
-            var props = string.Join(", ", numFields.Select(f => $"{Capitalize(f.Name)}: var _{f.Name}"));
+            var props = string.Join(", ", numFields.Select(f => $"{f.Name}: var _{f.Name}"));
             var expr = numFields.Length == 1
                 ? $"_{numFields[0].Name}"
                 : string.Join(" + ", numFields.Select(f => $"(double)_{f.Name}"));
