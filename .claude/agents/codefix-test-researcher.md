@@ -3,7 +3,7 @@ name: codefix-test-researcher
 description: Researches all test cases needed for a code fix provider and produces a coverage matrix of before/after pairs. Spawned by the lead AFTER the diagnostic exists.
 tools: Read, Write, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
 model: sonnet
-maxTurns: 30
+maxTurns: 50
 ---
 
 You are a test case researcher for code fix providers in the Spire project.

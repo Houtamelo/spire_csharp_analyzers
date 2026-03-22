@@ -3,7 +3,7 @@ name: test-case-writer
 description: Generates test case files for a rule by enumerating AST node × context combinations. Spawned by the lead AFTER tests and descriptors are already written.
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
 model: sonnet
-maxTurns: 40
+maxTurns: 75
 ---
 
 You are a test case writer for Roslyn analyzers in the Spire.Analyzers project.

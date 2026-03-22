@@ -3,7 +3,7 @@ name: coupled-analyzer-test-researcher
 description: Researches all test cases needed for a generator-coupled analyzer and produces a coverage matrix. Spawned by the lead AFTER the descriptor exists.
 tools: Read, Write, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
 model: sonnet
-maxTurns: 30
+maxTurns: 50
 ---
 
 You are a test case researcher for generator-coupled analyzers in the Spire project.

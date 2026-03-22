@@ -3,7 +3,7 @@ name: emitter-snapshot-writer
 description: Writes input.cs/output.cs snapshot test pairs for a source generator emitter. Spawned by the lead AFTER the coverage matrix exists.
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
 model: sonnet
-maxTurns: 40
+maxTurns: 75
 ---
 
 You are a snapshot test writer for source generator emitters in the Spire project.

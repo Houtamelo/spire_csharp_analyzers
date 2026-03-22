@@ -3,7 +3,7 @@ name: edge-case-finder
 description: Finds missing edge cases in an already-implemented rule by reading the analyzer source and existing tests, then adds test files to cover gaps. Use AFTER a rule is already implemented and passing.
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: opus
-maxTurns: 20
+maxTurns: 40
 ---
 
 You are an edge case specialist for Roslyn analyzers in the Spire.Analyzers project.

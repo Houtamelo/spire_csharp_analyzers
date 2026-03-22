@@ -3,7 +3,7 @@ name: analyzer-implementer
 description: Implements a Roslyn analyzer to make existing tests pass. Spawned by the lead AFTER tests and descriptors are already written.
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn, mcp__syntax-tree
 model: sonnet
-maxTurns: 30
+maxTurns: 50
 ---
 
 You are a Roslyn analyzer implementer for the Spire.Analyzers project.

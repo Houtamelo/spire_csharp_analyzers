@@ -3,7 +3,7 @@ name: codefix-test-case-writer
 description: Writes before.cs/after.cs test case pairs for a code fix provider. Spawned by the lead AFTER the coverage matrix exists.
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
 model: sonnet
-maxTurns: 40
+maxTurns: 75
 ---
 
 You are a code fix test case writer for the Spire project.

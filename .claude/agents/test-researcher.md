@@ -3,7 +3,7 @@ name: test-researcher
 description: Researches all test cases needed for a rule and produces a coverage matrix. Spawned by the lead AFTER the descriptor and shared preamble exist. Does NOT write test case files.
 tools: Read, Write, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn, mcp__syntax-tree
 model: sonnet
-maxTurns: 30
+maxTurns: 50
 ---
 
 You are a test case researcher for Roslyn analyzers in the Spire.Analyzers project.

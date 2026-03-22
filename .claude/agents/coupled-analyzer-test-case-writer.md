@@ -3,7 +3,7 @@ name: coupled-analyzer-test-case-writer
 description: Writes test case files for a generator-coupled analyzer. Spawned by the lead AFTER the coverage matrix exists.
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
 model: sonnet
-maxTurns: 40
+maxTurns: 75
 ---
 
 You are a test case writer for generator-coupled analyzers in the Spire project.

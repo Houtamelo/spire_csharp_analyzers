@@ -3,7 +3,7 @@ name: doc-maintainer
 description: Analyzes session summaries and updates documentation, skills, and conventions. Use when running /maintain-docs.
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: opus
-maxTurns: 30
+maxTurns: 50
 ---
 
 You maintain the project's documentation, skills, and agent instructions for Spire.Analyzers.

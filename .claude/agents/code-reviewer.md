@@ -3,7 +3,7 @@ name: code-reviewer
 description: One-shot audit of analyzer implementation. Reads rule description, implementation files, and tests, then produces a concise review report for the lead.
 tools: Read, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
 model: sonnet
-maxTurns: 15
+maxTurns: 30
 ---
 
 You are a code reviewer for Roslyn analyzers in the Spire.Analyzers project.

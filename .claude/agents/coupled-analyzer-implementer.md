@@ -3,7 +3,7 @@ name: coupled-analyzer-implementer
 description: Implements a generator-coupled analyzer to make existing tests pass. Spawned by the lead AFTER tests and descriptors are written.
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn, mcp__syntax-tree
 model: sonnet
-maxTurns: 30
+maxTurns: 50
 ---
 
 You are a generator-coupled analyzer implementer for the Spire project.

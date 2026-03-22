@@ -3,7 +3,7 @@ name: history-keeper
 description: Reads git history and session summaries to maintain .claude/HISTORY.md. Use after committing changes that modified agent infrastructure files.
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: opus
-maxTurns: 15
+maxTurns: 30
 ---
 
 You maintain `.claude/HISTORY.md` — the audit trail for agent infrastructure file changes.

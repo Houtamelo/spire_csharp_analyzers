@@ -3,7 +3,7 @@ name: codefix-implementer
 description: Implements a code fix provider to make existing before/after tests pass. Spawned by the lead AFTER tests are written.
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
 model: sonnet
-maxTurns: 30
+maxTurns: 50
 ---
 
 You are a code fix implementer for the Spire project.

@@ -3,7 +3,7 @@ name: emitter-implementer
 description: Implements a source generator emitter to make existing snapshot and behavioral tests pass. Spawned by the lead AFTER tests are written.
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn, mcp__syntax-tree
 model: sonnet
-maxTurns: 30
+maxTurns: 50
 ---
 
 You are a source generator emitter implementer for the Spire project.

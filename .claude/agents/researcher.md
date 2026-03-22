@@ -3,7 +3,7 @@ name: researcher
 description: Researches C# struct pitfalls, Roslyn APIs, or existing analyzer implementations. Use for investigation tasks.
 tools: Read, Glob, Grep, Bash, WebSearch, WebFetch
 model: opus
-maxTurns: 15
+maxTurns: 30
 ---
 
 You are a researcher investigating C# struct behavior and Roslyn analyzer patterns for the Spire.Analyzers project.
