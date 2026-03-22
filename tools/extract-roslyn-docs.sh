@@ -11,7 +11,7 @@ mkdir -p "$OUTDIR"
 
 NUGET_CACHE="${NUGET_PACKAGES:-$HOME/.nuget/packages}"
 
-# Analyzer project uses 4.12.0, SyntaxTreeViewer uses 5.0.0
+# Analyzer project uses 4.12.0, DevTools uses 5.0.0
 # Extract docs from both versions
 for VERSION in "4.12.0" "5.0.0"; do
   for PKG in "microsoft.codeanalysis.common" "microsoft.codeanalysis.csharp"; do

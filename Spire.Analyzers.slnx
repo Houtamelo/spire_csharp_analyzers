@@ -10,7 +10,7 @@
     <Project Path="tests/Spire.SourceGenerators.Tests/Spire.SourceGenerators.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
-    <Project Path="tools/SyntaxTreeViewer/SyntaxTreeViewer.csproj" />
+    <Project Path="tools/DevTools/DevTools.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/Spire.Benchmarks/Spire.Benchmarks.csproj" />

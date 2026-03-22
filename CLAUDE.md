@@ -15,7 +15,6 @@ dotnet restore
 dotnet build
 dotnet test
 dotnet test --filter "FullyQualifiedName~SPIRE001"   # single rule
-dotnet run --project tools/SyntaxTreeViewer -- <file> # print AST (CLI)
 # MCP tool `parse_syntax_tree` also available — preferred for agents
 ```
 
@@ -47,7 +46,7 @@ tests/Spire.BehavioralTests/      # Compile-time behavioral tests (generator run
   Types/                          # Union definitions per strategy
   Tests/                          # Type-safe tests with real switch/pattern matching
 benchmarks/Spire.Benchmarks/      # BenchmarkDotNet performance tests
-tools/SyntaxTreeViewer/           # AST printer (net10.0)
+tools/DevTools/                   # MCP server (parse_syntax_tree, dotnet_build, dotnet_test, git_query)
 docs/rules/                      # Per-rule docs (SPIRE001.md, ...)
 plans/                            # Design plans (read before implementing)
 ```
@@ -131,4 +130,4 @@ When a spawned agent stops because it ran out of turns/budget before finishing i
 
 - `plans/` — design plans and research. **Do NOT read unless the user explicitly asks you to.** Plans may be outdated or abandoned; reading them unprompted can lead to following stale instructions.
 - `docs/roslyn-api/` — Roslyn XML docs and curated reference guides (when available)
-- `tools/SyntaxTreeViewer` — AST printer, available as MCP tool `parse_syntax_tree` (preferred) or CLI
+- `tools/DevTools` — MCP server with `parse_syntax_tree`, `dotnet_build`, `dotnet_test`, `git_query` tools
