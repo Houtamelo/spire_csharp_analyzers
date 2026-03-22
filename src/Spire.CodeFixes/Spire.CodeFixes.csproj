@@ -3,12 +3,32 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <!-- NO EnforceExtendedAnalyzerRules — CodeFixProvider needs Workspaces -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <PackageId>Spire.CodeFixes</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>houtamelo</Authors>
+    <Copyright>Copyright (c) 2026 houtamelo</Copyright>
+    <Description>Code fixes and refactorings for Spire analyzers and source generators.</Description>
+    <PackageTags>roslyn;code-fix;csharp</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Houtamelo/spire_csharp_analyzers</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Houtamelo/spire_csharp_analyzers</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.0.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" PrivateAssets="all" />
     <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(OutputPath)\$(AssemblyName).dll"
+          PackagePath="analyzers/dotnet/cs"
+          Pack="true"
+          Visible="false" />
   </ItemGroup>
 
 </Project>
