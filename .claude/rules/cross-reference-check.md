@@ -46,7 +46,8 @@ The step-by-step process for adding a new rule.
 - `.claude/agents/code-reviewer.md` — step 12
 - `.claude/skills/verify-rule/SKILL.md` — step 14
 - `.claude/skills/test/SKILL.md` — steps 8, 11 (run tests)
-- `.claude/skills/syntax-tree/SKILL.md` — AST investigation during research/implementation
+- `.claude/skills/syntax-tree/SKILL.md` — AST investigation (uses `dev-tools` MCP server)
+- `tools/DevTools/` — MCP server: parse_syntax_tree, dotnet_build, dotnet_test, git_query
 
 ## Documentation style
 How all documentation (code comments, markdown, rule docs) should be written.
