@@ -126,6 +126,8 @@ Project layout, build configuration, conventions.
 - `CLAUDE.md` — "Project Structure", "Analyzer Conventions", "Build Commands" sections
 - `.claude/rules/analyzer-conventions.md` — target framework, dependencies
 - `.claude/rules/test-conventions.md` — test framework, target
+- `src/Spire/Spire.csproj`
+- `src/Spire.Core/Spire.Core.csproj`
 - `src/Spire.Analyzers/Spire.Analyzers.csproj`
 - `src/Spire.SourceGenerators/Spire.SourceGenerators.csproj`
 - `src/Spire.CodeFixes/Spire.CodeFixes.csproj`

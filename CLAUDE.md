@@ -4,9 +4,10 @@
 
 Roslyn-based C# analyzer
 
-- **Package**: `Spire.Analyzers`
+- **Packages**: `Spire` (meta-package), `Spire.Core` (attributes/utilities), `Spire.Analyzers`, `Spire.SourceGenerators`, `Spire.CodeFixes`
 - **Rule prefix**: `SPIRE` (SPIRE001, SPIRE002, ...)
-- **Code fixes** in separate `Spire.CodeFixes` project (references `Spire.SourceGenerators` for shared types)
+- **User-facing attributes** in `Spire.Core` (namespace `Spire`) — `MustBeInitAttribute`, `EnforceExhaustivenessAttribute`
+- **Code fixes** in separate `Spire.CodeFixes` project (standalone, no inter-project dependencies)
 
 ## Build Commands
 
@@ -23,17 +24,18 @@ dotnet run -c Release --project benchmarks/Spire.Benchmarks/ -- --filter '*'    
 ## Project Structure
 
 ```
+src/Spire/                        # Meta-package (no code, depends on all below)
+src/Spire.Core/                   # User-facing API: attributes, utilities (netstandard2.0)
 src/Spire.Analyzers/              # Analyzer (netstandard2.0)
   Rules/                          # One file per rule
   Descriptors.cs                  # Central DiagnosticDescriptor registry
-  RequireInitializationAttribute.cs
 src/Spire.Analyzers.Utils/        # Shared utilities (netstandard2.0)
 src/Spire.SourceGenerators/       # Discriminated union source generator (netstandard2.0)
   Emit/                           # Per-strategy emitters (Additive, Overlap, BoxedFields, etc.)
   Analyzers/                      # Generator-coupled analyzers (exhaustiveness, field access, type safety)
   Model/                          # Union declaration model types
   Parsing/                        # Attribute parsing
-src/Spire.CodeFixes/              # Code fixes (references Spire.SourceGenerators for shared types)
+src/Spire.CodeFixes/              # Code fixes (standalone, no inter-project deps)
 tests/Spire.Analyzers.Tests/      # Analyzer xUnit tests (net10.0, C# 14)
   AnalyzerTestBase.cs             # Base class for all analyzer tests (discovery, parsing, verification)
   {RuleId}/                       # One folder per rule
@@ -98,7 +100,7 @@ Test case file format is documented in `docs/test-case-format.md`.
 1. **Design the rule** — Before writing anything, understand what the rule should do. Research the C# semantics involved. Build the Flagged/NOT flagged spec tables mentally. Identify edge cases, ambiguous scenarios, and out-of-scope items. **Ask the user questions** to clarify concerns: severity level, boundary cases, whether specific patterns should be flagged or not. Make suggestions if you spot cases the user may not have considered. Do not proceed until the design is clear.
 2. **Write the rule plan** in `plans/` using the template at `.claude/skills/new-rule/templates/PlanTemplate.md`. Include: Flagged/NOT flagged spec tables, detection strategy, severity, message format, out-of-scope items.
 3. Add descriptor to `Descriptors.cs`
-4. Create attribute/marker type if needed (e.g. `RequireInitializationAttribute.cs`)
+4. Create attribute/marker type if needed in `src/Spire.Core/` (namespace `Spire`)
 5. Scaffold test folder, shared preamble, and test runner (inheriting `AnalyzerTestBase<TAnalyzer>`).
 6. **Spawn `test-researcher` agent** to produce a coverage matrix at `tests/.../{RuleId}/coverage-matrix.md`. Review the matrix — add/remove cases as needed.
 7. **Spawn `test-case-writer` agents** — one per category in the matrix, in parallel. Each writer receives its category's case list.
