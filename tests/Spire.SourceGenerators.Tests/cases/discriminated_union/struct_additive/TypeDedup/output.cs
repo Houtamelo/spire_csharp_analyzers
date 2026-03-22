@@ -2,7 +2,7 @@
 #nullable enable
 using System.ComponentModel;
 
-[global::Spire.Analyzers.MustBeInit]
+[global::Spire.MustBeInit]
 partial struct Shape
 {
     public enum Kind : byte

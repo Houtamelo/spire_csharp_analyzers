@@ -8,7 +8,7 @@ namespace TestNs
 {
     public partial class Outer
     {
-        [global::Spire.Analyzers.MustBeInit]
+        [global::Spire.MustBeInit]
         [StructLayout(LayoutKind.Explicit)]
         internal partial struct Shape
         {

@@ -6,7 +6,7 @@ using System.ComponentModel;
 
 namespace My.Deep.Namespace
 {
-    [global::Spire.Analyzers.MustBeInit]
+    [global::Spire.MustBeInit]
     [StructLayout(LayoutKind.Explicit)]
     partial struct Result
     {

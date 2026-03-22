@@ -2,7 +2,7 @@ global using System;
 global using System.Collections.Generic;
 global using System.Threading.Tasks;
 global using System.Reflection;
-global using Spire.Analyzers;
+global using Spire;
 
 [MustBeInit]
 public struct MustInitStruct
