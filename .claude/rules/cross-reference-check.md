@@ -80,6 +80,34 @@ Session metadata and reflection workflow.
 - `.claude/settings.json` — hook configuration
 - `session-reviews/` — reflection output files
 
+## Source generator emitter workflow
+How emitters are developed, tested (snapshot + behavioral), and implemented.
+- `.claude/skills/new-emitter/SKILL.md` — scaffolding skill
+- `.claude/agents/emitter-test-researcher.md` — coverage matrix
+- `.claude/agents/emitter-snapshot-writer.md` — snapshot test pairs
+- `.claude/agents/emitter-behavioral-writer.md` — behavioral types + tests
+- `.claude/agents/emitter-implementer.md` — emitter implementation
+- `tests/Spire.SourceGenerators.Tests/GeneratorSnapshotTestBase.cs` — snapshot test framework
+- `tests/Spire.BehavioralTests/` — behavioral test project
+
+## Generator-coupled analyzer workflow
+How analyzers that run on generator output are developed and tested.
+- `.claude/skills/new-coupled-analyzer/SKILL.md` — scaffolding skill
+- `.claude/agents/coupled-analyzer-test-researcher.md` — coverage matrix
+- `.claude/agents/coupled-analyzer-test-case-writer.md` — test cases
+- `.claude/agents/coupled-analyzer-implementer.md` — analyzer implementation
+- `tests/Spire.SourceGenerators.Tests/GeneratorAnalyzerTestBase.cs` — test framework
+- `src/Spire.SourceGenerators/AnalyzerDescriptors.cs` — descriptor registry
+
+## Code fix workflow
+How code fix providers are developed and tested.
+- `.claude/skills/new-codefix/SKILL.md` — scaffolding skill
+- `.claude/agents/codefix-test-researcher.md` — coverage matrix
+- `.claude/agents/codefix-test-case-writer.md` — before/after pairs
+- `.claude/agents/codefix-implementer.md` — code fix implementation
+- `tests/Spire.SourceGenerators.Tests/CodeFixTestBase.cs` — test framework
+- `src/Spire.CodeFixes/` — code fix providers
+
 ## Project structure and build
 Project layout, build configuration, conventions.
 - `CLAUDE.md` — "Project Structure", "Analyzer Conventions", "Build Commands" sections
