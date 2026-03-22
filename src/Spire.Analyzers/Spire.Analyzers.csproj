@@ -6,6 +6,7 @@
 
     <!-- NuGet package metadata -->
     <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DevelopmentDependency>true</DevelopmentDependency>
     <PackageId>Spire.Analyzers</PackageId>
     <Version>1.0.0</Version>
     <Authors>houtamelo</Authors>
@@ -16,7 +17,6 @@
     <PackageProjectUrl>https://github.com/Houtamelo/spire_csharp_analyzers</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Houtamelo/spire_csharp_analyzers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
     <NoPackageAnalysis>true</NoPackageAnalysis>
   </PropertyGroup>
 
@@ -47,7 +47,4 @@
           Visible="false" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="../../README.md" PackagePath="/" Pack="true" />
-  </ItemGroup>
 </Project>
