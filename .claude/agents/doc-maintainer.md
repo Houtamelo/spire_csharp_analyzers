@@ -1,7 +1,7 @@
 ---
 name: doc-maintainer
 description: Analyzes session summaries and updates documentation, skills, and conventions. Use when running /maintain-docs.
-tools: Read, Write, Edit, Glob, Grep, Bash
+tools: Read, Write, Edit, Glob, Grep
 model: opus
 maxTurns: 50
 ---

@@ -1,7 +1,7 @@
 ---
 name: codefix-test-case-writer
 description: Writes before.cs/after.cs test case pairs for a code fix provider. Spawned by the lead AFTER the coverage matrix exists.
-tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
+tools: Read, Write, Edit, Glob, Grep, mcp__sherlock, mcp__microsoft-learn, mcp__dev-tools
 model: sonnet
 maxTurns: 75
 ---
@@ -27,7 +27,7 @@ The lead gives you a **list of code fix test cases to create** from the coverage
    a. Create the directory `tests/Spire.SourceGenerators.Tests/CodeFix/cases/{CaseName}/`
    b. Write `before.cs` — code with a `[DiscriminatedUnion]` declaration + usage that triggers the diagnostic.
    c. Write `after.cs` — the expected code after the fix is applied (same structure, fix applied).
-5. Run `dotnet build tests/Spire.SourceGenerators.Tests/` — must compile cleanly.
+5. Use `dotnet_build` MCP tool on `tests/Spire.SourceGenerators.Tests/` — must compile cleanly.
 
 ## Code fix test format
 
@@ -89,5 +89,5 @@ Discovered by `CodeFixCaseDiscoveryAttribute` — any directory under `CodeFix/c
 - **Do NOT use `/tmp` or any absolute temp path** — use the project-local `tmp/` folder (gitignored).
 - **Use sherlock via MCP tools** (`mcp__sherlock__*`), never invoke sherlock through CLI/Bash.
 - Use the `Write` tool (not `cat` or heredocs in Bash) to create temporary files.
-- **Run `dotnet build` after writing all cases** — the test project must compile cleanly.
+- **Use `dotnet_build` MCP tool after writing all cases** — the test project must compile cleanly.
 - Note: code fix tests will FAIL at this stage if the code fix is not yet implemented. That is expected and correct (TDD).

@@ -1,7 +1,7 @@
 ---
 name: emitter-snapshot-writer
 description: Writes input.cs/output.cs snapshot test pairs for a source generator emitter. Spawned by the lead AFTER the coverage matrix exists.
-tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
+tools: Read, Write, Edit, Glob, Grep, mcp__sherlock, mcp__microsoft-learn, mcp__dev-tools
 model: sonnet
 maxTurns: 75
 ---
@@ -27,7 +27,7 @@ The lead gives you a **list of snapshot test cases to create** from the coverage
    a. Create the directory `tests/Spire.SourceGenerators.Tests/cases/{emitter_category}/{CaseName}/`
    b. Write `input.cs` — the user's `[DiscriminatedUnion]` type declaration.
    c. Write `output.cs` — the expected generated source code.
-5. Run `dotnet build tests/Spire.SourceGenerators.Tests/` — must compile cleanly.
+5. Use `dotnet_build` MCP tool on `tests/Spire.SourceGenerators.Tests/` — must compile cleanly.
 
 ## Snapshot test format
 
@@ -50,5 +50,5 @@ Discovered by `SnapshotCaseDiscoveryAttribute` — any leaf directory under `cas
 - **Do NOT use `/tmp` or any absolute temp path** — use the project-local `tmp/` folder (gitignored) for any temporary files.
 - **Use sherlock via MCP tools** (`mcp__sherlock__*`), never invoke sherlock through CLI/Bash.
 - Use the `Write` tool (not `cat` or heredocs in Bash) to create temporary files — then run commands on them separately.
-- **Run `dotnet build` after writing all cases** — the test project must compile cleanly.
+- **Use `dotnet_build` MCP tool after writing all cases** — the test project must compile cleanly.
 - Note: snapshot tests will FAIL at this stage if the emitter is not yet implemented. That is expected and correct (TDD).

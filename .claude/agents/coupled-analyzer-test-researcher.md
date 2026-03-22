@@ -1,7 +1,7 @@
 ---
 name: coupled-analyzer-test-researcher
 description: Researches all test cases needed for a generator-coupled analyzer and produces a coverage matrix. Spawned by the lead AFTER the descriptor exists.
-tools: Read, Write, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
+tools: Read, Write, Glob, Grep, mcp__sherlock, mcp__microsoft-learn, mcp__dev-tools
 model: sonnet
 maxTurns: 50
 ---

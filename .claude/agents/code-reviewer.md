@@ -1,7 +1,7 @@
 ---
 name: code-reviewer
 description: One-shot audit of analyzer implementation. Reads rule description, implementation files, and tests, then produces a concise review report for the lead.
-tools: Read, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
+tools: Read, Glob, Grep, mcp__sherlock, mcp__microsoft-learn
 model: sonnet
 maxTurns: 30
 ---

@@ -1,7 +1,7 @@
 ---
 name: codefix-test-researcher
 description: Researches all test cases needed for a code fix provider and produces a coverage matrix of before/after pairs. Spawned by the lead AFTER the diagnostic exists.
-tools: Read, Write, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
+tools: Read, Write, Glob, Grep, mcp__sherlock, mcp__microsoft-learn, mcp__dev-tools
 model: sonnet
 maxTurns: 50
 ---

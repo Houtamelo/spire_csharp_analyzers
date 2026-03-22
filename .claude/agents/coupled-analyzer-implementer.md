@@ -1,7 +1,7 @@
 ---
 name: coupled-analyzer-implementer
 description: Implements a generator-coupled analyzer to make existing tests pass. Spawned by the lead AFTER tests and descriptors are written.
-tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn, mcp__syntax-tree
+tools: Read, Write, Edit, Glob, Grep, mcp__sherlock, mcp__microsoft-learn, mcp__dev-tools
 model: sonnet
 maxTurns: 50
 ---
@@ -24,13 +24,13 @@ Generator-coupled analyzers live in `src/Spire.SourceGenerators/Analyzers/` (not
 4. Read the rule description provided by the lead (if included in the prompt).
 5. Study existing coupled analyzers in `src/Spire.SourceGenerators/Analyzers/` for patterns (e.g., `ExhaustivenessAnalyzer.cs`, `FieldAccessSafetyAnalyzer.cs`).
 6. Implement the analyzer in `src/Spire.SourceGenerators/Analyzers/{AnalyzerName}.cs`.
-7. Run `dotnet test` — all tests must pass, including existing tests.
+7. Use `dotnet_test` MCP tool — all tests must pass, including existing tests.
 
 ## Roslyn API resources
 
 - **MCP: `microsoft-learn`** — for Microsoft packages. Use `microsoft_docs_search` and `microsoft_docs_fetch`.
 - **MCP: `sherlock`** — for any dependency's type info and XML docs.
-- **MCP: `syntax-tree`** — use `parse_syntax_tree` tool with inline C# code to see the AST.
+- **MCP: `dev-tools`** — use `parse_syntax_tree` tool with inline C# code to see the AST.
 
 ## Constraints
 

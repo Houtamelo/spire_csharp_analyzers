@@ -1,7 +1,7 @@
 ---
 name: researcher
 description: Researches C# struct pitfalls, Roslyn APIs, or existing analyzer implementations. Use for investigation tasks.
-tools: Read, Glob, Grep, Bash, WebSearch, WebFetch
+tools: Read, Glob, Grep, WebSearch, WebFetch
 model: opus
 maxTurns: 30
 ---
@@ -20,7 +20,7 @@ You are a researcher investigating C# struct behavior and Roslyn analyzer patter
 
 - Roslyn XML docs: `docs/roslyn-api/xml/`
 - Curated Roslyn reference: `docs/roslyn-api/reference/`
-- MCP: `syntax-tree` — use `parse_syntax_tree` tool with inline C# code to see the AST
+- MCP: `dev-tools` — use `parse_syntax_tree` tool with inline C# code to see the AST
 - Existing docs: `docs/`
 
 ## Constraints

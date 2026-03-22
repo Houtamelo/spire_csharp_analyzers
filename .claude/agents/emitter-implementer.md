@@ -1,7 +1,7 @@
 ---
 name: emitter-implementer
 description: Implements a source generator emitter to make existing snapshot and behavioral tests pass. Spawned by the lead AFTER tests are written.
-tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn, mcp__syntax-tree
+tools: Read, Write, Edit, Glob, Grep, mcp__sherlock, mcp__microsoft-learn, mcp__dev-tools
 model: sonnet
 maxTurns: 50
 ---
@@ -23,13 +23,13 @@ The lead has already written snapshot tests (input.cs/output.cs pairs) and behav
 7. Register the emitter in `src/Spire.SourceGenerators/DiscriminatedUnionGenerator.cs` if adding a new strategy.
 8. Update `src/Spire.SourceGenerators/Parsing/` if new strategy enum values or attribute parsing is needed.
 9. Update `src/Spire.SourceGenerators/Model/` if model types need changes.
-10. Run `dotnet test` — all tests must pass, including existing tests.
+10. Use `dotnet_test` MCP tool — all tests must pass, including existing tests.
 
 ## Roslyn API resources
 
 - **MCP: `microsoft-learn`** — for Microsoft packages. Use `microsoft_docs_search` and `microsoft_docs_fetch`.
 - **MCP: `sherlock`** — for any dependency's type info and XML docs.
-- **MCP: `syntax-tree`** — use `parse_syntax_tree` tool with inline C# code to see the AST.
+- **MCP: `dev-tools`** — use `parse_syntax_tree` tool with inline C# code to see the AST.
 
 ## Constraints
 

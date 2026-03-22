@@ -1,7 +1,7 @@
 ---
 name: emitter-behavioral-writer
 description: Writes union type definitions and runtime behavioral tests for a source generator emitter. Spawned by the lead AFTER the coverage matrix exists.
-tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
+tools: Read, Write, Edit, Glob, Grep, mcp__sherlock, mcp__microsoft-learn, mcp__dev-tools
 model: sonnet
 maxTurns: 75
 ---
@@ -28,7 +28,7 @@ The lead gives you **type definitions and test cases** from the coverage matrix.
 3. Read the coverage matrix sections for type definitions and test cases.
 4. Write or edit `tests/Spire.BehavioralTests/Types/{Strategy}Unions.cs` with all union type declarations.
 5. Write or edit `tests/Spire.BehavioralTests/Tests/{Strategy}Tests.cs` with all `[Fact]` test methods.
-6. Run `dotnet build tests/Spire.BehavioralTests/` — must compile cleanly.
+6. Use `dotnet_build` MCP tool on `tests/Spire.BehavioralTests/` — must compile cleanly.
 
 ## Type definition format
 
@@ -81,5 +81,5 @@ Group tests by feature with `── Feature ───` section comments. One `[F
 - **Do NOT use `/tmp` or any absolute temp path** — use the project-local `tmp/` folder (gitignored) for any temporary files.
 - **Use sherlock via MCP tools** (`mcp__sherlock__*`), never invoke sherlock through CLI/Bash.
 - Use the `Write` tool (not `cat` or heredocs in Bash) to create temporary files — then run commands on them separately.
-- **Run `dotnet build` after writing all types and tests** — the behavioral test project must compile cleanly.
+- **Use `dotnet_build` MCP tool after writing all types and tests** — the behavioral test project must compile cleanly.
 - Note: behavioral tests will FAIL at this stage if the emitter is not yet implemented. That is expected and correct (TDD).

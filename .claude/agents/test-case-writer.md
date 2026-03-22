@@ -1,7 +1,7 @@
 ---
 name: test-case-writer
 description: Generates test case files for a rule by enumerating AST node × context combinations. Spawned by the lead AFTER tests and descriptors are already written.
-tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
+tools: Read, Write, Edit, Glob, Grep, mcp__sherlock, mcp__microsoft-learn, mcp__dev-tools
 model: sonnet
 maxTurns: 75
 ---
@@ -26,7 +26,7 @@ The lead gives you a **list of test cases to create**. Each case has a file name
    a. Write the `.cs` file in `tests/Spire.Analyzers.Tests/{RuleId}/cases/`.
    b. Move to the next case.
 5. If you need additional types for a test scenario, add them to `_shared.cs`.
-6. Run `dotnet build` — the test project must compile cleanly.
+6. Use `dotnet_build` MCP tool — the test project must compile cleanly.
 
 ## Test case file format
 
@@ -47,5 +47,5 @@ Read `docs/test-case-format.md` for the full format reference (headers, error ma
 - **Do NOT use `/tmp` or any absolute temp path** — use the project-local `tmp/` folder (gitignored) for any temporary files.
 - **Use sherlock via MCP tools** (`mcp__sherlock__*`), never invoke sherlock through CLI/Bash.
 - Use the `Write` tool (not `cat` or heredocs in Bash) to create temporary files — then run commands on them separately.
-- **Run `dotnet build` after writing all cases** — the test project must compile cleanly.
+- **Use `dotnet_build` MCP tool after writing all cases** — the test project must compile cleanly.
 - Note: tests will FAIL at this stage because no analyzer exists yet. That is expected and correct (TDD).

@@ -1,7 +1,7 @@
 ---
 name: test-researcher
 description: Researches all test cases needed for a rule and produces a coverage matrix. Spawned by the lead AFTER the descriptor and shared preamble exist. Does NOT write test case files.
-tools: Read, Write, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn, mcp__syntax-tree
+tools: Read, Write, Glob, Grep, mcp__sherlock, mcp__microsoft-learn, mcp__dev-tools
 model: sonnet
 maxTurns: 50
 ---
@@ -81,7 +81,7 @@ The matrix organizes cases into **categories** (groups of related cases). Each c
 
 - **MCP: `microsoft-learn`** — for Microsoft packages. Use `microsoft_docs_search` and `microsoft_docs_fetch`.
 - **MCP: `sherlock`** — for any dependency's type info and XML docs.
-- **MCP: `syntax-tree`** — use `parse_syntax_tree` tool with inline C# code to see the exact AST.
+- **MCP: `dev-tools`** — use `parse_syntax_tree` tool with inline C# code to see the exact AST.
 
 ## Constraints
 

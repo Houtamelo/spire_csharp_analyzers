@@ -1,7 +1,7 @@
 ---
 name: edge-case-finder
 description: Finds missing edge cases in an already-implemented rule by reading the analyzer source and existing tests, then adds test files to cover gaps. Use AFTER a rule is already implemented and passing.
-tools: Read, Write, Edit, Glob, Grep, Bash
+tools: Read, Write, Edit, Glob, Grep, mcp__dev-tools
 model: opus
 maxTurns: 40
 ---

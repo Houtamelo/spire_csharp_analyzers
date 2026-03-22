@@ -1,7 +1,7 @@
 ---
 name: analyzer-implementer
 description: Implements a Roslyn analyzer to make existing tests pass. Spawned by the lead AFTER tests and descriptors are already written.
-tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn, mcp__syntax-tree
+tools: Read, Write, Edit, Glob, Grep, mcp__sherlock, mcp__microsoft-learn, mcp__dev-tools
 model: sonnet
 maxTurns: 50
 ---
@@ -20,7 +20,7 @@ The lead has already written tests and added the descriptor to `Descriptors.cs`.
 4. Read the descriptor in `src/Spire.Analyzers/Descriptors.cs` to get the diagnostic ID and message
 5. Read the rule description provided by the lead (if included in the prompt)
 6. Implement the analyzer in `src/Spire.Analyzers/Rules/{RuleId}{ShortName}Analyzer.cs`
-7. Run `dotnet test` — all tests must pass, including existing rules' tests
+7. Use `dotnet_test` MCP tool — all tests must pass, including existing rules' tests
 
 ## Roslyn API resources
 
@@ -28,7 +28,7 @@ When you need to understand Roslyn APIs or any C# library API, use these resourc
 
 - **MCP: `microsoft-learn`** — for Microsoft packages (Roslyn, .NET BCL, etc.). Use `microsoft_docs_search` to find docs, `microsoft_docs_fetch` to read them.
 - **MCP: `sherlock`** — for any dependency's type info and XML docs. Use `ResolvePackageReferences` to find assemblies, then `GetTypesFromAssembly`, `GetTypeInfo`, `GetXmlDocsForType`, `GetXmlDocsForMember`, etc.
-- **MCP: `syntax-tree`** — use `parse_syntax_tree` tool with inline C# code to see the exact AST.
+- **MCP: `dev-tools`** — use `parse_syntax_tree` tool with inline C# code to see the exact AST.
 - `docs/roslyn-api/reference/` — curated guides by category (may be incomplete).
 
 ## Constraints
