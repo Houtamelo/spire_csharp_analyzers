@@ -128,7 +128,7 @@ public sealed class ExpandWildcardRefactoring : CodeRefactoringProvider
                     foreach (var prop in recursive.PropertySubpatterns)
                     {
                         if (prop.Member is IFieldReferenceOperation fieldRef &&
-                            fieldRef.Field.Name == "tag")
+                            fieldRef.Field.Name == "kind")
                         {
                             CollectCoveredVariants(prop.Pattern, unionType, isStruct, covered);
                         }
@@ -143,9 +143,8 @@ public sealed class ExpandWildcardRefactoring : CodeRefactoringProvider
                 break;
 
             case IConstantPatternOperation constant:
-                if (constant.Value?.ConstantValue.HasValue == true &&
-                    constant.Value.Type is INamedTypeSymbol constType &&
-                    constType.TypeKind == TypeKind.Enum)
+                if (constant.Value.ConstantValue.HasValue &&
+                    constant.Value.Type is INamedTypeSymbol { TypeKind: TypeKind.Enum })
                 {
                     if (constant.Value is IFieldReferenceOperation fieldRef)
                         covered.Add(fieldRef.Field.Name);

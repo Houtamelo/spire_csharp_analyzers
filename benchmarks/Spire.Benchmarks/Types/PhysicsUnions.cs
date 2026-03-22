@@ -1,6 +1,4 @@
-using Spire;
-
-namespace Spire.Benchmarks;
+namespace Spire.Benchmarks.Types;
 
 // 8 variants, all unmanaged fields:
 //   Idle()                                                    — 0 fields

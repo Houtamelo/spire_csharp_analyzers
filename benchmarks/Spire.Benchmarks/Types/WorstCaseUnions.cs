@@ -1,20 +1,17 @@
-using Spire;
-
-namespace Spire.Benchmarks;
+namespace Spire.Benchmarks.Types;
 
 // ── Scenario 1: WideTypes ──
 // Many unique field types across variants → maximum slot/field count.
 // Exposes: Additive (slot explosion — one slot per unique type combo)
 //          BoxedFields (many object? slots, every access boxes)
-// Note: field names conflict across variants (a:int vs a:float) → PublicProperties disabled
 [BenchmarkUnion(Name = "Wide")]
 public partial struct WideBench
 {
-    [Variant] public static partial WideBench IntOnly(int a, int b);
-    [Variant] public static partial WideBench FloatOnly(float a, float b);
-    [Variant] public static partial WideBench DoubleOnly(double a, double b);
-    [Variant] public static partial WideBench LongOnly(long a, long b);
-    [Variant] public static partial WideBench Mixed(int a, float b, double c, long d);
+    [Variant] public static partial WideBench IntOnly(int ia, int ib);
+    [Variant] public static partial WideBench FloatOnly(float fa, float fb);
+    [Variant] public static partial WideBench DoubleOnly(double da, double db);
+    [Variant] public static partial WideBench LongOnly(long la, long lb);
+    [Variant] public static partial WideBench Mixed(int ia, float fb, double dc, long ld);
     [Variant] public static partial WideBench Empty();
 }
 

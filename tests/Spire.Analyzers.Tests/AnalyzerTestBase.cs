@@ -265,7 +265,7 @@ public sealed class TestCaseDiscoveryAttribute : DataAttribute
         if (!Directory.Exists(casesDir))
             yield break;
 
-        var headerTag = $"//@ {_expectedHeader}";
+        var headerKind = $"//@ {_expectedHeader}";
 
         foreach (var file in Directory.GetFiles(casesDir, "*.cs").OrderBy(f => f))
         {
@@ -274,7 +274,7 @@ public sealed class TestCaseDiscoveryAttribute : DataAttribute
 
             using var reader = new StreamReader(file);
             var firstLine = reader.ReadLine()?.Trim() ?? "";
-            if (firstLine == headerTag)
+            if (firstLine == headerKind)
             {
                 yield return new object[] { fileName };
             }

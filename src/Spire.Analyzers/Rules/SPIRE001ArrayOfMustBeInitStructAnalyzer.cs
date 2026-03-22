@@ -138,7 +138,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         if (arrayPoolType != null
             && method.Name == "Rent"
             && SymbolEqualityComparer.Default.Equals(
-                method.ContainingType.OriginalDefinition, arrayPoolType))
+                method.ContainingType?.OriginalDefinition, arrayPoolType))
         {
             AnalyzeArrayPoolRent(context, operation, method, mustBeInitType);
             return;
@@ -251,7 +251,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
     {
         // ArrayPool<T>.Rent(int minimumLength)
         var containingType = method.ContainingType;
-        if (containingType.TypeArguments.Length == 0)
+        if (containingType is not { TypeArguments.Length: > 0 })
             return;
 
         var elementType = containingType.TypeArguments[0];
@@ -294,7 +294,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
 
         var containingType = propRef.Property.ContainingType;
         if (!SymbolEqualityComparer.Default.Equals(
-                containingType.OriginalDefinition, immutableBuilderType))
+                containingType?.OriginalDefinition, immutableBuilderType))
             return;
 
         // The Builder is ImmutableArray<T>.Builder, so T is in its ContainingType.TypeArguments[0]

@@ -188,13 +188,13 @@ internal static class PatternAnalyzer
             return CollectVariants(firstSub, info, variants);
         }
 
-        // Struct union: Property pattern: { tag: Shape.Kind.Circle }
-        // Find the tag member and delegate its pattern to CollectVariants.
+        // Struct union: Property pattern: { kind: Shape.Kind.Circle }
+        // Find the kind member and delegate its pattern to CollectVariants.
         if (!recursive.PropertySubpatterns.IsEmpty)
         {
             foreach (var propSub in recursive.PropertySubpatterns)
             {
-                if (IsTagMember(propSub))
+                if (IsKindMember(propSub))
                     return CollectVariants(propSub.Pattern, info, variants);
             }
         }
@@ -202,12 +202,12 @@ internal static class PatternAnalyzer
         return false;
     }
 
-    private static bool IsTagMember(IPropertySubpatternOperation propSub)
+    private static bool IsKindMember(IPropertySubpatternOperation propSub)
     {
         if (propSub.Member is IPropertyReferenceOperation propRef)
-            return propRef.Property.Name == "tag";
+            return propRef.Property.Name == "kind";
         if (propSub.Member is IFieldReferenceOperation fieldRef)
-            return fieldRef.Field.Name == "tag";
+            return fieldRef.Field.Name == "kind";
         return false;
     }
 

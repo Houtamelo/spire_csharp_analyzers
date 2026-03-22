@@ -23,22 +23,28 @@ internal sealed class TokenNsjConverter : JsonConverter<Token>
     public override void WriteJson(JsonWriter writer, Token value, JsonSerializer serializer)
     {
         writer.WriteStartObject();
-        switch (value.tag)
+        switch (value)
         {
-            case Token.Kind.Ident:
+            case { kind: Token.Kind.Ident }:
+            {
                 writer.WritePropertyName("kind");
                 writer.WriteValue("Ident");
                 break;
-            case Token.Kind.Number:
+            }
+            case { kind: Token.Kind.Number }:
+            {
                 writer.WritePropertyName("kind");
                 writer.WriteValue("Number");
                 break;
-            case Token.Kind.Eof:
+            }
+            case { kind: Token.Kind.Eof }:
+            {
                 writer.WritePropertyName("kind");
                 writer.WriteValue("Eof");
                 break;
+            }
             default:
-                throw new JsonSerializationException($"Unknown Token variant: {value.tag}");
+                throw new JsonSerializationException($"Unknown Token variant: {value.kind}");
         }
         writer.WriteEndObject();
     }

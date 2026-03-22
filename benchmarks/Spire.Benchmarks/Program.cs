@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Running;
+using Spire.Benchmarks.Helpers;
 
 // Run all:           dotnet run -c Release -- --filter '*' --job Dry
 // Single class:      dotnet run -c Release -- --filter *Construct*
@@ -41,7 +42,7 @@ if (Directory.Exists(resultsDir))
         writer.WriteLine("# Benchmark Results");
         writer.WriteLine();
         writer.WriteLine($"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}  ");
-        writer.WriteLine($"Job: {jobSuffix.TrimStart('_')} | N: {Spire.Benchmarks.BenchN.Default}  ");
+        writer.WriteLine($"Job: {jobSuffix.TrimStart('_')} | N: {BenchN.Default}  ");
         writer.WriteLine($"Runtime: .NET {Environment.Version}  ");
         writer.WriteLine();
 

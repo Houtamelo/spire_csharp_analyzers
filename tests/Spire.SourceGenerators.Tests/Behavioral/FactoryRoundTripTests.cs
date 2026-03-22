@@ -6,14 +6,14 @@ public class FactoryRoundTripTests : BehavioralTestBase
 {
     [Theory]
     [MemberData(nameof(StructStrategies))]
-    public void Circle_TagIsCorrect(string strategy)
+    public void Circle_KindIsCorrect(string strategy)
     {
         var asm = CompileAndLoad(BasicShapeSource(strategy));
         var shapeType = GetType(asm, "Shape");
         var circle = InvokeFactory(shapeType, "Circle", 3.14);
-        var tag = ReadTag(circle);
+        var kind = ReadKind(circle);
         var expected = GetKindValue(shapeType, "Circle");
-        Assert.Equal(expected, tag);
+        Assert.Equal(expected, kind);
     }
 
     [Theory]
@@ -40,14 +40,14 @@ public class FactoryRoundTripTests : BehavioralTestBase
 
     [Theory]
     [MemberData(nameof(StructStrategies))]
-    public void Point_TagIsCorrect(string strategy)
+    public void Point_KindIsCorrect(string strategy)
     {
         var asm = CompileAndLoad(BasicShapeSource(strategy));
         var shapeType = GetType(asm, "Shape");
         var point = InvokeFactory(shapeType, "Point");
-        var tag = ReadTag(point);
+        var kind = ReadKind(point);
         var expected = GetKindValue(shapeType, "Point");
-        Assert.Equal(expected, tag);
+        Assert.Equal(expected, kind);
     }
 
     [Theory]

@@ -13,7 +13,7 @@ namespace TestNs
     {
         double Test(Shape s) => s switch
         {
-            { tag: Shape.Kind.Circle, radius: var r } => r,
+            { kind: Shape.Kind.Circle, radius: var r } => r,
             _ => 0,
         };
     }

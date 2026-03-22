@@ -9,7 +9,7 @@
 
 ## Description
 
-Code accesses a variant-specific field (e.g., `shape.circle_radius`) while the tag guard indicates a different variant is active. Reading memory from the wrong variant's field slot is undefined behavior for overlapping layouts and a logic error for all layouts.
+Code accesses a variant-specific field (e.g., `shape.circle_radius`) while the kind guard indicates a different variant is active. Reading memory from the wrong variant's field slot is undefined behavior for overlapping layouts and a logic error for all layouts.
 
 ## Examples
 

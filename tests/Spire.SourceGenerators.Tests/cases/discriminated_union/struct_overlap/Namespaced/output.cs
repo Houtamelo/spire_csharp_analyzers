@@ -17,7 +17,7 @@ namespace My.Deep.Namespace
         }
 
         [FieldOffset(0)]
-        public readonly Kind tag;
+        public readonly Kind kind;
 
         [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -27,9 +27,9 @@ namespace My.Deep.Namespace
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal readonly string? _message;
 
-        Result(Kind tag) : this()
+        Result(Kind kind) : this()
         {
-            this.tag = tag;
+            this.kind = kind;
         }
 
         public static partial Result Ok(int value)
@@ -47,8 +47,8 @@ namespace My.Deep.Namespace
 
         public void Deconstruct(out Kind kind, out object? f0)
         {
-            kind = this.tag;
-            switch (this.tag)
+            kind = this.kind;
+            switch (this.kind)
             {
                 case Kind.Ok:
                     f0 = this._value;

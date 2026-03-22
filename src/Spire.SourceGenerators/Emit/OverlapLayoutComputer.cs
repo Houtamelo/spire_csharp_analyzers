@@ -70,12 +70,33 @@ internal static class OverlapLayoutComputer
     }
 
     public static OverlapLayoutInfo ComputeLayout(
-        IEnumerable<VariantInfo> variants, int kindSize, bool publicProperties = false)
+        IEnumerable<VariantInfo> variants, int kindSize)
     {
         var variantList = variants.ToList();
-        return publicProperties
-            ? ComputeLayoutPinned(variantList, kindSize)
-            : ComputeLayoutOriginal(variantList, kindSize);
+        return HasFieldNameConflicts(variantList)
+            ? ComputeLayoutOriginal(variantList, kindSize)
+            : ComputeLayoutPinned(variantList, kindSize);
+    }
+
+    private static bool HasFieldNameConflicts(List<VariantInfo> variants)
+    {
+        var fieldTypes = new Dictionary<string, string>();
+        foreach (var variant in variants)
+        {
+            foreach (var field in variant.Fields)
+            {
+                if (fieldTypes.TryGetValue(field.Name, out var existing))
+                {
+                    if (existing != field.TypeFullName)
+                        return true;
+                }
+                else
+                {
+                    fieldTypes[field.Name] = field.TypeFullName;
+                }
+            }
+        }
+        return false;
     }
 
     /// Original per-variant layout. Each variant gets its own R1 field.

@@ -7,16 +7,16 @@ public class ValueSemanticsTests : BehavioralTestBase
 {
     [Theory]
     [MemberData(nameof(StructStrategies))]
-    public void DefaultStruct_TagIsZero(string strategy)
+    public void DefaultStruct_KindIsZero(string strategy)
     {
         var asm = CompileAndLoad(BasicShapeSource(strategy));
         var shapeType = GetType(asm, "Shape");
 
-        // default(Shape) has tag == 0 → first variant (Circle)
+        // default(Shape) has kind == 0 → first variant (Circle)
         var defaultInstance = Activator.CreateInstance(shapeType)!;
-        var tag = ReadTag(defaultInstance);
+        var kind = ReadKind(defaultInstance);
         var firstKind = GetKindValue(shapeType, "Circle");
-        Assert.Equal(firstKind, tag);
+        Assert.Equal(firstKind, kind);
     }
 
     [Theory]

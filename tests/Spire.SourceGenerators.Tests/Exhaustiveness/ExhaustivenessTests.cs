@@ -14,6 +14,6 @@ public class ExhaustivenessTests : GeneratorAnalyzerTestBase
             new ExhaustivenessAnalyzer(),
             new CS8509Suppressor());
 
-    protected override bool IsRelevantDiagnostic(Diagnostic d)
+    protected override bool IsRelevantDiagnostic(RoslynDiagnostic d)
         => d.Id == "SPIRE009";
 }

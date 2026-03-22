@@ -51,7 +51,7 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
             return;
 
         // Must have [EditorBrowsable(EditorBrowsableState.Never)] — variant fields have this,
-        // tag and other public fields do not.
+        // kind and other public fields do not.
         if (!HasEditorBrowsableNever(field))
             return;
 
@@ -189,7 +189,7 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
             => new(variants.ToImmutableHashSet(), true);
     }
 
-    /// Walks the parent chain to find a tag guard and extract guarded variants.
+    /// Walks the parent chain to find a kind guard and extract guarded variants.
     private static GuardResult FindGuard(IOperation memberRefOp, UnionTypeInfo info)
     {
         var current = memberRefOp.Parent;
@@ -249,7 +249,7 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
 
             case IBinaryOperation binary when
                 binary.OperatorKind == BinaryOperatorKind.Equals:
-                // tag == Kind.X or Kind.X == tag — extract the Kind constant
+                // kind == Kind.X or Kind.X == kind — extract the Kind constant
                 TryExtractKindVariant(binary.LeftOperand, info, variants);
                 TryExtractKindVariant(binary.RightOperand, info, variants);
                 break;
@@ -302,7 +302,7 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
     }
 
     /// Checks whether the condition references the same union variable as the member access.
-    /// Handles: is-pattern (s is { tag: Kind.Circle }), tag comparison (s.tag == Kind.Circle).
+    /// Handles: is-pattern (s is { kind: Kind.Circle }), kind comparison (s.kind == Kind.Circle).
     private static bool ConditionReferencesUnionVariable(IOperation condition, IOperation memberRef)
     {
         var targetInstance = memberRef switch
@@ -322,30 +322,30 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
             case IBinaryOperation binary when
                 binary.OperatorKind == BinaryOperatorKind.Equals ||
                 binary.OperatorKind == BinaryOperatorKind.NotEquals:
-                // Check if either side is a .tag access on the same variable
-                return IsTagAccessOnSameVariable(binary.LeftOperand, targetInstance) ||
-                       IsTagAccessOnSameVariable(binary.RightOperand, targetInstance);
+                // Check if either side is a .kind access on the same variable
+                return IsKindAccessOnSameVariable(binary.LeftOperand, targetInstance) ||
+                       IsKindAccessOnSameVariable(binary.RightOperand, targetInstance);
 
             default:
                 return false;
         }
     }
 
-    /// Checks whether an operation is a .tag field/property access on the same variable.
-    private static bool IsTagAccessOnSameVariable(IOperation operation, IOperation targetInstance)
+    /// Checks whether an operation is a .kind field/property access on the same variable.
+    private static bool IsKindAccessOnSameVariable(IOperation operation, IOperation targetInstance)
     {
-        if (operation is IFieldReferenceOperation tagFieldRef &&
-            tagFieldRef.Field.Name == "tag" &&
-            tagFieldRef.Instance is not null)
+        if (operation is IFieldReferenceOperation kindFieldRef &&
+            kindFieldRef.Field.Name == "kind" &&
+            kindFieldRef.Instance is not null)
         {
-            return ReferenceSameVariable(tagFieldRef.Instance, targetInstance);
+            return ReferenceSameVariable(kindFieldRef.Instance, targetInstance);
         }
 
-        if (operation is IPropertyReferenceOperation tagPropRef &&
-            tagPropRef.Property.Name == "tag" &&
-            tagPropRef.Instance is not null)
+        if (operation is IPropertyReferenceOperation kindPropRef &&
+            kindPropRef.Property.Name == "kind" &&
+            kindPropRef.Instance is not null)
         {
-            return ReferenceSameVariable(tagPropRef.Instance, targetInstance);
+            return ReferenceSameVariable(kindPropRef.Instance, targetInstance);
         }
 
         return false;

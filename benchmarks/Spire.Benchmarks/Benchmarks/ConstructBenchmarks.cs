@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Attributes;
+using Spire.Benchmarks.Helpers;
 
 namespace Spire.Benchmarks;
 
@@ -16,57 +17,57 @@ public class ConstructBenchmarks
     // ── Event (mixed) ──
 
     [BenchmarkCategory("Event Construct"), Benchmark(Baseline = true, Description = "additive")]
-    public EventAdditive[] EventAdditive_()
+    public Types.EventAdditive[] EventAdditive_()
     {
-        var arr = new EventAdditive[N];
+        var arr = new Types.EventAdditive[N];
         ArrayFiller.Fill(arr, new Random(42), Distribution.Uniform);
         return arr;
     }
 
     [BenchmarkCategory("Event Construct"), Benchmark(Description = "boxedFields")]
-    public EventBoxedFields[] EventBoxedFields_()
+    public Types.EventBoxedFields[] EventBoxedFields_()
     {
-        var arr = new EventBoxedFields[N];
+        var arr = new Types.EventBoxedFields[N];
         ArrayFiller.Fill(arr, new Random(42), Distribution.Uniform);
         return arr;
     }
 
     [BenchmarkCategory("Event Construct"), Benchmark(Description = "boxedTuple")]
-    public EventBoxedTuple[] EventBoxedTuple_()
+    public Types.EventBoxedTuple[] EventBoxedTuple_()
     {
-        var arr = new EventBoxedTuple[N];
+        var arr = new Types.EventBoxedTuple[N];
         ArrayFiller.Fill(arr, new Random(42), Distribution.Uniform);
         return arr;
     }
 
     [BenchmarkCategory("Event Construct"), Benchmark(Description = "overlap")]
-    public EventOverlap[] EventOverlap_()
+    public Types.EventOverlap[] EventOverlap_()
     {
-        var arr = new EventOverlap[N];
+        var arr = new Types.EventOverlap[N];
         ArrayFiller.Fill(arr, new Random(42), Distribution.Uniform);
         return arr;
     }
 
     [BenchmarkCategory("Event Construct"), Benchmark(Description = "unsafeOverlap")]
-    public EventUnsafeOverlap[] EventUnsafeOverlap_()
+    public Types.EventUnsafeOverlap[] EventUnsafeOverlap_()
     {
-        var arr = new EventUnsafeOverlap[N];
+        var arr = new Types.EventUnsafeOverlap[N];
         ArrayFiller.Fill(arr, new Random(42), Distribution.Uniform);
         return arr;
     }
 
     [BenchmarkCategory("Event Construct"), Benchmark(Description = "record")]
-    public EventRecord[] EventRecord_()
+    public Types.EventRecord[] EventRecord_()
     {
-        var arr = new EventRecord[N];
+        var arr = new Types.EventRecord[N];
         ArrayFiller.Fill(arr, new Random(42), Distribution.Uniform);
         return arr;
     }
 
     [BenchmarkCategory("Event Construct"), Benchmark(Description = "class")]
-    public EventClass[] EventClass_()
+    public Types.EventClass[] EventClass_()
     {
-        var arr = new EventClass[N];
+        var arr = new Types.EventClass[N];
         ArrayFiller.Fill(arr, new Random(42), Distribution.Uniform);
         return arr;
     }
@@ -74,57 +75,57 @@ public class ConstructBenchmarks
     // ── Physics (unmanaged) ──
 
     [BenchmarkCategory("Physics Construct"), Benchmark(Baseline = true, Description = "additive")]
-    public PhysicsAdditive[] PhysicsAdditive_()
+    public Types.PhysicsAdditive[] PhysicsAdditive_()
     {
-        var arr = new PhysicsAdditive[N];
+        var arr = new Types.PhysicsAdditive[N];
         ArrayFiller.Fill(arr, new Random(42), Distribution.Uniform);
         return arr;
     }
 
     [BenchmarkCategory("Physics Construct"), Benchmark(Description = "boxedFields")]
-    public PhysicsBoxedFields[] PhysicsBoxedFields_()
+    public Types.PhysicsBoxedFields[] PhysicsBoxedFields_()
     {
-        var arr = new PhysicsBoxedFields[N];
+        var arr = new Types.PhysicsBoxedFields[N];
         ArrayFiller.Fill(arr, new Random(42), Distribution.Uniform);
         return arr;
     }
 
     [BenchmarkCategory("Physics Construct"), Benchmark(Description = "boxedTuple")]
-    public PhysicsBoxedTuple[] PhysicsBoxedTuple_()
+    public Types.PhysicsBoxedTuple[] PhysicsBoxedTuple_()
     {
-        var arr = new PhysicsBoxedTuple[N];
+        var arr = new Types.PhysicsBoxedTuple[N];
         ArrayFiller.Fill(arr, new Random(42), Distribution.Uniform);
         return arr;
     }
 
     [BenchmarkCategory("Physics Construct"), Benchmark(Description = "overlap")]
-    public PhysicsOverlap[] PhysicsOverlap_()
+    public Types.PhysicsOverlap[] PhysicsOverlap_()
     {
-        var arr = new PhysicsOverlap[N];
+        var arr = new Types.PhysicsOverlap[N];
         ArrayFiller.Fill(arr, new Random(42), Distribution.Uniform);
         return arr;
     }
 
     [BenchmarkCategory("Physics Construct"), Benchmark(Description = "unsafeOverlap")]
-    public PhysicsUnsafeOverlap[] PhysicsUnsafeOverlap_()
+    public Types.PhysicsUnsafeOverlap[] PhysicsUnsafeOverlap_()
     {
-        var arr = new PhysicsUnsafeOverlap[N];
+        var arr = new Types.PhysicsUnsafeOverlap[N];
         ArrayFiller.Fill(arr, new Random(42), Distribution.Uniform);
         return arr;
     }
 
     [BenchmarkCategory("Physics Construct"), Benchmark(Description = "record")]
-    public PhysicsRecord[] PhysicsRecord_()
+    public Types.PhysicsRecord[] PhysicsRecord_()
     {
-        var arr = new PhysicsRecord[N];
+        var arr = new Types.PhysicsRecord[N];
         ArrayFiller.Fill(arr, new Random(42), Distribution.Uniform);
         return arr;
     }
 
     [BenchmarkCategory("Physics Construct"), Benchmark(Description = "class")]
-    public PhysicsClass[] PhysicsClass_()
+    public Types.PhysicsClass[] PhysicsClass_()
     {
-        var arr = new PhysicsClass[N];
+        var arr = new Types.PhysicsClass[N];
         ArrayFiller.Fill(arr, new Random(42), Distribution.Uniform);
         return arr;
     }

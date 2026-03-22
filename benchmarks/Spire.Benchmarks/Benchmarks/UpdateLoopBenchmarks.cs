@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using BenchmarkDotNet.Attributes;
+using Spire.Benchmarks.Helpers;
 
 namespace Spire.Benchmarks;
 
@@ -13,24 +14,24 @@ public class UpdateLoopBenchmarks
     [ParamsAllValues]
     public Distribution Dist { get; set; }
 
-    EventAdditive[] _additive = null!;
-    EventBoxedFields[] _boxedFields = null!;
-    EventBoxedTuple[] _boxedTuple = null!;
-    EventOverlap[] _overlap = null!;
-    EventUnsafeOverlap[] _unsafeOverlap = null!;
-    EventRecord[] _record = null!;
-    EventClass[] _class = null!;
+    Types.EventAdditive[] _additive = null!;
+    Types.EventBoxedFields[] _boxedFields = null!;
+    Types.EventBoxedTuple[] _boxedTuple = null!;
+    Types.EventOverlap[] _overlap = null!;
+    Types.EventUnsafeOverlap[] _unsafeOverlap = null!;
+    Types.EventRecord[] _record = null!;
+    Types.EventClass[] _class = null!;
 
     [GlobalSetup]
     public void Setup()
     {
-        _additive = new EventAdditive[N];
-        _boxedFields = new EventBoxedFields[N];
-        _boxedTuple = new EventBoxedTuple[N];
-        _overlap = new EventOverlap[N];
-        _unsafeOverlap = new EventUnsafeOverlap[N];
-        _record = new EventRecord[N];
-        _class = new EventClass[N];
+        _additive = new Types.EventAdditive[N];
+        _boxedFields = new Types.EventBoxedFields[N];
+        _boxedTuple = new Types.EventBoxedTuple[N];
+        _overlap = new Types.EventOverlap[N];
+        _unsafeOverlap = new Types.EventUnsafeOverlap[N];
+        _record = new Types.EventRecord[N];
+        _class = new Types.EventClass[N];
 
         ArrayFiller.Fill(_additive, new Random(42), Dist);
         ArrayFiller.Fill(_boxedFields, new Random(42), Dist);
@@ -60,25 +61,25 @@ public class UpdateLoopBenchmarks
         for (int i = 0; i < arr.Length; i++)
         {
             var e = arr[i];
-            switch (e.tag)
+            switch (e.kind)
             {
-                case EventAdditive.Kind.Circle:
+                case Types.EventAdditive.Kind.Circle:
                     e.Deconstruct(out _, out object? cf0);
                     sum += (double)cf0! * (double)cf0! * 3.14159;
                     break;
-                case EventAdditive.Kind.Rectangle:
+                case Types.EventAdditive.Kind.Rectangle:
                     e.Deconstruct(out _, out float rw, out float rh);
                     sum += rw * rh;
                     break;
-                case EventAdditive.Kind.Transform:
+                case Types.EventAdditive.Kind.Transform:
                     e.Deconstruct(out _, out float tx, out float ty, out float tz, out float tw);
                     sum += tx * ty + tz * tw;
                     break;
-                case EventAdditive.Kind.RichText:
+                case Types.EventAdditive.Kind.RichText:
                     e.Deconstruct(out _, out string _, out int rsz, out bool _, out string _, out double rsp);
                     sum += rsp * rsz;
                     break;
-                case EventAdditive.Kind.ColoredLine:
+                case Types.EventAdditive.Kind.ColoredLine:
                     e.Deconstruct(out _, out int cx, out int cy, out string _);
                     sum += cx + cy;
                     break;
@@ -95,25 +96,25 @@ public class UpdateLoopBenchmarks
         for (int i = 0; i < arr.Length; i++)
         {
             var e = arr[i];
-            switch (e.tag)
+            switch (e.kind)
             {
-                case EventBoxedFields.Kind.Circle:
+                case Types.EventBoxedFields.Kind.Circle:
                     e.Deconstruct(out _, out object? cf0);
                     sum += (double)cf0! * (double)cf0! * 3.14159;
                     break;
-                case EventBoxedFields.Kind.Rectangle:
+                case Types.EventBoxedFields.Kind.Rectangle:
                     e.Deconstruct(out _, out float rw, out float rh);
                     sum += rw * rh;
                     break;
-                case EventBoxedFields.Kind.Transform:
+                case Types.EventBoxedFields.Kind.Transform:
                     e.Deconstruct(out _, out float tx, out float ty, out float tz, out float tw);
                     sum += tx * ty + tz * tw;
                     break;
-                case EventBoxedFields.Kind.RichText:
+                case Types.EventBoxedFields.Kind.RichText:
                     e.Deconstruct(out _, out string _, out int rsz, out bool _, out string _, out double rsp);
                     sum += rsp * rsz;
                     break;
-                case EventBoxedFields.Kind.ColoredLine:
+                case Types.EventBoxedFields.Kind.ColoredLine:
                     e.Deconstruct(out _, out int cx, out int cy, out string _);
                     sum += cx + cy;
                     break;
@@ -130,29 +131,29 @@ public class UpdateLoopBenchmarks
         for (int i = 0; i < arr.Length; i++)
         {
             var e = arr[i];
-            switch (e.tag)
+            switch (e.kind)
             {
-                case EventBoxedTuple.Kind.Circle:
+                case Types.EventBoxedTuple.Kind.Circle:
                     e.Deconstruct(out _, out object? cf0);
                     sum += (double)cf0! * (double)cf0! * 3.14159;
                     break;
-                case EventBoxedTuple.Kind.Rectangle:
+                case Types.EventBoxedTuple.Kind.Rectangle:
                     // BoxedTuple only has (Kind, object?) Deconstruct — must cast payload
                     e.Deconstruct(out _, out object? rpay);
                     var rect = ((float, float))rpay!;
                     sum += rect.Item1 * rect.Item2;
                     break;
-                case EventBoxedTuple.Kind.Transform:
+                case Types.EventBoxedTuple.Kind.Transform:
                     e.Deconstruct(out _, out object? tpay);
                     var tf = ((float, float, float, float))tpay!;
                     sum += tf.Item1 * tf.Item2 + tf.Item3 * tf.Item4;
                     break;
-                case EventBoxedTuple.Kind.RichText:
+                case Types.EventBoxedTuple.Kind.RichText:
                     e.Deconstruct(out _, out object? rtpay);
                     var rt = ((string, int, bool, string, double))rtpay!;
                     sum += rt.Item5 * rt.Item2;
                     break;
-                case EventBoxedTuple.Kind.ColoredLine:
+                case Types.EventBoxedTuple.Kind.ColoredLine:
                     e.Deconstruct(out _, out object? clpay);
                     var cl = ((int, int, string))clpay!;
                     sum += cl.Item1 + cl.Item2;
@@ -170,25 +171,25 @@ public class UpdateLoopBenchmarks
         for (int i = 0; i < arr.Length; i++)
         {
             var e = arr[i];
-            switch (e.tag)
+            switch (e.kind)
             {
-                case EventOverlap.Kind.Circle:
+                case Types.EventOverlap.Kind.Circle:
                     e.Deconstruct(out _, out object? cf0);
                     sum += (double)cf0! * (double)cf0! * 3.14159;
                     break;
-                case EventOverlap.Kind.Rectangle:
+                case Types.EventOverlap.Kind.Rectangle:
                     e.Deconstruct(out _, out float rw, out float rh);
                     sum += rw * rh;
                     break;
-                case EventOverlap.Kind.Transform:
+                case Types.EventOverlap.Kind.Transform:
                     e.Deconstruct(out _, out float tx, out float ty, out float tz, out float tw);
                     sum += tx * ty + tz * tw;
                     break;
-                case EventOverlap.Kind.RichText:
+                case Types.EventOverlap.Kind.RichText:
                     e.Deconstruct(out _, out string _, out int rsz, out bool _, out string _, out double rsp);
                     sum += rsp * rsz;
                     break;
-                case EventOverlap.Kind.ColoredLine:
+                case Types.EventOverlap.Kind.ColoredLine:
                     e.Deconstruct(out _, out int cx, out int cy, out string _);
                     sum += cx + cy;
                     break;
@@ -205,25 +206,25 @@ public class UpdateLoopBenchmarks
         for (int i = 0; i < arr.Length; i++)
         {
             var e = arr[i];
-            switch (e.tag)
+            switch (e.kind)
             {
-                case EventUnsafeOverlap.Kind.Circle:
+                case Types.EventUnsafeOverlap.Kind.Circle:
                     e.Deconstruct(out _, out object? cf0);
                     sum += (double)cf0! * (double)cf0! * 3.14159;
                     break;
-                case EventUnsafeOverlap.Kind.Rectangle:
+                case Types.EventUnsafeOverlap.Kind.Rectangle:
                     e.Deconstruct(out _, out float rw, out float rh);
                     sum += rw * rh;
                     break;
-                case EventUnsafeOverlap.Kind.Transform:
+                case Types.EventUnsafeOverlap.Kind.Transform:
                     e.Deconstruct(out _, out float tx, out float ty, out float tz, out float tw);
                     sum += tx * ty + tz * tw;
                     break;
-                case EventUnsafeOverlap.Kind.RichText:
+                case Types.EventUnsafeOverlap.Kind.RichText:
                     e.Deconstruct(out _, out string _, out int rsz, out bool _, out string _, out double rsp);
                     sum += rsp * rsz;
                     break;
-                case EventUnsafeOverlap.Kind.ColoredLine:
+                case Types.EventUnsafeOverlap.Kind.ColoredLine:
                     e.Deconstruct(out _, out int cx, out int cy, out string _);
                     sum += cx + cy;
                     break;
@@ -241,11 +242,11 @@ public class UpdateLoopBenchmarks
         {
             sum += arr[i] switch
             {
-                EventRecord.Circle(var radius) => radius * radius * 3.14159,
-                EventRecord.Rectangle(var w, var h) => w * h,
-                EventRecord.Transform(var x, var y, var z, var w) => x * y + z * w,
-                EventRecord.RichText(_, var sz, _, _, var sp) => sp * sz,
-                EventRecord.ColoredLine(var x1, var y1, _) => x1 + y1,
+                Types.EventRecord.Circle(var radius) => radius * radius * 3.14159,
+                Types.EventRecord.Rectangle(var w, var h) => w * h,
+                Types.EventRecord.Transform(var x, var y, var z, var w) => x * y + z * w,
+                Types.EventRecord.RichText(_, var sz, _, _, var sp) => sp * sz,
+                Types.EventRecord.ColoredLine(var x1, var y1, _) => x1 + y1,
                 _ => 0,
             };
         }
@@ -262,11 +263,11 @@ public class UpdateLoopBenchmarks
             // Class variants don't have positional Deconstruct — use type pattern + properties
             sum += arr[i] switch
             {
-                EventClass.Circle c => c.Radius * c.Radius * 3.14159,
-                EventClass.Rectangle r => r.Width * r.Height,
-                EventClass.Transform t => t.X * t.Y + t.Z * t.W,
-                EventClass.RichText rt => rt.Spacing * rt.Size,
-                EventClass.ColoredLine cl => cl.X1 + cl.Y1,
+                Types.EventClass.Circle c => c.Radius * c.Radius * 3.14159,
+                Types.EventClass.Rectangle r => r.Width * r.Height,
+                Types.EventClass.Transform t => t.X * t.Y + t.Z * t.W,
+                Types.EventClass.RichText rt => rt.Spacing * rt.Size,
+                Types.EventClass.ColoredLine cl => cl.X1 + cl.Y1,
                 _ => 0,
             };
         }
@@ -274,7 +275,7 @@ public class UpdateLoopBenchmarks
     }
 
     // ════════════════════════════════════════════════════════════════
-    // Property — C# property pattern syntax: case { tag: Kind.X, field: var x }
+    // Property — C# property pattern syntax: case { kind: Kind.X, field: var x }
     //
     // All struct strategies now have public typed properties.
     // Record/Class: type + property pattern.
@@ -289,19 +290,19 @@ public class UpdateLoopBenchmarks
         {
             switch (arr[i])
             {
-                case { tag: EventAdditive.Kind.Circle, radius: var r }:
+                case { kind: Types.EventAdditive.Kind.Circle, radius: var r }:
                     sum += r * r * 3.14159;
                     break;
-                case { tag: EventAdditive.Kind.Rectangle, width: var w, height: var h }:
+                case { kind: Types.EventAdditive.Kind.Rectangle, width: var w, height: var h }:
                     sum += w * h;
                     break;
-                case { tag: EventAdditive.Kind.Transform, x: var x, y: var y, z: var z, w: var w }:
+                case { kind: Types.EventAdditive.Kind.Transform, x: var x, y: var y, z: var z, w: var w }:
                     sum += x * y + z * w;
                     break;
-                case { tag: EventAdditive.Kind.RichText, spacing: var sp, size: var sz }:
+                case { kind: Types.EventAdditive.Kind.RichText, spacing: var sp, size: var sz }:
                     sum += sp * sz;
                     break;
-                case { tag: EventAdditive.Kind.ColoredLine, x1: var x1, y1: var y1 }:
+                case { kind: Types.EventAdditive.Kind.ColoredLine, x1: var x1, y1: var y1 }:
                     sum += x1 + y1;
                     break;
             }
@@ -318,19 +319,19 @@ public class UpdateLoopBenchmarks
         {
             switch (arr[i])
             {
-                case { tag: EventBoxedFields.Kind.Circle, radius: var r }:
+                case { kind: Types.EventBoxedFields.Kind.Circle, radius: var r }:
                     sum += r * r * 3.14159;
                     break;
-                case { tag: EventBoxedFields.Kind.Rectangle, width: var w, height: var h }:
+                case { kind: Types.EventBoxedFields.Kind.Rectangle, width: var w, height: var h }:
                     sum += w * h;
                     break;
-                case { tag: EventBoxedFields.Kind.Transform, x: var x, y: var y, z: var z, w: var w }:
+                case { kind: Types.EventBoxedFields.Kind.Transform, x: var x, y: var y, z: var z, w: var w }:
                     sum += x * y + z * w;
                     break;
-                case { tag: EventBoxedFields.Kind.RichText, spacing: var sp, size: var sz }:
+                case { kind: Types.EventBoxedFields.Kind.RichText, spacing: var sp, size: var sz }:
                     sum += sp * sz;
                     break;
-                case { tag: EventBoxedFields.Kind.ColoredLine, x1: var x1, y1: var y1 }:
+                case { kind: Types.EventBoxedFields.Kind.ColoredLine, x1: var x1, y1: var y1 }:
                     sum += x1 + y1;
                     break;
             }
@@ -347,19 +348,19 @@ public class UpdateLoopBenchmarks
         {
             switch (arr[i])
             {
-                case { tag: EventBoxedTuple.Kind.Circle, radius: var r }:
+                case { kind: Types.EventBoxedTuple.Kind.Circle, radius: var r }:
                     sum += r * r * 3.14159;
                     break;
-                case { tag: EventBoxedTuple.Kind.Rectangle, width: var w, height: var h }:
+                case { kind: Types.EventBoxedTuple.Kind.Rectangle, width: var w, height: var h }:
                     sum += w * h;
                     break;
-                case { tag: EventBoxedTuple.Kind.Transform, x: var x, y: var y, z: var z, w: var w }:
+                case { kind: Types.EventBoxedTuple.Kind.Transform, x: var x, y: var y, z: var z, w: var w }:
                     sum += x * y + z * w;
                     break;
-                case { tag: EventBoxedTuple.Kind.RichText, spacing: var sp, size: var sz }:
+                case { kind: Types.EventBoxedTuple.Kind.RichText, spacing: var sp, size: var sz }:
                     sum += sp * sz;
                     break;
-                case { tag: EventBoxedTuple.Kind.ColoredLine, x1: var x1, y1: var y1 }:
+                case { kind: Types.EventBoxedTuple.Kind.ColoredLine, x1: var x1, y1: var y1 }:
                     sum += x1 + y1;
                     break;
             }
@@ -376,19 +377,19 @@ public class UpdateLoopBenchmarks
         {
             switch (arr[i])
             {
-                case { tag: EventOverlap.Kind.Circle, radius: var r }:
+                case { kind: Types.EventOverlap.Kind.Circle, radius: var r }:
                     sum += r * r * 3.14159;
                     break;
-                case { tag: EventOverlap.Kind.Rectangle, width: var w, height: var h }:
+                case { kind: Types.EventOverlap.Kind.Rectangle, width: var w, height: var h }:
                     sum += w * h;
                     break;
-                case { tag: EventOverlap.Kind.Transform, x: var x, y: var y, z: var z, w: var w }:
+                case { kind: Types.EventOverlap.Kind.Transform, x: var x, y: var y, z: var z, w: var w }:
                     sum += x * y + z * w;
                     break;
-                case { tag: EventOverlap.Kind.RichText, spacing: var sp, size: var sz }:
+                case { kind: Types.EventOverlap.Kind.RichText, spacing: var sp, size: var sz }:
                     sum += sp * sz;
                     break;
-                case { tag: EventOverlap.Kind.ColoredLine, x1: var x1, y1: var y1 }:
+                case { kind: Types.EventOverlap.Kind.ColoredLine, x1: var x1, y1: var y1 }:
                     sum += x1 + y1;
                     break;
             }
@@ -405,19 +406,19 @@ public class UpdateLoopBenchmarks
         {
             switch (arr[i])
             {
-                case { tag: EventUnsafeOverlap.Kind.Circle, radius: var r }:
+                case { kind: Types.EventUnsafeOverlap.Kind.Circle, radius: var r }:
                     sum += r * r * 3.14159;
                     break;
-                case { tag: EventUnsafeOverlap.Kind.Rectangle, width: var w, height: var h }:
+                case { kind: Types.EventUnsafeOverlap.Kind.Rectangle, width: var w, height: var h }:
                     sum += w * h;
                     break;
-                case { tag: EventUnsafeOverlap.Kind.Transform, x: var x, y: var y, z: var z, w: var w }:
+                case { kind: Types.EventUnsafeOverlap.Kind.Transform, x: var x, y: var y, z: var z, w: var w }:
                     sum += x * y + z * w;
                     break;
-                case { tag: EventUnsafeOverlap.Kind.RichText, spacing: var sp, size: var sz }:
+                case { kind: Types.EventUnsafeOverlap.Kind.RichText, spacing: var sp, size: var sz }:
                     sum += sp * sz;
                     break;
-                case { tag: EventUnsafeOverlap.Kind.ColoredLine, x1: var x1, y1: var y1 }:
+                case { kind: Types.EventUnsafeOverlap.Kind.ColoredLine, x1: var x1, y1: var y1 }:
                     sum += x1 + y1;
                     break;
             }
@@ -434,19 +435,19 @@ public class UpdateLoopBenchmarks
         {
             switch (arr[i])
             {
-                case EventRecord.Circle { Radius: var r }:
+                case Types.EventRecord.Circle { Radius: var r }:
                     sum += r * r * 3.14159;
                     break;
-                case EventRecord.Rectangle { Width: var w, Height: var h }:
+                case Types.EventRecord.Rectangle { Width: var w, Height: var h }:
                     sum += w * h;
                     break;
-                case EventRecord.Transform { X: var x, Y: var y, Z: var z, W: var w }:
+                case Types.EventRecord.Transform { X: var x, Y: var y, Z: var z, W: var w }:
                     sum += x * y + z * w;
                     break;
-                case EventRecord.RichText { Spacing: var sp, Size: var sz }:
+                case Types.EventRecord.RichText { Spacing: var sp, Size: var sz }:
                     sum += sp * sz;
                     break;
-                case EventRecord.ColoredLine { X1: var x1, Y1: var y1 }:
+                case Types.EventRecord.ColoredLine { X1: var x1, Y1: var y1 }:
                     sum += x1 + y1;
                     break;
             }
@@ -463,19 +464,19 @@ public class UpdateLoopBenchmarks
         {
             switch (arr[i])
             {
-                case EventClass.Circle { Radius: var r }:
+                case Types.EventClass.Circle { Radius: var r }:
                     sum += r * r * 3.14159;
                     break;
-                case EventClass.Rectangle { Width: var w, Height: var h }:
+                case Types.EventClass.Rectangle { Width: var w, Height: var h }:
                     sum += w * h;
                     break;
-                case EventClass.Transform { X: var x, Y: var y, Z: var z, W: var w }:
+                case Types.EventClass.Transform { X: var x, Y: var y, Z: var z, W: var w }:
                     sum += x * y + z * w;
                     break;
-                case EventClass.RichText { Spacing: var sp, Size: var sz }:
+                case Types.EventClass.RichText { Spacing: var sp, Size: var sz }:
                     sum += sp * sz;
                     break;
-                case EventClass.ColoredLine { X1: var x1, Y1: var y1 }:
+                case Types.EventClass.ColoredLine { X1: var x1, Y1: var y1 }:
                     sum += x1 + y1;
                     break;
             }

@@ -18,7 +18,7 @@ namespace TestNs
         }
 
         [FieldOffset(0)]
-        public readonly Kind tag;
+        public readonly Kind kind;
 
         [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -28,9 +28,9 @@ namespace TestNs
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal readonly string? _name;
 
-        Token(Kind tag) : this()
+        Token(Kind kind) : this()
         {
-            this.tag = tag;
+            this.kind = kind;
         }
 
         public static partial Token Ident(string name)
@@ -50,8 +50,8 @@ namespace TestNs
 
         public void Deconstruct(out Kind kind, out object? f0)
         {
-            kind = this.tag;
-            switch (this.tag)
+            kind = this.kind;
+            switch (this.kind)
             {
                 case Kind.Ident:
                     f0 = this._name;

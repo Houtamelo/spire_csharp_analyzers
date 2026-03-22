@@ -17,7 +17,7 @@ namespace TestNs
         }
 
         [FieldOffset(0)]
-        public readonly Kind tag;
+        public readonly Kind kind;
 
         [FieldOffset(8)]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -31,9 +31,9 @@ namespace TestNs
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal readonly object? _obj_start;
 
-        Drawing(Kind tag) : this()
+        Drawing(Kind kind) : this()
         {
-            this.tag = tag;
+            this.kind = kind;
         }
 
         public static partial Drawing Dot(global::TestNs.Point location)
@@ -52,13 +52,13 @@ namespace TestNs
 
         public void Deconstruct(out Kind kind, out global::TestNs.Point location)
         {
-            kind = this.tag;
+            kind = this.kind;
             location = (global::TestNs.Point)this._obj_location!;
         }
 
         public void Deconstruct(out Kind kind, out global::TestNs.Point start, out global::TestNs.Point end)
         {
-            kind = this.tag;
+            kind = this.kind;
             start = (global::TestNs.Point)this._obj_start!;
             end = (global::TestNs.Point)this._obj_end!;
         }

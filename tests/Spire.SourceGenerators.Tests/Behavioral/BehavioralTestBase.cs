@@ -114,10 +114,10 @@ public abstract class BehavioralTestBase
         return prop.GetValue(instance);
     }
 
-    /// Read the public `tag` field, returning the underlying integral value.
-    protected static int ReadTag(object instance)
+    /// Read the public `kind` field, returning the underlying integral value.
+    protected static int ReadKind(object instance)
     {
-        var field = instance.GetType().GetField("tag",
+        var field = instance.GetType().GetField("kind",
             BindingFlags.Public | BindingFlags.Instance);
         Assert.NotNull(field);
         return Convert.ToInt32(field.GetValue(instance)!);
@@ -258,7 +258,7 @@ public abstract class BehavioralTestBase
 
         public static class TestRunner
         {
-            public static string MatchTag(Shape s) => s.tag switch
+            public static string MatchKind(Shape s) => s.kind switch
             {
                 Shape.Kind.Circle => "circle",
                 Shape.Kind.Square => "square",
@@ -269,13 +269,13 @@ public abstract class BehavioralTestBase
 
             public static double ExtractRadius(Shape s) => s switch
             {
-                { tag: Shape.Kind.Circle, radius: var r } => r,
+                { kind: Shape.Kind.Circle, radius: var r } => r,
                 _ => -1.0
             };
 
             public static string ExtractMultiField(Shape s) => s switch
             {
-                { tag: Shape.Kind.Rectangle, width: var w, height: var h } => $"{w},{h}",
+                { kind: Shape.Kind.Rectangle, width: var w, height: var h } => $"{w},{h}",
                 _ => "none"
             };
         }

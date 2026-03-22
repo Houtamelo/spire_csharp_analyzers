@@ -14,7 +14,7 @@ partial struct Shape
         Point,
     }
 
-    public readonly Kind tag;
+    public readonly Kind kind;
 
     [InlineArray(16)]
     [EditorBrowsable(EditorBrowsableState.Never)]
@@ -23,9 +23,9 @@ partial struct Shape
     [EditorBrowsable(EditorBrowsableState.Never)]
     internal _Buffer _data;
 
-    Shape(Kind tag)
+    Shape(Kind kind)
     {
-        this.tag = tag;
+        this.kind = kind;
         this._data = default;
     }
 
@@ -47,8 +47,8 @@ partial struct Shape
 
     public void Deconstruct(out Kind kind, out object? f0)
     {
-        kind = this.tag;
-        switch (this.tag)
+        kind = this.kind;
+        switch (this.kind)
         {
             case Kind.Circle:
                 f0 = Unsafe.ReadUnaligned<double>(ref Unsafe.Add(ref _data[0], 4));
@@ -61,7 +61,7 @@ partial struct Shape
 
     public void Deconstruct(out Kind kind, out float width, out float height)
     {
-        kind = this.tag;
+        kind = this.kind;
         width = Unsafe.ReadUnaligned<float>(ref Unsafe.Add(ref _data[0], 12));
         height = Unsafe.ReadUnaligned<float>(ref _data[0]);
     }

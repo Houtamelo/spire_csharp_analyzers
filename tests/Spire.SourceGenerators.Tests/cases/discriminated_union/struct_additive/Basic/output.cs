@@ -12,15 +12,15 @@ partial struct Shape
         Point,
     }
 
-    public readonly Kind tag;
+    public readonly Kind kind;
     [EditorBrowsable(EditorBrowsableState.Never)]
     internal readonly double _s0;
     [EditorBrowsable(EditorBrowsableState.Never)]
     internal readonly int _s1;
 
-    Shape(Kind tag, double s0, int s1)
+    Shape(Kind kind, double s0, int s1)
     {
-        this.tag = tag;
+        this.kind = kind;
         this._s0 = s0;
         this._s1 = s1;
     }
@@ -34,8 +34,8 @@ partial struct Shape
 
     public void Deconstruct(out Kind kind, out object? f0)
     {
-        kind = this.tag;
-        switch (this.tag)
+        kind = this.kind;
+        switch (this.kind)
         {
             case Kind.Circle:
                 f0 = this._s0;

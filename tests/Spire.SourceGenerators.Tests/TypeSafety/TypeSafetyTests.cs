@@ -12,6 +12,6 @@ public class TypeSafetyTests : GeneratorAnalyzerTestBase
     protected override ImmutableArray<DiagnosticAnalyzer> GetAnalyzers()
         => ImmutableArray.Create<DiagnosticAnalyzer>(new TypeSafetyAnalyzer());
 
-    protected override bool IsRelevantDiagnostic(Diagnostic d)
+    protected override bool IsRelevantDiagnostic(RoslynDiagnostic d)
         => d.Id == "SPIRE011" || d.Id == "SPIRE012";
 }

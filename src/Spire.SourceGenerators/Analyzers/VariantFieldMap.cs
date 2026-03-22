@@ -49,7 +49,7 @@ internal sealed class VariantFieldMap
         // For each [EditorBrowsable(Never)] property, find which variant owns it
         foreach (var prop in unionType.GetMembers().OfType<IPropertySymbol>())
         {
-            if (prop.Name == "tag") continue;
+            if (prop.Name == "kind") continue;
             if (!HasEditorBrowsableNever(prop)) continue;
 
             // Find the first variant method that has a parameter matching this property name
@@ -74,7 +74,7 @@ internal sealed class VariantFieldMap
 
         foreach (var field in unionType.GetMembers().OfType<IFieldSymbol>())
         {
-            if (field.Name == "tag") continue;
+            if (field.Name == "kind") continue;
             if (!HasEditorBrowsableNever(field)) continue;
             if (field.Name.StartsWith("_obj_")) continue;
             if (field.Name.StartsWith("_")) continue; // skip internal storage fields in global mode

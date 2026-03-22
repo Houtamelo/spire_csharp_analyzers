@@ -14,7 +14,7 @@ namespace TestNs
             Ping,
         }
 
-        public readonly Kind tag;
+        public readonly Kind kind;
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal readonly int _s0;
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -26,9 +26,9 @@ namespace TestNs
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal readonly object? _s4;
 
-        Event(Kind tag, int s0, int s1, object? s2, object? s3, object? s4)
+        Event(Kind kind, int s0, int s1, object? s2, object? s3, object? s4)
         {
-            this.tag = tag;
+            this.kind = kind;
             this._s0 = s0;
             this._s1 = s1;
             this._s2 = s2;
@@ -45,8 +45,8 @@ namespace TestNs
 
         public void Deconstruct(out Kind kind, out object? f0, out object? f1)
         {
-            kind = this.tag;
-            switch (this.tag)
+            kind = this.kind;
+            switch (this.kind)
             {
                 case Kind.Error:
                     f0 = this._s3;
@@ -61,7 +61,7 @@ namespace TestNs
 
         public void Deconstruct(out Kind kind, out int x, out int y, out string target)
         {
-            kind = this.tag;
+            kind = this.kind;
             x = this._s0;
             y = this._s1;
             target = (string)this._s4!;

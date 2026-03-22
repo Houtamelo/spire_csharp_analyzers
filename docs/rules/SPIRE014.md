@@ -1,4 +1,4 @@
-# SPIRE014: Accessing variant field without tag guard
+# SPIRE014: Accessing variant field without kind guard
 
 | Property    | Value        |
 |-------------|--------------|
@@ -9,9 +9,9 @@
 
 ## Description
 
-Code accesses a variant-specific field (e.g., `shape.circle_radius`) without first checking which variant is active via a switch, if-pattern, or equality check on `tag`. Without a guard, the field read may return garbage data from a different variant's overlapping memory.
+Code accesses a variant-specific field (e.g., `shape.circle_radius`) without first checking which variant is active via a switch, if-pattern, or equality check on `kind`. Without a guard, the field read may return garbage data from a different variant's overlapping memory.
 
-Accessing the `tag` field itself is always safe and does not trigger this diagnostic.
+Accessing the `kind` field itself is always safe and does not trigger this diagnostic.
 
 ## Examples
 
@@ -27,7 +27,7 @@ partial struct Shape
 
 void Bad(Shape s)
 {
-    var r = s.circle_radius;  // SPIRE014: no tag guard
+    var r = s.circle_radius;  // SPIRE014: no kind guard
 }
 ```
 
@@ -36,9 +36,9 @@ void Bad(Shape s)
 ```csharp
 void Ok(Shape s)
 {
-    if (s.tag == Shape.Kind.Circle)
+    if (s.kind == Shape.Kind.Circle)
     {
-        var r = s.circle_radius;  // guarded by tag check
+        var r = s.circle_radius;  // guarded by kind check
     }
 }
 

@@ -33,7 +33,7 @@ internal static class GeneratorTestHelper
     public static GeneratorDriverRunResult RunGenerator(
         string source,
         out Compilation outputCompilation,
-        out ImmutableArray<Diagnostic> diagnostics,
+        out ImmutableArray<Microsoft.CodeAnalysis.Diagnostic> diagnostics,
         string path = "test.cs")
     {
         var syntaxTree = CSharpSyntaxTree.ParseText(source,
@@ -106,7 +106,7 @@ internal static class GeneratorTestHelper
     }
 
     public static void AssertNoGeneratorDiagnostics(
-        ImmutableArray<Diagnostic> diagnostics)
+        ImmutableArray<Microsoft.CodeAnalysis.Diagnostic> diagnostics)
     {
         var errors = diagnostics
             .Where(d => d.Severity >= DiagnosticSeverity.Warning)

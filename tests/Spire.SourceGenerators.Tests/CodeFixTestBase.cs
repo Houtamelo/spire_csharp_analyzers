@@ -124,11 +124,13 @@ public abstract class CodeFixTestBase
         var modifiedDoc = workspace.CurrentSolution.GetDocument(userDocId)!;
         var modifiedText = (await modifiedDoc.GetTextAsync()).ToString();
 
-        // Compare with expected output
+        // Compare with expected output (NormalizeWhitespace needed because
+        // IsEquivalentTo considers trivia differences in property pattern clauses as structural)
         var actualTree = CSharpSyntaxTree.ParseText(modifiedText);
         var expectedTree = CSharpSyntaxTree.ParseText(afterSource);
 
-        if (!actualTree.GetRoot().IsEquivalentTo(expectedTree.GetRoot()))
+        if (!actualTree.GetRoot().NormalizeWhitespace().IsEquivalentTo(
+                expectedTree.GetRoot().NormalizeWhitespace()))
         {
             throw new XunitException(
                 $"Code fix mismatch for case '{caseName}'.\n\n" +

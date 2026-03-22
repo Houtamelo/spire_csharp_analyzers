@@ -1,5 +1,3 @@
-//@ should_pass
-// Accessing .tag is always OK — it's not a variant field
 using Spire;
 namespace TestNs
 {
@@ -9,8 +7,13 @@ namespace TestNs
         [Variant] public static partial Shape Circle(double radius);
         [Variant] public static partial Shape Square(int sideLength);
     }
-    class C
+
+    class Consumer
     {
-        Shape.Kind Test(Shape s) => s.tag;
+        int Test(Shape s) => s switch
+        {
+            { kind: Shape.Kind.Circle, radius: var _ } => 1,
+            { kind: Shape.Kind.Square, sideLength: var x } => 2,
+        };
     }
 }

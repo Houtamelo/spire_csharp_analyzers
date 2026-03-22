@@ -13,13 +13,13 @@ namespace My.Deep.Namespace
             Err,
         }
 
-        public readonly Kind tag;
+        public readonly Kind kind;
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal readonly object? _payload;
 
-        Result(Kind tag, object? payload)
+        Result(Kind kind, object? payload)
         {
-            this.tag = tag;
+            this.kind = kind;
             this._payload = payload;
         }
 
@@ -30,7 +30,7 @@ namespace My.Deep.Namespace
 
         public void Deconstruct(out Kind kind, out object? payload)
         {
-            kind = this.tag;
+            kind = this.kind;
             payload = this._payload;
         }
         [EditorBrowsable(EditorBrowsableState.Never)]

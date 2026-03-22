@@ -68,8 +68,8 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
                 if (diag.IsError) return;
             }
 
-            // PublicProperties: check for field name+type conflicts across variants
-            if (union.PublicProperties && HasFieldNameConflicts(ctx, union))
+            // Check for field name+type conflicts across variants (always an error)
+            if (HasFieldNameConflicts(ctx, union))
                 return;
 
             // UnsafeOverlap requires AllowUnsafe
@@ -165,7 +165,7 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
             hasConflict = true;
             var typeList = string.Join(", ", kv.Value.OrderBy(t => t));
             var message = $"Field '{kv.Key}' has conflicting types across variants: {typeList}. " +
-                          $"Rename the field to resolve the conflict, or set PublicProperties = false.";
+                          $"Rename the field to resolve the conflict.";
 
             var diag = new UnionDiagnostic(
                 Id: "SPIRE_DU010", Message: message, IsError: true,

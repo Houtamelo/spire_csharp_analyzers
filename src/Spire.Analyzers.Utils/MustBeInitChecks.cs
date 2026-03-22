@@ -34,8 +34,8 @@ public static class MustBeInitChecks
 
     /// Returns true if the type is a nullable-annotated reference type (T?).
     /// When true, null is explicitly allowed — callers should skip the diagnostic.
-    public static bool IsNullableAnnotatedReference(ITypeSymbol type)
+    public static bool IsNullableAnnotatedReference(ITypeSymbol? type)
     {
-        return type.IsReferenceType && type.NullableAnnotation == NullableAnnotation.Annotated;
+        return type is { IsReferenceType: true, NullableAnnotation: NullableAnnotation.Annotated };
     }
 }

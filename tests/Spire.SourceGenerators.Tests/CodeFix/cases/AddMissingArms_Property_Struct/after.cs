@@ -1,7 +1,7 @@
 using Spire;
 namespace TestNs
 {
-    [DiscriminatedUnion(PublicProperties = true)]
+    [DiscriminatedUnion]
     partial struct Shape
     {
         [Variant] public static partial Shape Circle(double radius);
@@ -15,7 +15,7 @@ namespace TestNs
         {
             { kind: Shape.Kind.Circle, radius: var r } => 1,
             { kind: Shape.Kind.Rectangle, width: var w, height: var h } => 2,
-            { kind: Shape.Kind.Square, sideLength: int sideLenth } => throw new System.NotImplementedException(),
+            { kind: Shape.Kind.Square, sideLength: int sideLength } => throw new System.NotImplementedException()
         };
     }
 }

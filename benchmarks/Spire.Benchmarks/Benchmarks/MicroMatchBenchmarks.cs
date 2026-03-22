@@ -7,24 +7,24 @@ namespace Spire.Benchmarks;
 [Config(typeof(SpireDisasmConfig))]
 public class MicroMatchBenchmarks
 {
-    EventAdditive _addTransform;
-    EventBoxedFields _bfTransform;
-    EventBoxedTuple _btTransform;
-    EventOverlap _ovTransform;
-    EventUnsafeOverlap _uoTransform;
-    EventRecord _recTransform = null!;
-    EventClass _clsTransform = null!;
+    Types.EventAdditive _addTransform;
+    Types.EventBoxedFields _bfTransform;
+    Types.EventBoxedTuple _btTransform;
+    Types.EventOverlap _ovTransform;
+    Types.EventUnsafeOverlap _uoTransform;
+    Types.EventRecord _recTransform = null!;
+    Types.EventClass _clsTransform = null!;
 
     [GlobalSetup]
     public void Setup()
     {
-        _addTransform = EventAdditive.Transform(1f, 2f, 3f, 4f);
-        _bfTransform = EventBoxedFields.Transform(1f, 2f, 3f, 4f);
-        _btTransform = EventBoxedTuple.Transform(1f, 2f, 3f, 4f);
-        _ovTransform = EventOverlap.Transform(1f, 2f, 3f, 4f);
-        _uoTransform = EventUnsafeOverlap.Transform(1f, 2f, 3f, 4f);
-        _recTransform = new EventRecord.Transform(1f, 2f, 3f, 4f);
-        _clsTransform = new EventClass.Transform(1f, 2f, 3f, 4f);
+        _addTransform = Types.EventAdditive.Transform(1f, 2f, 3f, 4f);
+        _bfTransform = Types.EventBoxedFields.Transform(1f, 2f, 3f, 4f);
+        _btTransform = Types.EventBoxedTuple.Transform(1f, 2f, 3f, 4f);
+        _ovTransform = Types.EventOverlap.Transform(1f, 2f, 3f, 4f);
+        _uoTransform = Types.EventUnsafeOverlap.Transform(1f, 2f, 3f, 4f);
+        _recTransform = new Types.EventRecord.Transform(1f, 2f, 3f, 4f);
+        _clsTransform = new Types.EventClass.Transform(1f, 2f, 3f, 4f);
     }
 
     // ── Match Transform (4 float fields) ──
@@ -67,14 +67,14 @@ public class MicroMatchBenchmarks
     [BenchmarkCategory("Micro Match"), Benchmark(Description = "record")]
     public double MatchRecord()
     {
-        var t = (EventRecord.Transform)_recTransform;
+        var t = (Types.EventRecord.Transform)_recTransform;
         return t.X * t.Y + t.Z * t.W;
     }
 
     [BenchmarkCategory("Micro Match"), Benchmark(Description = "class")]
     public double MatchClass()
     {
-        var t = (EventClass.Transform)_clsTransform;
+        var t = (Types.EventClass.Transform)_clsTransform;
         return t.X * t.Y + t.Z * t.W;
     }
 }

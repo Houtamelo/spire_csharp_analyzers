@@ -17,7 +17,7 @@ namespace TestNs
         }
 
         [FieldOffset(0)]
-        public readonly Kind tag;
+        public readonly Kind kind;
 
         [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -39,9 +39,9 @@ namespace TestNs
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal readonly string? _target;
 
-        Event(Kind tag) : this()
+        Event(Kind kind) : this()
         {
-            this.tag = tag;
+            this.kind = kind;
         }
 
         public static partial Event Click(int x, int y, string target)
@@ -62,14 +62,14 @@ namespace TestNs
 
         public void Deconstruct(out Kind kind, out float posX, out float posY)
         {
-            kind = this.tag;
+            kind = this.kind;
             posX = this._posX;
             posY = this._posY;
         }
 
         public void Deconstruct(out Kind kind, out int x, out int y, out string target)
         {
-            kind = this.tag;
+            kind = this.kind;
             x = this._x;
             y = this._y;
             target = this._target!;

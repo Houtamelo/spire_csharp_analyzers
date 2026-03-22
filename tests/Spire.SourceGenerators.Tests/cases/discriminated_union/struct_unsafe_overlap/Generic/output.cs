@@ -13,7 +13,7 @@ partial struct Result<T>
         Err,
     }
 
-    public readonly Kind tag;
+    public readonly Kind kind;
 
     [InlineArray(4)]
     [EditorBrowsable(EditorBrowsableState.Never)]
@@ -25,9 +25,9 @@ partial struct Result<T>
     [EditorBrowsable(EditorBrowsableState.Never)]
     internal T _s0;
 
-    Result(Kind tag)
+    Result(Kind kind)
     {
-        this.tag = tag;
+        this.kind = kind;
         this._data = default;
         this._s0 = default!;
     }
@@ -48,13 +48,13 @@ partial struct Result<T>
 
     public void Deconstruct(out Kind kind, out int code)
     {
-        kind = this.tag;
+        kind = this.kind;
         code = Unsafe.ReadUnaligned<int>(ref _data[0]);
     }
 
     public void Deconstruct(out Kind kind, out T value, out int code)
     {
-        kind = this.tag;
+        kind = this.kind;
         value = this._s0;
         code = Unsafe.ReadUnaligned<int>(ref _data[0]);
     }

@@ -1,5 +1,5 @@
 //@ should_pass
-// Field access inside nested if where OUTER if has tag guard
+// Field access inside nested if where OUTER if has kind guard
 using Spire;
 namespace TestNs
 {
@@ -13,7 +13,7 @@ namespace TestNs
     {
         double Test(Shape s)
         {
-            if (s.tag == Shape.Kind.Circle)
+            if (s.kind == Shape.Kind.Circle)
             {
                 if (true)
                 {

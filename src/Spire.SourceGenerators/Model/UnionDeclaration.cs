@@ -44,7 +44,6 @@ internal sealed record UnionDeclaration(
     bool IsRefStruct,
     EmitStrategy Strategy,
     bool GenerateDeconstruct,
-    bool PublicProperties,
     EquatableArray<string> TypeParameters,
     EquatableArray<VariantInfo> Variants,
     /// Containing types from outermost to innermost (empty if top-level).

@@ -23,28 +23,34 @@ internal sealed class ShapeNsjConverter : JsonConverter<Shape>
     public override void WriteJson(JsonWriter writer, Shape value, JsonSerializer serializer)
     {
         writer.WriteStartObject();
-        switch (value.tag)
+        switch (value)
         {
-            case Shape.Kind.Circle:
+            case { kind: Shape.Kind.Circle, radius: var __radius }:
+            {
                 writer.WritePropertyName("kind");
                 writer.WriteValue("Circle");
                 writer.WritePropertyName("radius");
-                serializer.Serialize(writer, value.radius);
+                serializer.Serialize(writer, __radius);
                 break;
-            case Shape.Kind.Rectangle:
+            }
+            case { kind: Shape.Kind.Rectangle, width: var __width, height: var __height }:
+            {
                 writer.WritePropertyName("kind");
                 writer.WriteValue("Rectangle");
                 writer.WritePropertyName("width");
-                serializer.Serialize(writer, value.width);
+                serializer.Serialize(writer, __width);
                 writer.WritePropertyName("height");
-                serializer.Serialize(writer, value.height);
+                serializer.Serialize(writer, __height);
                 break;
-            case Shape.Kind.Point:
+            }
+            case { kind: Shape.Kind.Point }:
+            {
                 writer.WritePropertyName("kind");
                 writer.WriteValue("Point");
                 break;
+            }
             default:
-                throw new JsonSerializationException($"Unknown Shape variant: {value.tag}");
+                throw new JsonSerializationException($"Unknown Shape variant: {value.kind}");
         }
         writer.WriteEndObject();
     }

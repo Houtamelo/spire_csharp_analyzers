@@ -1,5 +1,5 @@
 //@ should_fail
-// SPIRE014: accessing variant field without tag guard
+// SPIRE014: accessing variant field without kind guard
 using Spire;
 namespace TestNs
 {

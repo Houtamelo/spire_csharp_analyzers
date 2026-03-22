@@ -17,7 +17,7 @@ public class JsonNsjRoundTripTests : BehavioralTestBase
         var json = JsonConvert.SerializeObject(circle);
         var deserialized = JsonConvert.DeserializeObject(json, shapeType)!;
 
-        Assert.Equal(GetKindValue(shapeType, "Circle"), ReadTag(deserialized));
+        Assert.Equal(GetKindValue(shapeType, "Circle"), ReadKind(deserialized));
         Assert.Equal(3.14, ReadProperty(deserialized, "radius"));
     }
 
@@ -32,7 +32,7 @@ public class JsonNsjRoundTripTests : BehavioralTestBase
         var json = JsonConvert.SerializeObject(rect);
         var deserialized = JsonConvert.DeserializeObject(json, shapeType)!;
 
-        Assert.Equal(GetKindValue(shapeType, "Rectangle"), ReadTag(deserialized));
+        Assert.Equal(GetKindValue(shapeType, "Rectangle"), ReadKind(deserialized));
         Assert.Equal(1.5f, ReadProperty(deserialized, "width"));
         Assert.Equal(2.5f, ReadProperty(deserialized, "height"));
     }
@@ -48,7 +48,7 @@ public class JsonNsjRoundTripTests : BehavioralTestBase
         var json = JsonConvert.SerializeObject(point);
         var deserialized = JsonConvert.DeserializeObject(json, shapeType)!;
 
-        Assert.Equal(GetKindValue(shapeType, "Point"), ReadTag(deserialized));
+        Assert.Equal(GetKindValue(shapeType, "Point"), ReadKind(deserialized));
     }
 
     [Theory]

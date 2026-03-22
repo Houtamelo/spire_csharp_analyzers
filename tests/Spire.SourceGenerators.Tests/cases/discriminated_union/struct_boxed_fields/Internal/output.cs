@@ -12,13 +12,13 @@ namespace TestNs
             X,
         }
 
-        public readonly Kind tag;
+        public readonly Kind kind;
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal readonly object? _f0;
 
-        Internal(Kind tag, object? f0)
+        Internal(Kind kind, object? f0)
         {
-            this.tag = tag;
+            this.kind = kind;
             this._f0 = f0;
         }
 
@@ -27,7 +27,7 @@ namespace TestNs
 
         public void Deconstruct(out Kind kind, out int v)
         {
-            kind = this.tag;
+            kind = this.kind;
             v = (int)this._f0!;
         }
         [EditorBrowsable(EditorBrowsableState.Never)]

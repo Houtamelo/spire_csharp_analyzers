@@ -14,13 +14,13 @@ namespace TestNs
             Eof,
         }
 
-        public readonly Kind tag;
+        public readonly Kind kind;
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal readonly object? _payload;
 
-        Token(Kind tag, object? payload)
+        Token(Kind kind, object? payload)
         {
-            this.tag = tag;
+            this.kind = kind;
             this._payload = payload;
         }
 
@@ -33,7 +33,7 @@ namespace TestNs
 
         public void Deconstruct(out Kind kind, out object? payload)
         {
-            kind = this.tag;
+            kind = this.kind;
             payload = this._payload;
         }
         [EditorBrowsable(EditorBrowsableState.Never)]

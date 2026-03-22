@@ -1,5 +1,5 @@
 //@ should_fail
-// Property pattern matching on tag — missing Rectangle — SPIRE009
+// Property pattern matching on kind — missing Rectangle — SPIRE009
 using Spire;
 namespace TestNs
 {
@@ -15,8 +15,8 @@ namespace TestNs
     {
         int Test(Shape s) => s switch //~ ERROR
         {
-            { tag: Shape.Kind.Circle } => 1,
-            { tag: Shape.Kind.Square } => 2,
+            { kind: Shape.Kind.Circle } => 1,
+            { kind: Shape.Kind.Square } => 2,
         };
     }
 }

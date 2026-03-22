@@ -9,69 +9,69 @@ public class MicroConstructBenchmarks
     // ── Fieldless (Point/Idle) ──
 
     [BenchmarkCategory("Micro Construct Fieldless"), Benchmark(Baseline = true, Description = "additive")]
-    public EventAdditive FieldlessAdditive() => EventAdditive.Point();
+    public Types.EventAdditive FieldlessAdditive() => Types.EventAdditive.Point();
 
     [BenchmarkCategory("Micro Construct Fieldless"), Benchmark(Description = "boxedFields")]
-    public EventBoxedFields FieldlessBoxedFields() => EventBoxedFields.Point();
+    public Types.EventBoxedFields FieldlessBoxedFields() => Types.EventBoxedFields.Point();
 
     [BenchmarkCategory("Micro Construct Fieldless"), Benchmark(Description = "boxedTuple")]
-    public EventBoxedTuple FieldlessBoxedTuple() => EventBoxedTuple.Point();
+    public Types.EventBoxedTuple FieldlessBoxedTuple() => Types.EventBoxedTuple.Point();
 
     [BenchmarkCategory("Micro Construct Fieldless"), Benchmark(Description = "overlap")]
-    public EventOverlap FieldlessOverlap() => EventOverlap.Point();
+    public Types.EventOverlap FieldlessOverlap() => Types.EventOverlap.Point();
 
     [BenchmarkCategory("Micro Construct Fieldless"), Benchmark(Description = "unsafeOverlap")]
-    public EventUnsafeOverlap FieldlessUnsafeOverlap() => EventUnsafeOverlap.Point();
+    public Types.EventUnsafeOverlap FieldlessUnsafeOverlap() => Types.EventUnsafeOverlap.Point();
 
     [BenchmarkCategory("Micro Construct Fieldless"), Benchmark(Description = "record")]
-    public EventRecord FieldlessRecord() => new EventRecord.Point();
+    public Types.EventRecord FieldlessRecord() => new Types.EventRecord.Point();
 
     [BenchmarkCategory("Micro Construct Fieldless"), Benchmark(Description = "class")]
-    public EventClass FieldlessClass() => new EventClass.Point();
+    public Types.EventClass FieldlessClass() => new Types.EventClass.Point();
 
     // ── 4 unmanaged fields (Transform) ──
 
     [BenchmarkCategory("Micro Construct 4-field"), Benchmark(Baseline = true, Description = "additive")]
-    public EventAdditive Transform4Additive() => EventAdditive.Transform(1f, 2f, 3f, 4f);
+    public Types.EventAdditive Transform4Additive() => Types.EventAdditive.Transform(1f, 2f, 3f, 4f);
 
     [BenchmarkCategory("Micro Construct 4-field"), Benchmark(Description = "boxedFields")]
-    public EventBoxedFields Transform4BoxedFields() => EventBoxedFields.Transform(1f, 2f, 3f, 4f);
+    public Types.EventBoxedFields Transform4BoxedFields() => Types.EventBoxedFields.Transform(1f, 2f, 3f, 4f);
 
     [BenchmarkCategory("Micro Construct 4-field"), Benchmark(Description = "boxedTuple")]
-    public EventBoxedTuple Transform4BoxedTuple() => EventBoxedTuple.Transform(1f, 2f, 3f, 4f);
+    public Types.EventBoxedTuple Transform4BoxedTuple() => Types.EventBoxedTuple.Transform(1f, 2f, 3f, 4f);
 
     [BenchmarkCategory("Micro Construct 4-field"), Benchmark(Description = "overlap")]
-    public EventOverlap Transform4Overlap() => EventOverlap.Transform(1f, 2f, 3f, 4f);
+    public Types.EventOverlap Transform4Overlap() => Types.EventOverlap.Transform(1f, 2f, 3f, 4f);
 
     [BenchmarkCategory("Micro Construct 4-field"), Benchmark(Description = "unsafeOverlap")]
-    public EventUnsafeOverlap Transform4UnsafeOverlap() => EventUnsafeOverlap.Transform(1f, 2f, 3f, 4f);
+    public Types.EventUnsafeOverlap Transform4UnsafeOverlap() => Types.EventUnsafeOverlap.Transform(1f, 2f, 3f, 4f);
 
     [BenchmarkCategory("Micro Construct 4-field"), Benchmark(Description = "record")]
-    public EventRecord Transform4Record() => new EventRecord.Transform(1f, 2f, 3f, 4f);
+    public Types.EventRecord Transform4Record() => new Types.EventRecord.Transform(1f, 2f, 3f, 4f);
 
     [BenchmarkCategory("Micro Construct 4-field"), Benchmark(Description = "class")]
-    public EventClass Transform4Class() => new EventClass.Transform(1f, 2f, 3f, 4f);
+    public Types.EventClass Transform4Class() => new Types.EventClass.Transform(1f, 2f, 3f, 4f);
 
     // ── 5 mixed fields (RichText) ──
 
     [BenchmarkCategory("Micro Construct 5-mixed"), Benchmark(Baseline = true, Description = "additive")]
-    public EventAdditive RichText5Additive() => EventAdditive.RichText("hello", 12, true, "Arial", 1.5);
+    public Types.EventAdditive RichText5Additive() => Types.EventAdditive.RichText("hello", 12, true, "Arial", 1.5);
 
     [BenchmarkCategory("Micro Construct 5-mixed"), Benchmark(Description = "boxedFields")]
-    public EventBoxedFields RichText5BoxedFields() => EventBoxedFields.RichText("hello", 12, true, "Arial", 1.5);
+    public Types.EventBoxedFields RichText5BoxedFields() => Types.EventBoxedFields.RichText("hello", 12, true, "Arial", 1.5);
 
     [BenchmarkCategory("Micro Construct 5-mixed"), Benchmark(Description = "boxedTuple")]
-    public EventBoxedTuple RichText5BoxedTuple() => EventBoxedTuple.RichText("hello", 12, true, "Arial", 1.5);
+    public Types.EventBoxedTuple RichText5BoxedTuple() => Types.EventBoxedTuple.RichText("hello", 12, true, "Arial", 1.5);
 
     [BenchmarkCategory("Micro Construct 5-mixed"), Benchmark(Description = "overlap")]
-    public EventOverlap RichText5Overlap() => EventOverlap.RichText("hello", 12, true, "Arial", 1.5);
+    public Types.EventOverlap RichText5Overlap() => Types.EventOverlap.RichText("hello", 12, true, "Arial", 1.5);
 
     [BenchmarkCategory("Micro Construct 5-mixed"), Benchmark(Description = "unsafeOverlap")]
-    public EventUnsafeOverlap RichText5UnsafeOverlap() => EventUnsafeOverlap.RichText("hello", 12, true, "Arial", 1.5);
+    public Types.EventUnsafeOverlap RichText5UnsafeOverlap() => Types.EventUnsafeOverlap.RichText("hello", 12, true, "Arial", 1.5);
 
     [BenchmarkCategory("Micro Construct 5-mixed"), Benchmark(Description = "record")]
-    public EventRecord RichText5Record() => new EventRecord.RichText("hello", 12, true, "Arial", 1.5);
+    public Types.EventRecord RichText5Record() => new Types.EventRecord.RichText("hello", 12, true, "Arial", 1.5);
 
     [BenchmarkCategory("Micro Construct 5-mixed"), Benchmark(Description = "class")]
-    public EventClass RichText5Class() => new EventClass.RichText("hello", 12, true, "Arial", 1.5);
+    public Types.EventClass RichText5Class() => new Types.EventClass.RichText("hello", 12, true, "Arial", 1.5);
 }

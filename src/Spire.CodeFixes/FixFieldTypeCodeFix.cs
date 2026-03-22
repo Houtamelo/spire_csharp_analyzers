@@ -18,19 +18,19 @@ public sealed class FixFieldTypeCodeFix : CodeFixProvider
     public override ImmutableArray<string> FixableDiagnosticIds =>
         ImmutableArray.Create("SPIRE011");
 
-    public override FixAllProvider? GetFixAllProvider() =>
+    public override FixAllProvider GetFixAllProvider() =>
         WellKnownFixAllProviders.BatchFixer;
 
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
         var diagnostic = context.Diagnostics[0];
         var expectedType = diagnostic.Properties.GetValueOrDefault("ExpectedType");
-        if (string.IsNullOrEmpty(expectedType)) return;
+        if (expectedType is null or { Length: 0 }) return;
 
         context.RegisterCodeFix(
             CodeAction.Create(
                 title: $"Change type to '{expectedType}'",
-                createChangedDocument: ct => FixTypeAsync(context.Document, diagnostic, expectedType!, ct),
+                createChangedDocument: ct => FixTypeAsync(context.Document, diagnostic, expectedType, ct),
                 equivalenceKey: "FixFieldType"),
             diagnostic);
     }

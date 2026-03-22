@@ -19,14 +19,14 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
     public override ImmutableArray<string> FixableDiagnosticIds =>
         ImmutableArray.Create("SPIRE009");
 
-    public override FixAllProvider? GetFixAllProvider() =>
+    public override FixAllProvider GetFixAllProvider() =>
         WellKnownFixAllProviders.BatchFixer;
 
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
         var diagnostic = context.Diagnostics[0];
         var missingStr = diagnostic.Properties.GetValueOrDefault("MissingVariants");
-        if (string.IsNullOrEmpty(missingStr)) return;
+        if (missingStr is null or { Length: 0 }) return;
 
         context.RegisterCodeFix(
             CodeAction.Create(
@@ -59,6 +59,9 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
         var subjectType = model.GetTypeInfo(switchExpr.GoverningExpression, ct).Type as INamedTypeSymbol;
         if (subjectType is null) return document;
 
+        // Detect whether existing arms use property patterns or positional patterns
+        bool usePropertyPattern = ExistingArmsUsePropertyPattern(switchExpr);
+
         // Get Kind enum type name prefix (e.g. "Shape.Kind")
         var kindPrefix = $"{subjectType.Name}.Kind";
 
@@ -68,65 +71,128 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
         {
             var trimmed = variant.Trim();
 
-            // Find factory method to determine field count
+            // Find factory method to determine field parameters
             var factory = subjectType.GetMembers(trimmed)
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(m => m.IsStatic);
 
-            int fieldCount = factory?.Parameters.Length ?? 0;
+            SwitchExpressionArmSyntax arm;
+            if (usePropertyPattern)
+                arm = BuildPropertyPatternArm(trimmed, kindPrefix, factory);
+            else
+                arm = BuildPositionalPatternArm(trimmed, kindPrefix, factory, subjectType);
 
-            // Build positional pattern: (Kind.Variant, _, _, ...)
-            var subpatterns = new List<SubpatternSyntax>();
-
-            // First element: the Kind constant pattern
-            subpatterns.Add(SyntaxFactory.Subpattern(
-                SyntaxFactory.ConstantPattern(
-                    SyntaxFactory.ParseExpression($"{kindPrefix}.{trimmed}"))));
-
-            // Remaining elements: typed declaration per field
-            if (factory is not null)
-            {
-                foreach (var param in factory.Parameters)
-                {
-                    var typeName = param.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
-                    subpatterns.Add(SyntaxFactory.Subpattern(
-                        SyntaxFactory.DeclarationPattern(
-                            SyntaxFactory.ParseTypeName(typeName),
-                            SyntaxFactory.SingleVariableDesignation(
-                                SyntaxFactory.Identifier(param.Name)))));
-                }
-            }
-
-            // Fieldless variant with shared-arity Deconstruct needs one discard
-            if (fieldCount == 0)
-            {
-                var hasSharedDeconstruct = subjectType.GetMembers("Deconstruct")
-                    .OfType<IMethodSymbol>()
-                    .Any(m => m.Parameters.Length == 2);
-                if (hasSharedDeconstruct)
-                {
-                    subpatterns.Add(SyntaxFactory.Subpattern(
-                        SyntaxFactory.DiscardPattern()));
-                }
-            }
-
-            var pattern = SyntaxFactory.RecursivePattern()
-                .WithPositionalPatternClause(
-                    SyntaxFactory.PositionalPatternClause(
-                        SyntaxFactory.SeparatedList(subpatterns)));
-
-            var body = SyntaxFactory.ThrowExpression(
-                SyntaxFactory.ObjectCreationExpression(
-                    SyntaxFactory.ParseTypeName("System.NotImplementedException"))
-                .WithArgumentList(SyntaxFactory.ArgumentList()));
-
-            var arm = SyntaxFactory.SwitchExpressionArm(pattern, body);
             newArms.Add(arm);
         }
 
         // Add new arms to existing switch expression
         var updatedSwitch = switchExpr.AddArms(newArms.ToArray());
-        var newRoot = root.ReplaceNode(switchExpr, updatedSwitch);
+        SyntaxNode newRoot = root.ReplaceNode(switchExpr, updatedSwitch);
+
         return document.WithSyntaxRoot(newRoot);
     }
+
+    /// Returns true if any existing arm uses a property pattern (RecursivePattern with PropertyPatternClause).
+    private static bool ExistingArmsUsePropertyPattern(SwitchExpressionSyntax switchExpr)
+    {
+        foreach (var arm in switchExpr.Arms)
+        {
+            if (arm.Pattern is RecursivePatternSyntax recursive &&
+                recursive.PropertyPatternClause is not null)
+                return true;
+        }
+        return false;
+    }
+
+    private static SwitchExpressionArmSyntax BuildPropertyPatternArm(
+        string variantName, string kindPrefix, IMethodSymbol? factory)
+    {
+        var subpatterns = new List<SubpatternSyntax>();
+
+        // Kind subpattern: kind: Shape.Kind.X
+        subpatterns.Add(SyntaxFactory.Subpattern(
+            SyntaxFactory.NameColon(SyntaxFactory.IdentifierName("kind")),
+            SyntaxFactory.ConstantPattern(
+                SyntaxFactory.ParseExpression($"{kindPrefix}.{variantName}"))));
+
+        // Field subpatterns: fieldName: type fieldName
+        if (factory is not null)
+        {
+            foreach (var param in factory.Parameters)
+            {
+                var typeName = param.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+                subpatterns.Add(SyntaxFactory.Subpattern(
+                    SyntaxFactory.NameColon(SyntaxFactory.IdentifierName(param.Name)),
+                    SyntaxFactory.DeclarationPattern(
+                        SyntaxFactory.ParseTypeName(typeName),
+                        SyntaxFactory.SingleVariableDesignation(
+                            SyntaxFactory.Identifier(param.Name)))));
+            }
+        }
+
+        var pattern = SyntaxFactory.RecursivePattern()
+            .WithPropertyPatternClause(
+                SyntaxFactory.PropertyPatternClause(
+                    SyntaxFactory.SeparatedList(subpatterns)));
+
+        var body = SyntaxFactory.ThrowExpression(
+            SyntaxFactory.ObjectCreationExpression(
+                SyntaxFactory.ParseTypeName("System.NotImplementedException"))
+            .WithArgumentList(SyntaxFactory.ArgumentList()));
+
+        return SyntaxFactory.SwitchExpressionArm(pattern, body);
+    }
+
+    private static SwitchExpressionArmSyntax BuildPositionalPatternArm(
+        string variantName, string kindPrefix, IMethodSymbol? factory, INamedTypeSymbol subjectType)
+    {
+        int fieldCount = factory?.Parameters.Length ?? 0;
+
+        var subpatterns = new List<SubpatternSyntax>();
+
+        // First element: the Kind constant pattern
+        subpatterns.Add(SyntaxFactory.Subpattern(
+            SyntaxFactory.ConstantPattern(
+                SyntaxFactory.ParseExpression($"{kindPrefix}.{variantName}"))));
+
+        // Remaining elements: typed declaration per field
+        if (factory is not null)
+        {
+            foreach (var param in factory.Parameters)
+            {
+                var typeName = param.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+                subpatterns.Add(SyntaxFactory.Subpattern(
+                    SyntaxFactory.DeclarationPattern(
+                        SyntaxFactory.ParseTypeName(typeName),
+                        SyntaxFactory.SingleVariableDesignation(
+                            SyntaxFactory.Identifier(param.Name)))));
+            }
+        }
+
+        // Fieldless variant with shared-arity Deconstruct needs one discard
+        if (fieldCount == 0)
+        {
+            var hasSharedDeconstruct = subjectType.GetMembers("Deconstruct")
+                .OfType<IMethodSymbol>()
+                .Any(m => m.Parameters.Length == 2);
+            if (hasSharedDeconstruct)
+            {
+                subpatterns.Add(SyntaxFactory.Subpattern(
+                    SyntaxFactory.DiscardPattern()));
+            }
+        }
+
+        var pattern = SyntaxFactory.RecursivePattern()
+            .WithPositionalPatternClause(
+                SyntaxFactory.PositionalPatternClause(
+                    SyntaxFactory.SeparatedList(subpatterns)));
+
+        var body = SyntaxFactory.ThrowExpression(
+            SyntaxFactory.ObjectCreationExpression(
+                SyntaxFactory.ParseTypeName("System.NotImplementedException"))
+            .WithArgumentList(SyntaxFactory.ArgumentList()));
+
+        return SyntaxFactory.SwitchExpressionArm(pattern, body);
+    }
+
 }

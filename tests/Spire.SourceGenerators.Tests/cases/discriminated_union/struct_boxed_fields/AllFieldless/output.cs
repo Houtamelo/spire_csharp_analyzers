@@ -14,11 +14,11 @@ namespace TestNs
             Green,
         }
 
-        public readonly Kind tag;
+        public readonly Kind kind;
 
-        Light(Kind tag)
+        Light(Kind kind)
         {
-            this.tag = tag;
+            this.kind = kind;
         }
 
         public static partial Light Red()
@@ -30,7 +30,7 @@ namespace TestNs
 
         public void Deconstruct(out Kind kind, out object? _f0)
         {
-            kind = this.tag;
+            kind = this.kind;
             _f0 = null;
         }
     }

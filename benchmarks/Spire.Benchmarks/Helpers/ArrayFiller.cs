@@ -1,4 +1,4 @@
-namespace Spire.Benchmarks;
+namespace Spire.Benchmarks.Helpers;
 
 /// Fills union arrays with consistent random data across all strategies.
 static class ArrayFiller
@@ -17,85 +17,85 @@ static class ArrayFiller
 
     // ── Event (mixed managed/unmanaged) ──
 
-    public static void Fill(EventAdditive[] arr, Random rng, Distribution dist)
+    public static void Fill(Types.EventAdditive[] arr, Random rng, Distribution dist)
     {
         for (int i = 0; i < arr.Length; i++)
-            arr[i] = MakeEvent<EventAdditive>(PickVariant(rng, dist, i), rng,
-                EventAdditive.Point, EventAdditive.Circle, EventAdditive.Label,
-                EventAdditive.Rectangle, EventAdditive.ColoredLine, EventAdditive.Transform,
-                EventAdditive.RichText, EventAdditive.Error);
+            arr[i] = MakeEvent<Types.EventAdditive>(PickVariant(rng, dist, i), rng,
+                Types.EventAdditive.Point, Types.EventAdditive.Circle, Types.EventAdditive.Label,
+                Types.EventAdditive.Rectangle, Types.EventAdditive.ColoredLine, Types.EventAdditive.Transform,
+                Types.EventAdditive.RichText, Types.EventAdditive.Error);
     }
 
-    public static void Fill(EventBoxedFields[] arr, Random rng, Distribution dist)
+    public static void Fill(Types.EventBoxedFields[] arr, Random rng, Distribution dist)
     {
         for (int i = 0; i < arr.Length; i++)
-            arr[i] = MakeEvent<EventBoxedFields>(PickVariant(rng, dist, i), rng,
-                EventBoxedFields.Point, EventBoxedFields.Circle, EventBoxedFields.Label,
-                EventBoxedFields.Rectangle, EventBoxedFields.ColoredLine, EventBoxedFields.Transform,
-                EventBoxedFields.RichText, EventBoxedFields.Error);
+            arr[i] = MakeEvent<Types.EventBoxedFields>(PickVariant(rng, dist, i), rng,
+                Types.EventBoxedFields.Point, Types.EventBoxedFields.Circle, Types.EventBoxedFields.Label,
+                Types.EventBoxedFields.Rectangle, Types.EventBoxedFields.ColoredLine, Types.EventBoxedFields.Transform,
+                Types.EventBoxedFields.RichText, Types.EventBoxedFields.Error);
     }
 
-    public static void Fill(EventBoxedTuple[] arr, Random rng, Distribution dist)
+    public static void Fill(Types.EventBoxedTuple[] arr, Random rng, Distribution dist)
     {
         for (int i = 0; i < arr.Length; i++)
-            arr[i] = MakeEvent<EventBoxedTuple>(PickVariant(rng, dist, i), rng,
-                EventBoxedTuple.Point, EventBoxedTuple.Circle, EventBoxedTuple.Label,
-                EventBoxedTuple.Rectangle, EventBoxedTuple.ColoredLine, EventBoxedTuple.Transform,
-                EventBoxedTuple.RichText, EventBoxedTuple.Error);
+            arr[i] = MakeEvent<Types.EventBoxedTuple>(PickVariant(rng, dist, i), rng,
+                Types.EventBoxedTuple.Point, Types.EventBoxedTuple.Circle, Types.EventBoxedTuple.Label,
+                Types.EventBoxedTuple.Rectangle, Types.EventBoxedTuple.ColoredLine, Types.EventBoxedTuple.Transform,
+                Types.EventBoxedTuple.RichText, Types.EventBoxedTuple.Error);
     }
 
-    public static void Fill(EventOverlap[] arr, Random rng, Distribution dist)
+    public static void Fill(Types.EventOverlap[] arr, Random rng, Distribution dist)
     {
         for (int i = 0; i < arr.Length; i++)
-            arr[i] = MakeEvent<EventOverlap>(PickVariant(rng, dist, i), rng,
-                EventOverlap.Point, EventOverlap.Circle, EventOverlap.Label,
-                EventOverlap.Rectangle, EventOverlap.ColoredLine, EventOverlap.Transform,
-                EventOverlap.RichText, EventOverlap.Error);
+            arr[i] = MakeEvent<Types.EventOverlap>(PickVariant(rng, dist, i), rng,
+                Types.EventOverlap.Point, Types.EventOverlap.Circle, Types.EventOverlap.Label,
+                Types.EventOverlap.Rectangle, Types.EventOverlap.ColoredLine, Types.EventOverlap.Transform,
+                Types.EventOverlap.RichText, Types.EventOverlap.Error);
     }
 
-    public static void Fill(EventUnsafeOverlap[] arr, Random rng, Distribution dist)
+    public static void Fill(Types.EventUnsafeOverlap[] arr, Random rng, Distribution dist)
     {
         for (int i = 0; i < arr.Length; i++)
-            arr[i] = MakeEvent<EventUnsafeOverlap>(PickVariant(rng, dist, i), rng,
-                EventUnsafeOverlap.Point, EventUnsafeOverlap.Circle, EventUnsafeOverlap.Label,
-                EventUnsafeOverlap.Rectangle, EventUnsafeOverlap.ColoredLine, EventUnsafeOverlap.Transform,
-                EventUnsafeOverlap.RichText, EventUnsafeOverlap.Error);
+            arr[i] = MakeEvent<Types.EventUnsafeOverlap>(PickVariant(rng, dist, i), rng,
+                Types.EventUnsafeOverlap.Point, Types.EventUnsafeOverlap.Circle, Types.EventUnsafeOverlap.Label,
+                Types.EventUnsafeOverlap.Rectangle, Types.EventUnsafeOverlap.ColoredLine, Types.EventUnsafeOverlap.Transform,
+                Types.EventUnsafeOverlap.RichText, Types.EventUnsafeOverlap.Error);
     }
 
-    public static void Fill(EventRecord[] arr, Random rng, Distribution dist)
+    public static void Fill(Types.EventRecord[] arr, Random rng, Distribution dist)
     {
         for (int i = 0; i < arr.Length; i++)
         {
             int v = PickVariant(rng, dist, i);
             arr[i] = v switch
             {
-                0 => new EventRecord.Point(),
-                1 => new EventRecord.Circle(rng.NextDouble() * 200 - 100),
-                2 => new EventRecord.Label(StringPool[rng.Next(StringPool.Length)]),
-                3 => new EventRecord.Rectangle(rng.NextSingle() * 200 - 100, rng.NextSingle() * 200 - 100),
-                4 => new EventRecord.ColoredLine(rng.Next(-1000, 1000), rng.Next(-1000, 1000), StringPool[rng.Next(StringPool.Length)]),
-                5 => new EventRecord.Transform(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
-                6 => new EventRecord.RichText(StringPool[rng.Next(StringPool.Length)], rng.Next(8, 72), rng.Next(2) == 1, StringPool[rng.Next(StringPool.Length)], rng.NextDouble()),
-                _ => new EventRecord.Error(StringPool[rng.Next(StringPool.Length)]),
+                0 => new Types.EventRecord.Point(),
+                1 => new Types.EventRecord.Circle(rng.NextDouble() * 200 - 100),
+                2 => new Types.EventRecord.Label(StringPool[rng.Next(StringPool.Length)]),
+                3 => new Types.EventRecord.Rectangle(rng.NextSingle() * 200 - 100, rng.NextSingle() * 200 - 100),
+                4 => new Types.EventRecord.ColoredLine(rng.Next(-1000, 1000), rng.Next(-1000, 1000), StringPool[rng.Next(StringPool.Length)]),
+                5 => new Types.EventRecord.Transform(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
+                6 => new Types.EventRecord.RichText(StringPool[rng.Next(StringPool.Length)], rng.Next(8, 72), rng.Next(2) == 1, StringPool[rng.Next(StringPool.Length)], rng.NextDouble()),
+                _ => new Types.EventRecord.Error(StringPool[rng.Next(StringPool.Length)]),
             };
         }
     }
 
-    public static void Fill(EventClass[] arr, Random rng, Distribution dist)
+    public static void Fill(Types.EventClass[] arr, Random rng, Distribution dist)
     {
         for (int i = 0; i < arr.Length; i++)
         {
             int v = PickVariant(rng, dist, i);
             arr[i] = v switch
             {
-                0 => new EventClass.Point(),
-                1 => new EventClass.Circle(rng.NextDouble() * 200 - 100),
-                2 => new EventClass.Label(StringPool[rng.Next(StringPool.Length)]),
-                3 => new EventClass.Rectangle(rng.NextSingle() * 200 - 100, rng.NextSingle() * 200 - 100),
-                4 => new EventClass.ColoredLine(rng.Next(-1000, 1000), rng.Next(-1000, 1000), StringPool[rng.Next(StringPool.Length)]),
-                5 => new EventClass.Transform(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
-                6 => new EventClass.RichText(StringPool[rng.Next(StringPool.Length)], rng.Next(8, 72), rng.Next(2) == 1, StringPool[rng.Next(StringPool.Length)], rng.NextDouble()),
-                _ => new EventClass.Error(StringPool[rng.Next(StringPool.Length)]),
+                0 => new Types.EventClass.Point(),
+                1 => new Types.EventClass.Circle(rng.NextDouble() * 200 - 100),
+                2 => new Types.EventClass.Label(StringPool[rng.Next(StringPool.Length)]),
+                3 => new Types.EventClass.Rectangle(rng.NextSingle() * 200 - 100, rng.NextSingle() * 200 - 100),
+                4 => new Types.EventClass.ColoredLine(rng.Next(-1000, 1000), rng.Next(-1000, 1000), StringPool[rng.Next(StringPool.Length)]),
+                5 => new Types.EventClass.Transform(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
+                6 => new Types.EventClass.RichText(StringPool[rng.Next(StringPool.Length)], rng.Next(8, 72), rng.Next(2) == 1, StringPool[rng.Next(StringPool.Length)], rng.NextDouble()),
+                _ => new Types.EventClass.Error(StringPool[rng.Next(StringPool.Length)]),
             };
         }
     }
@@ -125,85 +125,85 @@ static class ArrayFiller
 
     // ── Physics (all unmanaged) ──
 
-    public static void Fill(PhysicsAdditive[] arr, Random rng, Distribution dist)
+    public static void Fill(Types.PhysicsAdditive[] arr, Random rng, Distribution dist)
     {
         for (int i = 0; i < arr.Length; i++)
-            arr[i] = MakePhysics<PhysicsAdditive>(PickVariant(rng, dist, i), rng,
-                PhysicsAdditive.Idle, PhysicsAdditive.Impulse, PhysicsAdditive.Position,
-                PhysicsAdditive.Force, PhysicsAdditive.Rotation, PhysicsAdditive.Spring,
-                PhysicsAdditive.Gravity, PhysicsAdditive.Collision);
+            arr[i] = MakePhysics<Types.PhysicsAdditive>(PickVariant(rng, dist, i), rng,
+                Types.PhysicsAdditive.Idle, Types.PhysicsAdditive.Impulse, Types.PhysicsAdditive.Position,
+                Types.PhysicsAdditive.Force, Types.PhysicsAdditive.Rotation, Types.PhysicsAdditive.Spring,
+                Types.PhysicsAdditive.Gravity, Types.PhysicsAdditive.Collision);
     }
 
-    public static void Fill(PhysicsBoxedFields[] arr, Random rng, Distribution dist)
+    public static void Fill(Types.PhysicsBoxedFields[] arr, Random rng, Distribution dist)
     {
         for (int i = 0; i < arr.Length; i++)
-            arr[i] = MakePhysics<PhysicsBoxedFields>(PickVariant(rng, dist, i), rng,
-                PhysicsBoxedFields.Idle, PhysicsBoxedFields.Impulse, PhysicsBoxedFields.Position,
-                PhysicsBoxedFields.Force, PhysicsBoxedFields.Rotation, PhysicsBoxedFields.Spring,
-                PhysicsBoxedFields.Gravity, PhysicsBoxedFields.Collision);
+            arr[i] = MakePhysics<Types.PhysicsBoxedFields>(PickVariant(rng, dist, i), rng,
+                Types.PhysicsBoxedFields.Idle, Types.PhysicsBoxedFields.Impulse, Types.PhysicsBoxedFields.Position,
+                Types.PhysicsBoxedFields.Force, Types.PhysicsBoxedFields.Rotation, Types.PhysicsBoxedFields.Spring,
+                Types.PhysicsBoxedFields.Gravity, Types.PhysicsBoxedFields.Collision);
     }
 
-    public static void Fill(PhysicsBoxedTuple[] arr, Random rng, Distribution dist)
+    public static void Fill(Types.PhysicsBoxedTuple[] arr, Random rng, Distribution dist)
     {
         for (int i = 0; i < arr.Length; i++)
-            arr[i] = MakePhysics<PhysicsBoxedTuple>(PickVariant(rng, dist, i), rng,
-                PhysicsBoxedTuple.Idle, PhysicsBoxedTuple.Impulse, PhysicsBoxedTuple.Position,
-                PhysicsBoxedTuple.Force, PhysicsBoxedTuple.Rotation, PhysicsBoxedTuple.Spring,
-                PhysicsBoxedTuple.Gravity, PhysicsBoxedTuple.Collision);
+            arr[i] = MakePhysics<Types.PhysicsBoxedTuple>(PickVariant(rng, dist, i), rng,
+                Types.PhysicsBoxedTuple.Idle, Types.PhysicsBoxedTuple.Impulse, Types.PhysicsBoxedTuple.Position,
+                Types.PhysicsBoxedTuple.Force, Types.PhysicsBoxedTuple.Rotation, Types.PhysicsBoxedTuple.Spring,
+                Types.PhysicsBoxedTuple.Gravity, Types.PhysicsBoxedTuple.Collision);
     }
 
-    public static void Fill(PhysicsOverlap[] arr, Random rng, Distribution dist)
+    public static void Fill(Types.PhysicsOverlap[] arr, Random rng, Distribution dist)
     {
         for (int i = 0; i < arr.Length; i++)
-            arr[i] = MakePhysics<PhysicsOverlap>(PickVariant(rng, dist, i), rng,
-                PhysicsOverlap.Idle, PhysicsOverlap.Impulse, PhysicsOverlap.Position,
-                PhysicsOverlap.Force, PhysicsOverlap.Rotation, PhysicsOverlap.Spring,
-                PhysicsOverlap.Gravity, PhysicsOverlap.Collision);
+            arr[i] = MakePhysics<Types.PhysicsOverlap>(PickVariant(rng, dist, i), rng,
+                Types.PhysicsOverlap.Idle, Types.PhysicsOverlap.Impulse, Types.PhysicsOverlap.Position,
+                Types.PhysicsOverlap.Force, Types.PhysicsOverlap.Rotation, Types.PhysicsOverlap.Spring,
+                Types.PhysicsOverlap.Gravity, Types.PhysicsOverlap.Collision);
     }
 
-    public static void Fill(PhysicsUnsafeOverlap[] arr, Random rng, Distribution dist)
+    public static void Fill(Types.PhysicsUnsafeOverlap[] arr, Random rng, Distribution dist)
     {
         for (int i = 0; i < arr.Length; i++)
-            arr[i] = MakePhysics<PhysicsUnsafeOverlap>(PickVariant(rng, dist, i), rng,
-                PhysicsUnsafeOverlap.Idle, PhysicsUnsafeOverlap.Impulse, PhysicsUnsafeOverlap.Position,
-                PhysicsUnsafeOverlap.Force, PhysicsUnsafeOverlap.Rotation, PhysicsUnsafeOverlap.Spring,
-                PhysicsUnsafeOverlap.Gravity, PhysicsUnsafeOverlap.Collision);
+            arr[i] = MakePhysics<Types.PhysicsUnsafeOverlap>(PickVariant(rng, dist, i), rng,
+                Types.PhysicsUnsafeOverlap.Idle, Types.PhysicsUnsafeOverlap.Impulse, Types.PhysicsUnsafeOverlap.Position,
+                Types.PhysicsUnsafeOverlap.Force, Types.PhysicsUnsafeOverlap.Rotation, Types.PhysicsUnsafeOverlap.Spring,
+                Types.PhysicsUnsafeOverlap.Gravity, Types.PhysicsUnsafeOverlap.Collision);
     }
 
-    public static void Fill(PhysicsRecord[] arr, Random rng, Distribution dist)
+    public static void Fill(Types.PhysicsRecord[] arr, Random rng, Distribution dist)
     {
         for (int i = 0; i < arr.Length; i++)
         {
             int v = PickVariant(rng, dist, i);
             arr[i] = v switch
             {
-                0 => new PhysicsRecord.Idle(),
-                1 => new PhysicsRecord.Impulse(rng.NextSingle()),
-                2 => new PhysicsRecord.Position(rng.NextSingle(), rng.NextSingle()),
-                3 => new PhysicsRecord.Force(rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
-                4 => new PhysicsRecord.Rotation(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
-                5 => new PhysicsRecord.Spring(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
-                6 => new PhysicsRecord.Gravity(rng.NextDouble()),
-                _ => new PhysicsRecord.Collision(rng.Next(), rng.Next()),
+                0 => new Types.PhysicsRecord.Idle(),
+                1 => new Types.PhysicsRecord.Impulse(rng.NextSingle()),
+                2 => new Types.PhysicsRecord.Position(rng.NextSingle(), rng.NextSingle()),
+                3 => new Types.PhysicsRecord.Force(rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
+                4 => new Types.PhysicsRecord.Rotation(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
+                5 => new Types.PhysicsRecord.Spring(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
+                6 => new Types.PhysicsRecord.Gravity(rng.NextDouble()),
+                _ => new Types.PhysicsRecord.Collision(rng.Next(), rng.Next()),
             };
         }
     }
 
-    public static void Fill(PhysicsClass[] arr, Random rng, Distribution dist)
+    public static void Fill(Types.PhysicsClass[] arr, Random rng, Distribution dist)
     {
         for (int i = 0; i < arr.Length; i++)
         {
             int v = PickVariant(rng, dist, i);
             arr[i] = v switch
             {
-                0 => new PhysicsClass.Idle(),
-                1 => new PhysicsClass.Impulse(rng.NextSingle()),
-                2 => new PhysicsClass.Position(rng.NextSingle(), rng.NextSingle()),
-                3 => new PhysicsClass.Force(rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
-                4 => new PhysicsClass.Rotation(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
-                5 => new PhysicsClass.Spring(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
-                6 => new PhysicsClass.Gravity(rng.NextDouble()),
-                _ => new PhysicsClass.Collision(rng.Next(), rng.Next()),
+                0 => new Types.PhysicsClass.Idle(),
+                1 => new Types.PhysicsClass.Impulse(rng.NextSingle()),
+                2 => new Types.PhysicsClass.Position(rng.NextSingle(), rng.NextSingle()),
+                3 => new Types.PhysicsClass.Force(rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
+                4 => new Types.PhysicsClass.Rotation(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
+                5 => new Types.PhysicsClass.Spring(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
+                6 => new Types.PhysicsClass.Gravity(rng.NextDouble()),
+                _ => new Types.PhysicsClass.Collision(rng.Next(), rng.Next()),
             };
         }
     }

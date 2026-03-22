@@ -24,7 +24,7 @@ internal static class DeconstructEmitter
             sb.AppendLine();
             sb.AppendLine("public void Deconstruct(out Kind kind, out object? _f0)");
             sb.OpenBrace();
-            sb.AppendLine("kind = this.tag;");
+            sb.AppendLine("kind = this.kind;");
             sb.AppendLine("_f0 = null;");
             sb.CloseBrace();
             return;
@@ -83,7 +83,7 @@ internal static class DeconstructEmitter
 
         sb.AppendLine($"public void Deconstruct({paramList})");
         sb.OpenBrace();
-        sb.AppendLine("kind = this.tag;");
+        sb.AppendLine("kind = this.kind;");
         for (int i = 0; i < variant.Fields.Length; i++)
         {
             var field = variant.Fields[i];
@@ -102,7 +102,7 @@ internal static class DeconstructEmitter
 
         sb.AppendLine($"public void Deconstruct({paramList})");
         sb.OpenBrace();
-        sb.AppendLine("kind = this.tag;");
+        sb.AppendLine("kind = this.kind;");
         for (int i = 0; i < fieldCount; i++)
         {
             sb.AppendLine($"f{i} = this._f{i};");

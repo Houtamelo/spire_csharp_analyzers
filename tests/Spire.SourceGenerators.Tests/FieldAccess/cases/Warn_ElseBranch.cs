@@ -13,7 +13,7 @@ namespace TestNs
     {
         double Test(Shape s)
         {
-            if (s.tag == Shape.Kind.Circle)
+            if (s.kind == Shape.Kind.Circle)
             {
                 return s.radius;
             }

@@ -24,18 +24,22 @@ internal sealed class TokenStjConverter : JsonConverter<Token>
     public override void Write(Utf8JsonWriter writer, Token value, JsonSerializerOptions options)
     {
         writer.WriteStartObject();
-        switch (value.tag)
+        switch (value)
         {
-            case Token.Kind.Number:
+            case { kind: Token.Kind.Number, value: var __value }:
+            {
                 writer.WriteString("type", "Number");
                 writer.WritePropertyName("value");
-                JsonSerializer.Serialize(writer, value.value, options);
+                JsonSerializer.Serialize(writer, __value, options);
                 break;
-            case Token.Kind.Eof:
+            }
+            case { kind: Token.Kind.Eof }:
+            {
                 writer.WriteString("type", "Eof");
                 break;
+            }
             default:
-                throw new JsonException($"Unknown Token variant: {value.tag}");
+                throw new JsonException($"Unknown Token variant: {value.kind}");
         }
         writer.WriteEndObject();
     }

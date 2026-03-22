@@ -1,6 +1,4 @@
-using Spire;
-
-namespace Spire.Benchmarks;
+namespace Spire.Benchmarks.Types;
 
 // 8 variants with 0-5 fields, mix of managed and unmanaged:
 //   Point()                                          — 0 fields

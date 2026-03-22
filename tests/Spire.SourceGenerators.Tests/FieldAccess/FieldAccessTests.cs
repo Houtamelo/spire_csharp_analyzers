@@ -12,6 +12,6 @@ public class FieldAccessTests : GeneratorAnalyzerTestBase
     protected override ImmutableArray<DiagnosticAnalyzer> GetAnalyzers()
         => ImmutableArray.Create<DiagnosticAnalyzer>(new FieldAccessSafetyAnalyzer());
 
-    protected override bool IsRelevantDiagnostic(Diagnostic d)
+    protected override bool IsRelevantDiagnostic(RoslynDiagnostic d)
         => d.Id == "SPIRE013" || d.Id == "SPIRE014";
 }

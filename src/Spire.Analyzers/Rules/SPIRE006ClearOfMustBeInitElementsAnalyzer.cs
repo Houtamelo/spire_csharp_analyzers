@@ -78,7 +78,7 @@ public sealed class SPIRE006ClearOfMustBeInitElementsAnalyzer : DiagnosticAnalyz
             return;
 
         // For reference types, skip if nullable-annotated
-        if (MustBeInitChecks.IsNullableAnnotatedReference(elementType!))
+        if (MustBeInitChecks.IsNullableAnnotatedReference(elementType))
             return;
 
         context.ReportDiagnostic(
@@ -133,7 +133,7 @@ public sealed class SPIRE006ClearOfMustBeInitElementsAnalyzer : DiagnosticAnalyz
 
         var containingType = method.ContainingType;
 
-        if (!SymbolEqualityComparer.Default.Equals(containingType.OriginalDefinition, spanType))
+        if (!SymbolEqualityComparer.Default.Equals(containingType?.OriginalDefinition, spanType))
             return false;
 
         if (containingType.TypeArguments.Length != 1)

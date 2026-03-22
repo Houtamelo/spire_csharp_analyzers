@@ -38,18 +38,22 @@ namespace TestNs
         public override void Write(Utf8JsonWriter writer, Option<T> value, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
-            switch (value.tag)
+            switch (value)
             {
-                case Option<T>.Kind.Some:
+                case { kind: Option<T>.Kind.Some, value: var __value }:
+                {
                     writer.WriteString("kind", "Some");
                     writer.WritePropertyName("value");
-                    JsonSerializer.Serialize(writer, value.value, options);
+                    JsonSerializer.Serialize(writer, __value, options);
                     break;
-                case Option<T>.Kind.None:
+                }
+                case { kind: Option<T>.Kind.None }:
+                {
                     writer.WriteString("kind", "None");
                     break;
+                }
                 default:
-                    throw new JsonException($"Unknown Option variant: {value.tag}");
+                    throw new JsonException($"Unknown Option variant: {value.kind}");
             }
             writer.WriteEndObject();
         }

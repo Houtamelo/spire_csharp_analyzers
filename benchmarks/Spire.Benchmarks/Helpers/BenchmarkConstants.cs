@@ -1,4 +1,4 @@
-namespace Spire.Benchmarks;
+namespace Spire.Benchmarks.Helpers;
 
 static class BenchN
 {

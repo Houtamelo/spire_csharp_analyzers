@@ -11,6 +11,6 @@ namespace TestNs
     }
     class C
     {
-        Token.Kind Test(Token t) => t.tag;
+        Token.Kind Test(Token t) => t.kind;
     }
 }

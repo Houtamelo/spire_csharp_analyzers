@@ -14,7 +14,7 @@ namespace TestNs
             Square,
         }
 
-        public readonly Kind tag;
+        public readonly Kind kind;
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal readonly object? _f0;
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -24,9 +24,9 @@ namespace TestNs
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal readonly object? _f3;
 
-        Shape(Kind tag, object? f0, object? f1, object? f2, object? f3)
+        Shape(Kind kind, object? f0, object? f1, object? f2, object? f3)
         {
-            this.tag = tag;
+            this.kind = kind;
             this._f0 = f0;
             this._f1 = f1;
             this._f2 = f2;
@@ -42,8 +42,8 @@ namespace TestNs
 
         public void Deconstruct(out Kind kind, out object? f0)
         {
-            kind = this.tag;
-            switch (this.tag)
+            kind = this.kind;
+            switch (this.kind)
             {
                 case Kind.Circle:
                     f0 = this._f1;
@@ -59,7 +59,7 @@ namespace TestNs
 
         public void Deconstruct(out Kind kind, out float width, out float height)
         {
-            kind = this.tag;
+            kind = this.kind;
             width = (float)this._f3!;
             height = (float)this._f0!;
         }

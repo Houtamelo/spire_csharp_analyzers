@@ -1,6 +1,4 @@
-using Spire;
-
-namespace Spire.Benchmarks;
+namespace Spire.Benchmarks.Types;
 
 // JSON-enabled variants for serialization benchmarks
 

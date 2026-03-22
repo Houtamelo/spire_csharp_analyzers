@@ -13,15 +13,15 @@ namespace TestNs
             B,
         }
 
-        public readonly Kind tag;
+        public readonly Kind kind;
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal readonly object? _f0;
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal readonly object? _f1;
 
-        Immutable(Kind tag, object? f0, object? f1)
+        Immutable(Kind kind, object? f0, object? f1)
         {
-            this.tag = tag;
+            this.kind = kind;
             this._f0 = f0;
             this._f1 = f1;
         }
@@ -33,8 +33,8 @@ namespace TestNs
 
         public void Deconstruct(out Kind kind, out object? f0)
         {
-            kind = this.tag;
-            switch (this.tag)
+            kind = this.kind;
+            switch (this.kind)
             {
                 case Kind.A:
                     f0 = this._f0;

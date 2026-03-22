@@ -43,7 +43,7 @@ N=1000, .NET 10.0, AMD Ryzen 9 9900X. Full results in [docs/benchmark-results/](
 - **Need reference semantics or JSON**: `record` — fastest construction, best JSON deserialization, natural C# pattern matching. Trades GC pressure for speed.
 - **No generics, unmanaged-heavy**: `Layout.Overlap` — identical match speed to Additive, true field overlap for minimal struct size. Cannot handle generic type parameters.
 - **Skewed variant distribution** (80%+ one variant): `Layout.BoxedTuple` — fieldless fast-path is sub-nanosecond. Poor uniform performance.
-- **Avoid**: `Layout.BoxedFields` — outperformed by Additive in most categories. Only advantage: zero-alloc Deconstruct (fields already boxed). Legacy layout.
+- **Avoid**: `Layout.BoxedFields` — outperformed by Additive in most categories. Only advankinde: zero-alloc Deconstruct (fields already boxed). Legacy layout.
 
 ## License
 

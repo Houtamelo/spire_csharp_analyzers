@@ -1,6 +1,4 @@
-using Spire;
-
-namespace Spire.Benchmarks;
+namespace Spire.Benchmarks.Types;
 
 [BenchmarkUnion(Name = "Phys")]
 public partial struct PhysBench

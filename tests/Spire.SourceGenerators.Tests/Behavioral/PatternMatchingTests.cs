@@ -6,23 +6,23 @@ public class PatternMatchingTests : BehavioralTestBase
 {
     [Theory]
     [MemberData(nameof(StructStrategies))]
-    public void SwitchOnTag_AllBranches(string strategy)
+    public void SwitchOnKind_AllBranches(string strategy)
     {
         var asm = CompileAndLoad(PatternMatchingSource(strategy));
         var shapeType = GetType(asm, "Shape");
         var runner = GetType(asm, "TestRunner");
 
         var circle = InvokeFactory(shapeType, "Circle", 3.14);
-        Assert.Equal("circle", InvokeMethod(runner, "MatchTag", circle));
+        Assert.Equal("circle", InvokeMethod(runner, "MatchKind", circle));
 
         var square = InvokeFactory(shapeType, "Square", 42);
-        Assert.Equal("square", InvokeMethod(runner, "MatchTag", square));
+        Assert.Equal("square", InvokeMethod(runner, "MatchKind", square));
 
         var rect = InvokeFactory(shapeType, "Rectangle", 1.5f, 2.5f);
-        Assert.Equal("rectangle", InvokeMethod(runner, "MatchTag", rect));
+        Assert.Equal("rectangle", InvokeMethod(runner, "MatchKind", rect));
 
         var point = InvokeFactory(shapeType, "Point");
-        Assert.Equal("point", InvokeMethod(runner, "MatchTag", point));
+        Assert.Equal("point", InvokeMethod(runner, "MatchKind", point));
     }
 
     [Theory]

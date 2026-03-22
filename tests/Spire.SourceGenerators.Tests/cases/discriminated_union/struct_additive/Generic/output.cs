@@ -11,13 +11,13 @@ partial struct Option<T>
         None,
     }
 
-    public readonly Kind tag;
+    public readonly Kind kind;
     [EditorBrowsable(EditorBrowsableState.Never)]
     internal readonly T _s0;
 
-    Option(Kind tag, T s0)
+    Option(Kind kind, T s0)
     {
-        this.tag = tag;
+        this.kind = kind;
         this._s0 = s0;
     }
 
@@ -28,8 +28,8 @@ partial struct Option<T>
 
     public void Deconstruct(out Kind kind, out object? f0)
     {
-        kind = this.tag;
-        switch (this.tag)
+        kind = this.kind;
+        switch (this.kind)
         {
             case Kind.Some:
                 f0 = this._s0;

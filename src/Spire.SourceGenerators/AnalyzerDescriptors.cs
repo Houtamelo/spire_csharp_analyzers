@@ -39,8 +39,8 @@ internal static class AnalyzerDescriptors
 
     public static readonly DiagnosticDescriptor SPIRE014_UnguardedFieldAccess = new(
         id: "SPIRE014",
-        title: "Accessing variant field without tag guard",
-        messageFormat: "Accessing variant field '{0}' without a tag guard",
+        title: "Accessing variant field without kind guard",
+        messageFormat: "Accessing variant field '{0}' without a kind guard",
         category: "Correctness",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);

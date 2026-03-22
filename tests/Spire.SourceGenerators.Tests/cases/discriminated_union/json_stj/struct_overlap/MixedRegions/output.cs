@@ -26,26 +26,30 @@ namespace TestNs
         public override void Write(Utf8JsonWriter writer, Event value, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
-            switch (value.tag)
+            switch (value)
             {
-                case Event.Kind.Click:
+                case { kind: Event.Kind.Click, x: var __x, y: var __y, target: var __target }:
+                {
                     writer.WriteString("kind", "Click");
                     writer.WritePropertyName("x");
-                    JsonSerializer.Serialize(writer, value.x, options);
+                    JsonSerializer.Serialize(writer, __x, options);
                     writer.WritePropertyName("y");
-                    JsonSerializer.Serialize(writer, value.y, options);
+                    JsonSerializer.Serialize(writer, __y, options);
                     writer.WritePropertyName("target");
-                    JsonSerializer.Serialize(writer, value.target, options);
+                    JsonSerializer.Serialize(writer, __target, options);
                     break;
-                case Event.Kind.Hover:
+                }
+                case { kind: Event.Kind.Hover, posX: var __posX, posY: var __posY }:
+                {
                     writer.WriteString("kind", "Hover");
                     writer.WritePropertyName("posX");
-                    JsonSerializer.Serialize(writer, value.posX, options);
+                    JsonSerializer.Serialize(writer, __posX, options);
                     writer.WritePropertyName("posY");
-                    JsonSerializer.Serialize(writer, value.posY, options);
+                    JsonSerializer.Serialize(writer, __posY, options);
                     break;
+                }
                 default:
-                    throw new JsonException($"Unknown Event variant: {value.tag}");
+                    throw new JsonException($"Unknown Event variant: {value.kind}");
             }
             writer.WriteEndObject();
         }

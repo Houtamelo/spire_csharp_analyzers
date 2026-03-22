@@ -7,7 +7,7 @@ public class LargeUnionTests : BehavioralTestBase
 {
     [Theory]
     [MemberData(nameof(StructStrategies))]
-    public void EightVariants_AllTagsCorrect(string strategy)
+    public void EightVariants_AllKindsCorrect(string strategy)
     {
         var asm = CompileAndLoad(LargeUnionSource(strategy));
         var eventType = GetType(asm, "Event");
@@ -33,7 +33,7 @@ public class LargeUnionTests : BehavioralTestBase
                 "Error" => InvokeFactory(eventType, name, "oops"),
                 _ => throw new Exception()
             };
-            Assert.Equal(expectedKind, ReadTag(instance));
+            Assert.Equal(expectedKind, ReadKind(instance));
         }
     }
 

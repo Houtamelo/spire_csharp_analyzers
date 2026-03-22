@@ -22,7 +22,7 @@ public abstract class GeneratorAnalyzerTestBase
 {
     protected abstract string Category { get; }
     protected abstract ImmutableArray<DiagnosticAnalyzer> GetAnalyzers();
-    protected abstract bool IsRelevantDiagnostic(Diagnostic d);
+    protected abstract bool IsRelevantDiagnostic(Microsoft.CodeAnalysis.Diagnostic d);
 
     [Theory]
     [GeneratorAnalyzerCaseDiscovery("should_fail")]
@@ -95,7 +95,7 @@ public abstract class GeneratorAnalyzerTestBase
         }
     }
 
-    private async Task<List<Diagnostic>> RunAnalyzers(Compilation compilation)
+    private async Task<List<Microsoft.CodeAnalysis.Diagnostic>> RunAnalyzers(Compilation compilation)
     {
         var withAnalyzers = compilation.WithAnalyzers(GetAnalyzers());
         var allDiags = await withAnalyzers.GetAnalyzerDiagnosticsAsync();
@@ -225,7 +225,7 @@ public sealed class GeneratorAnalyzerCaseDiscoveryAttribute : DataAttribute
             yield break;
         }
 
-        var headerTag = $"//@ {_expectedHeader}";
+        var headerKind = $"//@ {_expectedHeader}";
         bool found = false;
 
         foreach (var file in Directory.GetFiles(casesDir, "*.cs").OrderBy(f => f))
@@ -235,7 +235,7 @@ public sealed class GeneratorAnalyzerCaseDiscoveryAttribute : DataAttribute
 
             using var reader = new StreamReader(file);
             var firstLine = reader.ReadLine()?.Trim() ?? "";
-            if (firstLine == headerTag)
+            if (firstLine == headerKind)
             {
                 found = true;
                 yield return new object[] { fileName };

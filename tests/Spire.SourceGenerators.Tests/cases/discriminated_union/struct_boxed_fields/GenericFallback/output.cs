@@ -13,13 +13,13 @@ namespace TestNs
             None,
         }
 
-        public readonly Kind tag;
+        public readonly Kind kind;
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal readonly object? _f0;
 
-        Option(Kind tag, object? f0)
+        Option(Kind kind, object? f0)
         {
-            this.tag = tag;
+            this.kind = kind;
             this._f0 = f0;
         }
 
@@ -30,8 +30,8 @@ namespace TestNs
 
         public void Deconstruct(out Kind kind, out object? f0)
         {
-            kind = this.tag;
-            switch (this.tag)
+            kind = this.kind;
+            switch (this.kind)
             {
                 case Kind.Some:
                     f0 = this._f0;

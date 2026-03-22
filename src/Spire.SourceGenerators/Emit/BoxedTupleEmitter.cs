@@ -38,8 +38,8 @@ internal static class BoxedTupleEmitter
         EmitKindEnum(sb, union);
         sb.AppendLine();
 
-        // Fields: tag + single payload
-        sb.AppendLine("public readonly Kind tag;");
+        // Fields: kind + single payload
+        sb.AppendLine("public readonly Kind kind;");
         sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
         sb.AppendLine("internal readonly object? _payload;");
         sb.AppendLine();
@@ -55,8 +55,9 @@ internal static class BoxedTupleEmitter
         if (union.GenerateDeconstruct)
             EmitDeconstruct(sb);
 
-        // Public properties for pattern matching (tag switch for correct cast)
-        if (union.PublicProperties)
+        // Public properties for pattern matching (kind switch for correct cast)
+        // Skip if field names conflict across variants (same name, different type)
+        if (!HasFieldNameConflicts(union.Variants))
             EmitProperties(sb, union.Variants);
 
         sb.CloseBrace(); // type
@@ -83,9 +84,9 @@ internal static class BoxedTupleEmitter
 
     private static void EmitConstructor(SourceBuilder sb, string typeName)
     {
-        sb.AppendLine($"{typeName}(Kind tag, object? payload)");
+        sb.AppendLine($"{typeName}(Kind kind, object? payload)");
         sb.OpenBrace();
-        sb.AppendLine("this.tag = tag;");
+        sb.AppendLine("this.kind = kind;");
         sb.AppendLine("this._payload = payload;");
         sb.CloseBrace();
     }
@@ -124,7 +125,7 @@ internal static class BoxedTupleEmitter
         sb.AppendLine();
         sb.AppendLine("public void Deconstruct(out Kind kind, out object? payload)");
         sb.OpenBrace();
-        sb.AppendLine("kind = this.tag;");
+        sb.AppendLine("kind = this.kind;");
         sb.AppendLine("payload = this._payload;");
         sb.CloseBrace();
     }
@@ -188,7 +189,7 @@ internal static class BoxedTupleEmitter
             }
             else
             {
-                sb.AppendLine($"public {propType} {propName} => this.tag switch");
+                sb.AppendLine($"public {propType} {propName} => this.kind switch");
                 sb.OpenBrace();
                 foreach (var c in cases)
                     sb.AppendLine($"Kind.{c.VariantName} => {c.Accessor},");
@@ -196,6 +197,27 @@ internal static class BoxedTupleEmitter
                 sb.CloseBrace(";");
             }
         }
+    }
+
+    private static bool HasFieldNameConflicts(EquatableArray<VariantInfo> variants)
+    {
+        var fieldTypes = new Dictionary<string, string>();
+        foreach (var variant in variants)
+        {
+            foreach (var field in variant.Fields)
+            {
+                if (fieldTypes.TryGetValue(field.Name, out var existing))
+                {
+                    if (existing != field.TypeFullName)
+                        return true;
+                }
+                else
+                {
+                    fieldTypes[field.Name] = field.TypeFullName;
+                }
+            }
+        }
+        return false;
     }
 
     private static string FormatTypeParams(EquatableArray<string> typeParameters)

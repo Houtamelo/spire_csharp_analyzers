@@ -15,9 +15,9 @@ namespace TestNs
     {
         int Test(Shape s) => s switch
         {
-            { tag: Shape.Kind.Circle } => 1,
-            { tag: Shape.Kind.Rectangle } => 2,
-            { tag: Shape.Kind.Square } => 3,
+            { kind: Shape.Kind.Circle } => 1,
+            { kind: Shape.Kind.Rectangle } => 2,
+            { kind: Shape.Kind.Square } => 3,
         };
     }
 }

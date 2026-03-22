@@ -36,7 +36,16 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
     {
         var recursive = (IRecursivePatternOperation)ctx.Operation;
 
-        // Must have a Deconstruct method
+        // Property pattern path: { kind: Shape.Kind.X, field: type name }
+        // Check PropertySubpatterns first — property patterns take priority even when
+        // a Deconstruct method exists on the type.
+        if (!recursive.PropertySubpatterns.IsEmpty)
+        {
+            AnalyzePropertyPattern(ctx, recursive, duAttr);
+            return;
+        }
+
+        // Deconstruct pattern path: (Kind.X, type name)
         if (recursive.DeconstructSymbol is not IMethodSymbol method)
             return;
 
@@ -212,5 +221,150 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
         return factoryMethod.Parameters
             .Select(p => p.Type)
             .ToImmutableArray();
+    }
+
+    /// Analyzes a property pattern (e.g., { kind: Shape.Kind.Circle, radius: string bad })
+    /// for type mismatches. For property patterns, the expected type is always "var".
+    private static void AnalyzePropertyPattern(
+        OperationAnalysisContext ctx,
+        IRecursivePatternOperation recursive,
+        INamedTypeSymbol duAttr)
+    {
+        // The matched type is the union struct type
+        var matchedType = recursive.MatchedType as INamedTypeSymbol;
+        if (matchedType is null)
+            return;
+
+        var unionInfo = UnionTypeInfo.TryCreate(matchedType, duAttr);
+        if (unionInfo is null || !unionInfo.IsStructUnion)
+            return;
+
+        // Find the kind subpattern to resolve variant name
+        string? variantName = null;
+        foreach (var propSub in recursive.PropertySubpatterns)
+        {
+            if (!IsKindMemberOp(propSub))
+                continue;
+
+            variantName = ResolveVariantNameFromConstant(propSub.Pattern, unionInfo);
+            break;
+        }
+
+        // Check each non-kind property subpattern for type mismatches
+        foreach (var propSub in recursive.PropertySubpatterns)
+        {
+            if (IsKindMemberOp(propSub))
+                continue;
+
+            var pattern = propSub.Pattern;
+
+            switch (pattern)
+            {
+                case IDiscardPatternOperation:
+                    // Untyped discard — always OK
+                    continue;
+
+                case IDeclarationPatternOperation declPattern:
+                    // `var x` — infers from context, always OK
+                    if (declPattern.MatchedType is null)
+                        continue;
+                    if (declPattern.InputType is not null &&
+                        SymbolEqualityComparer.Default.Equals(
+                            declPattern.InputType, declPattern.MatchedType))
+                        continue;
+
+                    // Has an explicit type — property patterns should use `var`
+                    var memberName = GetPropertySubpatternMemberName(propSub);
+                    var fieldIndex = GetFieldIndex(matchedType, variantName, memberName);
+
+                    var properties = ImmutableDictionary.CreateBuilder<string, string?>();
+                    properties.Add("ExpectedType", "var");
+                    properties.Add("FieldIndex", fieldIndex.ToString());
+
+                    var actualTypeDisplay = declPattern.MatchedType?.ToDisplayString(
+                        SymbolDisplayFormat.MinimallyQualifiedFormat) ?? "?";
+
+                    ctx.ReportDiagnostic(Diagnostic.Create(
+                        AnalyzerDescriptors.SPIRE011_FieldTypeMismatch,
+                        pattern.Syntax.GetLocation(),
+                        properties.ToImmutable(),
+                        variantName ?? matchedType.Name,
+                        fieldIndex,
+                        "var",
+                        actualTypeDisplay));
+                    break;
+
+                default:
+                    continue;
+            }
+        }
+    }
+
+    private static bool IsKindMemberOp(IPropertySubpatternOperation propSub)
+    {
+        if (propSub.Member is IPropertyReferenceOperation propRef)
+            return propRef.Property.Name == "kind";
+        if (propSub.Member is IFieldReferenceOperation fieldRef)
+            return fieldRef.Field.Name == "kind";
+        return false;
+    }
+
+    private static string? GetPropertySubpatternMemberName(IPropertySubpatternOperation propSub)
+    {
+        if (propSub.Member is IPropertyReferenceOperation propRef)
+            return propRef.Property.Name;
+        if (propSub.Member is IFieldReferenceOperation fieldRef)
+            return fieldRef.Field.Name;
+        return null;
+    }
+
+    private static int GetFieldIndex(
+        INamedTypeSymbol unionType, string? variantName, string? memberName)
+    {
+        if (variantName is null || memberName is null)
+            return 0;
+
+        var factoryMethod = unionType.GetMembers(variantName)
+            .OfType<IMethodSymbol>()
+            .FirstOrDefault(m => m.IsStatic && m.MethodKind == MethodKind.Ordinary);
+
+        if (factoryMethod is null)
+            return 0;
+
+        for (int i = 0; i < factoryMethod.Parameters.Length; i++)
+        {
+            if (factoryMethod.Parameters[i].Name == memberName)
+                return i;
+        }
+
+        return 0;
+    }
+
+    /// Resolves the variant name from a constant pattern (Kind enum value).
+    private static string? ResolveVariantNameFromConstant(
+        IPatternOperation pattern, UnionTypeInfo unionInfo)
+    {
+        if (pattern is not IConstantPatternOperation constant)
+            return null;
+
+        var valueOp = constant.Value;
+        if (valueOp is null || valueOp.Type is null)
+            return null;
+
+        var kindEnum = unionInfo.KindEnumType;
+        if (kindEnum is null)
+            return null;
+
+        if (!SymbolEqualityComparer.Default.Equals(valueOp.Type, kindEnum))
+            return null;
+
+        if (!valueOp.ConstantValue.HasValue)
+            return null;
+
+        var value = valueOp.ConstantValue.Value;
+        if (TryGetOrdinal(value, out int ordinal) && ordinal >= 0 && ordinal < unionInfo.VariantNames.Length)
+            return unionInfo.VariantNames[ordinal];
+
+        return null;
     }
 }

@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using BenchmarkDotNet.Attributes;
+using Spire.Benchmarks.Helpers;
 
 namespace Spire.Benchmarks;
 
@@ -10,16 +11,16 @@ public class JsonNsjBenchmarks
     [Params(BenchN.Default)]
     public int N { get; set; }
 
-    EventAdditiveJson[] _additiveArr = null!;
-    EventRecordJson[] _recordArr = null!;
+    Types.EventAdditiveJson[] _additiveArr = null!;
+    Types.EventRecordJson[] _recordArr = null!;
     string _additiveJson = null!;
     string _recordJson = null!;
 
     [GlobalSetup]
     public void Setup()
     {
-        _additiveArr = new EventAdditiveJson[N];
-        _recordArr = new EventRecordJson[N];
+        _additiveArr = new Types.EventAdditiveJson[N];
+        _recordArr = new Types.EventRecordJson[N];
 
         var rng = new Random(42);
         string[] pool = ["hello", "world", "red", "blue", "Arial", "Mono", "error!", "warn"];
@@ -27,25 +28,25 @@ public class JsonNsjBenchmarks
         {
             _additiveArr[i] = (i % 8) switch
             {
-                0 => EventAdditiveJson.Point(),
-                1 => EventAdditiveJson.Circle(rng.NextDouble()),
-                2 => EventAdditiveJson.Label(pool[rng.Next(pool.Length)]),
-                3 => EventAdditiveJson.Rectangle(rng.NextSingle(), rng.NextSingle()),
-                4 => EventAdditiveJson.ColoredLine(rng.Next(), rng.Next(), pool[rng.Next(pool.Length)]),
-                5 => EventAdditiveJson.Transform(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
-                6 => EventAdditiveJson.RichText(pool[rng.Next(pool.Length)], rng.Next(8, 72), rng.Next(2) == 1, pool[rng.Next(pool.Length)], rng.NextDouble()),
-                _ => EventAdditiveJson.Error(pool[rng.Next(pool.Length)]),
+                0 => Types.EventAdditiveJson.Point(),
+                1 => Types.EventAdditiveJson.Circle(rng.NextDouble()),
+                2 => Types.EventAdditiveJson.Label(pool[rng.Next(pool.Length)]),
+                3 => Types.EventAdditiveJson.Rectangle(rng.NextSingle(), rng.NextSingle()),
+                4 => Types.EventAdditiveJson.ColoredLine(rng.Next(), rng.Next(), pool[rng.Next(pool.Length)]),
+                5 => Types.EventAdditiveJson.Transform(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
+                6 => Types.EventAdditiveJson.RichText(pool[rng.Next(pool.Length)], rng.Next(8, 72), rng.Next(2) == 1, pool[rng.Next(pool.Length)], rng.NextDouble()),
+                _ => Types.EventAdditiveJson.Error(pool[rng.Next(pool.Length)]),
             };
             _recordArr[i] = (i % 8) switch
             {
-                0 => new EventRecordJson.Point(),
-                1 => new EventRecordJson.Circle(rng.NextDouble()),
-                2 => new EventRecordJson.Label(pool[rng.Next(pool.Length)]),
-                3 => new EventRecordJson.Rectangle(rng.NextSingle(), rng.NextSingle()),
-                4 => new EventRecordJson.ColoredLine(rng.Next(), rng.Next(), pool[rng.Next(pool.Length)]),
-                5 => new EventRecordJson.Transform(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
-                6 => new EventRecordJson.RichText(pool[rng.Next(pool.Length)], rng.Next(8, 72), rng.Next(2) == 1, pool[rng.Next(pool.Length)], rng.NextDouble()),
-                _ => new EventRecordJson.Error(pool[rng.Next(pool.Length)]),
+                0 => new Types.EventRecordJson.Point(),
+                1 => new Types.EventRecordJson.Circle(rng.NextDouble()),
+                2 => new Types.EventRecordJson.Label(pool[rng.Next(pool.Length)]),
+                3 => new Types.EventRecordJson.Rectangle(rng.NextSingle(), rng.NextSingle()),
+                4 => new Types.EventRecordJson.ColoredLine(rng.Next(), rng.Next(), pool[rng.Next(pool.Length)]),
+                5 => new Types.EventRecordJson.Transform(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
+                6 => new Types.EventRecordJson.RichText(pool[rng.Next(pool.Length)], rng.Next(8, 72), rng.Next(2) == 1, pool[rng.Next(pool.Length)], rng.NextDouble()),
+                _ => new Types.EventRecordJson.Error(pool[rng.Next(pool.Length)]),
             };
         }
 
@@ -60,22 +61,22 @@ public class JsonNsjBenchmarks
     public string SerializeRecord() => JsonConvert.SerializeObject(_recordArr);
 
     [BenchmarkCategory("NSJ Deserialize"), Benchmark(Baseline = true, Description = "additive")]
-    public EventAdditiveJson[]? DeserializeAdditive() => JsonConvert.DeserializeObject<EventAdditiveJson[]>(_additiveJson);
+    public Types.EventAdditiveJson[]? DeserializeAdditive() => JsonConvert.DeserializeObject<Types.EventAdditiveJson[]>(_additiveJson);
 
     [BenchmarkCategory("NSJ Deserialize"), Benchmark(Description = "record")]
-    public EventRecordJson[]? DeserializeRecord() => JsonConvert.DeserializeObject<EventRecordJson[]>(_recordJson);
+    public Types.EventRecordJson[]? DeserializeRecord() => JsonConvert.DeserializeObject<Types.EventRecordJson[]>(_recordJson);
 
     [BenchmarkCategory("NSJ RoundTrip"), Benchmark(Baseline = true, Description = "additive")]
-    public EventAdditiveJson[]? RoundTripAdditive()
+    public Types.EventAdditiveJson[]? RoundTripAdditive()
     {
         var json = JsonConvert.SerializeObject(_additiveArr);
-        return JsonConvert.DeserializeObject<EventAdditiveJson[]>(json);
+        return JsonConvert.DeserializeObject<Types.EventAdditiveJson[]>(json);
     }
 
     [BenchmarkCategory("NSJ RoundTrip"), Benchmark(Description = "record")]
-    public EventRecordJson[]? RoundTripRecord()
+    public Types.EventRecordJson[]? RoundTripRecord()
     {
         var json = JsonConvert.SerializeObject(_recordArr);
-        return JsonConvert.DeserializeObject<EventRecordJson[]>(json);
+        return JsonConvert.DeserializeObject<Types.EventRecordJson[]>(json);
     }
 }

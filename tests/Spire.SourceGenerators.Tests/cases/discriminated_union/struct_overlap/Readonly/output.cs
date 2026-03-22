@@ -17,7 +17,7 @@ namespace TestNs
         }
 
         [FieldOffset(0)]
-        public readonly Kind tag;
+        public readonly Kind kind;
 
         [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -27,9 +27,9 @@ namespace TestNs
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal readonly string? _y;
 
-        Immutable(Kind tag) : this()
+        Immutable(Kind kind) : this()
         {
-            this.tag = tag;
+            this.kind = kind;
         }
 
         public static partial Immutable A(int x)
@@ -47,8 +47,8 @@ namespace TestNs
 
         public void Deconstruct(out Kind kind, out object? f0)
         {
-            kind = this.tag;
-            switch (this.tag)
+            kind = this.kind;
+            switch (this.kind)
             {
                 case Kind.A:
                     f0 = this._x;

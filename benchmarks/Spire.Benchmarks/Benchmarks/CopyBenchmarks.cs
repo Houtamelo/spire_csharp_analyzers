@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Attributes;
+using Spire.Benchmarks.Helpers;
 
 namespace Spire.Benchmarks;
 
@@ -8,24 +9,24 @@ public class CopyBenchmarks
     [Params(BenchN.Default)]
     public int N { get; set; }
 
-    EventAdditive[] _srcAdd = null!; EventAdditive[] _dstAdd = null!;
-    EventBoxedFields[] _srcBF = null!; EventBoxedFields[] _dstBF = null!;
-    EventBoxedTuple[] _srcBT = null!; EventBoxedTuple[] _dstBT = null!;
-    EventOverlap[] _srcOv = null!; EventOverlap[] _dstOv = null!;
-    EventUnsafeOverlap[] _srcUO = null!; EventUnsafeOverlap[] _dstUO = null!;
-    EventRecord[] _srcRec = null!; EventRecord[] _dstRec = null!;
-    EventClass[] _srcCls = null!; EventClass[] _dstCls = null!;
+    Types.EventAdditive[] _srcAdd = null!; Types.EventAdditive[] _dstAdd = null!;
+    Types.EventBoxedFields[] _srcBF = null!; Types.EventBoxedFields[] _dstBF = null!;
+    Types.EventBoxedTuple[] _srcBT = null!; Types.EventBoxedTuple[] _dstBT = null!;
+    Types.EventOverlap[] _srcOv = null!; Types.EventOverlap[] _dstOv = null!;
+    Types.EventUnsafeOverlap[] _srcUO = null!; Types.EventUnsafeOverlap[] _dstUO = null!;
+    Types.EventRecord[] _srcRec = null!; Types.EventRecord[] _dstRec = null!;
+    Types.EventClass[] _srcCls = null!; Types.EventClass[] _dstCls = null!;
 
     [GlobalSetup]
     public void Setup()
     {
-        _srcAdd = new EventAdditive[N]; _dstAdd = new EventAdditive[N];
-        _srcBF = new EventBoxedFields[N]; _dstBF = new EventBoxedFields[N];
-        _srcBT = new EventBoxedTuple[N]; _dstBT = new EventBoxedTuple[N];
-        _srcOv = new EventOverlap[N]; _dstOv = new EventOverlap[N];
-        _srcUO = new EventUnsafeOverlap[N]; _dstUO = new EventUnsafeOverlap[N];
-        _srcRec = new EventRecord[N]; _dstRec = new EventRecord[N];
-        _srcCls = new EventClass[N]; _dstCls = new EventClass[N];
+        _srcAdd = new Types.EventAdditive[N]; _dstAdd = new Types.EventAdditive[N];
+        _srcBF = new Types.EventBoxedFields[N]; _dstBF = new Types.EventBoxedFields[N];
+        _srcBT = new Types.EventBoxedTuple[N]; _dstBT = new Types.EventBoxedTuple[N];
+        _srcOv = new Types.EventOverlap[N]; _dstOv = new Types.EventOverlap[N];
+        _srcUO = new Types.EventUnsafeOverlap[N]; _dstUO = new Types.EventUnsafeOverlap[N];
+        _srcRec = new Types.EventRecord[N]; _dstRec = new Types.EventRecord[N];
+        _srcCls = new Types.EventClass[N]; _dstCls = new Types.EventClass[N];
 
         ArrayFiller.Fill(_srcAdd, new Random(42), Distribution.Uniform);
         ArrayFiller.Fill(_srcBF, new Random(42), Distribution.Uniform);

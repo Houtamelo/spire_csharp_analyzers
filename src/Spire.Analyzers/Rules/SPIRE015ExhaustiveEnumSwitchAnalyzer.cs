@@ -316,7 +316,7 @@ public sealed class SPIRE015ExhaustiveEnumSwitchAnalyzer : DiagnosticAnalyzer
             short s => s,
             ushort us => us,
             int i => i,
-            uint ui => (long)ui,
+            uint ui => ui,
             long l => l,
             ulong ul => (long)ul,
             _ => 0,

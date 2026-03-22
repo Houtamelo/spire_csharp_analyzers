@@ -19,7 +19,7 @@ namespace TestNs
             }
 
             [FieldOffset(0)]
-            public readonly Kind tag;
+            public readonly Kind kind;
 
             [FieldOffset(1)]
             [EditorBrowsable(EditorBrowsableState.Never)]
@@ -29,9 +29,9 @@ namespace TestNs
             [EditorBrowsable(EditorBrowsableState.Never)]
             internal readonly int _sideLength;
 
-            Shape(Kind tag) : this()
+            Shape(Kind kind) : this()
             {
-                this.tag = tag;
+                this.kind = kind;
             }
 
             public static partial Shape Circle(double radius)
@@ -49,8 +49,8 @@ namespace TestNs
 
             public void Deconstruct(out Kind kind, out object? f0)
             {
-                kind = this.tag;
-                switch (this.tag)
+                kind = this.kind;
+                switch (this.kind)
                 {
                     case Kind.Circle:
                         f0 = this._radius;

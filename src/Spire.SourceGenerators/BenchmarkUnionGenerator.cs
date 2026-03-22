@@ -322,7 +322,6 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
             IsRefStruct: false,
             Strategy: strategy,
             GenerateDeconstruct: true,
-            PublicProperties: !b.HasFieldNameConflicts,
             TypeParameters: new EquatableArray<string>(b.TypeParams.ToImmutableArray()),
             Variants: new EquatableArray<VariantInfo>(variants.ToImmutableArray()),
             ContainingTypes: new EquatableArray<ContainingTypeInfo>(ImmutableArray<ContainingTypeInfo>.Empty),
@@ -352,7 +351,6 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
             IsRefStruct: false,
             Strategy: EmitStrategy.Class,
             GenerateDeconstruct: true,
-            PublicProperties: !b.HasFieldNameConflicts,
             TypeParameters: new EquatableArray<string>(b.TypeParams.ToImmutableArray()),
             Variants: new EquatableArray<VariantInfo>(variants.ToImmutableArray()),
             ContainingTypes: new EquatableArray<ContainingTypeInfo>(ImmutableArray<ContainingTypeInfo>.Empty),
@@ -480,7 +478,7 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
         sb.AppendLine("[CategoriesColumn]");
         sb.AppendLine($"public class {b.Prefix}PropertyBenchmarks");
         sb.AppendLine("{");
-        sb.AppendLine("    [Params(BenchN.Default)] public int N { get; set; }");
+        sb.AppendLine("    [Params(Spire.Benchmarks.Helpers.BenchN.Default)] public int N { get; set; }");
         sb.AppendLine();
 
         foreach (var t in allTypes)
@@ -557,7 +555,7 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
             sb.AppendLine("        for (int i = 0; i < arr.Length; i++)");
             sb.AppendLine("        {");
             sb.AppendLine("            var e = arr[i];");
-            sb.AppendLine("            switch (e.tag)");
+            sb.AppendLine("            switch (e.kind)");
             sb.AppendLine("            {");
             EmitStructDeconstructArms(sb, b, t);
             sb.AppendLine("            }");
@@ -600,7 +598,7 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
         sb.AppendLine("[MemoryDiagnoser]");
         sb.AppendLine($"public class {b.Prefix}ConstructBenchmarks");
         sb.AppendLine("{");
-        sb.AppendLine("    [Params(BenchN.Default)] public int N { get; set; }");
+        sb.AppendLine("    [Params(Spire.Benchmarks.Helpers.BenchN.Default)] public int N { get; set; }");
         sb.AppendLine();
 
         bool first = true;
@@ -627,7 +625,7 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
         sb.AppendLine("[MemoryDiagnoser]");
         sb.AppendLine($"public class {b.Prefix}CopyBenchmarks");
         sb.AppendLine("{");
-        sb.AppendLine("    [Params(BenchN.Default)] public int N { get; set; }");
+        sb.AppendLine("    [Params(Spire.Benchmarks.Helpers.BenchN.Default)] public int N { get; set; }");
         sb.AppendLine();
 
         foreach (var t in allTypes)
@@ -666,7 +664,7 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
         sb.AppendLine("[CategoriesColumn]");
         sb.AppendLine($"public class {b.Prefix}JsonStjBenchmarks");
         sb.AppendLine("{");
-        sb.AppendLine("    [Params(BenchN.Default)] public int N { get; set; }");
+        sb.AppendLine("    [Params(Spire.Benchmarks.Helpers.BenchN.Default)] public int N { get; set; }");
         sb.AppendLine("    JsonSerializerOptions _opts = null!;");
         sb.AppendLine();
 
@@ -715,7 +713,7 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
         sb.AppendLine("[CategoriesColumn]");
         sb.AppendLine($"public class {b.Prefix}JsonNsjBenchmarks");
         sb.AppendLine("{");
-        sb.AppendLine("    [Params(BenchN.Default)] public int N { get; set; }");
+        sb.AppendLine("    [Params(Spire.Benchmarks.Helpers.BenchN.Default)] public int N { get; set; }");
         sb.AppendLine();
 
         foreach (var t in allTypes)
@@ -878,7 +876,7 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
                 ? $"_{numFields[0].Name}"
                 : string.Join(" + ", numFields.Select(f => $"(double)_{f.Name}"));
 
-            sb.AppendLine($"                case {{ tag: {typeName}.Kind.{v.Name}, {props} }}:");
+            sb.AppendLine($"                case {{ kind: {typeName}.Kind.{v.Name}, {props} }}:");
             sb.AppendLine($"                    sum += {expr}; break;");
         }
     }

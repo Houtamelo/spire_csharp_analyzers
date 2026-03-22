@@ -1,5 +1,5 @@
 //@ should_pass
-// Accessing Circle's field inside tag==Circle guard — OK
+// Accessing Circle's field inside kind==Circle guard — OK
 using Spire;
 namespace TestNs
 {
@@ -13,7 +13,7 @@ namespace TestNs
     {
         double Test(Shape s)
         {
-            if (s.tag == Shape.Kind.Circle)
+            if (s.kind == Shape.Kind.Circle)
             {
                 return s.radius;
             }

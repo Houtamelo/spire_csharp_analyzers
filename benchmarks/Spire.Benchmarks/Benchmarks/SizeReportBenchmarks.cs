@@ -11,20 +11,20 @@ public class SizeReportBenchmarks
     public void Setup()
     {
         Console.WriteLine("── Event (mixed managed/unmanaged) ──");
-        Console.WriteLine($"  EventAdditive        = {Unsafe.SizeOf<EventAdditive>()} bytes");
-        Console.WriteLine($"  EventBoxedFields     = {Unsafe.SizeOf<EventBoxedFields>()} bytes");
-        Console.WriteLine($"  EventBoxedTuple      = {Unsafe.SizeOf<EventBoxedTuple>()} bytes");
-        Console.WriteLine($"  EventOverlap         = {Unsafe.SizeOf<EventOverlap>()} bytes");
-        Console.WriteLine($"  EventUnsafeOverlap   = {Unsafe.SizeOf<EventUnsafeOverlap>()} bytes");
+        Console.WriteLine($"  EventAdditive        = {Unsafe.SizeOf<Types.EventAdditive>()} bytes");
+        Console.WriteLine($"  EventBoxedFields     = {Unsafe.SizeOf<Types.EventBoxedFields>()} bytes");
+        Console.WriteLine($"  EventBoxedTuple      = {Unsafe.SizeOf<Types.EventBoxedTuple>()} bytes");
+        Console.WriteLine($"  EventOverlap         = {Unsafe.SizeOf<Types.EventOverlap>()} bytes");
+        Console.WriteLine($"  EventUnsafeOverlap   = {Unsafe.SizeOf<Types.EventUnsafeOverlap>()} bytes");
         Console.WriteLine($"  EventRecord (ref)    = {IntPtr.Size} bytes");
         Console.WriteLine($"  EventClass (ref)     = {IntPtr.Size} bytes");
         Console.WriteLine();
         Console.WriteLine("── Physics (all unmanaged) ──");
-        Console.WriteLine($"  PhysicsAdditive      = {Unsafe.SizeOf<PhysicsAdditive>()} bytes");
-        Console.WriteLine($"  PhysicsBoxedFields   = {Unsafe.SizeOf<PhysicsBoxedFields>()} bytes");
-        Console.WriteLine($"  PhysicsBoxedTuple    = {Unsafe.SizeOf<PhysicsBoxedTuple>()} bytes");
-        Console.WriteLine($"  PhysicsOverlap       = {Unsafe.SizeOf<PhysicsOverlap>()} bytes");
-        Console.WriteLine($"  PhysicsUnsafeOverlap = {Unsafe.SizeOf<PhysicsUnsafeOverlap>()} bytes");
+        Console.WriteLine($"  PhysicsAdditive      = {Unsafe.SizeOf<Types.PhysicsAdditive>()} bytes");
+        Console.WriteLine($"  PhysicsBoxedFields   = {Unsafe.SizeOf<Types.PhysicsBoxedFields>()} bytes");
+        Console.WriteLine($"  PhysicsBoxedTuple    = {Unsafe.SizeOf<Types.PhysicsBoxedTuple>()} bytes");
+        Console.WriteLine($"  PhysicsOverlap       = {Unsafe.SizeOf<Types.PhysicsOverlap>()} bytes");
+        Console.WriteLine($"  PhysicsUnsafeOverlap = {Unsafe.SizeOf<Types.PhysicsUnsafeOverlap>()} bytes");
         Console.WriteLine($"  PhysicsRecord (ref)  = {IntPtr.Size} bytes");
         Console.WriteLine($"  PhysicsClass (ref)   = {IntPtr.Size} bytes");
     }

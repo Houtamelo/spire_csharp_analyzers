@@ -212,13 +212,13 @@ internal static class NewtonsoftJsonEmitter
 
             if (variant.Fields.Length == 0)
             {
-                sb.AppendLine($"case {{ tag: {unionType}.Kind.{variant.Name} }}:");
+                sb.AppendLine($"case {{ kind: {unionType}.Kind.{variant.Name} }}:");
             }
             else
             {
                 var props = string.Join(", ",
                     variant.Fields.Select(f => $"{f.Name}: var __{f.Name}"));
-                sb.AppendLine($"case {{ tag: {unionType}.Kind.{variant.Name}, {props} }}:");
+                sb.AppendLine($"case {{ kind: {unionType}.Kind.{variant.Name}, {props} }}:");
             }
 
             sb.OpenBrace();
@@ -238,7 +238,7 @@ internal static class NewtonsoftJsonEmitter
 
         sb.AppendLine("default:");
         sb.Indent();
-        sb.AppendLine($"throw new JsonSerializationException($\"Unknown {union.TypeName} variant: {{value.tag}}\");");
+        sb.AppendLine($"throw new JsonSerializationException($\"Unknown {union.TypeName} variant: {{value.kind}}\");");
         sb.Dedent();
 
         sb.CloseBrace(); // switch

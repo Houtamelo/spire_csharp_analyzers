@@ -15,4 +15,4 @@ SPIRE009 | Correctness | Error | Switch does not handle all variants of discrimi
 SPIRE011 | Correctness | Error | Discriminated union pattern field type mismatch
 SPIRE012 | Correctness | Error | Discriminated union pattern field count mismatch
 SPIRE013 | Correctness | Error | Accessing another variant's field
-SPIRE014 | Correctness | Warning | Accessing variant field without tag guard
+SPIRE014 | Correctness | Warning | Accessing variant field without kind guard

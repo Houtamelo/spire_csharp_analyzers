@@ -1,11 +1,10 @@
 using System.Collections.Immutable;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Spire.CodeFixes;
 using Spire.SourceGenerators.Analyzers;
 
-namespace Spire.SourceGenerators.Tests;
+namespace Spire.SourceGenerators.Tests.CodeFix;
 
 public class CodeFixTests : CodeFixTestBase
 {

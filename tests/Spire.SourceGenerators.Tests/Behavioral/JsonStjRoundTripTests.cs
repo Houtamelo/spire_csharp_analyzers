@@ -17,7 +17,7 @@ public class JsonStjRoundTripTests : BehavioralTestBase
         var json = JsonSerializer.Serialize(circle, shapeType);
         var deserialized = JsonSerializer.Deserialize(json, shapeType)!;
 
-        Assert.Equal(GetKindValue(shapeType, "Circle"), ReadTag(deserialized));
+        Assert.Equal(GetKindValue(shapeType, "Circle"), ReadKind(deserialized));
         Assert.Equal(3.14, ReadProperty(deserialized, "radius"));
     }
 
@@ -32,7 +32,7 @@ public class JsonStjRoundTripTests : BehavioralTestBase
         var json = JsonSerializer.Serialize(rect, shapeType);
         var deserialized = JsonSerializer.Deserialize(json, shapeType)!;
 
-        Assert.Equal(GetKindValue(shapeType, "Rectangle"), ReadTag(deserialized));
+        Assert.Equal(GetKindValue(shapeType, "Rectangle"), ReadKind(deserialized));
         Assert.Equal(1.5f, ReadProperty(deserialized, "width"));
         Assert.Equal(2.5f, ReadProperty(deserialized, "height"));
     }
@@ -48,7 +48,7 @@ public class JsonStjRoundTripTests : BehavioralTestBase
         var json = JsonSerializer.Serialize(point, shapeType);
         var deserialized = JsonSerializer.Deserialize(json, shapeType)!;
 
-        Assert.Equal(GetKindValue(shapeType, "Point"), ReadTag(deserialized));
+        Assert.Equal(GetKindValue(shapeType, "Point"), ReadKind(deserialized));
     }
 
     [Theory]
@@ -94,7 +94,7 @@ public class JsonStjRoundTripTests : BehavioralTestBase
 
         // Round-trip
         var deserialized = JsonSerializer.Deserialize(json, shapeType)!;
-        Assert.Equal(GetKindValue(shapeType, "Circle"), ReadTag(deserialized));
+        Assert.Equal(GetKindValue(shapeType, "Circle"), ReadKind(deserialized));
         Assert.Equal(3.14, ReadProperty(deserialized, "radius"));
     }
 
@@ -146,7 +146,7 @@ public class JsonStjRoundTripTests : BehavioralTestBase
         Assert.Contains("\"Some\"", json);
 
         var deserialized = JsonSerializer.Deserialize(json, optionInt)!;
-        Assert.Equal(GetKindValue(optionInt, "Some"), ReadTag(deserialized));
+        Assert.Equal(GetKindValue(optionInt, "Some"), ReadKind(deserialized));
         Assert.Equal(42, ReadProperty(deserialized, "value"));
     }
 
@@ -161,7 +161,7 @@ public class JsonStjRoundTripTests : BehavioralTestBase
         var none = InvokeFactory(optionInt, "None");
         var json = JsonSerializer.Serialize(none, optionInt);
         var deserialized = JsonSerializer.Deserialize(json, optionInt)!;
-        Assert.Equal(GetKindValue(optionInt, "None"), ReadTag(deserialized));
+        Assert.Equal(GetKindValue(optionInt, "None"), ReadKind(deserialized));
     }
 
     // ── Error cases ─────────────────────────────────────────────
