@@ -26,7 +26,7 @@ public sealed class SPIRE006ClearOfMustBeInitElementsAnalyzer : DiagnosticAnalyz
                 .GetTypeByMetadataName("System.Span`1");
 
             var mustBeInitType = compilationContext.Compilation
-                .GetTypeByMetadataName("Spire.Analyzers.MustBeInitAttribute");
+                .GetTypeByMetadataName("Spire.MustBeInitAttribute");
 
             if (mustBeInitType is null)
                 return;
