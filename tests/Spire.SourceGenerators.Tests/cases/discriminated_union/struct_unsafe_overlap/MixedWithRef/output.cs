@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace TestNs
 {
-    [global::Spire.Analyzers.MustBeInit]
+    [global::Spire.MustBeInit]
     partial struct Event
     {
         public enum Kind : byte

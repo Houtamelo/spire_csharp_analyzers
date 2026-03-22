@@ -23,7 +23,7 @@ public sealed class SPIRE008GetUninitializedObjectOfMustBeInitStructAnalyzer : D
                 .GetTypeByMetadataName("System.Runtime.CompilerServices.RuntimeHelpers");
 
             var mustBeInitType = compilationContext.Compilation
-                .GetTypeByMetadataName("Spire.Analyzers.MustBeInitAttribute");
+                .GetTypeByMetadataName("Spire.MustBeInitAttribute");
 
             if (runtimeHelpersType is null || mustBeInitType is null)
                 return;

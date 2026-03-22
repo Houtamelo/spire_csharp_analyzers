@@ -25,9 +25,9 @@ public abstract class BehavioralTestBase
             .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
             .ToList();
 
-        // Spire.Analyzers — provides [MustBeInit] and other marker attributes
+        // Spire.Core — provides [MustBeInit] and other marker attributes
         refs.Add(MetadataReference.CreateFromFile(
-            typeof(Spire.Analyzers.MustBeInitAttribute).Assembly.Location));
+            typeof(Spire.MustBeInitAttribute).Assembly.Location));
 
         // Newtonsoft.Json — not a platform assembly, needed for NSJ converter compilation
         refs.Add(MetadataReference.CreateFromFile(

@@ -1,7 +1,7 @@
 global using System;
 global using System.Collections.Generic;
 global using System.Threading.Tasks;
-global using Spire.Analyzers;
+global using Spire;
 
 // [MustBeInit] struct without parameterless ctor — new T() == default(T)
 [MustBeInit]

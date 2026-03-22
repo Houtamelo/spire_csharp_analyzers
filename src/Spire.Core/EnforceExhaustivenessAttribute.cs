@@ -1,6 +1,6 @@
 using System;
 
-namespace Spire.Analyzers;
+namespace Spire;
 
 [AttributeUsage(AttributeTargets.Enum)]
 public sealed class EnforceExhaustivenessAttribute : MustBeInitAttribute

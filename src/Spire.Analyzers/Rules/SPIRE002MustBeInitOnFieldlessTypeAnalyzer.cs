@@ -19,7 +19,7 @@ public sealed class SPIRE002MustBeInitOnFieldlessTypeAnalyzer : DiagnosticAnalyz
         context.RegisterCompilationStartAction(compilationContext =>
         {
             var mustBeInitType = compilationContext.Compilation
-                .GetTypeByMetadataName("Spire.Analyzers.MustBeInitAttribute");
+                .GetTypeByMetadataName("Spire.MustBeInitAttribute");
 
             if (mustBeInitType is null)
                 return;

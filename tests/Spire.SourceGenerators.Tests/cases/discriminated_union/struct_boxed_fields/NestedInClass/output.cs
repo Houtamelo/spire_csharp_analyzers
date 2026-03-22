@@ -6,7 +6,7 @@ namespace TestNs
 {
     public static partial class Unions
     {
-        [global::Spire.Analyzers.MustBeInit]
+        [global::Spire.MustBeInit]
         internal partial struct Token
         {
             public enum Kind : byte

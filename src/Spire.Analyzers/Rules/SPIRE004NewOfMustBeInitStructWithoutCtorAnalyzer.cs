@@ -21,7 +21,7 @@ public sealed class SPIRE004NewOfMustBeInitStructWithoutCtorAnalyzer : Diagnosti
         context.RegisterCompilationStartAction(compilationContext =>
         {
             var mustBeInitType = compilationContext.Compilation
-                .GetTypeByMetadataName("Spire.Analyzers.MustBeInitAttribute");
+                .GetTypeByMetadataName("Spire.MustBeInitAttribute");
 
             if (mustBeInitType is null)
                 return;

@@ -22,7 +22,7 @@ public sealed class SPIRE015ExhaustiveEnumSwitchAnalyzer : DiagnosticAnalyzer
         context.RegisterCompilationStartAction(compilationCtx =>
         {
             var enforceType = compilationCtx.Compilation.GetTypeByMetadataName(
-                "Spire.Analyzers.EnforceExhaustivenessAttribute");
+                "Spire.EnforceExhaustivenessAttribute");
 
             if (enforceType is null)
                 return;

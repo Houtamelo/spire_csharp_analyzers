@@ -23,7 +23,7 @@ public sealed class SPIRE007UnsafeSkipInitOfMustBeInitStructAnalyzer : Diagnosti
                 .GetTypeByMetadataName("System.Runtime.CompilerServices.Unsafe");
 
             var mustBeInitType = compilationContext.Compilation
-                .GetTypeByMetadataName("Spire.Analyzers.MustBeInitAttribute");
+                .GetTypeByMetadataName("Spire.MustBeInitAttribute");
 
             if (unsafeType is null || mustBeInitType is null)
                 return;

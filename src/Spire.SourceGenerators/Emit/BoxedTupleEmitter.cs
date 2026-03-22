@@ -30,7 +30,7 @@ internal static class BoxedTupleEmitter
         var readonlyMod = union.IsReadonly ? "readonly " : "";
         var refMod = union.IsRefStruct ? "ref " : "";
 
-        sb.AppendLine("[global::Spire.Analyzers.MustBeInit]");
+        sb.AppendLine("[global::Spire.MustBeInit]");
         sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType}");
         sb.OpenBrace();
 

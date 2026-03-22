@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-[global::Spire.Analyzers.MustBeInit]
+[global::Spire.MustBeInit]
 partial struct Result<T>
 {
     public enum Kind : byte

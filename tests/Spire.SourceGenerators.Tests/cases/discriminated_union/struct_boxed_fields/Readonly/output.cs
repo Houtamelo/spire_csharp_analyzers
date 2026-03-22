@@ -4,7 +4,7 @@ using System.ComponentModel;
 
 namespace TestNs
 {
-    [global::Spire.Analyzers.MustBeInit]
+    [global::Spire.MustBeInit]
     readonly partial struct Immutable
     {
         public enum Kind : byte

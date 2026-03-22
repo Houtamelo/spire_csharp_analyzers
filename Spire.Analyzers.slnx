@@ -1,5 +1,7 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Spire/Spire.csproj" />
+    <Project Path="src/Spire.Core/Spire.Core.csproj" />
     <Project Path="src/Spire.Analyzers/Spire.Analyzers.csproj" />
     <Project Path="src/Spire.Analyzers.Utils/Spire.Analyzers.Utils.csproj" />
     <Project Path="src/Spire.SourceGenerators/Spire.SourceGenerators.csproj" />

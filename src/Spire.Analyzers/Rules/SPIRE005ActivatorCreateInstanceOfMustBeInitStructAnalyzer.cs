@@ -23,7 +23,7 @@ public sealed class SPIRE005ActivatorCreateInstanceOfMustBeInitStructAnalyzer : 
                 .GetTypeByMetadataName("System.Activator");
 
             var mustBeInitType = compilationContext.Compilation
-                .GetTypeByMetadataName("Spire.Analyzers.MustBeInitAttribute");
+                .GetTypeByMetadataName("Spire.MustBeInitAttribute");
 
             var arrayType = compilationContext.Compilation
                 .GetTypeByMetadataName("System.Array");

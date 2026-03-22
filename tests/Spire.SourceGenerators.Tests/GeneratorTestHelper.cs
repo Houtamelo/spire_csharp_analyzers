@@ -10,8 +10,8 @@ namespace Spire.SourceGenerators.Tests;
 
 internal static class GeneratorTestHelper
 {
-    private static readonly MetadataReference AnalyzerAssemblyReference =
-        MetadataReference.CreateFromFile(typeof(Spire.Analyzers.MustBeInitAttribute).Assembly.Location);
+    private static readonly MetadataReference CoreAssemblyReference =
+        MetadataReference.CreateFromFile(typeof(Spire.MustBeInitAttribute).Assembly.Location);
 
     private static readonly MetadataReference[] BaseReferences =
         GetBaseReferences();
@@ -25,7 +25,7 @@ internal static class GeneratorTestHelper
             .Split(System.IO.Path.PathSeparator)
             .Select(path => MetadataReference.CreateFromFile(path))
             .Cast<MetadataReference>()
-            .Append(AnalyzerAssemblyReference)
+            .Append(CoreAssemblyReference)
             .ToArray();
         return trustedAssemblies;
     }

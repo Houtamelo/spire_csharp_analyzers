@@ -1,6 +1,6 @@
 using System;
 
-namespace Spire.Analyzers;
+namespace Spire;
 
 [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Enum)]
 public class MustBeInitAttribute : Attribute
