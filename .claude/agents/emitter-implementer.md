@@ -1,7 +1,7 @@
 ---
 name: emitter-implementer
 description: Implements a source generator emitter to make existing snapshot and behavioral tests pass. Spawned by the lead AFTER tests are written.
-tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
+tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn, mcp__syntax-tree
 model: sonnet
 maxTurns: 30
 ---
@@ -29,7 +29,7 @@ The lead has already written snapshot tests (input.cs/output.cs pairs) and behav
 
 - **MCP: `microsoft-learn`** — for Microsoft packages. Use `microsoft_docs_search` and `microsoft_docs_fetch`.
 - **MCP: `sherlock`** — for any dependency's type info and XML docs.
-- `tools/SyntaxTreeViewer` — run `dotnet run --project tools/SyntaxTreeViewer -- <file.cs>` on a snippet to see its AST.
+- **MCP: `syntax-tree`** — use `parse_syntax_tree` tool with inline C# code to see the AST.
 
 ## Constraints
 

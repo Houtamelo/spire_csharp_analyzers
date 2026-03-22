@@ -15,7 +15,8 @@ dotnet restore
 dotnet build
 dotnet test
 dotnet test --filter "FullyQualifiedName~SPIRE001"   # single rule
-dotnet run --project tools/SyntaxTreeViewer -- <file> # print AST
+dotnet run --project tools/SyntaxTreeViewer -- <file> # print AST (CLI)
+# MCP tool `parse_syntax_tree` also available — preferred for agents
 ```
 
 ## Project Structure
@@ -130,4 +131,4 @@ When a spawned agent stops because it ran out of turns/budget before finishing i
 
 - `plans/` — design plans and research. **Do NOT read unless the user explicitly asks you to.** Plans may be outdated or abandoned; reading them unprompted can lead to following stale instructions.
 - `docs/roslyn-api/` — Roslyn XML docs and curated reference guides (when available)
-- `tools/SyntaxTreeViewer` — run on C# snippets to discover AST node types
+- `tools/SyntaxTreeViewer` — AST printer, available as MCP tool `parse_syntax_tree` (preferred) or CLI

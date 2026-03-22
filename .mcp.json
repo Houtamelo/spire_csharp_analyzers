@@ -10,6 +10,11 @@
       "env": {
         "DOTNET_ROOT": "/usr/lib/dotnet"
       }
+    },
+    "syntax-tree": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": ["run", "--project", "tools/SyntaxTreeViewer"]
     }
   }
 }

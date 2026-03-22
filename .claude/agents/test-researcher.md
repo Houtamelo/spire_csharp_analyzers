@@ -1,7 +1,7 @@
 ---
 name: test-researcher
 description: Researches all test cases needed for a rule and produces a coverage matrix. Spawned by the lead AFTER the descriptor and shared preamble exist. Does NOT write test case files.
-tools: Read, Write, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
+tools: Read, Write, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn, mcp__syntax-tree
 model: sonnet
 maxTurns: 30
 ---
@@ -18,7 +18,7 @@ The lead has already added the descriptor and shared preamble. Your job is to **
 2. Read the descriptor in `src/Spire.Analyzers/Descriptors.cs` for the diagnostic ID and message.
 3. Read the shared preamble in `tests/Spire.Analyzers.Tests/{RuleId}/cases/_shared.cs` for available types.
 4. Write representative C# snippets that exercise the rule (both triggering and non-triggering).
-5. Run them through `dotnet run --project tools/SyntaxTreeViewer -- <file.cs>` to identify the relevant `IOperation`/syntax node types.
+5. Use the `parse_syntax_tree` MCP tool to identify the relevant `IOperation`/syntax node types.
 6. For each relevant node type, enumerate **every** syntactic context where it can appear. You must consider at minimum:
    - Local variable declarations
    - Field / property initializers
@@ -81,7 +81,7 @@ The matrix organizes cases into **categories** (groups of related cases). Each c
 
 - **MCP: `microsoft-learn`** — for Microsoft packages. Use `microsoft_docs_search` and `microsoft_docs_fetch`.
 - **MCP: `sherlock`** — for any dependency's type info and XML docs.
-- **`tools/SyntaxTreeViewer`** — run `dotnet run --project tools/SyntaxTreeViewer -- <file.cs>` to see the exact AST for a snippet.
+- **MCP: `syntax-tree`** — use `parse_syntax_tree` tool with inline C# code to see the exact AST.
 
 ## Constraints
 

@@ -1,7 +1,7 @@
 ---
 name: analyzer-implementer
 description: Implements a Roslyn analyzer to make existing tests pass. Spawned by the lead AFTER tests and descriptors are already written.
-tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
+tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn, mcp__syntax-tree
 model: sonnet
 maxTurns: 30
 ---
@@ -28,7 +28,7 @@ When you need to understand Roslyn APIs or any C# library API, use these resourc
 
 - **MCP: `microsoft-learn`** — for Microsoft packages (Roslyn, .NET BCL, etc.). Use `microsoft_docs_search` to find docs, `microsoft_docs_fetch` to read them.
 - **MCP: `sherlock`** — for any dependency's type info and XML docs. Use `ResolvePackageReferences` to find assemblies, then `GetTypesFromAssembly`, `GetTypeInfo`, `GetXmlDocsForType`, `GetXmlDocsForMember`, etc.
-- `tools/SyntaxTreeViewer` — run `dotnet run --project tools/SyntaxTreeViewer -- <file.cs>` on a C# snippet to see its exact AST structure.
+- **MCP: `syntax-tree`** — use `parse_syntax_tree` tool with inline C# code to see the exact AST.
 - `docs/roslyn-api/reference/` — curated guides by category (may be incomplete).
 
 ## Constraints

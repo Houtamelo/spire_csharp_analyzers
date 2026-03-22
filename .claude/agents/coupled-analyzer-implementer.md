@@ -1,7 +1,7 @@
 ---
 name: coupled-analyzer-implementer
 description: Implements a generator-coupled analyzer to make existing tests pass. Spawned by the lead AFTER tests and descriptors are written.
-tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
+tools: Read, Write, Edit, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn, mcp__syntax-tree
 model: sonnet
 maxTurns: 30
 ---
@@ -30,7 +30,7 @@ Generator-coupled analyzers live in `src/Spire.SourceGenerators/Analyzers/` (not
 
 - **MCP: `microsoft-learn`** — for Microsoft packages. Use `microsoft_docs_search` and `microsoft_docs_fetch`.
 - **MCP: `sherlock`** — for any dependency's type info and XML docs.
-- `tools/SyntaxTreeViewer` — run `dotnet run --project tools/SyntaxTreeViewer -- <file.cs>` on a snippet to see its AST.
+- **MCP: `syntax-tree`** — use `parse_syntax_tree` tool with inline C# code to see the AST.
 
 ## Constraints
 

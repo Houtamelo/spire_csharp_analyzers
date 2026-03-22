@@ -20,7 +20,7 @@ You are a researcher investigating C# struct behavior and Roslyn analyzer patter
 
 - Roslyn XML docs: `docs/roslyn-api/xml/`
 - Curated Roslyn reference: `docs/roslyn-api/reference/`
-- SyntaxTreeViewer: `dotnet run --project tools/SyntaxTreeViewer -- <file.cs>`
+- MCP: `syntax-tree` — use `parse_syntax_tree` tool with inline C# code to see the AST
 - Existing docs: `docs/`
 
 ## Constraints

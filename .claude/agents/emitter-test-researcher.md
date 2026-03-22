@@ -1,7 +1,7 @@
 ---
 name: emitter-test-researcher
 description: Researches all test cases needed for a source generator emitter and produces a coverage matrix with snapshot cases, behavioral types, and behavioral tests. Spawned by the lead AFTER the emitter stub exists.
-tools: Read, Write, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn
+tools: Read, Write, Glob, Grep, Bash, mcp__sherlock, mcp__microsoft-learn, mcp__syntax-tree
 model: sonnet
 maxTurns: 30
 ---
@@ -63,7 +63,7 @@ The lead has described what the emitter should generate. Your job is to **resear
 
 - **MCP: `microsoft-learn`** — for Microsoft packages. Use `microsoft_docs_search` and `microsoft_docs_fetch`.
 - **MCP: `sherlock`** — for any dependency's type info and XML docs.
-- **`tools/SyntaxTreeViewer`** — run `dotnet run --project tools/SyntaxTreeViewer -- <file.cs>` to see the exact AST for a snippet.
+- **MCP: `syntax-tree`** — use `parse_syntax_tree` tool with inline C# code to see the exact AST.
 
 ## Constraints
 
