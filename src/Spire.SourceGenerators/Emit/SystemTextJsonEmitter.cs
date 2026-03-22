@@ -171,20 +171,36 @@ internal static class SystemTextJsonEmitter
 
     private static void EmitWriteStruct(SourceBuilder sb, UnionDeclaration union, string unionType)
     {
-        sb.AppendLine("switch (value.tag)");
+        sb.AppendLine("switch (value)");
         sb.OpenBrace();
 
         foreach (var variant in union.Variants)
         {
             var jsonVariantName = variant.JsonName ?? variant.Name;
-            sb.AppendLine($"case {unionType}.Kind.{variant.Name}:");
-            sb.Indent();
+
+            if (variant.Fields.Length == 0)
+            {
+                sb.AppendLine($"case {{ tag: {unionType}.Kind.{variant.Name} }}:");
+            }
+            else
+            {
+                var props = string.Join(", ",
+                    variant.Fields.Select(f => $"{f.Name}: var __{f.Name}"));
+                sb.AppendLine($"case {{ tag: {unionType}.Kind.{variant.Name}, {props} }}:");
+            }
+
+            sb.OpenBrace();
             sb.AppendLine($"writer.WriteString(\"{union.JsonDiscriminator}\", \"{jsonVariantName}\");");
 
-            EmitWriteFieldsForStructVariant(sb, union, variant);
+            foreach (var field in variant.Fields)
+            {
+                var jsonFieldName = field.JsonName ?? field.Name;
+                sb.AppendLine($"writer.WritePropertyName(\"{jsonFieldName}\");");
+                sb.AppendLine($"JsonSerializer.Serialize(writer, __{field.Name}, options);");
+            }
 
             sb.AppendLine("break;");
-            sb.Dedent();
+            sb.CloseBrace();
         }
 
         sb.AppendLine("default:");
@@ -193,19 +209,6 @@ internal static class SystemTextJsonEmitter
         sb.Dedent();
 
         sb.CloseBrace(); // switch
-    }
-
-    private static void EmitWriteFieldsForStructVariant(
-        SourceBuilder sb, UnionDeclaration union, VariantInfo variant)
-    {
-        // All struct strategies have public typed properties named after the field names.
-        // Use value.{fieldName} uniformly — the property getter handles internal storage access.
-        foreach (var field in variant.Fields)
-        {
-            var jsonFieldName = field.JsonName ?? field.Name;
-            sb.AppendLine($"writer.WritePropertyName(\"{jsonFieldName}\");");
-            sb.AppendLine($"JsonSerializer.Serialize(writer, value.{field.Name}, options);");
-        }
     }
 
     private static void EmitWriteRecordOrClass(

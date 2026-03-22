@@ -82,11 +82,14 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
                 }
                 ctx.AddSource($"{typeName}.Bench.g.cs", source);
 
-                // JSON converters
-                if ((jsonFlags & JsonLibrary.SystemTextJson) != 0)
-                    ctx.AddSource($"{typeName}.Stj.g.cs", SystemTextJsonEmitter.Emit(union));
-                if ((jsonFlags & JsonLibrary.NewtonsoftJson) != 0)
-                    ctx.AddSource($"{typeName}.Nsj.g.cs", NewtonsoftJsonEmitter.Emit(union));
+                // JSON converters (require public properties for field access)
+                if (!b.HasFieldNameConflicts)
+                {
+                    if ((jsonFlags & JsonLibrary.SystemTextJson) != 0)
+                        ctx.AddSource($"{typeName}.Stj.g.cs", SystemTextJsonEmitter.Emit(union));
+                    if ((jsonFlags & JsonLibrary.NewtonsoftJson) != 0)
+                        ctx.AddSource($"{typeName}.Nsj.g.cs", NewtonsoftJsonEmitter.Emit(union));
+                }
             }
 
             // Emit record (declaration + implementation)
@@ -131,6 +134,7 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
         string InputTypeName,
         string Prefix,
         bool IsGeneric,
+        bool HasFieldNameConflicts,
         string[] TypeParams,
         BenchVariant[] Variants);
 
@@ -175,7 +179,20 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
         }
 
         if (variants.Count == 0) return null;
-        return new BenchmarkDef(ns, symbol.Name, prefix, isGeneric, typeParams, variants.ToArray());
+
+        // Detect field name conflicts (same name, different type across variants)
+        var fieldTypes = new Dictionary<string, string>();
+        bool hasConflicts = false;
+        foreach (var v in variants)
+            foreach (var f in v.Fields)
+            {
+                if (!fieldTypes.ContainsKey(f.Name))
+                    fieldTypes[f.Name] = f.TypeFullName;
+                else if (fieldTypes[f.Name] != f.TypeFullName)
+                    hasConflicts = true;
+            }
+
+        return new BenchmarkDef(ns, symbol.Name, prefix, isGeneric, hasConflicts, typeParams, variants.ToArray());
     }
 
     static int? GetKnownSize(ITypeSymbol type)
@@ -305,7 +322,7 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
             IsRefStruct: false,
             Strategy: strategy,
             GenerateDeconstruct: true,
-            PublicProperties: true,
+            PublicProperties: !b.HasFieldNameConflicts,
             TypeParameters: new EquatableArray<string>(b.TypeParams.ToImmutableArray()),
             Variants: new EquatableArray<VariantInfo>(variants.ToImmutableArray()),
             ContainingTypes: new EquatableArray<ContainingTypeInfo>(ImmutableArray<ContainingTypeInfo>.Empty),
@@ -335,7 +352,7 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
             IsRefStruct: false,
             Strategy: EmitStrategy.Class,
             GenerateDeconstruct: true,
-            PublicProperties: true,
+            PublicProperties: !b.HasFieldNameConflicts,
             TypeParameters: new EquatableArray<string>(b.TypeParams.ToImmutableArray()),
             Variants: new EquatableArray<VariantInfo>(variants.ToImmutableArray()),
             ContainingTypes: new EquatableArray<ContainingTypeInfo>(ImmutableArray<ContainingTypeInfo>.Empty),
@@ -393,18 +410,24 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
 
         EmitFiller(sb, b, allTypes, refTypes);
         sb.AppendLine();
-        EmitPropertyBenchmark(sb, b, allTypes, structTypes, refTypes);
-        sb.AppendLine();
+
+        // Property/Deconstruct benchmarks require public properties (no name conflicts)
+        if (!b.HasFieldNameConflicts)
+        {
+            EmitPropertyBenchmark(sb, b, allTypes, structTypes, refTypes);
+            sb.AppendLine();
+        }
+
         EmitConstructBenchmark(sb, b, allTypes);
         sb.AppendLine();
         EmitCopyBenchmark(sb, b, allTypes);
 
-        if (compInfo.HasSystemTextJson)
+        if (!b.HasFieldNameConflicts && compInfo.HasSystemTextJson)
         {
             sb.AppendLine();
             EmitJsonStjBenchmark(sb, b, allTypes, refTypes);
         }
-        if (compInfo.HasNewtonsoftJson)
+        if (!b.HasFieldNameConflicts && compInfo.HasNewtonsoftJson)
         {
             sb.AppendLine();
             EmitJsonNsjBenchmark(sb, b, allTypes, refTypes);
@@ -734,11 +757,22 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
 
     static void EmitStructDeconstructArms(StringBuilder sb, BenchmarkDef b, string typeName)
     {
-        // Group variants by field count to determine typed vs generic Deconstruct
-        var groups = b.Variants
-            .Where(v => v.Fields.Length > 0)
+        // Group variants by field count — replicate DU generator's fieldless-merge logic
+        var allGroups = b.Variants
             .GroupBy(v => v.Fields.Length)
             .ToDictionary(g => g.Key, g => g.ToList());
+
+        var hasFieldless = allGroups.ContainsKey(0);
+        var groups = allGroups.Where(g => g.Key > 0)
+            .ToDictionary(g => g.Key, g => g.Value);
+
+        // DU generator merges fieldless into smallest group when smallest has count 1
+        if (hasFieldless && groups.Count > 0)
+        {
+            var smallestKey = groups.Keys.Min();
+            if (groups[smallestKey].Count == 1)
+                groups[smallestKey].AddRange(allGroups[0]);
+        }
 
         foreach (var v in b.Variants)
         {
@@ -760,11 +794,11 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
 
             if (isUniqueArity)
             {
-                // Typed Deconstruct available
+                // Typed Deconstruct — use explicit types to avoid ambiguity with generic overload
                 var outParams = string.Join(", ", v.Fields.Select(f =>
                     numFields.Any(nf => nf.Name == f.Name)
-                        ? $"out var {vn}_{f.Name}"
-                        : "out _"));
+                        ? $"out {f.TypeFullName} {vn}_{f.Name}"
+                        : $"out {f.TypeFullName} _"));
                 sb.AppendLine($"                    e.Deconstruct(out _, {outParams});");
 
                 if (numFields.Length > 0)

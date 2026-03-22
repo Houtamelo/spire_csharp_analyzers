@@ -190,9 +190,10 @@ internal static class AdditiveEmitter
     {
         var layout = new AdditiveLayout();
 
-        // Collect unique (fieldName → typeKey). Ambiguity (same name, different type)
-        // is already rejected by the generator before reaching here.
+        // Collect unique (fieldName → typeKey). If same name has conflicting types
+        // across variants, fall back to sequential layout (name-pinning is impossible).
         var fieldTypeKeys = new Dictionary<string, string>();
+        bool hasConflict = false;
         foreach (var variant in variantList)
         {
             foreach (var field in variant.Fields)
@@ -200,8 +201,13 @@ internal static class AdditiveEmitter
                 var key = SlotTypeKey(field);
                 if (!fieldTypeKeys.ContainsKey(field.Name))
                     fieldTypeKeys[field.Name] = key;
+                else if (fieldTypeKeys[field.Name] != key)
+                    hasConflict = true;
             }
         }
+
+        if (hasConflict)
+            return ComputeLayoutSequential(variantList);
 
         // Create one slot per unique field name, sorted by (typeKey, fieldName)
         int slotIndex = 0;
