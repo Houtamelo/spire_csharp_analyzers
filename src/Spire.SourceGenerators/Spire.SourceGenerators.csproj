@@ -3,6 +3,19 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <PackageId>Spire.SourceGenerators</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>houtamelo</Authors>
+    <Copyright>Copyright (c) 2026 houtamelo</Copyright>
+    <Description>Discriminated union source generator for C# structs, classes, and records.</Description>
+    <PackageTags>roslyn;source-generator;discriminated-union;csharp</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Houtamelo/spire_csharp_analyzers</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Houtamelo/spire_csharp_analyzers</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,5 +27,12 @@
   <ItemGroup>
     <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
     <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(OutputPath)\$(AssemblyName).dll"
+          PackagePath="analyzers/dotnet/cs"
+          Pack="true"
+          Visible="false" />
   </ItemGroup>
 </Project>
