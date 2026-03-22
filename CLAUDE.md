@@ -15,6 +15,8 @@ dotnet restore
 dotnet build
 dotnet test
 dotnet test --filter "FullyQualifiedName~SPIRE001"   # single rule
+dotnet run -c Release --project benchmarks/Spire.Benchmarks/ -- --filter '*' --job Dry   # benchmarks (25s)
+dotnet run -c Release --project benchmarks/Spire.Benchmarks/ -- --filter '*'              # benchmarks (full, ~2h)
 # MCP tool `parse_syntax_tree` also available — preferred for agents
 ```
 
@@ -46,6 +48,10 @@ tests/Spire.BehavioralTests/      # Compile-time behavioral tests (generator run
   Types/                          # Union definitions per strategy
   Tests/                          # Type-safe tests with real switch/pattern matching
 benchmarks/Spire.Benchmarks/      # BenchmarkDotNet performance tests
+  Types/                          # Union type declarations ([BenchmarkUnion] + hand-written)
+  Benchmarks/                     # Hand-written benchmark classes (UpdateLoop, Match, Micro, JSON, etc.)
+  Helpers/                        # ArrayFiller, Distribution, BenchN constant
+docs/benchmark-results/           # Auto-generated RESULTS_{job}.md from benchmark runs
 tools/DevTools/                   # MCP server (parse_syntax_tree, dotnet_build, dotnet_test, git_query)
 docs/rules/                      # Per-rule docs (SPIRE001.md, ...)
 plans/                            # Design plans (read before implementing)

@@ -108,6 +108,18 @@ How code fix providers are developed and tested.
 - `tests/Spire.SourceGenerators.Tests/CodeFixTestBase.cs` — test framework
 - `src/Spire.CodeFixes/` — code fix providers
 
+## Benchmark infrastructure
+How benchmarks are structured, run, and results generated.
+- `benchmarks/Spire.Benchmarks/Program.cs` — entry point, RESULTS.md generation
+- `benchmarks/Spire.Benchmarks/Helpers/BenchmarkConstants.cs` — shared N constant
+- `benchmarks/Spire.Benchmarks/Types/` — union type declarations ([BenchmarkUnion] + hand-written)
+- `benchmarks/Spire.Benchmarks/Benchmarks/` — hand-written benchmark classes
+- `src/Spire.SourceGenerators/BenchmarkUnionGenerator.cs` — [BenchmarkUnion] generator
+- `src/Spire.SourceGenerators/Attributes/BenchmarkAttributeSource.cs` — attribute source
+- `docs/benchmark-results/` — auto-generated RESULTS_{job}.md files
+- `README.md` — layout strategy comparison table
+- `CLAUDE.md` — benchmark build commands
+
 ## Project structure and build
 Project layout, build configuration, conventions.
 - `CLAUDE.md` — "Project Structure", "Analyzer Conventions", "Build Commands" sections
