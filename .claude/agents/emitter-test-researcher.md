@@ -22,7 +22,7 @@ The lead has described what the emitter should generate. Your job is to **resear
    - Behavioral tests: `tests/Spire.BehavioralTests/Tests/` (e.g., `AdditiveTests.cs`)
 3. Enumerate snapshot test cases — each is an input.cs/output.cs pair covering a specific union declaration scenario.
 4. Enumerate behavioral type definitions — union declarations that exercise the emitter at runtime.
-5. Enumerate behavioral test assertions — `[Fact]` methods that validate generated code behavior (factory construction, field access, tag switching, pattern matching, deconstruct, JSON round-trips).
+5. Enumerate behavioral test assertions — `[Fact]` methods that validate generated code behavior (factory construction, field access, kind switching, pattern matching, deconstruct, JSON round-trips).
 6. Write the coverage matrix to `tests/Spire.SourceGenerators.Tests/cases/{emitter_category}/coverage-matrix.md`.
 
 ## Coverage matrix format
@@ -50,14 +50,14 @@ The lead has described what the emitter should generate. Your job is to **resear
 
 | Test Name | Type | Description |
 |-----------|------|-------------|
-| `Circle_TagAndRadius` | union: `ShapeXyz` | Factory creates Circle, verify tag and radius field |
+| `Circle_KindAndRadius` | union: `ShapeXyz` | Factory creates Circle, verify kind and radius field |
 ```
 
 ### Category design guidelines
 
 - Snapshot categories: group by input shape (basic struct, generic, multi-field, fieldless, nested, etc.). 5-15 cases per category.
 - Behavioral types: one table — list all union types needed across all behavioral tests.
-- Behavioral test categories: group by feature (factory+fields, tag switching, pattern matching, deconstruct, JSON). Each category maps to test methods.
+- Behavioral test categories: group by feature (factory+fields, kind switching, pattern matching, deconstruct, JSON). Each category maps to test methods.
 
 ## Roslyn API resources
 

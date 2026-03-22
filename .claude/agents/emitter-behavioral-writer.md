@@ -61,7 +61,7 @@ public class {Strategy}Tests
     public void Circle_TagAndRadius()
     {
         var c = Shape{Suffix}.Circle(3.14);
-        Assert.Equal(Shape{Suffix}.Kind.Circle, c.tag);
+        Assert.Equal(Shape{Suffix}.Kind.Circle, c.kind);
         Assert.Equal(3.14, c.radius);
     }
 }
