@@ -41,8 +41,13 @@ An analyzer diagnostic already exists and has passing tests. The lead wants to a
 - Case names follow `{FixName}_{Scenario}` pattern (e.g., `AddMissingArms_MultipleVariants`).
 - Consider: single fix, multiple fixes needed, edge cases (empty unions, generic unions, nested types).
 
+## Edge case mindset
+
+Your matrix must include cases that **try to break the code fix**. Reference the C# keywords list (https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/) for context inspiration. Consider: nested switch expressions, `async` methods, expression-bodied members, generic unions, property patterns, multiple diagnostics in one file, code with unusual formatting/trivia, etc.
+
 ## Constraints
 
+- **Do NOT read code fix implementation source code** (`src/Spire.CodeFixes/`) — the matrix must be designed from the fix spec, not the implementation.
 - **Don't be shallow** — consider all diagnostic trigger patterns.
 - **Don't write test case files** — your only output is the coverage matrix.
 - **Don't invent fix behavior** — if the description doesn't specify a transformation, note it with `(?)` and message the lead.

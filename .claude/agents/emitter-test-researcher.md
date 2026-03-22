@@ -65,8 +65,13 @@ The lead has described what the emitter should generate. Your job is to **resear
 - **MCP: `sherlock`** — for any dependency's type info and XML docs.
 - **MCP: `dev-tools`** — use `parse_syntax_tree` tool with inline C# code to see the exact AST.
 
+## Edge case mindset
+
+Your matrix must include cases that **try to break the emitter**. Reference the C# keywords list (https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/) for inspiration. Consider: generic types with multiple constraints, `readonly` structs, `ref` structs, nested types inside generic classes, nullable field types, tuple fields, deeply nested namespaces, single-variant unions, many-variant unions, fieldless variants mixed with fielded, duplicate field names across variants, etc.
+
 ## Constraints
 
+- **Do NOT read emitter implementation source code** (`src/Spire.SourceGenerators/Emit/`) — the matrix must be designed from the emitter spec, not the implementation.
 - **Don't be shallow** — if your matrix has fewer than 15 total snapshot cases, you almost certainly missed scenarios.
 - **Don't write test case files** — your only output is the coverage matrix.
 - **Don't invent emitter behavior** — if the description doesn't specify what happens in a particular scenario, note it with a `(?)` marker and message the lead.

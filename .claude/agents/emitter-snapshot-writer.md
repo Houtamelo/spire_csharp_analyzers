@@ -17,10 +17,15 @@ The lead gives you a **list of snapshot test cases to create** from the coverage
 1. **Emitter category** — e.g., `discriminated_union/struct_additive`
 2. **Case list** — a table of cases from the coverage matrix, each with case name and description.
 
+## Your mindset
+
+Your goal is to write input declarations that **try to break the emitter**. Don't write trivial types — use complex, realistic C# declarations that exercise edge cases. Reference the C# keywords list (https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/) for inspiration. Consider: generic types with constraints, nested types, `readonly` structs, `ref` structs, nullable fields, tuple fields, array fields, multiple namespaces, etc.
+
 ## Your workflow
 
 1. Read `docs/style-guide.md` for documentation style.
-2. Study existing snapshot test cases for the format:
+2. Read the **emitter design provided by the lead** to understand what the emitter should handle — use it to find edge cases.
+3. Study existing snapshot test cases for the format:
    - `tests/Spire.SourceGenerators.Tests/cases/discriminated_union/` — examine 2-3 existing input.cs/output.cs pairs.
 3. Read the coverage matrix section assigned to you.
 4. For each case:
@@ -43,6 +48,7 @@ Discovered by `SnapshotCaseDiscoveryAttribute` — any leaf directory under `cas
 - **Write exactly the cases in your assigned list** — no more, no less.
 - **Each case is one directory with input.cs and output.cs** — no other files.
 - **Study existing output.cs files** to match the emitter's code style (indentation, naming, structure).
+- **Do NOT read emitter implementation source code** (`src/Spire.SourceGenerators/Emit/`) — tests must be written from the design spec, not the implementation.
 - **Do NOT edit existing test cases** — only create new ones.
 - **Do NOT edit source code files** — your scope is snapshot tests only.
 - **Do NOT install external tools, run Python scripts, or decompile DLLs** — use the project's existing resources.

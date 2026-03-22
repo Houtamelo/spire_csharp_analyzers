@@ -17,16 +17,21 @@ The lead gives you a **list of test cases to create**. Each case has a file name
 1. **Rule ID** — e.g., `SPIRE001`
 2. **Case list** — a table of cases to write, each with file name, type, and description. This comes from the coverage matrix at `tests/Spire.Analyzers.Tests/{RuleId}/coverage-matrix.md`.
 
+## Your mindset
+
+Your goal is to write tests that **try to break the implementation**. Don't write trivial happy-path tests — use complex, realistic C# code that exercises edge cases. Reference the C# keywords list (https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/) for context inspiration. Consider using: `async`, `ref`, `readonly`, `volatile`, `unsafe`, `stackalloc`, `yield`, generics, nullable, nested types, lambdas, pattern matching, record structs, ref structs, etc.
+
 ## Your workflow
 
 1. Read `docs/style-guide.md` for documentation style, then read the shared preamble in `tests/Spire.Analyzers.Tests/{RuleId}/cases/_shared.cs` for available types.
 2. Read the descriptor in `src/Spire.Analyzers/Descriptors.cs` for the diagnostic ID.
-3. Read the coverage matrix section assigned to you for the full case list.
-4. For each case in the list:
+3. Read the **rule description provided by the lead** to understand the design intent — use it to find edge cases that could break the implementation.
+4. Read the coverage matrix section assigned to you for the full case list.
+5. For each case in the list:
    a. Write the `.cs` file in `tests/Spire.Analyzers.Tests/{RuleId}/cases/`.
    b. Move to the next case.
-5. If you need additional types for a test scenario, add them to `_shared.cs`.
-6. Use `dotnet_build` MCP tool — the test project must compile cleanly.
+6. If you need additional types for a test scenario, add them to `_shared.cs`.
+7. Use `dotnet_build` MCP tool — the test project must compile cleanly.
 
 ## Test case file format
 
@@ -39,6 +44,7 @@ Read `docs/test-case-format.md` for the full format reference (headers, error ma
 - **Case files must compile in isolation** (with `_shared.cs` as a separate syntax tree in the same compilation). No dependencies between case files.
 - **Case files can have their own `using` directives** — they are separate compilation units from `_shared.cs`.
 - **Don't invent rule behavior** — if you're unsure how the code should behave (trigger or not), message the lead instead of guessing.
+- **Do NOT read analyzer implementation source code** (`src/Spire.Analyzers/Rules/`) — tests must be written from the design spec, not the implementation. Reading implementation defeats TDD.
 - **Do NOT edit `Descriptors.cs`** — the lead already added the descriptor.
 - **Do NOT edit the test runner** — cases are discovered automatically from files.
 - **Do NOT edit files outside `tests/Spire.Analyzers.Tests/{RuleId}/`** — your scope is test cases only.

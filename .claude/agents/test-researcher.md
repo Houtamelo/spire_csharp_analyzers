@@ -83,8 +83,13 @@ The matrix organizes cases into **categories** (groups of related cases). Each c
 - **MCP: `sherlock`** — for any dependency's type info and XML docs.
 - **MCP: `dev-tools`** — use `parse_syntax_tree` tool with inline C# code to see the exact AST.
 
+## Edge case mindset
+
+Your matrix must include cases that **try to break the implementation**. Reference the C# keywords list (https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/) for context inspiration. For every node type, consider using it inside: `async` methods, lambdas, `ref`/`readonly` contexts, `unsafe` blocks, generic methods, expression-bodied members, `yield` iterators, nested types, pattern matching, tuple expressions, nullable contexts, etc.
+
 ## Constraints
 
+- **Do NOT read analyzer implementation source code** (`src/Spire.Analyzers/Rules/`) — the matrix must be designed from the rule spec, not the implementation.
 - **Don't be shallow** — one context per node type is NOT acceptable. If your matrix has fewer than 15 total cases, you almost certainly missed contexts.
 - **Don't write test case files** — your only output is the coverage matrix.
 - **Don't invent rule behavior** — if the plan doesn't specify what happens in a particular context, note it in the matrix with a `(?)` marker and message the lead.

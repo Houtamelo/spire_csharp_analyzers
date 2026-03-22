@@ -21,10 +21,15 @@ Test case files contain `[DiscriminatedUnion]` declarations. The generator runs 
 1. **Category** — e.g., `Exhaustiveness`
 2. **Case list** — a table of cases to write, from the coverage matrix.
 
+## Your mindset
+
+Your goal is to write tests that **try to break the analyzer**. Don't write trivial switch/match patterns — use complex, realistic C# code. Reference the C# keywords list (https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/) for context inspiration. Consider: `async` methods, lambdas, nested switches, `when` guards, `or`/`and`/`not` patterns, generic unions, `readonly` structs, property patterns, tuple patterns, nested types, etc.
+
 ## Your workflow
 
 1. Read `docs/style-guide.md` for documentation style.
-2. Study existing coupled analyzer test cases for the format:
+2. Read the **rule description provided by the lead** to understand the design intent — use it to find edge cases that could break the analyzer.
+3. Study existing coupled analyzer test cases for the format:
    - `tests/Spire.SourceGenerators.Tests/Exhaustiveness/cases/` — examine 2-3 existing files.
 3. Read the descriptor in `src/Spire.SourceGenerators/AnalyzerDescriptors.cs`.
 4. Read the coverage matrix section assigned to you.
@@ -66,6 +71,7 @@ namespace TestNs
 - **Write exactly the cases in your assigned list** — no more, no less.
 - **Don't merge cases** — each case file tests exactly one scenario.
 - **Don't invent rule behavior** — if unsure, message the lead.
+- **Do NOT read analyzer implementation source code** (`src/Spire.SourceGenerators/Analyzers/`) — tests must be written from the design spec, not the implementation.
 - **Do NOT edit the test runner** — cases are discovered automatically from files.
 - **Do NOT edit files outside `tests/Spire.SourceGenerators.Tests/{Category}/cases/`** — your scope is test cases only.
 - **Do NOT install external tools, run Python scripts, or decompile DLLs**.

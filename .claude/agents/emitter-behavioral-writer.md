@@ -18,10 +18,15 @@ The lead gives you **type definitions and test cases** from the coverage matrix.
 2. **Type definitions** — table of union types to declare (name, variants, fields).
 3. **Test case list** — table of `[Fact]` methods to write (name, which type, what to assert).
 
+## Your mindset
+
+Your goal is to write union types and tests that **try to break the emitter at runtime**. Don't write trivial types — use complex, realistic declarations that exercise edge cases. Reference the C# keywords list (https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/) for inspiration. Consider: generic unions, nullable fields, `readonly` structs, deeply nested pattern matching, mixed fieldless/fielded variants, many variants, single-variant unions, etc.
+
 ## Your workflow
 
 1. Read `docs/style-guide.md` for documentation style.
-2. Study existing behavioral tests for the format:
+2. Read the **emitter design provided by the lead** to understand what the emitter should handle — use it to find edge cases.
+3. Study existing behavioral tests for the format:
    - Types: `tests/Spire.BehavioralTests/Types/AdditiveUnions.cs` (struct union pattern)
    - Types: `tests/Spire.BehavioralTests/Types/RecordUnions.cs` (record union pattern)
    - Tests: `tests/Spire.BehavioralTests/Tests/AdditiveTests.cs` (test method style)
@@ -74,6 +79,7 @@ Group tests by feature with `── Feature ───` section comments. One `[F
 - **Write exactly the types and tests in your assigned list** — no more, no less.
 - **Types and tests are tightly coupled** — a test method references types declared in the same session.
 - **If modifying existing files**, use Edit to append new types/tests. Do not overwrite existing content.
+- **Do NOT read emitter implementation source code** (`src/Spire.SourceGenerators/Emit/`) — tests must be written from the design spec, not the implementation.
 - **Do NOT edit source code files** — your scope is behavioral tests only.
 - **Do NOT edit snapshot test files** — those are handled by the snapshot writer.
 - **Do NOT install external tools, run Python scripts, or decompile DLLs** — use the project's existing resources.

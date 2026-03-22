@@ -55,8 +55,13 @@ Same format as standalone analyzer test-researcher — categories with should_fa
 - Group by: union kind (struct/record/class), pattern form (switch expression/statement), edge case type.
 - Consider all layout strategies (Additive, Overlap, BoxedFields, BoxedTuple, UnsafeOverlap) where relevant.
 
+## Edge case mindset
+
+Your matrix must include cases that **try to break the analyzer**. Reference the C# keywords list (https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/) for context inspiration. Consider: `async` methods, lambdas, `when` guards, `or`/`and`/`not` patterns, property patterns, generic unions, `readonly` structs, nested switch expressions, tuple patterns, expression-bodied members, etc.
+
 ## Constraints
 
+- **Do NOT read analyzer implementation source code** (`src/Spire.SourceGenerators/Analyzers/`) — the matrix must be designed from the rule spec, not the implementation.
 - **Don't be shallow** — if your matrix has fewer than 15 total cases, you almost certainly missed scenarios.
 - **Don't write test case files** — your only output is the coverage matrix.
 - **Don't invent rule behavior** — if the description doesn't specify what happens in a scenario, note it with `(?)` and message the lead.
