@@ -25,6 +25,9 @@ out/
 .DS_Store
 Thumbs.db
 
+# Benchmark artifacts
+BenchmarkDotNet.Artifacts/
+
 # Test results
 TestResults/
 *.trx

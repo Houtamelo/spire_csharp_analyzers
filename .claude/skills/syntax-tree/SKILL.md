@@ -2,7 +2,7 @@
 name: syntax-tree
 description: Print the Roslyn syntax tree for C# code. Use to discover which SyntaxNode types and properties to match in an analyzer.
 user-invocable: true
-allowed-tools: mcp__syntax-tree
+allowed-tools: mcp__dev-tools
 argument-hint: <C# code>
 hooks:
   Stop:
