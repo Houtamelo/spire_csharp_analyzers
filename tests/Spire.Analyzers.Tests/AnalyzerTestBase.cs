@@ -26,6 +26,9 @@ public abstract class AnalyzerTestBase<TAnalyzer> where TAnalyzer : DiagnosticAn
     private static readonly MetadataReference AnalyzerAssemblyReference =
         MetadataReference.CreateFromFile(typeof(TAnalyzer).Assembly.Location);
 
+    private static readonly MetadataReference CoreAssemblyReference =
+        MetadataReference.CreateFromFile(typeof(Spire.MustBeInitAttribute).Assembly.Location);
+
     private static readonly Lazy<Task<ImmutableArray<MetadataReference>>> CachedReferences =
         new(() => ResolveReferencesAsync());
 
@@ -185,7 +188,7 @@ public abstract class AnalyzerTestBase<TAnalyzer> where TAnalyzer : DiagnosticAn
     {
         var refs = await ReferenceAssemblies.Net.Net80.ResolveAsync(
             LanguageNames.CSharp, CancellationToken.None);
-        return refs.Add(AnalyzerAssemblyReference);
+        return refs.Add(AnalyzerAssemblyReference).Add(CoreAssemblyReference);
     }
 
     private static async Task<ImmutableArray<Diagnostic>> GetAnalyzerDiagnosticsAsync(
