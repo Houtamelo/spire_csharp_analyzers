@@ -56,9 +56,7 @@ internal static class BoxedTupleEmitter
             EmitDeconstruct(sb);
 
         // Public properties for pattern matching (kind switch for correct cast)
-        // Skip if field names conflict across variants (same name, different type)
-        if (!HasFieldNameConflicts(union.Variants))
-            EmitProperties(sb, union.Variants);
+        EmitProperties(sb, union.Variants);
 
         sb.CloseBrace(); // type
 
@@ -197,27 +195,6 @@ internal static class BoxedTupleEmitter
                 sb.CloseBrace(";");
             }
         }
-    }
-
-    private static bool HasFieldNameConflicts(EquatableArray<VariantInfo> variants)
-    {
-        var fieldTypes = new Dictionary<string, string>();
-        foreach (var variant in variants)
-        {
-            foreach (var field in variant.Fields)
-            {
-                if (fieldTypes.TryGetValue(field.Name, out var existing))
-                {
-                    if (existing != field.TypeFullName)
-                        return true;
-                }
-                else
-                {
-                    fieldTypes[field.Name] = field.TypeFullName;
-                }
-            }
-        }
-        return false;
     }
 
     private static string FormatTypeParams(EquatableArray<string> typeParameters)

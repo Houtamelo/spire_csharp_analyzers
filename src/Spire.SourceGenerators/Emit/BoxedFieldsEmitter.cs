@@ -60,8 +60,7 @@ internal static class BoxedFieldsEmitter
             EmitDeconstructs(sb, union.Variants, layout);
 
         // Public properties for pattern matching
-        if (layout.IsNamePinned)
-            EmitProperties(sb, union.Variants, layout);
+        EmitProperties(sb, union.Variants, layout);
 
         sb.CloseBrace(); // type
 
@@ -79,7 +78,6 @@ internal static class BoxedFieldsEmitter
     {
         public int SlotCount;
         public Dictionary<string, VariantMapping> Variants = new Dictionary<string, VariantMapping>();
-        public bool IsNamePinned;
     }
 
     internal sealed class VariantMapping
@@ -90,36 +88,8 @@ internal static class BoxedFieldsEmitter
 
     internal static BoxedFieldsLayout ComputeLayout(IEnumerable<VariantInfo> variants)
     {
-        return ComputeLayoutNamePinned(variants.ToList());
-    }
-
-    /// Sequential: slot count = max field count, fields assigned positionally.
-    private static BoxedFieldsLayout ComputeLayoutSequential(List<VariantInfo> variantList)
-    {
+        var variantList = variants.ToList();
         var layout = new BoxedFieldsLayout();
-        int maxFields = 0;
-        foreach (var v in variantList)
-        {
-            if (v.Fields.Length > maxFields)
-                maxFields = v.Fields.Length;
-        }
-        layout.SlotCount = maxFields;
-
-        foreach (var variant in variantList)
-        {
-            var mapping = new VariantMapping();
-            for (int i = 0; i < variant.Fields.Length; i++)
-                mapping.FieldToSlot.Add(i);
-            layout.Variants[variant.Name] = mapping;
-        }
-
-        return layout;
-    }
-
-    /// Name-pinned: each unique field name gets a dedicated slot.
-    private static BoxedFieldsLayout ComputeLayoutNamePinned(List<VariantInfo> variantList)
-    {
-        var layout = new BoxedFieldsLayout { IsNamePinned = true };
 
         // Collect unique field names (sorted for determinism)
         var nameToSlot = new Dictionary<string, int>();

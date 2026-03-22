@@ -26,7 +26,7 @@ internal sealed class VariantFieldMap
 
         var map = new Dictionary<string, string>();
 
-        // New mode: scan [EditorBrowsable(Never)] properties (PublicProperties=true)
+        // Scan [EditorBrowsable(Never)] properties for variant field info
         // These have bare field names. Map each property to its owning variant
         // by checking which [Variant] methods declare a parameter with that name.
         ScanProperties(unionType, info, map);

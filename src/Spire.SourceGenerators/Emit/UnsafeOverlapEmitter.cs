@@ -98,8 +98,7 @@ internal static class UnsafeOverlapEmitter
             EmitDeconstructs(sb, union.Variants, layout);
 
         // Public properties for pattern matching
-        if (layout.IsNamePinned)
-            EmitProperties(sb, union.Variants, layout);
+        EmitProperties(sb, union.Variants, layout);
 
         sb.CloseBrace(); // type
 
@@ -122,7 +121,6 @@ internal static class UnsafeOverlapEmitter
         public Dictionary<string, BufferFieldInfo> NamedBufferFields = new Dictionary<string, BufferFieldInfo>();
         /// Name-pinned slot mappings
         public Dictionary<string, int> NamedSlots = new Dictionary<string, int>();
-        public bool IsNamePinned;
     }
 
     internal sealed class BufferFieldInfo
@@ -163,136 +161,12 @@ internal static class UnsafeOverlapEmitter
 
     internal static UnsafeLayout ComputeLayout(IEnumerable<VariantInfo> variants)
     {
-        var variantList = variants.ToList();
-        return HasFieldNameConflicts(variantList)
-            ? ComputeLayoutSequential(variantList)
-            : ComputeLayoutNamePinned(variantList);
-    }
-
-    private static bool HasFieldNameConflicts(List<VariantInfo> variantList)
-    {
-        var fieldTypes = new Dictionary<string, string>();
-        foreach (var variant in variantList)
-        {
-            foreach (var field in variant.Fields)
-            {
-                if (fieldTypes.TryGetValue(field.Name, out var existing))
-                {
-                    if (existing != field.TypeFullName)
-                        return true;
-                }
-                else
-                {
-                    fieldTypes[field.Name] = field.TypeFullName;
-                }
-            }
-        }
-        return false;
-    }
-
-    private static UnsafeLayout ComputeLayoutSequential(List<VariantInfo> variantList)
-    {
-        var layout = new UnsafeLayout();
-
-        // Buffer size: max total unmanaged bytes per variant
-        int maxBufferBytes = 0;
-        foreach (var variant in variantList)
-        {
-            int bytes = 0;
-            foreach (var field in variant.Fields)
-            {
-                if (IsBufferField(field))
-                    bytes += field.KnownSize!.Value;
-            }
-            if (bytes > maxBufferBytes)
-                maxBufferBytes = bytes;
-        }
-        layout.BufferSize = maxBufferBytes;
-
-        // Dedup slots for non-buffer fields (same algorithm as Additive)
-        var typeMaxCounts = new Dictionary<string, int>();
-        foreach (var variant in variantList)
-        {
-            var typeCounts = new Dictionary<string, int>();
-            foreach (var field in variant.Fields)
-            {
-                if (IsBufferField(field)) continue;
-                var key = field.IsReferenceType ? "object?" : field.TypeFullName;
-                if (!typeCounts.ContainsKey(key))
-                    typeCounts[key] = 0;
-                typeCounts[key]++;
-            }
-
-            foreach (var kv in typeCounts)
-            {
-                if (!typeMaxCounts.ContainsKey(kv.Key) || kv.Value > typeMaxCounts[kv.Key])
-                    typeMaxCounts[kv.Key] = kv.Value;
-            }
-        }
-
-        int slotIndex = 0;
-        var typeSlotStarts = new Dictionary<string, int>();
-        foreach (var kv in typeMaxCounts.OrderBy(x => x.Key))
-        {
-            typeSlotStarts[kv.Key] = slotIndex;
-            bool isRef = kv.Key == "object?";
-
-            for (int i = 0; i < kv.Value; i++)
-            {
-                layout.Slots.Add(new SlotInfo
-                {
-                    Index = slotIndex++,
-                    TypeFullName = kv.Key,
-                    IsRefSlot = isRef,
-                });
-            }
-        }
-
-        // Per-variant field mappings
-        foreach (var variant in variantList)
-        {
-            var mapping = new VariantMapping();
-            int bufferOffset = 0;
-            var typeCounters = new Dictionary<string, int>();
-
-            foreach (var field in variant.Fields)
-            {
-                if (IsBufferField(field))
-                {
-                    mapping.Fields.Add(new FieldMapping
-                    {
-                        IsBuffer = true,
-                        BufferOffset = bufferOffset,
-                    });
-                    bufferOffset += field.KnownSize!.Value;
-                    mapping.HasBufferFields = true;
-                }
-                else
-                {
-                    var key = field.IsReferenceType ? "object?" : field.TypeFullName;
-                    if (!typeCounters.ContainsKey(key))
-                        typeCounters[key] = 0;
-                    int typeLocalIndex = typeCounters[key]++;
-                    int slot = typeSlotStarts[key] + typeLocalIndex;
-
-                    mapping.Fields.Add(new FieldMapping
-                    {
-                        IsBuffer = false,
-                        SlotIndex = slot,
-                    });
-                    mapping.HasSlotFields = true;
-                }
-            }
-
-            layout.Variants[variant.Name] = mapping;
-        }
-
-        return layout;
+        return ComputeLayoutNamePinned(variants.ToList());
     }
 
     private static UnsafeLayout ComputeLayoutNamePinned(List<VariantInfo> variantList)
     {
-        var layout = new UnsafeLayout { IsNamePinned = true };
+        var layout = new UnsafeLayout();
 
         // Collect unique buffer fields and slot fields by name
         var bufferFields = new Dictionary<string, FieldInfo>();

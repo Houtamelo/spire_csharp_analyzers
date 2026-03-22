@@ -15,8 +15,7 @@ internal sealed class OverlapLayoutInfo
     /// Per-variant field placements
     public Dictionary<string, VariantLayoutInfo> Variants = new Dictionary<string, VariantLayoutInfo>();
 
-    /// PublicProperties mode: global R1 fields (one per unique unmanaged field name)
-    public bool UseGlobalFields;
+    /// Global R1 fields (one per unique unmanaged field name)
     public List<GlobalFieldInfo> GlobalR1 = new List<GlobalFieldInfo>();
     public List<GlobalFieldInfo> GlobalR2 = new List<GlobalFieldInfo>();
     public List<GlobalFieldInfo> GlobalR3 = new List<GlobalFieldInfo>();
@@ -73,106 +72,13 @@ internal static class OverlapLayoutComputer
         IEnumerable<VariantInfo> variants, int kindSize)
     {
         var variantList = variants.ToList();
-        return HasFieldNameConflicts(variantList)
-            ? ComputeLayoutOriginal(variantList, kindSize)
-            : ComputeLayoutPinned(variantList, kindSize);
-    }
-
-    private static bool HasFieldNameConflicts(List<VariantInfo> variants)
-    {
-        var fieldTypes = new Dictionary<string, string>();
-        foreach (var variant in variants)
-        {
-            foreach (var field in variant.Fields)
-            {
-                if (fieldTypes.TryGetValue(field.Name, out var existing))
-                {
-                    if (existing != field.TypeFullName)
-                        return true;
-                }
-                else
-                {
-                    fieldTypes[field.Name] = field.TypeFullName;
-                }
-            }
-        }
-        return false;
-    }
-
-    /// Original per-variant layout. Each variant gets its own R1 field.
-    private static OverlapLayoutInfo ComputeLayoutOriginal(List<VariantInfo> variantList, int kindSize)
-    {
-        var layout = new OverlapLayoutInfo();
-
-        int maxR1Size = 0;
-        int maxR2Slots = 0;
-        int maxR3Slots = 0;
-
-        foreach (var variant in variantList)
-        {
-            var vl = new VariantLayoutInfo();
-            int r2Count = 0;
-            int r3Count = 0;
-
-            foreach (var field in variant.Fields)
-            {
-                var region = FieldClassifier.Classify(field);
-                switch (region)
-                {
-                    case FieldRegion.Unmanaged:
-                        vl.R1Fields.Add(new FieldPlacement { Field = field, SlotIndex = 0 });
-                        break;
-                    case FieldRegion.Reference:
-                        vl.R2Fields.Add(new FieldPlacement { Field = field, SlotIndex = r2Count++ });
-                        break;
-                    case FieldRegion.Boxed:
-                        vl.R3Fields.Add(new FieldPlacement { Field = field, SlotIndex = r3Count++ });
-                        break;
-                }
-            }
-
-            int r1Size;
-            if (vl.R1Fields.Count == 0)
-            {
-                r1Size = 0;
-                vl.R1IsTuple = false;
-                vl.R1FieldName = "";
-            }
-            else if (vl.R1Fields.Count == 1)
-            {
-                r1Size = vl.R1Fields[0].Field.KnownSize!.Value;
-                vl.R1IsTuple = false;
-                vl.R1FieldName = ToCamelCase(variant.Name) + "_" + vl.R1Fields[0].Field.Name;
-            }
-            else
-            {
-                r1Size = 0;
-                foreach (var fp in vl.R1Fields)
-                    r1Size += fp.Field.KnownSize!.Value;
-                vl.R1IsTuple = true;
-                vl.R1FieldName = ToCamelCase(variant.Name);
-            }
-
-            if (r1Size > maxR1Size) maxR1Size = r1Size;
-            if (r2Count > maxR2Slots) maxR2Slots = r2Count;
-            if (r3Count > maxR3Slots) maxR3Slots = r3Count;
-
-            layout.Variants[variant.Name] = vl;
-        }
-
-        layout.R1Size = maxR1Size;
-        layout.R2Offset = AlignUp(kindSize + maxR1Size, 8);
-        layout.R2Slots = maxR2Slots;
-        layout.R3Offset = layout.R2Offset + maxR2Slots * 8;
-        layout.R3Slots = maxR3Slots;
-
-        return layout;
+        return ComputeLayoutPinned(variantList, kindSize);
     }
 
     /// Name-pinned layout. Each unique field name gets a dedicated offset/slot.
     private static OverlapLayoutInfo ComputeLayoutPinned(List<VariantInfo> variantList, int kindSize)
     {
-        var layout = new OverlapLayoutInfo { UseGlobalFields = true };
+        var layout = new OverlapLayoutInfo();
 
         // Collect unique fields by region, keyed by name (ambiguity already rejected)
         var r1Fields = new Dictionary<string, FieldInfo>();
