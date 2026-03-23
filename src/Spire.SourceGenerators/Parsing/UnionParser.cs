@@ -52,7 +52,8 @@ internal static class UnionParser
                     "Generic structs cannot use Overlap layout (CLR restriction); use BoxedFields or BoxedTuple",
                     isError: true),
                 Json: JsonLibrary.None,
-                JsonDiscriminator: "kind");
+                JsonDiscriminator: "kind",
+                HasInitProperties: false);
         }
 
         // Warn when Layout is explicitly set on record/class (it's ignored)
@@ -98,7 +99,8 @@ internal static class UnionParser
                     hint,
                     isError: false),
                 Json: JsonLibrary.None,
-                JsonDiscriminator: "kind");
+                JsonDiscriminator: "kind",
+                HasInitProperties: false);
         }
 
         var json = GetJsonLibrary(ctx.Attributes);
@@ -134,7 +136,8 @@ internal static class UnionParser
             ContainingTypes: new EquatableArray<ContainingTypeInfo>(GetContainingTypes(typeSymbol)),
             Diagnostic: layoutWarning,
             Json: json,
-            JsonDiscriminator: GetJsonDiscriminator(ctx.Attributes));
+            JsonDiscriminator: GetJsonDiscriminator(ctx.Attributes),
+            HasInitProperties: false);
     }
 
     /// Walks up the ContainingType chain and returns the nesting wrappers

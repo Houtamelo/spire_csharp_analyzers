@@ -54,5 +54,7 @@ internal sealed record UnionDeclaration(
     /// Which JSON libraries to generate converters for.
     JsonLibrary Json,
     /// Discriminator property name in JSON (default "kind").
-    string JsonDiscriminator
+    string JsonDiscriminator,
+    /// Whether System.Runtime.CompilerServices.IsExternalInit is available (C# 9+ init support).
+    bool HasInitProperties
 ) : IEquatable<UnionDeclaration>;

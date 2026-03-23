@@ -42,7 +42,9 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
                     "Newtonsoft.Json.JsonConverter") is not null,
                 AllowsUnsafe: ((Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions)comp.Options).AllowUnsafe,
                 HasInlineArray: comp.GetTypeByMetadataName(
-                    "System.Runtime.CompilerServices.InlineArrayAttribute") is not null));
+                    "System.Runtime.CompilerServices.InlineArrayAttribute") is not null,
+                HasInitProperties: comp.GetTypeByMetadataName(
+                    "System.Runtime.CompilerServices.IsExternalInit") is not null));
 
         var combined = unions.Combine(compilationInfo);
 
@@ -50,6 +52,7 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
         {
             var (union, compInfo) = pair;
             if (union is null) return;
+            union = union with { HasInitProperties = compInfo.HasInitProperties };
 
             // Report diagnostic if present
             if (union.Diagnostic is { } diag)

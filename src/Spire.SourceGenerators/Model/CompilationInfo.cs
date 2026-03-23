@@ -6,5 +6,6 @@ internal sealed record CompilationInfo(
     bool HasSystemTextJson,
     bool HasNewtonsoftJson,
     bool AllowsUnsafe,
-    bool HasInlineArray
+    bool HasInlineArray,
+    bool HasInitProperties
 ) : IEquatable<CompilationInfo>;

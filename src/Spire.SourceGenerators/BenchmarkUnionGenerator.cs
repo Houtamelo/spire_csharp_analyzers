@@ -35,7 +35,9 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
                     "Newtonsoft.Json.JsonConverter") is not null,
                 AllowsUnsafe: ((CSharpCompilationOptions)comp.Options).AllowUnsafe,
                 HasInlineArray: comp.GetTypeByMetadataName(
-                    "System.Runtime.CompilerServices.InlineArrayAttribute") is not null));
+                    "System.Runtime.CompilerServices.InlineArrayAttribute") is not null,
+                HasInitProperties: comp.GetTypeByMetadataName(
+                    "System.Runtime.CompilerServices.IsExternalInit") is not null));
 
         var combined = benchmarks.Combine(compilationInfo);
 
@@ -47,7 +49,7 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
 
             // Emit implementation for the input struct itself (Additive by default)
             {
-                var inputUnion = MakeUnionDeclaration(b, b.InputTypeName, "struct", EmitStrategy.Additive);
+                var inputUnion = MakeUnionDeclaration(b, b.InputTypeName, "struct", EmitStrategy.Additive, hasInit: compInfo.HasInitProperties);
                 ctx.AddSource($"{b.InputTypeName}.Bench.g.cs", Emit(inputUnion));
             }
 
@@ -65,7 +67,7 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
             foreach (var strategy in layouts)
             {
                 var typeName = b.Prefix + StrategyName(strategy);
-                var union = MakeUnionDeclaration(b, typeName, "struct", strategy, jsonFlags);
+                var union = MakeUnionDeclaration(b, typeName, "struct", strategy, jsonFlags, compInfo.HasInitProperties);
 
                 // Defining declaration: partial struct with [Variant] method signatures
                 ctx.AddSource($"{typeName}.BenchDecl.g.cs", EmitStructDeclaration(b, typeName));
@@ -96,7 +98,7 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
             {
                 var typeName = b.Prefix + "Record";
                 ctx.AddSource($"{typeName}.BenchDecl.g.cs", EmitRecordDeclaration(b, typeName));
-                var union = MakeUnionDeclaration(b, typeName, "record", EmitStrategy.Record, jsonFlags);
+                var union = MakeUnionDeclaration(b, typeName, "record", EmitStrategy.Record, jsonFlags, compInfo.HasInitProperties);
                 ctx.AddSource($"{typeName}.Bench.g.cs", RecordEmitter.Emit(union));
                 if ((jsonFlags & JsonLibrary.SystemTextJson) != 0)
                     ctx.AddSource($"{typeName}.Stj.g.cs", SystemTextJsonEmitter.Emit(union));
@@ -108,10 +110,10 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
             {
                 var typeName = b.Prefix + "Class";
                 ctx.AddSource($"{typeName}.BenchDecl.g.cs", EmitClassDeclaration(b, typeName));
-                var union = MakeClassDeclaration(b, typeName);
+                var union = MakeClassDeclaration(b, typeName, compInfo.HasInitProperties);
                 ctx.AddSource($"{typeName}.Bench.g.cs", ClassEmitter.Emit(union));
                 // Class JSON: use same union with json flags
-                var classUnionJson = MakeUnionDeclaration(b, typeName, "class", EmitStrategy.Class, jsonFlags);
+                var classUnionJson = MakeUnionDeclaration(b, typeName, "class", EmitStrategy.Class, jsonFlags, compInfo.HasInitProperties);
                 if ((jsonFlags & JsonLibrary.SystemTextJson) != 0)
                     ctx.AddSource($"{typeName}.Stj.g.cs", SystemTextJsonEmitter.Emit(classUnionJson));
                 if ((jsonFlags & JsonLibrary.NewtonsoftJson) != 0)
@@ -303,7 +305,7 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
 
     static UnionDeclaration MakeUnionDeclaration(
         BenchmarkDef b, string typeName, string keyword, EmitStrategy strategy,
-        JsonLibrary json = JsonLibrary.None)
+        JsonLibrary json = JsonLibrary.None, bool hasInit = false)
     {
         var variants = b.Variants.Select(v => new VariantInfo(
             v.Name,
@@ -327,10 +329,11 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
             ContainingTypes: new EquatableArray<ContainingTypeInfo>(ImmutableArray<ContainingTypeInfo>.Empty),
             Diagnostic: null,
             Json: json,
-            JsonDiscriminator: "kind");
+            JsonDiscriminator: "kind",
+            HasInitProperties: hasInit);
     }
 
-    static UnionDeclaration MakeClassDeclaration(BenchmarkDef b, string typeName)
+    static UnionDeclaration MakeClassDeclaration(BenchmarkDef b, string typeName, bool hasInit = false)
     {
         // Class variants use constructor parameters — fields become properties via user code
         // The ClassEmitter handles nested class generation from variant info
@@ -356,7 +359,8 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
             ContainingTypes: new EquatableArray<ContainingTypeInfo>(ImmutableArray<ContainingTypeInfo>.Empty),
             Diagnostic: null,
             Json: JsonLibrary.None,
-            JsonDiscriminator: "kind");
+            JsonDiscriminator: "kind",
+            HasInitProperties: hasInit);
     }
 
     static string StrategyName(EmitStrategy s) => s switch
