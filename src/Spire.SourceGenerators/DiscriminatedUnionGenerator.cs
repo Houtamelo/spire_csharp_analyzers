@@ -132,6 +132,14 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
                     ctx.AddSource($"{hintPrefix}.Nsj.g.cs", nsjSource);
                 }
             }
+
+            // JSON Schema
+            if (union.Json != JsonLibrary.None)
+            {
+                bool hasStj = (union.Json & JsonLibrary.SystemTextJson) != 0 && compInfo.HasSystemTextJson;
+                var schemaSource = JsonSchemaEmitter.Emit(union, hasStj);
+                ctx.AddSource($"{hintPrefix}.Schema.g.cs", schemaSource);
+            }
         });
     }
 
