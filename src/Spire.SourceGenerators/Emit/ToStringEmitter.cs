@@ -63,13 +63,18 @@ internal static class ToStringEmitter
         sb.AppendLine($"{accessMod}{abstractMod}partial {union.DeclarationKeyword} {unionType}");
         sb.OpenBrace();
 
+        // For records: constructor param names = property names (guaranteed by language).
+        // For classes: constructor param names may differ from property names (user-defined).
+        // Only interpolate fields for record strategy; class strategy gets just the variant name.
+        var canReferenceFields = union.Strategy == EmitStrategy.Record;
+
         foreach (var variant in union.Variants)
         {
             var variantAccess = string.IsNullOrEmpty(variant.AccessibilityKeyword) ? "" : variant.AccessibilityKeyword + " ";
             sb.AppendLine($"{variantAccess}sealed partial {variantKeyword} {variant.Name}");
             sb.OpenBrace();
 
-            if (variant.Fields.Length == 0)
+            if (!canReferenceFields || variant.Fields.Length == 0)
             {
                 sb.AppendLine($"public override string ToString() => \"{variant.Name}()\";");
             }
