@@ -31,17 +31,23 @@ internal static class BoxedTupleEmitter
         var refMod = union.IsRefStruct ? "ref " : "";
 
         sb.AppendLine("[global::Spire.MustBeInit]");
-        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType}");
+        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType} : global::Spire.IDiscriminatedUnion<{unionType}.Kind>");
         sb.OpenBrace();
 
         // Kind enum
         EmitKindEnum(sb, union);
         sb.AppendLine();
 
-        // Fields: kind + single payload
-        sb.AppendLine("public readonly Kind kind;");
+        // Kind field (backing field + property)
+        sb.AppendLine("readonly Kind _kind;");
+        sb.AppendLine("public Kind kind => this._kind;");
+
+        // Payload field
         sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-        sb.AppendLine("internal readonly object? _payload;");
+        if (union.HasInitProperties)
+            sb.AppendLine("internal object? _payload { get; init; }");
+        else
+            sb.AppendLine("internal readonly object? _payload;");
         sb.AppendLine();
 
         // Private constructor
@@ -56,7 +62,11 @@ internal static class BoxedTupleEmitter
             EmitDeconstruct(sb);
 
         // Public properties for pattern matching (kind switch for correct cast)
-        EmitProperties(sb, union.Variants);
+        EmitProperties(sb, union.Variants, union.HasInitProperties);
+
+        // IsVariant properties
+        foreach (var variant in union.Variants)
+            sb.AppendLine($"public bool Is{variant.Name} => this.kind == Kind.{variant.Name};");
 
         sb.CloseBrace(); // type
 
@@ -84,7 +94,7 @@ internal static class BoxedTupleEmitter
     {
         sb.AppendLine($"{typeName}(Kind kind, object? payload)");
         sb.OpenBrace();
-        sb.AppendLine("this.kind = kind;");
+        sb.AppendLine("this._kind = kind;");
         sb.AppendLine("this._payload = payload;");
         sb.CloseBrace();
     }
@@ -128,12 +138,12 @@ internal static class BoxedTupleEmitter
         sb.CloseBrace();
     }
 
-    private static void EmitProperties(SourceBuilder sb, IEnumerable<VariantInfo> variants)
+    private static void EmitProperties(SourceBuilder sb, IEnumerable<VariantInfo> variants, bool hasInitProperties)
     {
         var variantList = variants.ToList();
 
         // Collect unique property names and their type
-        var propertyFields = new Dictionary<string, string>(); // name → TypeFullName
+        var propertyFields = new Dictionary<string, string>(); // name -> TypeFullName
         foreach (var variant in variantList)
         {
             foreach (var field in variant.Fields)
@@ -148,8 +158,8 @@ internal static class BoxedTupleEmitter
             var propName = kv.Key;
             var propType = kv.Value;
 
-            // Find which variants have this field and their accessor expressions
-            var cases = new List<(string VariantName, string Accessor)>();
+            // Find which variants have this field and their accessor/setter info
+            var cases = new List<PropertyCase>();
             foreach (var variant in variantList)
             {
                 int fieldIdx = -1;
@@ -177,23 +187,131 @@ internal static class BoxedTupleEmitter
                     accessor = $"(({tupleType})this._payload!).Item{fieldIdx + 1}";
                 }
 
-                cases.Add((variant.Name, accessor));
+                cases.Add(new PropertyCase
+                {
+                    VariantName = variant.Name,
+                    Accessor = accessor,
+                    FieldIndex = fieldIdx,
+                    Variant = variant,
+                });
             }
 
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-            if (cases.Count == 1)
+
+            if (hasInitProperties)
             {
-                sb.AppendLine($"public {propType} {propName} => {cases[0].Accessor};");
+                EmitPropertyWithInit(sb, propName, propType, cases);
             }
             else
             {
-                sb.AppendLine($"public {propType} {propName} => this.kind switch");
-                sb.OpenBrace();
-                foreach (var c in cases)
-                    sb.AppendLine($"Kind.{c.VariantName} => {c.Accessor},");
-                sb.AppendLine($"_ => default!,");
-                sb.CloseBrace(";");
+                EmitReadonlyProperty(sb, propName, propType, cases);
             }
+        }
+    }
+
+    private sealed class PropertyCase
+    {
+        public string VariantName = "";
+        public string Accessor = "";
+        public int FieldIndex;
+        public VariantInfo Variant = default!;
+    }
+
+    private static void EmitReadonlyProperty(
+        SourceBuilder sb, string propName, string propType, List<PropertyCase> cases)
+    {
+        if (cases.Count == 1)
+        {
+            sb.AppendLine($"public {propType} {propName} => {cases[0].Accessor};");
+        }
+        else
+        {
+            sb.AppendLine($"public {propType} {propName} => this.kind switch");
+            sb.OpenBrace();
+            foreach (var c in cases)
+                sb.AppendLine($"Kind.{c.VariantName} => {c.Accessor},");
+            sb.AppendLine($"_ => default!,");
+            sb.CloseBrace(";");
+        }
+    }
+
+    private static void EmitPropertyWithInit(
+        SourceBuilder sb, string propName, string propType, List<PropertyCase> cases)
+    {
+        // Getter
+        sb.AppendLine($"public {propType} {propName}");
+        sb.OpenBrace();
+
+        if (cases.Count == 1)
+            sb.AppendLine($"get => {cases[0].Accessor};");
+        else
+        {
+            sb.AppendLine($"get => this.kind switch");
+            sb.OpenBrace();
+            foreach (var c in cases)
+                sb.AppendLine($"Kind.{c.VariantName} => {c.Accessor},");
+            sb.AppendLine($"_ => default!,");
+            sb.CloseBrace(";");
+        }
+
+        // Init setter — must handle single vs multi-field variants
+        // All cases for a given property name share the same init setter body.
+        // Since all cases must produce valid code, we use a kind switch for multi-case,
+        // or a single body for single-case.
+        if (cases.Count == 1)
+        {
+            var c = cases[0];
+            EmitInitSetterBody(sb, c);
+        }
+        else
+        {
+            sb.AppendLine("init");
+            sb.OpenBrace();
+            sb.AppendLine("switch (this.kind)");
+            sb.OpenBrace();
+            foreach (var c in cases)
+            {
+                sb.AppendLine($"case Kind.{c.VariantName}:");
+                sb.Indent();
+                if (c.Variant.Fields.Length == 1)
+                {
+                    sb.AppendLine("this._payload = value;");
+                }
+                else
+                {
+                    var tupleType = "(" + string.Join(", ",
+                        c.Variant.Fields.Select(f => f.TypeFullName)) + ")";
+                    sb.AppendLine($"var t = ({tupleType})this._payload!;");
+                    sb.AppendLine($"t.Item{c.FieldIndex + 1} = value;");
+                    sb.AppendLine("this._payload = t;");
+                }
+                sb.AppendLine("break;");
+                sb.Dedent();
+            }
+            sb.AppendLine("default: break;");
+            sb.CloseBrace(); // switch
+            sb.CloseBrace(); // init
+        }
+
+        sb.CloseBrace(); // property
+    }
+
+    private static void EmitInitSetterBody(SourceBuilder sb, PropertyCase c)
+    {
+        if (c.Variant.Fields.Length == 1)
+        {
+            sb.AppendLine("init => this._payload = value;");
+        }
+        else
+        {
+            var tupleType = "(" + string.Join(", ",
+                c.Variant.Fields.Select(f => f.TypeFullName)) + ")";
+            sb.AppendLine("init");
+            sb.OpenBrace();
+            sb.AppendLine($"var t = ({tupleType})this._payload!;");
+            sb.AppendLine($"t.Item{c.FieldIndex + 1} = value;");
+            sb.AppendLine("this._payload = t;");
+            sb.CloseBrace();
         }
     }
 
