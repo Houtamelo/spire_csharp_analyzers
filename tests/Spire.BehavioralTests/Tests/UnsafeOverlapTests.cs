@@ -9,7 +9,7 @@ public class UnsafeOverlapTests
     public void Circle_TagAndRadius()
     {
         var c = ShapeUo.Circle(3.14);
-        Assert.Equal(ShapeUo.Kind.Circle, c.tag);
+        Assert.Equal(ShapeUo.Kind.Circle, c.kind);
         Assert.Equal(3.14, c.radius);
     }
 
@@ -17,7 +17,7 @@ public class UnsafeOverlapTests
     public void Square_TagAndSideLength()
     {
         var s = ShapeUo.Square(42);
-        Assert.Equal(ShapeUo.Kind.Square, s.tag);
+        Assert.Equal(ShapeUo.Kind.Square, s.kind);
         Assert.Equal(42, s.sideLength);
     }
 
@@ -25,7 +25,7 @@ public class UnsafeOverlapTests
     public void Rectangle_AllFields()
     {
         var r = ShapeUo.Rectangle(1.5f, 2.5f);
-        Assert.Equal(ShapeUo.Kind.Rectangle, r.tag);
+        Assert.Equal(ShapeUo.Kind.Rectangle, r.kind);
         Assert.Equal(1.5f, r.width);
         Assert.Equal(2.5f, r.height);
     }
@@ -36,7 +36,7 @@ public class UnsafeOverlapTests
         Assert.Equal("circle", Match(ShapeUo.Circle(1)));
         Assert.Equal("point", Match(ShapeUo.Point()));
 
-        static string Match(ShapeUo s) => s.tag switch
+        static string Match(ShapeUo s) => s.kind switch
         {
             ShapeUo.Kind.Circle => "circle",
             ShapeUo.Kind.Square => "square",
@@ -52,7 +52,7 @@ public class UnsafeOverlapTests
         var c = ShapeUo.Circle(7.5);
         var r = c switch
         {
-            { tag: ShapeUo.Kind.Circle, radius: var v } => v,
+            { kind: ShapeUo.Kind.Circle, radius: var v } => v,
             _ => -1.0
         };
         Assert.Equal(7.5, r);
@@ -64,7 +64,7 @@ public class UnsafeOverlapTests
         var rect = ShapeUo.Rectangle(3.0f, 4.0f);
         var (w, h) = rect switch
         {
-            { tag: ShapeUo.Kind.Rectangle, width: var ww, height: var hh } => (ww, hh),
+            { kind: ShapeUo.Kind.Rectangle, width: var ww, height: var hh } => (ww, hh),
             _ => (0f, 0f)
         };
         Assert.Equal(3.0f, w);
@@ -102,7 +102,7 @@ public class UnsafeOverlapTests
         var c = JsonShapeUoStj.Circle(3.14);
         var json = System.Text.Json.JsonSerializer.Serialize(c);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonShapeUoStj>(json);
-        Assert.Equal(JsonShapeUoStj.Kind.Circle, d.tag);
+        Assert.Equal(JsonShapeUoStj.Kind.Circle, d.kind);
         Assert.Equal(3.14, d.radius);
     }
 
@@ -122,7 +122,7 @@ public class UnsafeOverlapTests
         var p = JsonShapeUoStj.Point();
         var json = System.Text.Json.JsonSerializer.Serialize(p);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonShapeUoStj>(json);
-        Assert.Equal(JsonShapeUoStj.Kind.Point, d.tag);
+        Assert.Equal(JsonShapeUoStj.Kind.Point, d.kind);
     }
 
     [Fact]
@@ -131,7 +131,7 @@ public class UnsafeOverlapTests
         var c = JsonShapeUoNsj.Circle(3.14);
         var json = JsonConvert.SerializeObject(c);
         var d = JsonConvert.DeserializeObject<JsonShapeUoNsj>(json);
-        Assert.Equal(JsonShapeUoNsj.Kind.Circle, d.tag);
+        Assert.Equal(JsonShapeUoNsj.Kind.Circle, d.kind);
         Assert.Equal(3.14, d.radius);
     }
 
@@ -151,6 +151,6 @@ public class UnsafeOverlapTests
         var p = JsonShapeUoNsj.Point();
         var json = JsonConvert.SerializeObject(p);
         var d = JsonConvert.DeserializeObject<JsonShapeUoNsj>(json);
-        Assert.Equal(JsonShapeUoNsj.Kind.Point, d.tag);
+        Assert.Equal(JsonShapeUoNsj.Kind.Point, d.kind);
     }
 }

@@ -9,7 +9,7 @@ public class BoxedFieldsTests
     public void Circle_TagAndRadius()
     {
         var c = ShapeBf.Circle(3.14);
-        Assert.Equal(ShapeBf.Kind.Circle, c.tag);
+        Assert.Equal(ShapeBf.Kind.Circle, c.kind);
         Assert.Equal(3.14, c.radius);
     }
 
@@ -17,7 +17,7 @@ public class BoxedFieldsTests
     public void Rectangle_AllFields()
     {
         var r = ShapeBf.Rectangle(1.5f, 2.5f);
-        Assert.Equal(ShapeBf.Kind.Rectangle, r.tag);
+        Assert.Equal(ShapeBf.Kind.Rectangle, r.kind);
         Assert.Equal(1.5f, r.width);
         Assert.Equal(2.5f, r.height);
     }
@@ -28,7 +28,7 @@ public class BoxedFieldsTests
         Assert.Equal("circle", Match(ShapeBf.Circle(1)));
         Assert.Equal("point", Match(ShapeBf.Point()));
 
-        static string Match(ShapeBf s) => s.tag switch
+        static string Match(ShapeBf s) => s.kind switch
         {
             ShapeBf.Kind.Circle => "circle",
             ShapeBf.Kind.Square => "square",
@@ -44,7 +44,7 @@ public class BoxedFieldsTests
         var c = ShapeBf.Circle(7.5);
         var r = c switch
         {
-            { tag: ShapeBf.Kind.Circle, radius: var v } => v,
+            { kind: ShapeBf.Kind.Circle, radius: var v } => v,
             _ => -1.0
         };
         Assert.Equal(7.5, r);
@@ -68,10 +68,10 @@ public class BoxedFieldsTests
     {
         var o = OptionBf<int>.Some(42);
         Assert.Equal(42, o.value);
-        Assert.Equal(OptionBf<int>.Kind.Some, o.tag);
+        Assert.Equal(OptionBf<int>.Kind.Some, o.kind);
 
         var n = OptionBf<string>.None();
-        Assert.Equal(OptionBf<string>.Kind.None, n.tag);
+        Assert.Equal(OptionBf<string>.Kind.None, n.kind);
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public class BoxedFieldsTests
         var c = JsonShapeBfStj.Circle(3.14);
         var json = System.Text.Json.JsonSerializer.Serialize(c);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonShapeBfStj>(json);
-        Assert.Equal(JsonShapeBfStj.Kind.Circle, d.tag);
+        Assert.Equal(JsonShapeBfStj.Kind.Circle, d.kind);
         Assert.Equal(3.14, d.radius);
     }
 
@@ -111,7 +111,7 @@ public class BoxedFieldsTests
         var p = JsonShapeBfStj.Point();
         var json = System.Text.Json.JsonSerializer.Serialize(p);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonShapeBfStj>(json);
-        Assert.Equal(JsonShapeBfStj.Kind.Point, d.tag);
+        Assert.Equal(JsonShapeBfStj.Kind.Point, d.kind);
     }
 
     [Fact]
@@ -120,7 +120,7 @@ public class BoxedFieldsTests
         var c = JsonShapeBfNsj.Circle(3.14);
         var json = JsonConvert.SerializeObject(c);
         var d = JsonConvert.DeserializeObject<JsonShapeBfNsj>(json);
-        Assert.Equal(JsonShapeBfNsj.Kind.Circle, d.tag);
+        Assert.Equal(JsonShapeBfNsj.Kind.Circle, d.kind);
         Assert.Equal(3.14, d.radius);
     }
 
@@ -140,6 +140,6 @@ public class BoxedFieldsTests
         var p = JsonShapeBfNsj.Point();
         var json = JsonConvert.SerializeObject(p);
         var d = JsonConvert.DeserializeObject<JsonShapeBfNsj>(json);
-        Assert.Equal(JsonShapeBfNsj.Kind.Point, d.tag);
+        Assert.Equal(JsonShapeBfNsj.Kind.Point, d.kind);
     }
 }

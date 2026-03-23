@@ -9,7 +9,7 @@ public class BoxedTupleTests
     public void Circle_TagAndRadius()
     {
         var c = ShapeBt.Circle(3.14);
-        Assert.Equal(ShapeBt.Kind.Circle, c.tag);
+        Assert.Equal(ShapeBt.Kind.Circle, c.kind);
         Assert.Equal(3.14, c.radius);
     }
 
@@ -17,7 +17,7 @@ public class BoxedTupleTests
     public void Rectangle_AllFields()
     {
         var r = ShapeBt.Rectangle(1.5f, 2.5f);
-        Assert.Equal(ShapeBt.Kind.Rectangle, r.tag);
+        Assert.Equal(ShapeBt.Kind.Rectangle, r.kind);
         Assert.Equal(1.5f, r.width);
         Assert.Equal(2.5f, r.height);
     }
@@ -28,7 +28,7 @@ public class BoxedTupleTests
         Assert.Equal("circle", Match(ShapeBt.Circle(1)));
         Assert.Equal("point", Match(ShapeBt.Point()));
 
-        static string Match(ShapeBt s) => s.tag switch
+        static string Match(ShapeBt s) => s.kind switch
         {
             ShapeBt.Kind.Circle => "circle",
             ShapeBt.Kind.Square => "square",
@@ -44,7 +44,7 @@ public class BoxedTupleTests
         var c = ShapeBt.Circle(7.5);
         var r = c switch
         {
-            { tag: ShapeBt.Kind.Circle, radius: var v } => v,
+            { kind: ShapeBt.Kind.Circle, radius: var v } => v,
             _ => -1.0
         };
         Assert.Equal(7.5, r);
@@ -56,7 +56,7 @@ public class BoxedTupleTests
         var rect = ShapeBt.Rectangle(3.0f, 4.0f);
         var (w, h) = rect switch
         {
-            { tag: ShapeBt.Kind.Rectangle, width: var ww, height: var hh } => (ww, hh),
+            { kind: ShapeBt.Kind.Rectangle, width: var ww, height: var hh } => (ww, hh),
             _ => (0f, 0f)
         };
         Assert.Equal(3.0f, w);
@@ -81,7 +81,7 @@ public class BoxedTupleTests
     {
         var o = OptionBt<int>.Some(42);
         Assert.Equal(42, o.value);
-        Assert.Equal(OptionBt<int>.Kind.Some, o.tag);
+        Assert.Equal(OptionBt<int>.Kind.Some, o.kind);
     }
 
     [Fact]
@@ -97,7 +97,7 @@ public class BoxedTupleTests
         var c = JsonShapeBtStj.Circle(3.14);
         var json = System.Text.Json.JsonSerializer.Serialize(c);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonShapeBtStj>(json);
-        Assert.Equal(JsonShapeBtStj.Kind.Circle, d.tag);
+        Assert.Equal(JsonShapeBtStj.Kind.Circle, d.kind);
         Assert.Equal(3.14, d.radius);
     }
 
@@ -117,7 +117,7 @@ public class BoxedTupleTests
         var p = JsonShapeBtStj.Point();
         var json = System.Text.Json.JsonSerializer.Serialize(p);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonShapeBtStj>(json);
-        Assert.Equal(JsonShapeBtStj.Kind.Point, d.tag);
+        Assert.Equal(JsonShapeBtStj.Kind.Point, d.kind);
     }
 
     [Fact]
@@ -126,7 +126,7 @@ public class BoxedTupleTests
         var c = JsonShapeBtNsj.Circle(3.14);
         var json = JsonConvert.SerializeObject(c);
         var d = JsonConvert.DeserializeObject<JsonShapeBtNsj>(json);
-        Assert.Equal(JsonShapeBtNsj.Kind.Circle, d.tag);
+        Assert.Equal(JsonShapeBtNsj.Kind.Circle, d.kind);
         Assert.Equal(3.14, d.radius);
     }
 
@@ -146,6 +146,6 @@ public class BoxedTupleTests
         var p = JsonShapeBtNsj.Point();
         var json = JsonConvert.SerializeObject(p);
         var d = JsonConvert.DeserializeObject<JsonShapeBtNsj>(json);
-        Assert.Equal(JsonShapeBtNsj.Kind.Point, d.tag);
+        Assert.Equal(JsonShapeBtNsj.Kind.Point, d.kind);
     }
 }

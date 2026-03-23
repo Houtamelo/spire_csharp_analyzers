@@ -272,7 +272,7 @@ internal static class BoxedTupleEmitter
             foreach (var c in cases)
             {
                 sb.AppendLine($"case Kind.{c.VariantName}:");
-                sb.Indent();
+                sb.OpenBrace();
                 if (c.Variant.Fields.Length == 1)
                 {
                     sb.AppendLine("this._payload = value;");
@@ -286,7 +286,7 @@ internal static class BoxedTupleEmitter
                     sb.AppendLine("this._payload = t;");
                 }
                 sb.AppendLine("break;");
-                sb.Dedent();
+                sb.CloseBrace();
             }
             sb.AppendLine("default: break;");
             sb.CloseBrace(); // switch

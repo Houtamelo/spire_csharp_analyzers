@@ -12,7 +12,7 @@ public class AdditiveTests
     public void Circle_TagAndRadius()
     {
         var c = ShapeAdd.Circle(3.14);
-        Assert.Equal(ShapeAdd.Kind.Circle, c.tag);
+        Assert.Equal(ShapeAdd.Kind.Circle, c.kind);
         Assert.Equal(3.14, c.radius);
     }
 
@@ -20,7 +20,7 @@ public class AdditiveTests
     public void Square_TagAndSideLength()
     {
         var s = ShapeAdd.Square(42);
-        Assert.Equal(ShapeAdd.Kind.Square, s.tag);
+        Assert.Equal(ShapeAdd.Kind.Square, s.kind);
         Assert.Equal(42, s.sideLength);
     }
 
@@ -28,7 +28,7 @@ public class AdditiveTests
     public void Rectangle_AllFields()
     {
         var r = ShapeAdd.Rectangle(1.5f, 2.5f);
-        Assert.Equal(ShapeAdd.Kind.Rectangle, r.tag);
+        Assert.Equal(ShapeAdd.Kind.Rectangle, r.kind);
         Assert.Equal(1.5f, r.width);
         Assert.Equal(2.5f, r.height);
     }
@@ -37,7 +37,7 @@ public class AdditiveTests
     public void Point_Tag()
     {
         var p = ShapeAdd.Point();
-        Assert.Equal(ShapeAdd.Kind.Point, p.tag);
+        Assert.Equal(ShapeAdd.Kind.Point, p.kind);
     }
 
     // ── Switch on Tag ───────────────────────────────────────────
@@ -50,7 +50,7 @@ public class AdditiveTests
         Assert.Equal("rectangle", Match(ShapeAdd.Rectangle(1, 2)));
         Assert.Equal("point", Match(ShapeAdd.Point()));
 
-        static string Match(ShapeAdd s) => s.tag switch
+        static string Match(ShapeAdd s) => s.kind switch
         {
             ShapeAdd.Kind.Circle => "circle",
             ShapeAdd.Kind.Square => "square",
@@ -68,7 +68,7 @@ public class AdditiveTests
         var c = ShapeAdd.Circle(7.5);
         var r = c switch
         {
-            { tag: ShapeAdd.Kind.Circle, radius: var v } => v,
+            { kind: ShapeAdd.Kind.Circle, radius: var v } => v,
             _ => -1.0
         };
         Assert.Equal(7.5, r);
@@ -80,7 +80,7 @@ public class AdditiveTests
         var rect = ShapeAdd.Rectangle(3.0f, 4.0f);
         var (w, h) = rect switch
         {
-            { tag: ShapeAdd.Kind.Rectangle, width: var ww, height: var hh } => (ww, hh),
+            { kind: ShapeAdd.Kind.Rectangle, width: var ww, height: var hh } => (ww, hh),
             _ => (0f, 0f)
         };
         Assert.Equal(3.0f, w);
@@ -93,7 +93,7 @@ public class AdditiveTests
         var s = ShapeAdd.Square(10);
         var r = s switch
         {
-            { tag: ShapeAdd.Kind.Circle, radius: var v } => v,
+            { kind: ShapeAdd.Kind.Circle, radius: var v } => v,
             _ => -1.0
         };
         Assert.Equal(-1.0, r);
@@ -163,7 +163,7 @@ public class AdditiveTests
     public void Option_Int_Some()
     {
         var o = OptionAdd<int>.Some(42);
-        Assert.Equal(OptionAdd<int>.Kind.Some, o.tag);
+        Assert.Equal(OptionAdd<int>.Kind.Some, o.kind);
         Assert.Equal(42, o.value);
     }
 
@@ -171,7 +171,7 @@ public class AdditiveTests
     public void Option_String_Some()
     {
         var o = OptionAdd<string>.Some("hi");
-        Assert.Equal(OptionAdd<string>.Kind.Some, o.tag);
+        Assert.Equal(OptionAdd<string>.Kind.Some, o.kind);
         Assert.Equal("hi", o.value);
     }
 
@@ -179,7 +179,7 @@ public class AdditiveTests
     public void Option_None()
     {
         var o = OptionAdd<int>.None();
-        Assert.Equal(OptionAdd<int>.Kind.None, o.tag);
+        Assert.Equal(OptionAdd<int>.Kind.None, o.kind);
     }
 
     // ── JSON System.Text.Json ───────────────────────────────────
@@ -190,7 +190,7 @@ public class AdditiveTests
         var c = JsonShapeAddStj.Circle(3.14);
         var json = System.Text.Json.JsonSerializer.Serialize(c);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonShapeAddStj>(json);
-        Assert.Equal(JsonShapeAddStj.Kind.Circle, d.tag);
+        Assert.Equal(JsonShapeAddStj.Kind.Circle, d.kind);
         Assert.Equal(3.14, d.radius);
     }
 
@@ -200,7 +200,7 @@ public class AdditiveTests
         var r = JsonShapeAddStj.Rectangle(1.5f, 2.5f);
         var json = System.Text.Json.JsonSerializer.Serialize(r);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonShapeAddStj>(json);
-        Assert.Equal(JsonShapeAddStj.Kind.Rectangle, d.tag);
+        Assert.Equal(JsonShapeAddStj.Kind.Rectangle, d.kind);
         Assert.Equal(1.5f, d.width);
         Assert.Equal(2.5f, d.height);
     }
@@ -211,7 +211,7 @@ public class AdditiveTests
         var p = JsonShapeAddStj.Point();
         var json = System.Text.Json.JsonSerializer.Serialize(p);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonShapeAddStj>(json);
-        Assert.Equal(JsonShapeAddStj.Kind.Point, d.tag);
+        Assert.Equal(JsonShapeAddStj.Kind.Point, d.kind);
     }
 
     [Fact]
@@ -242,7 +242,7 @@ public class AdditiveTests
         var c = JsonShapeAddNsj.Circle(3.14);
         var json = JsonConvert.SerializeObject(c);
         var d = JsonConvert.DeserializeObject<JsonShapeAddNsj>(json);
-        Assert.Equal(JsonShapeAddNsj.Kind.Circle, d.tag);
+        Assert.Equal(JsonShapeAddNsj.Kind.Circle, d.kind);
         Assert.Equal(3.14, d.radius);
     }
 
@@ -252,7 +252,7 @@ public class AdditiveTests
         var r = JsonShapeAddNsj.Rectangle(1.5f, 2.5f);
         var json = JsonConvert.SerializeObject(r);
         var d = JsonConvert.DeserializeObject<JsonShapeAddNsj>(json);
-        Assert.Equal(JsonShapeAddNsj.Kind.Rectangle, d.tag);
+        Assert.Equal(JsonShapeAddNsj.Kind.Rectangle, d.kind);
         Assert.Equal(1.5f, d.width);
         Assert.Equal(2.5f, d.height);
     }
@@ -263,7 +263,7 @@ public class AdditiveTests
         var p = JsonShapeAddNsj.Point();
         var json = JsonConvert.SerializeObject(p);
         var d = JsonConvert.DeserializeObject<JsonShapeAddNsj>(json);
-        Assert.Equal(JsonShapeAddNsj.Kind.Point, d.tag);
+        Assert.Equal(JsonShapeAddNsj.Kind.Point, d.kind);
     }
 
     [Fact]

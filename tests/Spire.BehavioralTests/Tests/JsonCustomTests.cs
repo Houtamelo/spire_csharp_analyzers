@@ -24,7 +24,7 @@ public class JsonCustomTests
         var c = JsonCustomDiscStj.Circle(3.14);
         var json = System.Text.Json.JsonSerializer.Serialize(c);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonCustomDiscStj>(json);
-        Assert.Equal(JsonCustomDiscStj.Kind.Circle, d.tag);
+        Assert.Equal(JsonCustomDiscStj.Kind.Circle, d.kind);
         Assert.Equal(3.14, d.radius);
     }
 
@@ -34,7 +34,7 @@ public class JsonCustomTests
         var p = JsonCustomDiscStj.Point();
         var json = System.Text.Json.JsonSerializer.Serialize(p);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonCustomDiscStj>(json);
-        Assert.Equal(JsonCustomDiscStj.Kind.Point, d.tag);
+        Assert.Equal(JsonCustomDiscStj.Kind.Point, d.kind);
     }
 
     // ── Custom Discriminator — NSJ ──────────────────────────────
@@ -54,7 +54,7 @@ public class JsonCustomTests
         var c = JsonCustomDiscNsj.Circle(3.14);
         var json = JsonConvert.SerializeObject(c);
         var d = JsonConvert.DeserializeObject<JsonCustomDiscNsj>(json);
-        Assert.Equal(JsonCustomDiscNsj.Kind.Circle, d.tag);
+        Assert.Equal(JsonCustomDiscNsj.Kind.Circle, d.kind);
         Assert.Equal(3.14, d.radius);
     }
 
@@ -86,7 +86,7 @@ public class JsonCustomTests
         var c = JsonNamedStj.Circle(3.14);
         var json = System.Text.Json.JsonSerializer.Serialize(c);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonNamedStj>(json);
-        Assert.Equal(JsonNamedStj.Kind.Circle, d.tag);
+        Assert.Equal(JsonNamedStj.Kind.Circle, d.kind);
         Assert.Equal(3.14, d.radius);
     }
 
@@ -97,7 +97,7 @@ public class JsonCustomTests
         var json = System.Text.Json.JsonSerializer.Serialize(p);
         Assert.Contains("\"pt\"", json);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonNamedStj>(json);
-        Assert.Equal(JsonNamedStj.Kind.Point, d.tag);
+        Assert.Equal(JsonNamedStj.Kind.Point, d.kind);
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public class JsonCustomTests
         var c = JsonNamedNsj.Circle(3.14);
         var json = JsonConvert.SerializeObject(c);
         var d = JsonConvert.DeserializeObject<JsonNamedNsj>(json);
-        Assert.Equal(JsonNamedNsj.Kind.Circle, d.tag);
+        Assert.Equal(JsonNamedNsj.Kind.Circle, d.kind);
         Assert.Equal(3.14, d.radius);
     }
 }

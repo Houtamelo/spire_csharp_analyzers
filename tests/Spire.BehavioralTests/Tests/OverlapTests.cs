@@ -9,7 +9,7 @@ public class OverlapTests
     public void Circle_TagAndRadius()
     {
         var c = ShapeOvl.Circle(3.14);
-        Assert.Equal(ShapeOvl.Kind.Circle, c.tag);
+        Assert.Equal(ShapeOvl.Kind.Circle, c.kind);
         Assert.Equal(3.14, c.radius);
     }
 
@@ -17,7 +17,7 @@ public class OverlapTests
     public void Rectangle_AllFields()
     {
         var r = ShapeOvl.Rectangle(1.5f, 2.5f);
-        Assert.Equal(ShapeOvl.Kind.Rectangle, r.tag);
+        Assert.Equal(ShapeOvl.Kind.Rectangle, r.kind);
         Assert.Equal(1.5f, r.width);
         Assert.Equal(2.5f, r.height);
     }
@@ -30,7 +30,7 @@ public class OverlapTests
         Assert.Equal("rectangle", Match(ShapeOvl.Rectangle(1, 2)));
         Assert.Equal("point", Match(ShapeOvl.Point()));
 
-        static string Match(ShapeOvl s) => s.tag switch
+        static string Match(ShapeOvl s) => s.kind switch
         {
             ShapeOvl.Kind.Circle => "circle",
             ShapeOvl.Kind.Square => "square",
@@ -46,7 +46,7 @@ public class OverlapTests
         var c = ShapeOvl.Circle(7.5);
         var r = c switch
         {
-            { tag: ShapeOvl.Kind.Circle, radius: var v } => v,
+            { kind: ShapeOvl.Kind.Circle, radius: var v } => v,
             _ => -1.0
         };
         Assert.Equal(7.5, r);
@@ -58,7 +58,7 @@ public class OverlapTests
         var rect = ShapeOvl.Rectangle(3.0f, 4.0f);
         var (w, h) = rect switch
         {
-            { tag: ShapeOvl.Kind.Rectangle, width: var ww, height: var hh } => (ww, hh),
+            { kind: ShapeOvl.Kind.Rectangle, width: var ww, height: var hh } => (ww, hh),
             _ => (0f, 0f)
         };
         Assert.Equal(3.0f, w);
@@ -96,7 +96,7 @@ public class OverlapTests
         var c = JsonShapeOvlStj.Circle(3.14);
         var json = System.Text.Json.JsonSerializer.Serialize(c);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonShapeOvlStj>(json);
-        Assert.Equal(JsonShapeOvlStj.Kind.Circle, d.tag);
+        Assert.Equal(JsonShapeOvlStj.Kind.Circle, d.kind);
         Assert.Equal(3.14, d.radius);
     }
 
@@ -116,7 +116,7 @@ public class OverlapTests
         var p = JsonShapeOvlStj.Point();
         var json = System.Text.Json.JsonSerializer.Serialize(p);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonShapeOvlStj>(json);
-        Assert.Equal(JsonShapeOvlStj.Kind.Point, d.tag);
+        Assert.Equal(JsonShapeOvlStj.Kind.Point, d.kind);
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public class OverlapTests
         var c = JsonShapeOvlNsj.Circle(3.14);
         var json = JsonConvert.SerializeObject(c);
         var d = JsonConvert.DeserializeObject<JsonShapeOvlNsj>(json);
-        Assert.Equal(JsonShapeOvlNsj.Kind.Circle, d.tag);
+        Assert.Equal(JsonShapeOvlNsj.Kind.Circle, d.kind);
         Assert.Equal(3.14, d.radius);
     }
 
@@ -145,6 +145,6 @@ public class OverlapTests
         var p = JsonShapeOvlNsj.Point();
         var json = JsonConvert.SerializeObject(p);
         var d = JsonConvert.DeserializeObject<JsonShapeOvlNsj>(json);
-        Assert.Equal(JsonShapeOvlNsj.Kind.Point, d.tag);
+        Assert.Equal(JsonShapeOvlNsj.Kind.Point, d.kind);
     }
 }

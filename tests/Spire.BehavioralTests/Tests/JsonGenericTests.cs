@@ -14,7 +14,7 @@ public class JsonGenericTests
         var o = JsonOptionAddStj<int>.Some(42);
         var json = System.Text.Json.JsonSerializer.Serialize(o);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonOptionAddStj<int>>(json);
-        Assert.Equal(JsonOptionAddStj<int>.Kind.Some, d.tag);
+        Assert.Equal(JsonOptionAddStj<int>.Kind.Some, d.kind);
         Assert.Equal(42, d.value);
     }
 
@@ -24,7 +24,7 @@ public class JsonGenericTests
         var o = JsonOptionAddStj<string>.Some("hello");
         var json = System.Text.Json.JsonSerializer.Serialize(o);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonOptionAddStj<string>>(json);
-        Assert.Equal(JsonOptionAddStj<string>.Kind.Some, d.tag);
+        Assert.Equal(JsonOptionAddStj<string>.Kind.Some, d.kind);
         Assert.Equal("hello", d.value);
     }
 
@@ -34,7 +34,7 @@ public class JsonGenericTests
         var o = JsonOptionAddStj<int>.None();
         var json = System.Text.Json.JsonSerializer.Serialize(o);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonOptionAddStj<int>>(json);
-        Assert.Equal(JsonOptionAddStj<int>.Kind.None, d.tag);
+        Assert.Equal(JsonOptionAddStj<int>.Kind.None, d.kind);
     }
 
     // ── System.Text.Json — BoxedFields ──────────────────────────
@@ -45,7 +45,7 @@ public class JsonGenericTests
         var o = JsonOptionBfStj<int>.Some(99);
         var json = System.Text.Json.JsonSerializer.Serialize(o);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonOptionBfStj<int>>(json);
-        Assert.Equal(JsonOptionBfStj<int>.Kind.Some, d.tag);
+        Assert.Equal(JsonOptionBfStj<int>.Kind.Some, d.kind);
         Assert.Equal(99, d.value);
     }
 
@@ -57,7 +57,7 @@ public class JsonGenericTests
         var o = JsonOptionBtStj<int>.Some(77);
         var json = System.Text.Json.JsonSerializer.Serialize(o);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonOptionBtStj<int>>(json);
-        Assert.Equal(JsonOptionBtStj<int>.Kind.Some, d.tag);
+        Assert.Equal(JsonOptionBtStj<int>.Kind.Some, d.kind);
         Assert.Equal(77, d.value);
     }
 
@@ -69,7 +69,7 @@ public class JsonGenericTests
         var o = JsonOptionAddNsj<int>.Some(42);
         var json = JsonConvert.SerializeObject(o);
         var d = JsonConvert.DeserializeObject<JsonOptionAddNsj<int>>(json);
-        Assert.Equal(JsonOptionAddNsj<int>.Kind.Some, d.tag);
+        Assert.Equal(JsonOptionAddNsj<int>.Kind.Some, d.kind);
         Assert.Equal(42, d.value);
     }
 
@@ -79,7 +79,7 @@ public class JsonGenericTests
         var o = JsonOptionAddNsj<string>.Some("hello");
         var json = JsonConvert.SerializeObject(o);
         var d = JsonConvert.DeserializeObject<JsonOptionAddNsj<string>>(json);
-        Assert.Equal(JsonOptionAddNsj<string>.Kind.Some, d.tag);
+        Assert.Equal(JsonOptionAddNsj<string>.Kind.Some, d.kind);
         Assert.Equal("hello", d.value);
     }
 
@@ -89,7 +89,7 @@ public class JsonGenericTests
         var o = JsonOptionAddNsj<int>.None();
         var json = JsonConvert.SerializeObject(o);
         var d = JsonConvert.DeserializeObject<JsonOptionAddNsj<int>>(json);
-        Assert.Equal(JsonOptionAddNsj<int>.Kind.None, d.tag);
+        Assert.Equal(JsonOptionAddNsj<int>.Kind.None, d.kind);
     }
 
     // ── Newtonsoft — BoxedFields ────────────────────────────────
@@ -100,7 +100,7 @@ public class JsonGenericTests
         var o = JsonOptionBfNsj<int>.Some(99);
         var json = JsonConvert.SerializeObject(o);
         var d = JsonConvert.DeserializeObject<JsonOptionBfNsj<int>>(json);
-        Assert.Equal(JsonOptionBfNsj<int>.Kind.Some, d.tag);
+        Assert.Equal(JsonOptionBfNsj<int>.Kind.Some, d.kind);
         Assert.Equal(99, d.value);
     }
 
@@ -112,7 +112,7 @@ public class JsonGenericTests
         var o = JsonOptionBtNsj<int>.Some(77);
         var json = JsonConvert.SerializeObject(o);
         var d = JsonConvert.DeserializeObject<JsonOptionBtNsj<int>>(json);
-        Assert.Equal(JsonOptionBtNsj<int>.Kind.Some, d.tag);
+        Assert.Equal(JsonOptionBtNsj<int>.Kind.Some, d.kind);
         Assert.Equal(77, d.value);
     }
 }
