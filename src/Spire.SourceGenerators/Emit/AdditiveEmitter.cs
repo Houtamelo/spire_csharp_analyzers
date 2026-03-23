@@ -36,7 +36,7 @@ internal static class AdditiveEmitter
         var refMod = union.IsRefStruct ? "ref " : "";
 
         sb.AppendLine("[global::Spire.MustBeInit]");
-        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType}");
+        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType} : global::Spire.IDiscriminatedUnion<{unionType}.Kind>");
         sb.OpenBrace();
 
         // Kind enum
@@ -48,15 +48,19 @@ internal static class AdditiveEmitter
         sb.CloseBrace();
         sb.AppendLine();
 
-        // Kind field
-        sb.AppendLine("public readonly Kind kind;");
+        // Kind field (backing field + property)
+        sb.AppendLine("readonly Kind _kind;");
+        sb.AppendLine("public Kind kind => this._kind;");
 
         // Slot fields
         foreach (var slot in layout.Slots)
         {
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
             var slotType = slot.IsRefSlot ? "object?" : slot.TypeFullName;
-            sb.AppendLine($"internal readonly {slotType} _s{slot.Index};");
+            if (union.HasInitProperties)
+                sb.AppendLine($"internal {slotType} _s{slot.Index} {{ get; init; }}");
+            else
+                sb.AppendLine($"internal readonly {slotType} _s{slot.Index};");
         }
         sb.AppendLine();
 
@@ -72,7 +76,11 @@ internal static class AdditiveEmitter
             EmitDeconstructs(sb, union.Variants, layout);
 
         // Public properties for pattern matching
-        EmitProperties(sb, union.Variants, layout);
+        EmitProperties(sb, union.Variants, layout, union.HasInitProperties);
+
+        // IsVariant properties
+        foreach (var variant in union.Variants)
+            sb.AppendLine($"public bool Is{variant.Name} => this.kind == Kind.{variant.Name};");
 
         sb.CloseBrace(); // type
 
@@ -180,7 +188,7 @@ internal static class AdditiveEmitter
 
         sb.AppendLine($"{typeName}({paramList})");
         sb.OpenBrace();
-        sb.AppendLine("this.kind = kind;");
+        sb.AppendLine("this._kind = kind;");
         foreach (var slot in slots)
             sb.AppendLine($"this._s{slot.Index} = s{slot.Index};");
         sb.CloseBrace();
@@ -220,7 +228,7 @@ internal static class AdditiveEmitter
     }
 
     private static void EmitProperties(
-        SourceBuilder sb, IEnumerable<VariantInfo> variants, AdditiveLayout layout)
+        SourceBuilder sb, IEnumerable<VariantInfo> variants, AdditiveLayout layout, bool hasInitProperties)
     {
         var emitted = new HashSet<string>();
         foreach (var variant in variants)
@@ -235,10 +243,24 @@ internal static class AdditiveEmitter
                 var slotInfo = layout.Slots[slot];
 
                 sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-                if (slotInfo.IsRefSlot)
-                    sb.AppendLine($"public {field.TypeFullName} {field.Name} => ({field.TypeFullName})this._s{slot}!;");
+                if (hasInitProperties)
+                {
+                    sb.AppendLine($"public {field.TypeFullName} {field.Name}");
+                    sb.OpenBrace();
+                    if (slotInfo.IsRefSlot)
+                        sb.AppendLine($"get => ({field.TypeFullName})this._s{slot}!;");
+                    else
+                        sb.AppendLine($"get => this._s{slot};");
+                    sb.AppendLine($"init => this._s{slot} = value;");
+                    sb.CloseBrace();
+                }
                 else
-                    sb.AppendLine($"public {field.TypeFullName} {field.Name} => this._s{slot};");
+                {
+                    if (slotInfo.IsRefSlot)
+                        sb.AppendLine($"public {field.TypeFullName} {field.Name} => ({field.TypeFullName})this._s{slot}!;");
+                    else
+                        sb.AppendLine($"public {field.TypeFullName} {field.Name} => this._s{slot};");
+                }
             }
         }
     }
