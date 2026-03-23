@@ -16,7 +16,8 @@
       "Bash(git commit *)",
       "Bash(cat *)",
       "Bash(echo *)",
-      "Bash(cat > *)"
+      "Bash(cat > *)",
+      "Bash(find *)"
     ],
     "defaultMode": "acceptEdits"
   },

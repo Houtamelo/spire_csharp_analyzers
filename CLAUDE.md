@@ -6,7 +6,7 @@ Roslyn-based C# analyzer
 
 - **Packages**: `Spire` (meta-package), `Spire.Core` (attributes/utilities), `Spire.Analyzers`, `Spire.SourceGenerators`, `Spire.CodeFixes`
 - **Rule prefix**: `SPIRE` (SPIRE001, SPIRE002, ...)
-- **User-facing attributes** in `Spire.Core` (namespace `Spire`) — `MustBeInitAttribute`, `EnforceExhaustivenessAttribute`
+- **User-facing API** in `Spire.Core` (namespace `Spire`) — `MustBeInitAttribute`, `EnforceExhaustivenessAttribute`, `IDiscriminatedUnion<TEnum>`, `SpireLINQ.OfKind`
 - **Code fixes** in separate `Spire.CodeFixes` project (standalone, no inter-project dependencies)
 
 ## Build Commands
