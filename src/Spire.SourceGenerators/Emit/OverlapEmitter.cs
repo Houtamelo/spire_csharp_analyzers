@@ -35,24 +35,29 @@ internal static class OverlapEmitter
 
         sb.AppendLine("[global::Spire.MustBeInit]");
         sb.AppendLine($"[StructLayout(LayoutKind.Explicit)]");
-        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {union.TypeName}");
+        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {union.TypeName} : global::Spire.IDiscriminatedUnion<{union.TypeName}.Kind>");
         sb.OpenBrace();
 
         EmitKindEnum(sb, union);
         sb.AppendLine();
 
-        // Kind field at offset 0
+        // Kind field (backing field + property)
         sb.AppendLine("[FieldOffset(0)]");
-        sb.AppendLine("public readonly Kind kind;");
+        sb.AppendLine("readonly Kind _kind;");
+        sb.AppendLine("public Kind kind => this._kind;");
         sb.AppendLine();
 
-        EmitGlobalFields(sb, layout);
+        EmitGlobalFields(sb, layout, union.HasInitProperties);
         EmitGlobalConstructor(sb, union.TypeName);
         sb.AppendLine();
         EmitGlobalFactories(sb, union, layout);
         if (union.GenerateDeconstruct)
             EmitGlobalDeconstructs(sb, union.Variants, layout);
-        EmitProperties(sb, layout);
+        EmitProperties(sb, layout, union.HasInitProperties);
+
+        // IsVariant properties
+        foreach (var variant in union.Variants)
+            sb.AppendLine($"public bool Is{variant.Name} => this.kind == Kind.{variant.Name};");
 
         sb.CloseBrace(); // type
 
@@ -74,31 +79,46 @@ internal static class OverlapEmitter
         sb.CloseBrace();
     }
 
-    private static void EmitGlobalFields(SourceBuilder sb, OverlapLayoutInfo layout)
+    private static void EmitGlobalFields(SourceBuilder sb, OverlapLayoutInfo layout, bool hasInitProperties)
     {
         foreach (var gf in layout.GlobalR1)
         {
-            sb.AppendLine($"[FieldOffset({gf.Offset})]");
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-            sb.AppendLine($"internal readonly {gf.TypeFullName} _{gf.Name};");
+            if (hasInitProperties)
+                sb.AppendLine($"[field: FieldOffset({gf.Offset})] internal {gf.TypeFullName} _{gf.Name} {{ get; init; }}");
+            else
+            {
+                sb.AppendLine($"[FieldOffset({gf.Offset})]");
+                sb.AppendLine($"internal readonly {gf.TypeFullName} _{gf.Name};");
+            }
             sb.AppendLine();
         }
 
         foreach (var gf in layout.GlobalR2)
         {
             int offset = layout.R2Offset + gf.Offset * 8;
-            sb.AppendLine($"[FieldOffset({offset})]");
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-            sb.AppendLine($"internal readonly {gf.TypeFullName}? _{gf.Name};");
+            if (hasInitProperties)
+                sb.AppendLine($"[field: FieldOffset({offset})] internal {gf.TypeFullName}? _{gf.Name} {{ get; init; }}");
+            else
+            {
+                sb.AppendLine($"[FieldOffset({offset})]");
+                sb.AppendLine($"internal readonly {gf.TypeFullName}? _{gf.Name};");
+            }
             sb.AppendLine();
         }
 
         foreach (var gf in layout.GlobalR3)
         {
             int offset = layout.R3Offset + gf.Offset * 8;
-            sb.AppendLine($"[FieldOffset({offset})]");
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-            sb.AppendLine($"internal readonly object? _obj_{gf.Name};");
+            if (hasInitProperties)
+                sb.AppendLine($"[field: FieldOffset({offset})] internal object? _obj_{gf.Name} {{ get; init; }}");
+            else
+            {
+                sb.AppendLine($"[FieldOffset({offset})]");
+                sb.AppendLine($"internal readonly object? _obj_{gf.Name};");
+            }
             sb.AppendLine();
         }
     }
@@ -107,7 +127,7 @@ internal static class OverlapEmitter
     {
         sb.AppendLine($"{typeName}(Kind kind) : this()");
         sb.OpenBrace();
-        sb.AppendLine("this.kind = kind;");
+        sb.AppendLine("this._kind = kind;");
         sb.CloseBrace();
     }
 
@@ -147,22 +167,49 @@ internal static class OverlapEmitter
         }
     }
 
-    private static void EmitProperties(SourceBuilder sb, OverlapLayoutInfo layout)
+    private static void EmitProperties(SourceBuilder sb, OverlapLayoutInfo layout, bool hasInitProperties)
     {
         foreach (var gf in layout.GlobalR1)
         {
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-            sb.AppendLine($"public {gf.TypeFullName} {gf.Name} => this._{gf.Name};");
+            if (hasInitProperties)
+            {
+                sb.AppendLine($"public {gf.TypeFullName} {gf.Name}");
+                sb.OpenBrace();
+                sb.AppendLine($"get => this._{gf.Name};");
+                sb.AppendLine($"init => this._{gf.Name} = value;");
+                sb.CloseBrace();
+            }
+            else
+                sb.AppendLine($"public {gf.TypeFullName} {gf.Name} => this._{gf.Name};");
         }
         foreach (var gf in layout.GlobalR2)
         {
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-            sb.AppendLine($"public {gf.TypeFullName} {gf.Name} => this._{gf.Name}!;");
+            if (hasInitProperties)
+            {
+                sb.AppendLine($"public {gf.TypeFullName} {gf.Name}");
+                sb.OpenBrace();
+                sb.AppendLine($"get => this._{gf.Name}!;");
+                sb.AppendLine($"init => this._{gf.Name} = value;");
+                sb.CloseBrace();
+            }
+            else
+                sb.AppendLine($"public {gf.TypeFullName} {gf.Name} => this._{gf.Name}!;");
         }
         foreach (var gf in layout.GlobalR3)
         {
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-            sb.AppendLine($"public {gf.TypeFullName} {gf.Name} => ({gf.TypeFullName})this._obj_{gf.Name}!;");
+            if (hasInitProperties)
+            {
+                sb.AppendLine($"public {gf.TypeFullName} {gf.Name}");
+                sb.OpenBrace();
+                sb.AppendLine($"get => ({gf.TypeFullName})this._obj_{gf.Name}!;");
+                sb.AppendLine($"init => this._obj_{gf.Name} = value;");
+                sb.CloseBrace();
+            }
+            else
+                sb.AppendLine($"public {gf.TypeFullName} {gf.Name} => ({gf.TypeFullName})this._obj_{gf.Name}!;");
         }
     }
 
