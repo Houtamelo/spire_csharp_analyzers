@@ -114,13 +114,13 @@ public abstract class BehavioralTestBase
         return prop.GetValue(instance);
     }
 
-    /// Read the public `kind` field, returning the underlying integral value.
+    /// Read the public `kind` property, returning the underlying integral value.
     protected static int ReadKind(object instance)
     {
-        var field = instance.GetType().GetField("kind",
+        var prop = instance.GetType().GetProperty("kind",
             BindingFlags.Public | BindingFlags.Instance);
-        Assert.NotNull(field);
-        return Convert.ToInt32(field.GetValue(instance)!);
+        Assert.NotNull(prop);
+        return Convert.ToInt32(prop.GetValue(instance)!);
     }
 
     /// Get a Kind enum ordinal by variant name (e.g. "Circle" → 0).
