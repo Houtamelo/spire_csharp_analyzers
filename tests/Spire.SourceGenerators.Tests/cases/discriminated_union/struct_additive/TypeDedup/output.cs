@@ -3,7 +3,7 @@
 using System.ComponentModel;
 
 [global::Spire.MustBeInit]
-partial struct Shape
+partial struct Shape : global::Spire.IDiscriminatedUnion<Shape.Kind>
 {
     public enum Kind : byte
     {
@@ -13,19 +13,20 @@ partial struct Shape
         Point,
     }
 
-    public readonly Kind kind;
+    readonly Kind _kind;
+    public Kind kind => this._kind;
     [EditorBrowsable(EditorBrowsableState.Never)]
-    internal readonly double _s0;
+    internal double _s0 { get; init; }
     [EditorBrowsable(EditorBrowsableState.Never)]
-    internal readonly double _s1;
+    internal double _s1 { get; init; }
     [EditorBrowsable(EditorBrowsableState.Never)]
-    internal readonly double _s2;
+    internal double _s2 { get; init; }
     [EditorBrowsable(EditorBrowsableState.Never)]
-    internal readonly double _s3;
+    internal double _s3 { get; init; }
 
     Shape(Kind kind, double s0, double s1, double s2, double s3)
     {
-        this.kind = kind;
+        this._kind = kind;
         this._s0 = s0;
         this._s1 = s1;
         this._s2 = s2;
@@ -65,11 +66,31 @@ partial struct Shape
         height = this._s0;
     }
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public double radius => this._s1;
+    public double radius
+    {
+        get => this._s1;
+        init => this._s1 = value;
+    }
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public double width => this._s3;
+    public double width
+    {
+        get => this._s3;
+        init => this._s3 = value;
+    }
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public double height => this._s0;
+    public double height
+    {
+        get => this._s0;
+        init => this._s0 = value;
+    }
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public double side => this._s2;
+    public double side
+    {
+        get => this._s2;
+        init => this._s2 = value;
+    }
+    public bool IsCircle => this.kind == Kind.Circle;
+    public bool IsRect => this.kind == Kind.Rect;
+    public bool IsSquare => this.kind == Kind.Square;
+    public bool IsPoint => this.kind == Kind.Point;
 }

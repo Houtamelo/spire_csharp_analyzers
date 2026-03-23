@@ -9,5 +9,8 @@ namespace My.Deep.Namespace
 
         public sealed partial record Ok;
         public sealed partial record Error;
+
+        public bool IsOk => this is Ok;
+        public bool IsError => this is Error;
     }
 }

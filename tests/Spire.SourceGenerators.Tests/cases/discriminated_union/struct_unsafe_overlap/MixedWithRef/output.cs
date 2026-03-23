@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 namespace TestNs
 {
     [global::Spire.MustBeInit]
-    partial struct Event
+    partial struct Event : global::Spire.IDiscriminatedUnion<Event.Kind>
     {
         public enum Kind : byte
         {
@@ -16,7 +16,8 @@ namespace TestNs
             Ping,
         }
 
-        public readonly Kind kind;
+        readonly Kind _kind;
+        public Kind kind => this._kind;
 
         [InlineArray(8)]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -34,7 +35,7 @@ namespace TestNs
 
         Event(Kind kind)
         {
-            this.kind = kind;
+            this._kind = kind;
             this._data = default;
             this._s0 = default!;
             this._s1 = default!;
@@ -83,14 +84,37 @@ namespace TestNs
             target = (string)this._s2!;
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public int x => Unsafe.ReadUnaligned<int>(ref _data[0]);
+        public int x
+        {
+            get => Unsafe.ReadUnaligned<int>(ref _data[0]);
+            init => Unsafe.WriteUnaligned(ref _data[0], value);
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public int y => Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref _data[0], 4));
+        public int y
+        {
+            get => Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref _data[0], 4));
+            init => Unsafe.WriteUnaligned(ref Unsafe.Add(ref _data[0], 4), value);
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public string target => (string)this._s2!;
+        public string target
+        {
+            get => (string)this._s2!;
+            init => this._s2 = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public string message => (string)this._s1!;
+        public string message
+        {
+            get => (string)this._s1!;
+            init => this._s1 = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public global::System.Exception ex => (global::System.Exception)this._s0!;
+        public global::System.Exception ex
+        {
+            get => (global::System.Exception)this._s0!;
+            init => this._s0 = value;
+        }
+        public bool IsClick => this.kind == Kind.Click;
+        public bool IsError => this.kind == Kind.Error;
+        public bool IsPing => this.kind == Kind.Ping;
     }
 }

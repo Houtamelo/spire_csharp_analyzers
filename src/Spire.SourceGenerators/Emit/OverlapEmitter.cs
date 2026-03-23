@@ -47,7 +47,7 @@ internal static class OverlapEmitter
         sb.AppendLine("public Kind kind => this._kind;");
         sb.AppendLine();
 
-        EmitGlobalFields(sb, layout, union.HasInitProperties);
+        EmitGlobalFields(sb, layout);
         EmitGlobalConstructor(sb, union.TypeName);
         sb.AppendLine();
         EmitGlobalFactories(sb, union, layout);
@@ -79,18 +79,15 @@ internal static class OverlapEmitter
         sb.CloseBrace();
     }
 
-    private static void EmitGlobalFields(SourceBuilder sb, OverlapLayoutInfo layout, bool hasInitProperties)
+    private static void EmitGlobalFields(SourceBuilder sb, OverlapLayoutInfo layout)
     {
+        // Internal storage must be readonly fields (not auto-properties) because
+        // factory methods use Unsafe.AsRef to write through them.
         foreach (var gf in layout.GlobalR1)
         {
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-            if (hasInitProperties)
-                sb.AppendLine($"[field: FieldOffset({gf.Offset})] internal {gf.TypeFullName} _{gf.Name} {{ get; init; }}");
-            else
-            {
-                sb.AppendLine($"[FieldOffset({gf.Offset})]");
-                sb.AppendLine($"internal readonly {gf.TypeFullName} _{gf.Name};");
-            }
+            sb.AppendLine($"[FieldOffset({gf.Offset})]");
+            sb.AppendLine($"internal readonly {gf.TypeFullName} _{gf.Name};");
             sb.AppendLine();
         }
 
@@ -98,13 +95,8 @@ internal static class OverlapEmitter
         {
             int offset = layout.R2Offset + gf.Offset * 8;
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-            if (hasInitProperties)
-                sb.AppendLine($"[field: FieldOffset({offset})] internal {gf.TypeFullName}? _{gf.Name} {{ get; init; }}");
-            else
-            {
-                sb.AppendLine($"[FieldOffset({offset})]");
-                sb.AppendLine($"internal readonly {gf.TypeFullName}? _{gf.Name};");
-            }
+            sb.AppendLine($"[FieldOffset({offset})]");
+            sb.AppendLine($"internal readonly {gf.TypeFullName}? _{gf.Name};");
             sb.AppendLine();
         }
 
@@ -112,13 +104,8 @@ internal static class OverlapEmitter
         {
             int offset = layout.R3Offset + gf.Offset * 8;
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-            if (hasInitProperties)
-                sb.AppendLine($"[field: FieldOffset({offset})] internal object? _obj_{gf.Name} {{ get; init; }}");
-            else
-            {
-                sb.AppendLine($"[FieldOffset({offset})]");
-                sb.AppendLine($"internal readonly object? _obj_{gf.Name};");
-            }
+            sb.AppendLine($"[FieldOffset({offset})]");
+            sb.AppendLine($"internal readonly object? _obj_{gf.Name};");
             sb.AppendLine();
         }
     }

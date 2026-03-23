@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 [global::Spire.MustBeInit]
-partial struct Result<T>
+partial struct Result<T> : global::Spire.IDiscriminatedUnion<Result<T>.Kind>
 {
     public enum Kind : byte
     {
@@ -13,7 +13,8 @@ partial struct Result<T>
         Err,
     }
 
-    public readonly Kind kind;
+    readonly Kind _kind;
+    public Kind kind => this._kind;
 
     [InlineArray(4)]
     [EditorBrowsable(EditorBrowsableState.Never)]
@@ -27,7 +28,7 @@ partial struct Result<T>
 
     Result(Kind kind)
     {
-        this.kind = kind;
+        this._kind = kind;
         this._data = default;
         this._s0 = default!;
     }
@@ -59,7 +60,17 @@ partial struct Result<T>
         code = Unsafe.ReadUnaligned<int>(ref _data[0]);
     }
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public T value => this._s0;
+    public T value
+    {
+        get => this._s0;
+        init => this._s0 = value;
+    }
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public int code => Unsafe.ReadUnaligned<int>(ref _data[0]);
+    public int code
+    {
+        get => Unsafe.ReadUnaligned<int>(ref _data[0]);
+        init => Unsafe.WriteUnaligned(ref _data[0], value);
+    }
+    public bool IsOk => this.kind == Kind.Ok;
+    public bool IsErr => this.kind == Kind.Err;
 }

@@ -9,5 +9,8 @@ namespace MyApp
 
         public sealed partial class Active;
         public sealed partial class Inactive;
+
+        public bool IsActive => this is Active;
+        public bool IsInactive => this is Inactive;
     }
 }

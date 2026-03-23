@@ -5,20 +5,21 @@ using System.ComponentModel;
 namespace TestNs
 {
     [global::Spire.MustBeInit]
-    internal partial struct Internal
+    internal partial struct Internal : global::Spire.IDiscriminatedUnion<Internal.Kind>
     {
         public enum Kind : byte
         {
             X,
         }
 
-        public readonly Kind kind;
+        readonly Kind _kind;
+        public Kind kind => this._kind;
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal readonly object? _f0;
+        internal object? _f0 { get; init; }
 
         Internal(Kind kind, object? f0)
         {
-            this.kind = kind;
+            this._kind = kind;
             this._f0 = f0;
         }
 
@@ -31,6 +32,11 @@ namespace TestNs
             v = (int)this._f0!;
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public int v => (int)this._f0!;
+        public int v
+        {
+            get => (int)this._f0!;
+            init => this._f0 = value;
+        }
+        public bool IsX => this.kind == Kind.X;
     }
 }

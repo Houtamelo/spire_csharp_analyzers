@@ -8,7 +8,7 @@ namespace TestNs
 {
     [global::Spire.MustBeInit]
     [StructLayout(LayoutKind.Explicit)]
-    partial struct Token
+    partial struct Token : global::Spire.IDiscriminatedUnion<Token.Kind>
     {
         public enum Kind : byte
         {
@@ -18,19 +18,20 @@ namespace TestNs
         }
 
         [FieldOffset(0)]
-        public readonly Kind kind;
+        readonly Kind _kind;
+        public Kind kind => this._kind;
 
-        [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(1)]
         internal readonly int _value;
 
-        [FieldOffset(8)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(8)]
         internal readonly string? _name;
 
         Token(Kind kind) : this()
         {
-            this.kind = kind;
+            this._kind = kind;
         }
 
         public static partial Token Ident(string name)
@@ -65,8 +66,19 @@ namespace TestNs
             }
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public int value => this._value;
+        public int value
+        {
+            get => this._value;
+            init => this._value = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public string name => this._name!;
+        public string name
+        {
+            get => this._name!;
+            init => this._name = value;
+        }
+        public bool IsIdent => this.kind == Kind.Ident;
+        public bool IsNumber => this.kind == Kind.Number;
+        public bool IsEof => this.kind == Kind.Eof;
     }
 }

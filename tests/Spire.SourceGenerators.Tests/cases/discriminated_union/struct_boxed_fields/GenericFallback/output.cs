@@ -5,7 +5,7 @@ using System.ComponentModel;
 namespace TestNs
 {
     [global::Spire.MustBeInit]
-    partial struct Option<T>
+    partial struct Option<T> : global::Spire.IDiscriminatedUnion<Option<T>.Kind>
     {
         public enum Kind : byte
         {
@@ -13,13 +13,14 @@ namespace TestNs
             None,
         }
 
-        public readonly Kind kind;
+        readonly Kind _kind;
+        public Kind kind => this._kind;
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal readonly object? _f0;
+        internal object? _f0 { get; init; }
 
         Option(Kind kind, object? f0)
         {
-            this.kind = kind;
+            this._kind = kind;
             this._f0 = f0;
         }
 
@@ -42,6 +43,12 @@ namespace TestNs
             }
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public T value => (T)this._f0!;
+        public T value
+        {
+            get => (T)this._f0!;
+            init => this._f0 = value;
+        }
+        public bool IsSome => this.kind == Kind.Some;
+        public bool IsNone => this.kind == Kind.None;
     }
 }

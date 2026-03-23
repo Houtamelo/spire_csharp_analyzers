@@ -8,7 +8,7 @@ namespace TestNs
 {
     [global::Spire.MustBeInit]
     [StructLayout(LayoutKind.Explicit)]
-    partial struct Event
+    partial struct Event : global::Spire.IDiscriminatedUnion<Event.Kind>
     {
         public enum Kind : byte
         {
@@ -17,31 +17,32 @@ namespace TestNs
         }
 
         [FieldOffset(0)]
-        public readonly Kind kind;
+        readonly Kind _kind;
+        public Kind kind => this._kind;
 
-        [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(1)]
         internal readonly float _posX;
 
-        [FieldOffset(5)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(5)]
         internal readonly float _posY;
 
-        [FieldOffset(9)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(9)]
         internal readonly int _x;
 
-        [FieldOffset(13)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(13)]
         internal readonly int _y;
 
-        [FieldOffset(24)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(24)]
         internal readonly string? _target;
 
         Event(Kind kind) : this()
         {
-            this.kind = kind;
+            this._kind = kind;
         }
 
         public static partial Event Click(int x, int y, string target)
@@ -75,14 +76,36 @@ namespace TestNs
             target = this._target!;
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public float posX => this._posX;
+        public float posX
+        {
+            get => this._posX;
+            init => this._posX = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public float posY => this._posY;
+        public float posY
+        {
+            get => this._posY;
+            init => this._posY = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public int x => this._x;
+        public int x
+        {
+            get => this._x;
+            init => this._x = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public int y => this._y;
+        public int y
+        {
+            get => this._y;
+            init => this._y = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public string target => this._target!;
+        public string target
+        {
+            get => this._target!;
+            init => this._target = value;
+        }
+        public bool IsClick => this.kind == Kind.Click;
+        public bool IsHover => this.kind == Kind.Hover;
     }
 }

@@ -8,7 +8,7 @@ namespace TestNs
 {
     [global::Spire.MustBeInit]
     [StructLayout(LayoutKind.Explicit)]
-    partial struct Drawing
+    partial struct Drawing : global::Spire.IDiscriminatedUnion<Drawing.Kind>
     {
         public enum Kind : byte
         {
@@ -17,23 +17,24 @@ namespace TestNs
         }
 
         [FieldOffset(0)]
-        public readonly Kind kind;
+        readonly Kind _kind;
+        public Kind kind => this._kind;
 
-        [FieldOffset(8)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(8)]
         internal readonly object? _obj_end;
 
-        [FieldOffset(16)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(16)]
         internal readonly object? _obj_location;
 
-        [FieldOffset(24)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(24)]
         internal readonly object? _obj_start;
 
         Drawing(Kind kind) : this()
         {
-            this.kind = kind;
+            this._kind = kind;
         }
 
         public static partial Drawing Dot(global::TestNs.Point location)
@@ -63,10 +64,24 @@ namespace TestNs
             end = (global::TestNs.Point)this._obj_end!;
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public global::TestNs.Point end => (global::TestNs.Point)this._obj_end!;
+        public global::TestNs.Point end
+        {
+            get => (global::TestNs.Point)this._obj_end!;
+            init => this._obj_end = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public global::TestNs.Point location => (global::TestNs.Point)this._obj_location!;
+        public global::TestNs.Point location
+        {
+            get => (global::TestNs.Point)this._obj_location!;
+            init => this._obj_location = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public global::TestNs.Point start => (global::TestNs.Point)this._obj_start!;
+        public global::TestNs.Point start
+        {
+            get => (global::TestNs.Point)this._obj_start!;
+            init => this._obj_start = value;
+        }
+        public bool IsDot => this.kind == Kind.Dot;
+        public bool IsLine => this.kind == Kind.Line;
     }
 }

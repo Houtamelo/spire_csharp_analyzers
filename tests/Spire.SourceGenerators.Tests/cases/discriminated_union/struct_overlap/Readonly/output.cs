@@ -8,7 +8,7 @@ namespace TestNs
 {
     [global::Spire.MustBeInit]
     [StructLayout(LayoutKind.Explicit)]
-    readonly partial struct Immutable
+    readonly partial struct Immutable : global::Spire.IDiscriminatedUnion<Immutable.Kind>
     {
         public enum Kind : byte
         {
@@ -17,19 +17,20 @@ namespace TestNs
         }
 
         [FieldOffset(0)]
-        public readonly Kind kind;
+        readonly Kind _kind;
+        public Kind kind => this._kind;
 
-        [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(1)]
         internal readonly int _x;
 
-        [FieldOffset(8)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(8)]
         internal readonly string? _y;
 
         Immutable(Kind kind) : this()
         {
-            this.kind = kind;
+            this._kind = kind;
         }
 
         public static partial Immutable A(int x)
@@ -62,8 +63,18 @@ namespace TestNs
             }
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public int x => this._x;
+        public int x
+        {
+            get => this._x;
+            init => this._x = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public string y => this._y!;
+        public string y
+        {
+            get => this._y!;
+            init => this._y = value;
+        }
+        public bool IsA => this.kind == Kind.A;
+        public bool IsB => this.kind == Kind.B;
     }
 }

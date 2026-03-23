@@ -8,7 +8,7 @@ namespace TestNs
 {
     [global::Spire.MustBeInit]
     [StructLayout(LayoutKind.Explicit)]
-    partial struct Shape
+    partial struct Shape : global::Spire.IDiscriminatedUnion<Shape.Kind>
     {
         public enum Kind : byte
         {
@@ -18,27 +18,28 @@ namespace TestNs
         }
 
         [FieldOffset(0)]
-        public readonly Kind kind;
+        readonly Kind _kind;
+        public Kind kind => this._kind;
 
-        [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(1)]
         internal readonly float _height;
 
-        [FieldOffset(5)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(5)]
         internal readonly double _radius;
 
-        [FieldOffset(13)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(13)]
         internal readonly int _sideLength;
 
-        [FieldOffset(17)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(17)]
         internal readonly float _width;
 
         Shape(Kind kind) : this()
         {
-            this.kind = kind;
+            this._kind = kind;
         }
 
         public static partial Shape Circle(double radius)
@@ -85,12 +86,31 @@ namespace TestNs
             height = this._height;
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public float height => this._height;
+        public float height
+        {
+            get => this._height;
+            init => this._height = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public double radius => this._radius;
+        public double radius
+        {
+            get => this._radius;
+            init => this._radius = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public int sideLength => this._sideLength;
+        public int sideLength
+        {
+            get => this._sideLength;
+            init => this._sideLength = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public float width => this._width;
+        public float width
+        {
+            get => this._width;
+            init => this._width = value;
+        }
+        public bool IsCircle => this.kind == Kind.Circle;
+        public bool IsRectangle => this.kind == Kind.Rectangle;
+        public bool IsSquare => this.kind == Kind.Square;
     }
 }

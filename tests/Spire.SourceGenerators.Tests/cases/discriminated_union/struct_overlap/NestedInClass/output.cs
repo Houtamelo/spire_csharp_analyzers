@@ -10,7 +10,7 @@ namespace TestNs
     {
         [global::Spire.MustBeInit]
         [StructLayout(LayoutKind.Explicit)]
-        internal partial struct Shape
+        internal partial struct Shape : global::Spire.IDiscriminatedUnion<Shape.Kind>
         {
             public enum Kind : byte
             {
@@ -19,19 +19,20 @@ namespace TestNs
             }
 
             [FieldOffset(0)]
-            public readonly Kind kind;
+            readonly Kind _kind;
+            public Kind kind => this._kind;
 
-            [FieldOffset(1)]
             [EditorBrowsable(EditorBrowsableState.Never)]
+            [FieldOffset(1)]
             internal readonly double _radius;
 
-            [FieldOffset(9)]
             [EditorBrowsable(EditorBrowsableState.Never)]
+            [FieldOffset(9)]
             internal readonly int _sideLength;
 
             Shape(Kind kind) : this()
             {
-                this.kind = kind;
+                this._kind = kind;
             }
 
             public static partial Shape Circle(double radius)
@@ -64,9 +65,19 @@ namespace TestNs
                 }
             }
             [EditorBrowsable(EditorBrowsableState.Never)]
-            public double radius => this._radius;
+            public double radius
+            {
+                get => this._radius;
+                init => this._radius = value;
+            }
             [EditorBrowsable(EditorBrowsableState.Never)]
-            public int sideLength => this._sideLength;
+            public int sideLength
+            {
+                get => this._sideLength;
+                init => this._sideLength = value;
+            }
+            public bool IsCircle => this.kind == Kind.Circle;
+            public bool IsSquare => this.kind == Kind.Square;
         }
     }
 }

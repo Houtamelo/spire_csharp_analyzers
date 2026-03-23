@@ -9,5 +9,8 @@ namespace MyApp
 
         public sealed partial class Start;
         public sealed partial class Stop;
+
+        public bool IsStart => this is Start;
+        public bool IsStop => this is Stop;
     }
 }

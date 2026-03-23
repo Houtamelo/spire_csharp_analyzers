@@ -9,5 +9,8 @@ namespace MyApp
 
         public sealed partial class Some;
         public sealed partial class None;
+
+        public bool IsSome => this is Some;
+        public bool IsNone => this is None;
     }
 }

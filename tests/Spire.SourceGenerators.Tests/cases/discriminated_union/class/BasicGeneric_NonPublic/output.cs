@@ -9,5 +9,8 @@ namespace MyApp
 
         sealed partial class Ok;
         sealed partial class Err;
+
+        public bool IsOk => this is Ok;
+        public bool IsErr => this is Err;
     }
 }

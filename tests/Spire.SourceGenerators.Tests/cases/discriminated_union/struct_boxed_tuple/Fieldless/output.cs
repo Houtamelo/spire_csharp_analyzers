@@ -5,7 +5,7 @@ using System.ComponentModel;
 namespace TestNs
 {
     [global::Spire.MustBeInit]
-    partial struct Token
+    partial struct Token : global::Spire.IDiscriminatedUnion<Token.Kind>
     {
         public enum Kind : byte
         {
@@ -14,13 +14,14 @@ namespace TestNs
             Eof,
         }
 
-        public readonly Kind kind;
+        readonly Kind _kind;
+        public Kind kind => this._kind;
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal readonly object? _payload;
+        internal object? _payload { get; init; }
 
         Token(Kind kind, object? payload)
         {
-            this.kind = kind;
+            this._kind = kind;
             this._payload = payload;
         }
 
@@ -37,8 +38,19 @@ namespace TestNs
             payload = this._payload;
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public string name => (string)this._payload!;
+        public string name
+        {
+            get => (string)this._payload!;
+            init => this._payload = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public int value => (int)this._payload!;
+        public int value
+        {
+            get => (int)this._payload!;
+            init => this._payload = value;
+        }
+        public bool IsIdent => this.kind == Kind.Ident;
+        public bool IsNumber => this.kind == Kind.Number;
+        public bool IsEof => this.kind == Kind.Eof;
     }
 }

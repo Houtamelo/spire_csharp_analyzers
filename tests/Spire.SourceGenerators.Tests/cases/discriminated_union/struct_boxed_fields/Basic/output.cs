@@ -5,7 +5,7 @@ using System.ComponentModel;
 namespace TestNs
 {
     [global::Spire.MustBeInit]
-    partial struct Shape
+    partial struct Shape : global::Spire.IDiscriminatedUnion<Shape.Kind>
     {
         public enum Kind : byte
         {
@@ -14,19 +14,20 @@ namespace TestNs
             Square,
         }
 
-        public readonly Kind kind;
+        readonly Kind _kind;
+        public Kind kind => this._kind;
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal readonly object? _f0;
+        internal object? _f0 { get; init; }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal readonly object? _f1;
+        internal object? _f1 { get; init; }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal readonly object? _f2;
+        internal object? _f2 { get; init; }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal readonly object? _f3;
+        internal object? _f3 { get; init; }
 
         Shape(Kind kind, object? f0, object? f1, object? f2, object? f3)
         {
-            this.kind = kind;
+            this._kind = kind;
             this._f0 = f0;
             this._f1 = f1;
             this._f2 = f2;
@@ -64,12 +65,31 @@ namespace TestNs
             height = (float)this._f0!;
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public double radius => (double)this._f1!;
+        public double radius
+        {
+            get => (double)this._f1!;
+            init => this._f1 = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public float width => (float)this._f3!;
+        public float width
+        {
+            get => (float)this._f3!;
+            init => this._f3 = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public float height => (float)this._f0!;
+        public float height
+        {
+            get => (float)this._f0!;
+            init => this._f0 = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public int sideLength => (int)this._f2!;
+        public int sideLength
+        {
+            get => (int)this._f2!;
+            init => this._f2 = value;
+        }
+        public bool IsCircle => this.kind == Kind.Circle;
+        public bool IsRectangle => this.kind == Kind.Rectangle;
+        public bool IsSquare => this.kind == Kind.Square;
     }
 }

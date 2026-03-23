@@ -5,7 +5,7 @@ using System.ComponentModel;
 namespace TestNs
 {
     [global::Spire.MustBeInit]
-    partial struct Shape
+    partial struct Shape : global::Spire.IDiscriminatedUnion<Shape.Kind>
     {
         public enum Kind : byte
         {
@@ -14,13 +14,14 @@ namespace TestNs
             Square,
         }
 
-        public readonly Kind kind;
+        readonly Kind _kind;
+        public Kind kind => this._kind;
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal readonly object? _payload;
+        internal object? _payload { get; init; }
 
         Shape(Kind kind, object? payload)
         {
-            this.kind = kind;
+            this._kind = kind;
             this._payload = payload;
         }
 
@@ -37,12 +38,41 @@ namespace TestNs
             payload = this._payload;
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public double radius => (double)this._payload!;
+        public double radius
+        {
+            get => (double)this._payload!;
+            init => this._payload = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public float width => (((float, float))this._payload!).Item1;
+        public float width
+        {
+            get => (((float, float))this._payload!).Item1;
+            init
+            {
+                var t = ((float, float))this._payload!;
+                t.Item1 = value;
+                this._payload = t;
+            }
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public float height => (((float, float))this._payload!).Item2;
+        public float height
+        {
+            get => (((float, float))this._payload!).Item2;
+            init
+            {
+                var t = ((float, float))this._payload!;
+                t.Item2 = value;
+                this._payload = t;
+            }
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public int sideLength => (int)this._payload!;
+        public int sideLength
+        {
+            get => (int)this._payload!;
+            init => this._payload = value;
+        }
+        public bool IsCircle => this.kind == Kind.Circle;
+        public bool IsRectangle => this.kind == Kind.Rectangle;
+        public bool IsSquare => this.kind == Kind.Square;
     }
 }

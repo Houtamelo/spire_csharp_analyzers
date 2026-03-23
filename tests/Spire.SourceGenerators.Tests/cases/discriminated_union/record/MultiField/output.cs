@@ -9,5 +9,8 @@ namespace Geo
 
         public sealed partial record Rectangle;
         public sealed partial record Circle;
+
+        public bool IsRectangle => this is Rectangle;
+        public bool IsCircle => this is Circle;
     }
 }

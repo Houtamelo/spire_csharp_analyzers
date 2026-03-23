@@ -3,7 +3,7 @@
 using System.ComponentModel;
 
 [global::Spire.MustBeInit]
-partial struct Shape
+partial struct Shape : global::Spire.IDiscriminatedUnion<Shape.Kind>
 {
     public enum Kind : byte
     {
@@ -12,15 +12,16 @@ partial struct Shape
         Point,
     }
 
-    public readonly Kind kind;
+    readonly Kind _kind;
+    public Kind kind => this._kind;
     [EditorBrowsable(EditorBrowsableState.Never)]
-    internal readonly double _s0;
+    internal double _s0 { get; init; }
     [EditorBrowsable(EditorBrowsableState.Never)]
-    internal readonly int _s1;
+    internal int _s1 { get; init; }
 
     Shape(Kind kind, double s0, int s1)
     {
-        this.kind = kind;
+        this._kind = kind;
         this._s0 = s0;
         this._s1 = s1;
     }
@@ -49,7 +50,18 @@ partial struct Shape
         }
     }
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public double radius => this._s0;
+    public double radius
+    {
+        get => this._s0;
+        init => this._s0 = value;
+    }
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public int sideLength => this._s1;
+    public int sideLength
+    {
+        get => this._s1;
+        init => this._s1 = value;
+    }
+    public bool IsCircle => this.kind == Kind.Circle;
+    public bool IsSquare => this.kind == Kind.Square;
+    public bool IsPoint => this.kind == Kind.Point;
 }

@@ -3,7 +3,7 @@
 using System.ComponentModel;
 
 [global::Spire.MustBeInit]
-partial struct Option<T>
+partial struct Option<T> : global::Spire.IDiscriminatedUnion<Option<T>.Kind>
 {
     public enum Kind : byte
     {
@@ -11,13 +11,14 @@ partial struct Option<T>
         None,
     }
 
-    public readonly Kind kind;
+    readonly Kind _kind;
+    public Kind kind => this._kind;
     [EditorBrowsable(EditorBrowsableState.Never)]
-    internal readonly T _s0;
+    internal T _s0 { get; init; }
 
     Option(Kind kind, T s0)
     {
-        this.kind = kind;
+        this._kind = kind;
         this._s0 = s0;
     }
 
@@ -40,5 +41,11 @@ partial struct Option<T>
         }
     }
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public T value => this._s0;
+    public T value
+    {
+        get => this._s0;
+        init => this._s0 = value;
+    }
+    public bool IsSome => this.kind == Kind.Some;
+    public bool IsNone => this.kind == Kind.None;
 }

@@ -7,7 +7,7 @@ namespace TestNs
     public static partial class Unions
     {
         [global::Spire.MustBeInit]
-        internal partial struct Token
+        internal partial struct Token : global::Spire.IDiscriminatedUnion<Token.Kind>
         {
             public enum Kind : byte
             {
@@ -15,15 +15,16 @@ namespace TestNs
                 Number,
             }
 
-            public readonly Kind kind;
+            readonly Kind _kind;
+            public Kind kind => this._kind;
             [EditorBrowsable(EditorBrowsableState.Never)]
-            internal readonly object? _f0;
+            internal object? _f0 { get; init; }
             [EditorBrowsable(EditorBrowsableState.Never)]
-            internal readonly object? _f1;
+            internal object? _f1 { get; init; }
 
             Token(Kind kind, object? f0, object? f1)
             {
-                this.kind = kind;
+                this._kind = kind;
                 this._f0 = f0;
                 this._f1 = f1;
             }
@@ -50,9 +51,19 @@ namespace TestNs
                 }
             }
             [EditorBrowsable(EditorBrowsableState.Never)]
-            public string name => (string)this._f0!;
+            public string name
+            {
+                get => (string)this._f0!;
+                init => this._f0 = value;
+            }
             [EditorBrowsable(EditorBrowsableState.Never)]
-            public int value => (int)this._f1!;
+            public int value
+            {
+                get => (int)this._f1!;
+                init => this._f1 = value;
+            }
+            public bool IsIdent => this.kind == Kind.Ident;
+            public bool IsNumber => this.kind == Kind.Number;
         }
     }
 }

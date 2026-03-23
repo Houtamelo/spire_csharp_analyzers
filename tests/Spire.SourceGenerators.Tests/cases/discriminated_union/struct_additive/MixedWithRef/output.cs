@@ -5,7 +5,7 @@ using System.ComponentModel;
 namespace TestNs
 {
     [global::Spire.MustBeInit]
-    partial struct Event
+    partial struct Event : global::Spire.IDiscriminatedUnion<Event.Kind>
     {
         public enum Kind : byte
         {
@@ -14,21 +14,22 @@ namespace TestNs
             Ping,
         }
 
-        public readonly Kind kind;
+        readonly Kind _kind;
+        public Kind kind => this._kind;
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal readonly int _s0;
+        internal int _s0 { get; init; }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal readonly int _s1;
+        internal int _s1 { get; init; }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal readonly object? _s2;
+        internal object? _s2 { get; init; }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal readonly object? _s3;
+        internal object? _s3 { get; init; }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal readonly object? _s4;
+        internal object? _s4 { get; init; }
 
         Event(Kind kind, int s0, int s1, object? s2, object? s3, object? s4)
         {
-            this.kind = kind;
+            this._kind = kind;
             this._s0 = s0;
             this._s1 = s1;
             this._s2 = s2;
@@ -67,14 +68,37 @@ namespace TestNs
             target = (string)this._s4!;
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public int x => this._s0;
+        public int x
+        {
+            get => this._s0;
+            init => this._s0 = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public int y => this._s1;
+        public int y
+        {
+            get => this._s1;
+            init => this._s1 = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public string target => (string)this._s4!;
+        public string target
+        {
+            get => (string)this._s4!;
+            init => this._s4 = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public string message => (string)this._s3!;
+        public string message
+        {
+            get => (string)this._s3!;
+            init => this._s3 = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public global::System.Exception ex => (global::System.Exception)this._s2!;
+        public global::System.Exception ex
+        {
+            get => (global::System.Exception)this._s2!;
+            init => this._s2 = value;
+        }
+        public bool IsClick => this.kind == Kind.Click;
+        public bool IsError => this.kind == Kind.Error;
+        public bool IsPing => this.kind == Kind.Ping;
     }
 }

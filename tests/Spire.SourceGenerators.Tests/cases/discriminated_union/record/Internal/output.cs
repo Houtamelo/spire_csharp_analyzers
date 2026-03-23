@@ -9,5 +9,8 @@ namespace Access
 
         public sealed partial record Success;
         public sealed partial record Failure;
+
+        public bool IsSuccess => this is Success;
+        public bool IsFailure => this is Failure;
     }
 }

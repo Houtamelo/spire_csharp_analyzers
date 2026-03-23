@@ -77,15 +77,13 @@ internal static class UnsafeOverlapEmitter
             sb.AppendLine();
         }
 
-        // Dedup slots for reference/generic fields
+        // Dedup slots for reference/generic fields — must be plain fields (not
+        // auto-properties) because factory methods assign to them directly.
         foreach (var slot in layout.Slots)
         {
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
             var slotType = slot.IsRefSlot ? "object?" : slot.TypeFullName;
-            if (union.HasInitProperties)
-                sb.AppendLine($"internal {slotType} _s{slot.Index} {{ get; init; }}");
-            else
-                sb.AppendLine($"internal {slotType} _s{slot.Index};");
+            sb.AppendLine($"internal {slotType} _s{slot.Index};");
         }
         if (layout.Slots.Count > 0)
             sb.AppendLine();

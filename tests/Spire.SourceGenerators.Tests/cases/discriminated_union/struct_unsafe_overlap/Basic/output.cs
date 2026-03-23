@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 [global::Spire.MustBeInit]
-partial struct Shape
+partial struct Shape : global::Spire.IDiscriminatedUnion<Shape.Kind>
 {
     public enum Kind : byte
     {
@@ -14,7 +14,8 @@ partial struct Shape
         Point,
     }
 
-    public readonly Kind kind;
+    readonly Kind _kind;
+    public Kind kind => this._kind;
 
     [InlineArray(16)]
     [EditorBrowsable(EditorBrowsableState.Never)]
@@ -25,7 +26,7 @@ partial struct Shape
 
     Shape(Kind kind)
     {
-        this.kind = kind;
+        this._kind = kind;
         this._data = default;
     }
 
@@ -66,9 +67,24 @@ partial struct Shape
         height = Unsafe.ReadUnaligned<float>(ref _data[0]);
     }
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public double radius => Unsafe.ReadUnaligned<double>(ref Unsafe.Add(ref _data[0], 4));
+    public double radius
+    {
+        get => Unsafe.ReadUnaligned<double>(ref Unsafe.Add(ref _data[0], 4));
+        init => Unsafe.WriteUnaligned(ref Unsafe.Add(ref _data[0], 4), value);
+    }
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public float width => Unsafe.ReadUnaligned<float>(ref Unsafe.Add(ref _data[0], 12));
+    public float width
+    {
+        get => Unsafe.ReadUnaligned<float>(ref Unsafe.Add(ref _data[0], 12));
+        init => Unsafe.WriteUnaligned(ref Unsafe.Add(ref _data[0], 12), value);
+    }
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public float height => Unsafe.ReadUnaligned<float>(ref _data[0]);
+    public float height
+    {
+        get => Unsafe.ReadUnaligned<float>(ref _data[0]);
+        init => Unsafe.WriteUnaligned(ref _data[0], value);
+    }
+    public bool IsCircle => this.kind == Kind.Circle;
+    public bool IsRect => this.kind == Kind.Rect;
+    public bool IsPoint => this.kind == Kind.Point;
 }

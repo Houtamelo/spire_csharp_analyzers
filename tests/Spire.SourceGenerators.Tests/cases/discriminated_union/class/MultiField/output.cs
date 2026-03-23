@@ -9,5 +9,8 @@ namespace MyApp
 
         public sealed partial class Circle;
         public sealed partial class Rect;
+
+        public bool IsCircle => this is Circle;
+        public bool IsRect => this is Rect;
     }
 }

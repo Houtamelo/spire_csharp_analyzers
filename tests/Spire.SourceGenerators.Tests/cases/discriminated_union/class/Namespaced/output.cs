@@ -9,5 +9,8 @@ namespace Deep.Nested.Namespace
 
         public sealed partial class Ident;
         public sealed partial class Number;
+
+        public bool IsIdent => this is Ident;
+        public bool IsNumber => this is Number;
     }
 }

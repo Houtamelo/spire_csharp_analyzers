@@ -8,7 +8,7 @@ namespace My.Deep.Namespace
 {
     [global::Spire.MustBeInit]
     [StructLayout(LayoutKind.Explicit)]
-    partial struct Result
+    partial struct Result : global::Spire.IDiscriminatedUnion<Result.Kind>
     {
         public enum Kind : byte
         {
@@ -17,19 +17,20 @@ namespace My.Deep.Namespace
         }
 
         [FieldOffset(0)]
-        public readonly Kind kind;
+        readonly Kind _kind;
+        public Kind kind => this._kind;
 
-        [FieldOffset(1)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(1)]
         internal readonly int _value;
 
-        [FieldOffset(8)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(8)]
         internal readonly string? _message;
 
         Result(Kind kind) : this()
         {
-            this.kind = kind;
+            this._kind = kind;
         }
 
         public static partial Result Ok(int value)
@@ -62,8 +63,18 @@ namespace My.Deep.Namespace
             }
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public int value => this._value;
+        public int value
+        {
+            get => this._value;
+            init => this._value = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public string message => this._message!;
+        public string message
+        {
+            get => this._message!;
+            init => this._message = value;
+        }
+        public bool IsOk => this.kind == Kind.Ok;
+        public bool IsErr => this.kind == Kind.Err;
     }
 }

@@ -5,7 +5,7 @@ using System.ComponentModel;
 namespace My.Deep.Namespace
 {
     [global::Spire.MustBeInit]
-    partial struct Result
+    partial struct Result : global::Spire.IDiscriminatedUnion<Result.Kind>
     {
         public enum Kind : byte
         {
@@ -13,13 +13,14 @@ namespace My.Deep.Namespace
             Err,
         }
 
-        public readonly Kind kind;
+        readonly Kind _kind;
+        public Kind kind => this._kind;
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal readonly object? _payload;
+        internal object? _payload { get; init; }
 
         Result(Kind kind, object? payload)
         {
-            this.kind = kind;
+            this._kind = kind;
             this._payload = payload;
         }
 
@@ -34,8 +35,18 @@ namespace My.Deep.Namespace
             payload = this._payload;
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public int value => (int)this._payload!;
+        public int value
+        {
+            get => (int)this._payload!;
+            init => this._payload = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public string message => (string)this._payload!;
+        public string message
+        {
+            get => (string)this._payload!;
+            init => this._payload = value;
+        }
+        public bool IsOk => this.kind == Kind.Ok;
+        public bool IsErr => this.kind == Kind.Err;
     }
 }

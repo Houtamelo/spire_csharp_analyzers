@@ -9,5 +9,8 @@ namespace Shapes
 
         public sealed partial record Circle;
         public sealed partial record Square;
+
+        public bool IsCircle => this is Circle;
+        public bool IsSquare => this is Square;
     }
 }

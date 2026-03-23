@@ -10,5 +10,9 @@ namespace Traffic
         public sealed partial record Red;
         public sealed partial record Yellow;
         public sealed partial record Green;
+
+        public bool IsRed => this is Red;
+        public bool IsYellow => this is Yellow;
+        public bool IsGreen => this is Green;
     }
 }

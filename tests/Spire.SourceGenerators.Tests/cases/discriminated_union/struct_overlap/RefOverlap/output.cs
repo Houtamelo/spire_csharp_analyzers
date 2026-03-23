@@ -8,7 +8,7 @@ namespace TestNs
 {
     [global::Spire.MustBeInit]
     [StructLayout(LayoutKind.Explicit)]
-    partial struct Message
+    partial struct Message : global::Spire.IDiscriminatedUnion<Message.Kind>
     {
         public enum Kind : byte
         {
@@ -17,19 +17,20 @@ namespace TestNs
         }
 
         [FieldOffset(0)]
-        public readonly Kind kind;
+        readonly Kind _kind;
+        public Kind kind => this._kind;
 
-        [FieldOffset(8)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(8)]
         internal readonly string? _content;
 
-        [FieldOffset(16)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [FieldOffset(16)]
         internal readonly object? _detail;
 
         Message(Kind kind) : this()
         {
-            this.kind = kind;
+            this._kind = kind;
         }
 
         public static partial Message Text(string content)
@@ -62,8 +63,18 @@ namespace TestNs
             }
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public string content => this._content!;
+        public string content
+        {
+            get => this._content!;
+            init => this._content = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public object detail => this._detail!;
+        public object detail
+        {
+            get => this._detail!;
+            init => this._detail = value;
+        }
+        public bool IsText => this.kind == Kind.Text;
+        public bool IsError => this.kind == Kind.Error;
     }
 }

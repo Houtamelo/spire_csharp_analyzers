@@ -5,7 +5,7 @@ using System.ComponentModel;
 namespace TestNs
 {
     [global::Spire.MustBeInit]
-    partial struct Light
+    partial struct Light : global::Spire.IDiscriminatedUnion<Light.Kind>
     {
         public enum Kind : byte
         {
@@ -14,11 +14,12 @@ namespace TestNs
             Green,
         }
 
-        public readonly Kind kind;
+        readonly Kind _kind;
+        public Kind kind => this._kind;
 
         Light(Kind kind)
         {
-            this.kind = kind;
+            this._kind = kind;
         }
 
         public static partial Light Red()
@@ -33,5 +34,8 @@ namespace TestNs
             kind = this.kind;
             _f0 = null;
         }
+        public bool IsRed => this.kind == Kind.Red;
+        public bool IsYellow => this.kind == Kind.Yellow;
+        public bool IsGreen => this.kind == Kind.Green;
     }
 }

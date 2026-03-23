@@ -9,5 +9,8 @@ namespace TestNs
 
         public sealed partial record Some;
         public sealed partial record None;
+
+        public bool IsSome => this is Some;
+        public bool IsNone => this is None;
     }
 }

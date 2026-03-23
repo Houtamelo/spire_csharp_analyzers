@@ -5,7 +5,7 @@ using System.ComponentModel;
 namespace TestNs
 {
     [global::Spire.MustBeInit]
-    readonly partial struct Immutable
+    readonly partial struct Immutable : global::Spire.IDiscriminatedUnion<Immutable.Kind>
     {
         public enum Kind : byte
         {
@@ -13,13 +13,14 @@ namespace TestNs
             B,
         }
 
-        public readonly Kind kind;
+        readonly Kind _kind;
+        public Kind kind => this._kind;
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal readonly object? _payload;
+        internal object? _payload { get; init; }
 
         Immutable(Kind kind, object? payload)
         {
-            this.kind = kind;
+            this._kind = kind;
             this._payload = payload;
         }
 
@@ -34,8 +35,18 @@ namespace TestNs
             payload = this._payload;
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public int x => (int)this._payload!;
+        public int x
+        {
+            get => (int)this._payload!;
+            init => this._payload = value;
+        }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public string y => (string)this._payload!;
+        public string y
+        {
+            get => (string)this._payload!;
+            init => this._payload = value;
+        }
+        public bool IsA => this.kind == Kind.A;
+        public bool IsB => this.kind == Kind.B;
     }
 }
