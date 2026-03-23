@@ -36,7 +36,7 @@ internal static class UnsafeOverlapEmitter
         var refMod = union.IsRefStruct ? "ref " : "";
 
         sb.AppendLine("[global::Spire.MustBeInit]");
-        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType}");
+        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType} : global::Spire.IDiscriminatedUnion<{unionType}.Kind>");
         sb.OpenBrace();
 
         // Kind enum
@@ -48,8 +48,9 @@ internal static class UnsafeOverlapEmitter
         sb.CloseBrace();
         sb.AppendLine();
 
-        // Kind field
-        sb.AppendLine("public readonly Kind kind;");
+        // Kind field (backing field + property)
+        sb.AppendLine("readonly Kind _kind;");
+        sb.AppendLine("public Kind kind => this._kind;");
         sb.AppendLine();
 
         // InlineArray buffer (if any unmanaged fields)
@@ -81,7 +82,10 @@ internal static class UnsafeOverlapEmitter
         {
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
             var slotType = slot.IsRefSlot ? "object?" : slot.TypeFullName;
-            sb.AppendLine($"internal {slotType} _s{slot.Index};");
+            if (union.HasInitProperties)
+                sb.AppendLine($"internal {slotType} _s{slot.Index} {{ get; init; }}");
+            else
+                sb.AppendLine($"internal {slotType} _s{slot.Index};");
         }
         if (layout.Slots.Count > 0)
             sb.AppendLine();
@@ -98,7 +102,11 @@ internal static class UnsafeOverlapEmitter
             EmitDeconstructs(sb, union.Variants, layout);
 
         // Public properties for pattern matching
-        EmitProperties(sb, union.Variants, layout);
+        EmitProperties(sb, union.Variants, layout, union.HasInitProperties);
+
+        // IsVariant properties
+        foreach (var variant in union.Variants)
+            sb.AppendLine($"public bool Is{variant.Name} => this.kind == Kind.{variant.Name};");
 
         sb.CloseBrace(); // type
 
@@ -262,7 +270,7 @@ internal static class UnsafeOverlapEmitter
     {
         sb.AppendLine($"{typeName}(Kind kind)");
         sb.OpenBrace();
-        sb.AppendLine("this.kind = kind;");
+        sb.AppendLine("this._kind = kind;");
         if (layout.BufferSize > 0)
             sb.AppendLine("this._data = default;");
         foreach (var slot in layout.Slots)
@@ -316,7 +324,7 @@ internal static class UnsafeOverlapEmitter
     }
 
     private static void EmitProperties(
-        SourceBuilder sb, IEnumerable<VariantInfo> variants, UnsafeLayout layout)
+        SourceBuilder sb, IEnumerable<VariantInfo> variants, UnsafeLayout layout, bool hasInitProperties)
     {
         var emitted = new HashSet<string>();
         foreach (var variant in variants)
@@ -332,18 +340,51 @@ internal static class UnsafeOverlapEmitter
 
                 if (fm.IsBuffer)
                 {
-                    if (fm.BufferOffset == 0)
-                        sb.AppendLine($"public {field.TypeFullName} {field.Name} => Unsafe.ReadUnaligned<{field.TypeFullName}>(ref _data[0]);");
+                    if (hasInitProperties)
+                    {
+                        sb.AppendLine($"public {field.TypeFullName} {field.Name}");
+                        sb.OpenBrace();
+                        if (fm.BufferOffset == 0)
+                        {
+                            sb.AppendLine($"get => Unsafe.ReadUnaligned<{field.TypeFullName}>(ref _data[0]);");
+                            sb.AppendLine($"init => Unsafe.WriteUnaligned(ref _data[0], value);");
+                        }
+                        else
+                        {
+                            sb.AppendLine($"get => Unsafe.ReadUnaligned<{field.TypeFullName}>(ref Unsafe.Add(ref _data[0], {fm.BufferOffset}));");
+                            sb.AppendLine($"init => Unsafe.WriteUnaligned(ref Unsafe.Add(ref _data[0], {fm.BufferOffset}), value);");
+                        }
+                        sb.CloseBrace();
+                    }
                     else
-                        sb.AppendLine($"public {field.TypeFullName} {field.Name} => Unsafe.ReadUnaligned<{field.TypeFullName}>(ref Unsafe.Add(ref _data[0], {fm.BufferOffset}));");
+                    {
+                        if (fm.BufferOffset == 0)
+                            sb.AppendLine($"public {field.TypeFullName} {field.Name} => Unsafe.ReadUnaligned<{field.TypeFullName}>(ref _data[0]);");
+                        else
+                            sb.AppendLine($"public {field.TypeFullName} {field.Name} => Unsafe.ReadUnaligned<{field.TypeFullName}>(ref Unsafe.Add(ref _data[0], {fm.BufferOffset}));");
+                    }
                 }
                 else
                 {
                     var slotInfo = layout.Slots[fm.SlotIndex];
-                    if (slotInfo.IsRefSlot)
-                        sb.AppendLine($"public {field.TypeFullName} {field.Name} => ({field.TypeFullName})this._s{fm.SlotIndex}!;");
+                    if (hasInitProperties)
+                    {
+                        sb.AppendLine($"public {field.TypeFullName} {field.Name}");
+                        sb.OpenBrace();
+                        if (slotInfo.IsRefSlot)
+                            sb.AppendLine($"get => ({field.TypeFullName})this._s{fm.SlotIndex}!;");
+                        else
+                            sb.AppendLine($"get => this._s{fm.SlotIndex};");
+                        sb.AppendLine($"init => this._s{fm.SlotIndex} = value;");
+                        sb.CloseBrace();
+                    }
                     else
-                        sb.AppendLine($"public {field.TypeFullName} {field.Name} => this._s{fm.SlotIndex};");
+                    {
+                        if (slotInfo.IsRefSlot)
+                            sb.AppendLine($"public {field.TypeFullName} {field.Name} => ({field.TypeFullName})this._s{fm.SlotIndex}!;");
+                        else
+                            sb.AppendLine($"public {field.TypeFullName} {field.Name} => this._s{fm.SlotIndex};");
+                    }
                 }
             }
         }
