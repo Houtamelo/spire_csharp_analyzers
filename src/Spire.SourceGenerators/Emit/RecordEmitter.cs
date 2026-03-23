@@ -39,6 +39,10 @@ internal static class RecordEmitter
             sb.AppendLine($"{variantAccess}sealed partial record {variant.Name};");
         }
 
+        sb.AppendLine();
+        foreach (var variant in union.Variants)
+            sb.AppendLine($"public bool Is{variant.Name} => this is {variant.Name};");
+
         sb.CloseBrace(); // type
 
         sb.CloseContainingTypes(union.ContainingTypes);

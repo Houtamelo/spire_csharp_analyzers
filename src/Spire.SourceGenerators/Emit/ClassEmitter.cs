@@ -39,6 +39,10 @@ internal static class ClassEmitter
             sb.AppendLine($"{variantAccess}sealed partial class {variant.Name};");
         }
 
+        sb.AppendLine();
+        foreach (var variant in union.Variants)
+            sb.AppendLine($"public bool Is{variant.Name} => this is {variant.Name};");
+
         sb.CloseBrace(); // type
 
         sb.CloseContainingTypes(union.ContainingTypes);
