@@ -94,6 +94,13 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
             var hintPrefix = $"{union.TypeName}{arity}";
             ctx.AddSource($"{hintPrefix}.g.cs", source);
 
+            // ToString (record/class only — struct ToString is inline)
+            if (union.Strategy == EmitStrategy.Record || union.Strategy == EmitStrategy.Class)
+            {
+                var toStringSource = ToStringEmitter.EmitRecordClassToString(union);
+                ctx.AddSource($"{hintPrefix}.ToString.g.cs", toStringSource);
+            }
+
             // JSON: System.Text.Json
             if ((union.Json & JsonLibrary.SystemTextJson) != 0)
             {

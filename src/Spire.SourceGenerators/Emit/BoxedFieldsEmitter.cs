@@ -72,6 +72,8 @@ internal static class BoxedFieldsEmitter
         foreach (var variant in union.Variants)
             sb.AppendLine($"public bool Is{variant.Name} => this.kind == Kind.{variant.Name};");
 
+        ToStringEmitter.EmitStructToString(sb, union);
+
         sb.CloseBrace(); // type
 
         sb.CloseContainingTypes(union.ContainingTypes);
