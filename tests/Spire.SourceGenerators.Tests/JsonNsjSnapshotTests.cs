@@ -34,13 +34,7 @@ public class JsonNsjSnapshotTests
         var actualSource = GeneratorTestHelper.GetGeneratedSource(result, ".Nsj.g.cs");
         Assert.NotNull(actualSource);
 
-        var actualTree = CSharpSyntaxTree.ParseText(actualSource!);
-        var expectedTree = CSharpSyntaxTree.ParseText(expectedSource);
-
-        var actualRoot = actualTree.GetRoot();
-        var expectedRoot = expectedTree.GetRoot();
-
-        if (!actualRoot.IsEquivalentTo(expectedRoot))
+        if (!GeneratorTestHelper.AreStructurallyEquivalent(actualSource!, expectedSource))
         {
             throw new XunitException(
                 $"Snapshot mismatch for case '{casePath}'.\n\n" +

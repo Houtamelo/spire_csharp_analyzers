@@ -74,5 +74,15 @@ namespace TestNs
         public bool IsCircle => this.kind == Kind.Circle;
         public bool IsRectangle => this.kind == Kind.Rectangle;
         public bool IsSquare => this.kind == Kind.Square;
+        public override string ToString()
+        {
+            return this.kind switch
+            {
+                Kind.Circle => $"Circle({this.radius})",
+                Kind.Rectangle => $"Rectangle({this.width}, {this.height})",
+                Kind.Square => $"Square({this.sideLength})",
+                _ => "Shape(?)",
+            };
+        }
     }
 }

@@ -48,4 +48,13 @@ partial struct Option<T> : global::Spire.IDiscriminatedUnion<Option<T>.Kind>
     }
     public bool IsSome => this.kind == Kind.Some;
     public bool IsNone => this.kind == Kind.None;
+    public override string ToString()
+    {
+        return this.kind switch
+        {
+            Kind.Some => $"Some({this.value})",
+            Kind.None => "None()",
+            _ => "Option(?)",
+        };
+    }
 }

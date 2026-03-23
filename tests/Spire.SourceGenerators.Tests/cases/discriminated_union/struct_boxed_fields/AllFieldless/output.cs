@@ -37,5 +37,15 @@ namespace TestNs
         public bool IsRed => this.kind == Kind.Red;
         public bool IsYellow => this.kind == Kind.Yellow;
         public bool IsGreen => this.kind == Kind.Green;
+        public override string ToString()
+        {
+            return this.kind switch
+            {
+                Kind.Red => "Red()",
+                Kind.Yellow => "Yellow()",
+                Kind.Green => "Green()",
+                _ => "Light(?)",
+            };
+        }
     }
 }

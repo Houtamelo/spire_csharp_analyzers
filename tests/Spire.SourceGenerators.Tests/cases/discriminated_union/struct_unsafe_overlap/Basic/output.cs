@@ -87,4 +87,14 @@ partial struct Shape : global::Spire.IDiscriminatedUnion<Shape.Kind>
     public bool IsCircle => this.kind == Kind.Circle;
     public bool IsRect => this.kind == Kind.Rect;
     public bool IsPoint => this.kind == Kind.Point;
+    public override string ToString()
+    {
+        return this.kind switch
+        {
+            Kind.Circle => $"Circle({this.radius})",
+            Kind.Rect => $"Rect({this.width}, {this.height})",
+            Kind.Point => "Point()",
+            _ => "Shape(?)",
+        };
+    }
 }

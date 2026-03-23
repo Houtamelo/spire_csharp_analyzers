@@ -76,5 +76,14 @@ namespace TestNs
         }
         public bool IsText => this.kind == Kind.Text;
         public bool IsError => this.kind == Kind.Error;
+        public override string ToString()
+        {
+            return this.kind switch
+            {
+                Kind.Text => $"Text({this.content})",
+                Kind.Error => $"Error({this.detail})",
+                _ => "Message(?)",
+            };
+        }
     }
 }

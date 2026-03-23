@@ -74,7 +74,9 @@ internal static class GeneratorTestHelper
                 var fileName = System.IO.Path.GetFileName(t.FilePath);
                 return !AttributeHints.Contains(fileName)
                     && !fileName.EndsWith(".Stj.g.cs")
-                    && !fileName.EndsWith(".Nsj.g.cs");
+                    && !fileName.EndsWith(".Nsj.g.cs")
+                    && !fileName.EndsWith(".ToString.g.cs")
+                    && !fileName.EndsWith(".Schema.g.cs");
             })
             .Select(t => t.GetText().ToString())
             .FirstOrDefault();
@@ -89,6 +91,16 @@ internal static class GeneratorTestHelper
             .Where(t => System.IO.Path.GetFileName(t.FilePath).EndsWith(hintSuffix))
             .Select(t => t.GetText().ToString())
             .FirstOrDefault();
+    }
+
+    /// Compares two C# source strings for structural equivalence, ignoring whitespace/trivia.
+    /// Roslyn's IsEquivalentTo is sensitive to blank lines — this normalizes first.
+    public static bool AreStructurallyEquivalent(string source1, string source2)
+    {
+        var tree1 = CSharpSyntaxTree.ParseText(source1);
+        var tree2 = CSharpSyntaxTree.ParseText(source2);
+        return tree1.GetRoot().NormalizeWhitespace().IsEquivalentTo(
+            tree2.GetRoot().NormalizeWhitespace());
     }
 
     public static void AssertNoCompilationErrors(Compilation compilation)

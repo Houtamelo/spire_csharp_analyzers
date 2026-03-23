@@ -73,4 +73,13 @@ partial struct Result<T> : global::Spire.IDiscriminatedUnion<Result<T>.Kind>
     }
     public bool IsOk => this.kind == Kind.Ok;
     public bool IsErr => this.kind == Kind.Err;
+    public override string ToString()
+    {
+        return this.kind switch
+        {
+            Kind.Ok => $"Ok({this.value}, {this.code})",
+            Kind.Err => $"Err({this.code})",
+            _ => "Result(?)",
+        };
+    }
 }

@@ -36,13 +36,7 @@ public abstract class GeneratorSnapshotTestBase
         var actualSource = GeneratorTestHelper.GetUnionGeneratedSource(result);
         Assert.NotNull(actualSource);
 
-        var actualTree = CSharpSyntaxTree.ParseText(actualSource!);
-        var expectedTree = CSharpSyntaxTree.ParseText(expectedSource);
-
-        var actualRoot = actualTree.GetRoot();
-        var expectedRoot = expectedTree.GetRoot();
-
-        if (!actualRoot.IsEquivalentTo(expectedRoot))
+        if (!GeneratorTestHelper.AreStructurallyEquivalent(actualSource!, expectedSource))
         {
             throw new XunitException(
                 $"Snapshot mismatch for case '{casePath}'.\n\n" +
@@ -78,7 +72,8 @@ public sealed class SnapshotCaseDiscoveryAttribute : DataAttribute
 
             var relativePath = Path.GetRelativePath(casesDir, leafDir);
             // Skip JSON-specific test cases (handled by JsonStjSnapshotTests / JsonNsjSnapshotTests)
-            if (relativePath.Contains("json_stj") || relativePath.Contains("json_nsj"))
+            if (relativePath.Contains("json_stj") || relativePath.Contains("json_nsj")
+                || relativePath.Contains("tostring") || relativePath.Contains("json_schema"))
                 continue;
             yield return new object[] { relativePath };
         }

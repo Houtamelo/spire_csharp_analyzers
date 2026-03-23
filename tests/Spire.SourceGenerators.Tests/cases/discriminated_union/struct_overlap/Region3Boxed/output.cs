@@ -83,5 +83,14 @@ namespace TestNs
         }
         public bool IsDot => this.kind == Kind.Dot;
         public bool IsLine => this.kind == Kind.Line;
+        public override string ToString()
+        {
+            return this.kind switch
+            {
+                Kind.Dot => $"Dot({this.location})",
+                Kind.Line => $"Line({this.start}, {this.end})",
+                _ => "Drawing(?)",
+            };
+        }
     }
 }

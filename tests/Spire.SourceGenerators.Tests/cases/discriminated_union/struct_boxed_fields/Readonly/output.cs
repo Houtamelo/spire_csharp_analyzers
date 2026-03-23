@@ -62,5 +62,14 @@ namespace TestNs
         }
         public bool IsA => this.kind == Kind.A;
         public bool IsB => this.kind == Kind.B;
+        public override string ToString()
+        {
+            return this.kind switch
+            {
+                Kind.A => $"A({this.x})",
+                Kind.B => $"B({this.y})",
+                _ => "Immutable(?)",
+            };
+        }
     }
 }

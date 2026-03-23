@@ -48,5 +48,14 @@ namespace My.Deep.Namespace
         }
         public bool IsOk => this.kind == Kind.Ok;
         public bool IsErr => this.kind == Kind.Err;
+        public override string ToString()
+        {
+            return this.kind switch
+            {
+                Kind.Ok => $"Ok({this.value})",
+                Kind.Err => $"Err({this.message})",
+                _ => "Result(?)",
+            };
+        }
     }
 }

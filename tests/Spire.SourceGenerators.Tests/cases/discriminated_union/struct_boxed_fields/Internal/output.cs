@@ -38,5 +38,13 @@ namespace TestNs
             init => this._f0 = value;
         }
         public bool IsX => this.kind == Kind.X;
+        public override string ToString()
+        {
+            return this.kind switch
+            {
+                Kind.X => $"X({this.v})",
+                _ => "Internal(?)",
+            };
+        }
     }
 }

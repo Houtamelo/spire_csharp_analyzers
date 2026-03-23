@@ -107,5 +107,14 @@ namespace TestNs
         }
         public bool IsClick => this.kind == Kind.Click;
         public bool IsHover => this.kind == Kind.Hover;
+        public override string ToString()
+        {
+            return this.kind switch
+            {
+                Kind.Click => $"Click({this.x}, {this.y}, {this.target})",
+                Kind.Hover => $"Hover({this.posX}, {this.posY})",
+                _ => "Event(?)",
+            };
+        }
     }
 }

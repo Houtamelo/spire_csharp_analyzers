@@ -80,5 +80,15 @@ namespace TestNs
         public bool IsIdent => this.kind == Kind.Ident;
         public bool IsNumber => this.kind == Kind.Number;
         public bool IsEof => this.kind == Kind.Eof;
+        public override string ToString()
+        {
+            return this.kind switch
+            {
+                Kind.Ident => $"Ident({this.name})",
+                Kind.Number => $"Number({this.value})",
+                Kind.Eof => "Eof()",
+                _ => "Token(?)",
+            };
+        }
     }
 }

@@ -100,5 +100,15 @@ namespace TestNs
         public bool IsClick => this.kind == Kind.Click;
         public bool IsError => this.kind == Kind.Error;
         public bool IsPing => this.kind == Kind.Ping;
+        public override string ToString()
+        {
+            return this.kind switch
+            {
+                Kind.Click => $"Click({this.x}, {this.y}, {this.target})",
+                Kind.Error => $"Error({this.message}, {this.ex})",
+                Kind.Ping => "Ping()",
+                _ => "Event(?)",
+            };
+        }
     }
 }
