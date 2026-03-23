@@ -32,19 +32,25 @@ internal static class BoxedFieldsEmitter
         var refMod = union.IsRefStruct ? "ref " : "";
 
         sb.AppendLine("[global::Spire.MustBeInit]");
-        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType}");
+        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType} : global::Spire.IDiscriminatedUnion<{unionType}.Kind>");
         sb.OpenBrace();
 
         // Kind enum
         EmitKindEnum(sb, union);
         sb.AppendLine();
 
-        // Fields: kind + boxed slots
-        sb.AppendLine("public readonly Kind kind;");
+        // Kind field (backing field + property)
+        sb.AppendLine("readonly Kind _kind;");
+        sb.AppendLine("public Kind kind => this._kind;");
+
+        // Boxed slot fields
         for (int i = 0; i < layout.SlotCount; i++)
         {
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-            sb.AppendLine($"internal readonly object? _f{i};");
+            if (union.HasInitProperties)
+                sb.AppendLine($"internal object? _f{i} {{ get; init; }}");
+            else
+                sb.AppendLine($"internal readonly object? _f{i};");
         }
         sb.AppendLine();
 
@@ -60,7 +66,11 @@ internal static class BoxedFieldsEmitter
             EmitDeconstructs(sb, union.Variants, layout);
 
         // Public properties for pattern matching
-        EmitProperties(sb, union.Variants, layout);
+        EmitProperties(sb, union.Variants, layout, union.HasInitProperties);
+
+        // IsVariant properties
+        foreach (var variant in union.Variants)
+            sb.AppendLine($"public bool Is{variant.Name} => this.kind == Kind.{variant.Name};");
 
         sb.CloseBrace(); // type
 
@@ -138,7 +148,7 @@ internal static class BoxedFieldsEmitter
 
         sb.AppendLine($"{typeName}({paramList})");
         sb.OpenBrace();
-        sb.AppendLine("this.kind = kind;");
+        sb.AppendLine("this._kind = kind;");
         for (int i = 0; i < slotCount; i++)
             sb.AppendLine($"this._f{i} = f{i};");
         sb.CloseBrace();
@@ -170,7 +180,7 @@ internal static class BoxedFieldsEmitter
     }
 
     private static void EmitProperties(
-        SourceBuilder sb, IEnumerable<VariantInfo> variants, BoxedFieldsLayout layout)
+        SourceBuilder sb, IEnumerable<VariantInfo> variants, BoxedFieldsLayout layout, bool hasInitProperties)
     {
         var emitted = new HashSet<string>();
         foreach (var variant in variants)
@@ -183,7 +193,18 @@ internal static class BoxedFieldsEmitter
 
                 int slot = mapping.FieldToSlot[i];
                 sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-                sb.AppendLine($"public {field.TypeFullName} {field.Name} => ({field.TypeFullName})this._f{slot}!;");
+                if (hasInitProperties)
+                {
+                    sb.AppendLine($"public {field.TypeFullName} {field.Name}");
+                    sb.OpenBrace();
+                    sb.AppendLine($"get => ({field.TypeFullName})this._f{slot}!;");
+                    sb.AppendLine($"init => this._f{slot} = value;");
+                    sb.CloseBrace();
+                }
+                else
+                {
+                    sb.AppendLine($"public {field.TypeFullName} {field.Name} => ({field.TypeFullName})this._f{slot}!;");
+                }
             }
         }
     }
