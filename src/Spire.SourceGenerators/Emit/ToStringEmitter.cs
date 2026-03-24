@@ -37,7 +37,7 @@ internal static class ToStringEmitter
 
     /// Returns a complete generated file containing per-variant ToString() overrides.
     /// Used for the Record strategy (emitted as a separate .ToString.g.cs file).
-    public static string EmitRecordClassToString(UnionDeclaration union)
+    public static string EmitRecordToString(UnionDeclaration union)
     {
         var sb = new SourceBuilder();
 

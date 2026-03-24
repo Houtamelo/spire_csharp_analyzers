@@ -4,7 +4,7 @@ Rule ID | Category | Severity | Notes
 --------|----------|----------|------
 SPIRE_DU002 | SourceGeneration | Error | ref struct not supported for [DiscriminatedUnion]
 SPIRE_DU003 | SourceGeneration | Warning | No [Variant] methods found
-SPIRE_DU004 | SourceGeneration | Warning | Layout parameter is ignored for record/class discriminated unions
+SPIRE_DU004 | SourceGeneration | Warning | Layout parameter is ignored for record discriminated unions
 SPIRE_DU005 | SourceGeneration | Error | Generic structs cannot use Overlap layout (CLR restriction)
 SPIRE_DU006 | SourceGeneration | Error | System.Text.Json not referenced
 SPIRE_DU007 | SourceGeneration | Error | Newtonsoft.Json not referenced

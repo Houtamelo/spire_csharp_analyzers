@@ -61,7 +61,7 @@ public sealed class ExpandWildcardRefactoring : CodeRefactoringProvider
             SymbolEqualityComparer.Default.Equals(a.AttributeClass, duAttr)))
             return;
 
-        // Find all variant names from the Kind enum (struct) or nested types (record/class)
+        // Find all variant names from the Kind enum (struct) or nested types (record)
         ImmutableArray<string> allVariants;
         bool isStruct = subjectType.IsValueType;
 
@@ -239,7 +239,7 @@ public sealed class ExpandWildcardRefactoring : CodeRefactoringProvider
             }
             else
             {
-                // Record/class: type pattern — handled differently
+                // Record: type pattern — handled differently
                 // For now, just create a type pattern
                 subpatterns.Add(SyntaxFactory.Subpattern(
                     SyntaxFactory.ConstantPattern(

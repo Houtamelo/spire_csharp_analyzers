@@ -161,7 +161,7 @@ internal static class SystemTextJsonEmitter
         sb.AppendLine("writer.WriteStartObject();");
 
         if (IsRecord(union))
-            EmitWriteRecordOrClass(sb, union, unionType);
+            EmitWriteRecord(sb, union, unionType);
         else
             EmitWriteStruct(sb, union, unionType);
 
@@ -211,7 +211,7 @@ internal static class SystemTextJsonEmitter
         sb.CloseBrace(); // switch
     }
 
-    private static void EmitWriteRecordOrClass(
+    private static void EmitWriteRecord(
         SourceBuilder sb, UnionDeclaration union, string unionType)
     {
         sb.AppendLine("switch (value)");

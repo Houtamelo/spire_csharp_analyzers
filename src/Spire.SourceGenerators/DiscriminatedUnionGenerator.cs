@@ -97,7 +97,7 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
             // ToString (record only — struct ToString is inline)
             if (union.Strategy == EmitStrategy.Record)
             {
-                var toStringSource = ToStringEmitter.EmitRecordClassToString(union);
+                var toStringSource = ToStringEmitter.EmitRecordToString(union);
                 ctx.AddSource($"{hintPrefix}.ToString.g.cs", toStringSource);
             }
 

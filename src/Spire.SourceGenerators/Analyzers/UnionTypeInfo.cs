@@ -8,9 +8,9 @@ namespace Spire.SourceGenerators.Analyzers;
 internal sealed class UnionTypeInfo
 {
     public bool IsStructUnion { get; }
-    public bool IsRecordOrClassUnion => !IsStructUnion;
+    public bool IsRecordUnion => !IsStructUnion;
     public ImmutableArray<string> VariantNames { get; }
-    /// For record/class unions: the variant type symbols (for type pattern matching).
+    /// For record unions: the variant type symbols (for type pattern matching).
     public ImmutableArray<INamedTypeSymbol> VariantTypes { get; }
     /// For struct unions: the nested Kind enum type (for constant pattern matching).
     public INamedTypeSymbol? KindEnumType { get; }
@@ -36,7 +36,7 @@ internal sealed class UnionTypeInfo
         if (type.IsValueType)
             return TryCreateStruct(type);
         else
-            return TryCreateRecordOrClass(type);
+            return TryCreateRecord(type);
     }
 
     private static UnionTypeInfo? TryCreateStruct(ITypeSymbol type)
@@ -57,9 +57,9 @@ internal sealed class UnionTypeInfo
         return new UnionTypeInfo(true, names, ImmutableArray<INamedTypeSymbol>.Empty, kindEnum);
     }
 
-    private static UnionTypeInfo? TryCreateRecordOrClass(ITypeSymbol type)
+    private static UnionTypeInfo? TryCreateRecord(ITypeSymbol type)
     {
-        // Record/class unions have sealed nested types that inherit from the union
+        // Record unions have sealed nested types that inherit from the union
         var variants = type.GetTypeMembers()
             .Where(nested => nested.IsSealed &&
                 SymbolEqualityComparer.Default.Equals(

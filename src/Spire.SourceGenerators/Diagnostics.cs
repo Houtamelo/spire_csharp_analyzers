@@ -22,10 +22,10 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    private static readonly DiagnosticDescriptor LayoutIgnoredForRecordClass = new(
+    private static readonly DiagnosticDescriptor LayoutIgnoredForRecord = new(
         id: "SPIRE_DU004",
-        title: "Layout parameter ignored for record/class discriminated unions",
-        messageFormat: "Layout parameter is ignored for record/class discriminated unions",
+        title: "Layout parameter ignored for record discriminated unions",
+        messageFormat: "Layout parameter is ignored for record discriminated unions",
         category: "SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -82,7 +82,7 @@ internal static class Diagnostics
     {
         ["SPIRE_DU002"] = RefStructNotSupported,
         ["SPIRE_DU003"] = NoVariantsFound,
-        ["SPIRE_DU004"] = LayoutIgnoredForRecordClass,
+        ["SPIRE_DU004"] = LayoutIgnoredForRecord,
         ["SPIRE_DU005"] = OverlapOnGenericStruct,
         ["SPIRE_DU006"] = SystemTextJsonNotReferenced,
         ["SPIRE_DU007"] = NewtonsoftJsonNotReferenced,

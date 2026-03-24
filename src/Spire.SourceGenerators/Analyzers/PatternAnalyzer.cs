@@ -114,10 +114,10 @@ internal static class PatternAnalyzer
                     SymbolEqualityComparer.Default.Equals(
                         declPattern.InputType, declPattern.MatchedType))
                     return true;
-                // Record/class union: `Option<int>.Some some` — type narrows to a variant
-                if (info.IsRecordOrClassUnion && declPattern.MatchedType is INamedTypeSymbol declMatchedType)
+                // Record union: `Option<int>.Some some` — type narrows to a variant
+                if (info.IsRecordUnion && declPattern.MatchedType is INamedTypeSymbol declMatchedType)
                 {
-                    var variantName = TryGetRecordClassVariant(declMatchedType, info);
+                    var variantName = TryGetRecordVariant(declMatchedType, info);
                     if (variantName is not null)
                     {
                         variants.Add(variantName);
@@ -137,10 +137,10 @@ internal static class PatternAnalyzer
                 return false;
 
             case ITypePatternOperation typePattern:
-                // Record/class union: bare type pattern `Option<int>.None =>` (no binding, no properties)
-                if (info.IsRecordOrClassUnion && typePattern.MatchedType is INamedTypeSymbol typeMatchedType)
+                // Record union: bare type pattern `Option<int>.None =>` (no binding, no properties)
+                if (info.IsRecordUnion && typePattern.MatchedType is INamedTypeSymbol typeMatchedType)
                 {
-                    var variantName = TryGetRecordClassVariant(typeMatchedType, info);
+                    var variantName = TryGetRecordVariant(typeMatchedType, info);
                     if (variantName is not null)
                     {
                         variants.Add(variantName);
@@ -166,11 +166,11 @@ internal static class PatternAnalyzer
             or Microsoft.CodeAnalysis.CSharp.Syntax.DiscardPatternSyntax)
             return true;
 
-        // Record/class union: `Option<int>.Some { Value: var v }` or just `Option<int>.None`
+        // Record union: `Option<int>.Some { Value: var v }` or just `Option<int>.None`
         // The MatchedType tells us which variant is being matched.
-        if (info.IsRecordOrClassUnion && recursive.MatchedType is INamedTypeSymbol matchedType)
+        if (info.IsRecordUnion && recursive.MatchedType is INamedTypeSymbol matchedType)
         {
-            var variantName = TryGetRecordClassVariant(matchedType, info);
+            var variantName = TryGetRecordVariant(matchedType, info);
             if (variantName is not null)
             {
                 variants.Add(variantName);
@@ -298,9 +298,9 @@ internal static class PatternAnalyzer
         return info.KindEnumType;
     }
 
-    /// For record/class unions, resolves a matched type to a variant name.
+    /// For record unions, resolves a matched type to a variant name.
     /// Compares using OriginalDefinition so generic instantiations are handled correctly.
-    private static string? TryGetRecordClassVariant(INamedTypeSymbol matchedType, UnionTypeInfo info)
+    private static string? TryGetRecordVariant(INamedTypeSymbol matchedType, UnionTypeInfo info)
     {
         var originalMatched = matchedType.OriginalDefinition;
         for (int i = 0; i < info.VariantTypes.Length; i++)

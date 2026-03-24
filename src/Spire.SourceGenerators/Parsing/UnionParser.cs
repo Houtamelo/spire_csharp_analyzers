@@ -302,7 +302,7 @@ internal static class UnionParser
             .ToImmutableArray();
     }
 
-    /// Discovers variants from nested types that inherit from the parent (record/class path).
+    /// Discovers variants from nested types that inherit from the parent (record path).
     private static ImmutableArray<VariantInfo> DiscoverNestedTypeVariants(INamedTypeSymbol typeSymbol)
     {
         return typeSymbol.GetTypeMembers()
