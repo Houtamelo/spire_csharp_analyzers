@@ -1,4 +1,4 @@
-# SPIRE016: Operation may produce invalid value of [MustBeInit] enum
+# SPIRE016: Integer cast to [MustBeInit] enum may produce invalid variant
 
 | Property    | Value           |
 |-------------|-----------------|
@@ -9,14 +9,13 @@
 
 ## Description
 
-Enums marked with `[MustBeInit]` require all values to correspond to named members. This rule flags operations that may produce unnamed values:
+Flags integer-to-enum casts on `[MustBeInit]` enums when the resulting value may not correspond to a valid variant.
 
-- `default(T)` / `default` literal — flagged only when the enum has no zero-valued named member
-- Integer-to-enum casts — flagged when the value is unknown at compile time or doesn't match any named member
-- `Unsafe.SkipInit` — always flagged, produces garbage data regardless of zero member
-- Zero-initialization operations (`Array.Clear`, `Span<T>.Clear`, `Activator.CreateInstance`, `RuntimeHelpers.GetUninitializedObject`, array allocation) — flagged only when the enum has no zero-valued named member
+- **Non-constant casts** (`(MarkedEnum)variable`) — always flagged, value cannot be verified at compile time
+- **Constant casts** (`(MarkedEnum)42`) — flagged when the value doesn't match any named member
+- **`[Flags]` enums** — constant composite values are valid if all bits are covered by named members (e.g., `(Flags)3` where `Read=1, Write=2` is valid because `3 = Read|Write`)
 
-When an enum has a zero-valued named member, `default` produces that member, which is valid. In that case, default expressions are not flagged.
+Other `[MustBeInit]` enum checks (default expressions, array allocation, Clear, SkipInit, etc.) are handled by SPIRE001–008.
 
 ## Examples
 
@@ -26,30 +25,32 @@ When an enum has a zero-valued named member, `default` produces that member, whi
 [MustBeInit]
 enum Status { Active = 1, Inactive = 2, Pending = 3 }
 
-Status s = default;                          // SPIRE016 — no zero-valued member
-var s2 = default(Status);                    // SPIRE016
-Status s3 = (Status)42;                      // SPIRE016 — 42 is not a named member
+Status s = (Status)42;                       // SPIRE016 — 42 is not a named member
 int unknown = GetValue();
-Status s4 = (Status)unknown;                 // SPIRE016 — value unknown at compile time
+Status s2 = (Status)unknown;                 // SPIRE016 — value unknown at compile time
+
+[MustBeInit, Flags]
+enum Perms { Read = 1, Write = 2, Execute = 4 }
+
+Perms p = (Perms)8;                          // SPIRE016 — bit 3 not covered by any member
 ```
 
 ### Compliant code
 
 ```csharp
-[MustBeInit]
-enum StatusOk { None = 0, Active = 1 }
+Status s = (Status)1;                        // OK — matches Active
+Status s2 = Status.Active;                   // OK — named member
 
-StatusOk s = default;                        // OK — default = None, a named member
-StatusOk s2 = StatusOk.Active;              // OK — named member
-StatusOk s3 = (StatusOk)1;                  // OK — matches Active
+Perms p = (Perms)3;                          // OK — 3 = Read|Write, valid composite
+Perms p2 = (Perms)7;                         // OK — 7 = Read|Write|Execute
 ```
 
 ## When to Suppress
 
-Suppress when you intentionally need to create an unnamed enum value, for example as a sentinel or for bit manipulation in `[Flags]` enums where composite values are expected.
+Suppress when you intentionally create an enum value from a trusted integer source that the analyzer cannot verify at compile time.
 
 ```csharp
 #pragma warning disable SPIRE016
-Status sentinel = default;
+Status s = (Status)trustedValue;
 #pragma warning restore SPIRE016
 ```
