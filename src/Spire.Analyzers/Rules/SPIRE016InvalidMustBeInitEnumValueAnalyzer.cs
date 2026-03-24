@@ -27,15 +27,19 @@ public sealed class SPIRE016InvalidMustBeInitEnumValueAnalyzer : DiagnosticAnaly
             if (mustBeInitType is null)
                 return;
 
+            var flagsAttributeType = compilationContext.Compilation
+                .GetTypeByMetadataName("System.FlagsAttribute");
+
             compilationContext.RegisterOperationAction(
-                operationContext => AnalyzeConversion(operationContext, mustBeInitType),
+                operationContext => AnalyzeConversion(operationContext, mustBeInitType, flagsAttributeType),
                 OperationKind.Conversion);
         });
     }
 
     private static void AnalyzeConversion(
         OperationAnalysisContext context,
-        INamedTypeSymbol mustBeInitType)
+        INamedTypeSymbol mustBeInitType,
+        INamedTypeSymbol? flagsAttributeType)
     {
         var operation = (IConversionOperation)context.Operation;
 
@@ -60,8 +64,18 @@ public sealed class SPIRE016InvalidMustBeInitEnumValueAnalyzer : DiagnosticAnaly
             return;
 
         var constantValue = operation.Operand.ConstantValue;
-        if (constantValue.HasValue && IsNamedMemberValue(targetType, constantValue.Value))
-            return;
+        if (constantValue.HasValue)
+        {
+            bool hasFlagsAttribute = flagsAttributeType is not null
+                && HasAttribute(targetType, flagsAttributeType);
+
+            bool isValid = hasFlagsAttribute
+                ? IsValidFlagsCombination(targetType, constantValue.Value)
+                : IsNamedMemberValue(targetType, constantValue.Value);
+
+            if (isValid)
+                return;
+        }
 
         context.ReportDiagnostic(
             Diagnostic.Create(
@@ -69,6 +83,94 @@ public sealed class SPIRE016InvalidMustBeInitEnumValueAnalyzer : DiagnosticAnaly
                 operation.Syntax.GetLocation(),
                 "Integer cast",
                 targetType.Name));
+    }
+
+    private static bool HasAttribute(INamedTypeSymbol type, INamedTypeSymbol attributeType)
+    {
+        foreach (var attr in type.GetAttributes())
+        {
+            if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// For [Flags] enums: value 0 is valid only if a zero-valued member exists.
+    /// Non-zero non-negative value is valid if all its bits are covered by named members.
+    /// Negative values fall back to exact named-member check.
+    private static bool IsValidFlagsCombination(INamedTypeSymbol enumType, object? constantValue)
+    {
+        if (constantValue is null)
+            return false;
+
+        // Try to get the value as ulong for bit manipulation.
+        // For signed types, convert only when non-negative.
+        if (!TryToLong(constantValue, out long longValue))
+        {
+            // ulong case
+            if (constantValue is ulong ulongValue)
+                return IsValidFlagsCombinationUlong(enumType, ulongValue);
+
+            return IsNamedMemberValue(enumType, constantValue);
+        }
+
+        if (longValue < 0)
+        {
+            // Negative values can't be valid flag combinations — fall back to exact match.
+            return IsNamedMemberValue(enumType, constantValue);
+        }
+
+        return IsValidFlagsCombinationUlong(enumType, (ulong)longValue);
+    }
+
+    private static bool IsValidFlagsCombinationUlong(INamedTypeSymbol enumType, ulong value)
+    {
+        ulong allNamedBits = 0;
+        bool hasZeroMember = false;
+
+        foreach (var member in enumType.GetMembers())
+        {
+            if (member is not IFieldSymbol { IsConst: true } field)
+                continue;
+
+            if (!TryToUlong(field.ConstantValue, out ulong memberValue))
+                continue;
+
+            if (memberValue == 0)
+                hasZeroMember = true;
+            else
+                allNamedBits |= memberValue;
+        }
+
+        if (value == 0)
+            return hasZeroMember;
+
+        return (value & ~allNamedBits) == 0;
+    }
+
+    private static bool TryToUlong(object? value, out ulong result)
+    {
+        if (value is null)
+        {
+            result = 0;
+            return false;
+        }
+
+        if (TryToLong(value, out long longVal) && longVal >= 0)
+        {
+            result = (ulong)longVal;
+            return true;
+        }
+
+        if (value is ulong ul)
+        {
+            result = ul;
+            return true;
+        }
+
+        result = 0;
+        return false;
     }
 
     private static bool IsNamedMemberValue(INamedTypeSymbol enumType, object? constantValue)
