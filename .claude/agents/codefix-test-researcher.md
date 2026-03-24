@@ -44,7 +44,7 @@ An analyzer diagnostic already exists and has passing tests. The lead wants to a
 ### Category design guidelines
 
 - 5-15 cases per category.
-- Group by: fix type (add arms, fix type, expand wildcard), union kind (struct/record/class), complexity.
+- Group by: fix type (add arms, fix type, expand wildcard), union kind (struct/record), complexity.
 - Case names follow `{FixName}_{Scenario}` pattern (e.g., `AddMissingArms_MultipleVariants`).
 - Consider: single fix, multiple fixes needed, edge cases (empty unions, generic unions, nested types).
 

@@ -31,7 +31,7 @@ Generator-coupled analyzers run on the output of the `DiscriminatedUnionGenerato
    - `tests/Spire.SourceGenerators.Tests/Exhaustiveness/cases/` — example should_fail/should_pass files.
    - `tests/Spire.SourceGenerators.Tests/FieldAccess/cases/` — another example.
 4. Write representative C# snippets with `[DiscriminatedUnion]` declarations + usage code.
-5. Enumerate every relevant scenario: struct unions, record unions, class unions, generic unions, different layout strategies, different pattern matching forms, edge cases.
+5. Enumerate every relevant scenario: struct unions, record unions, generic unions, different layout strategies, different pattern matching forms, edge cases.
 6. Write the coverage matrix to `tests/Spire.SourceGenerators.Tests/{Category}/coverage-matrix.md`.
 
 ## Coverage matrix format
@@ -59,7 +59,7 @@ Same format as standalone analyzer test-researcher — categories with should_fa
 ### Category design guidelines
 
 - 5-15 cases per category.
-- Group by: union kind (struct/record/class), pattern form (switch expression/statement), edge case type.
+- Group by: union kind (struct/record), pattern form (switch expression/statement), edge case type.
 - Consider all layout strategies (Additive, Overlap, BoxedFields, BoxedTuple, UnsafeOverlap) where relevant.
 
 ## Edge case mindset

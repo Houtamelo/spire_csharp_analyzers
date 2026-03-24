@@ -59,7 +59,7 @@ partial struct Shape{Suffix}
 }
 ```
 
-Record/class unions — see existing `RecordUnions.cs` / `ClassUnions.cs` patterns.
+Record unions — see existing `RecordUnions.cs` patterns.
 
 ## Test method format
 
