@@ -12,7 +12,7 @@ public bool IsCircle => this.kind == Kind.Circle;
 public bool IsSquare => this.kind == Kind.Square;
 ```
 
-**Record/class unions:**
+**Record unions:**
 ```csharp
 // Generated in the base type's partial declaration, where Circle resolves to the nested type.
 public bool IsCircle => this is Circle;
@@ -22,11 +22,11 @@ public bool IsSquare => this is Square;
 - Naming: `Is{VariantName}`, PascalCase matching variant name
 - Return type: `bool`
 - Always generated, no opt-out attribute
-- Applies to all strategies (struct, record, class)
+- Applies to all strategies (struct, record)
 
 ## 2. IDiscriminatedUnion Interface + OfKind LINQ Extension
 
-**Struct unions only.** Record/class unions already have `OfType<TVariant>()` for collection filtering.
+**Struct unions only.** Record unions already have `OfType<TVariant>()` for collection filtering.
 
 ### Interface (Spire.Core, namespace `Spire`)
 
@@ -182,7 +182,7 @@ Slot aliasing: different variants may share backing storage. Setting `radius` on
 
 - `init` requires C# 9+. Users on C# 8 or below see properties as read-only.
 - `IsExternalInit` polyfill needed for netstandard2.0 targets. PolySharp (already in Spire.Core) provides this.
-- Record/class unions: no change needed — records already support `with` natively.
+- Record unions: no change needed — records already support `with` natively.
 - Applies to all struct strategies (Additive, Overlap, BoxedFields, BoxedTuple, UnsafeOverlap).
 
 ### Implementation Note
@@ -192,7 +192,7 @@ Changing backing fields to `{ get; init; }` and adding `IsVariant` properties wi
 ## Out of Scope
 
 - Dynamic IntelliSense filtering based on variant context (requires VSIX/Rider plugin)
-- `IDiscriminatedUnion` for record/class unions — use `OfType<TVariant>()` instead
+- `IDiscriminatedUnion` for record unions — use `OfType<TVariant>()` instead
 - `params Kind[]` overload for `OfKind`
 - Functional combinators (Map, Bind, Fold) — covered by C# pattern matching
 - `UnwrapVariant` / `TryGetVariant` — covered by C# casting / pattern matching
