@@ -1,4 +1,5 @@
 //@ should_pass
+#nullable enable
 // All generic record variants covered with type patterns
 using Spire;
 namespace TestNs

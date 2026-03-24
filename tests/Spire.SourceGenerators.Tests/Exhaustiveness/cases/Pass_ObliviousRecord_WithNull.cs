@@ -1,6 +1,5 @@
 //@ should_pass
-#nullable enable
-// CS8509 suppressed — all record variants covered
+// No #nullable — oblivious context, but null arm present — no diagnostic
 using Spire;
 namespace TestNs
 {
@@ -14,6 +13,7 @@ namespace TestNs
     {
         int Test(Option<int> o) => o switch
         {
+            null => -1,
             Option<int>.Some { Value: var v } => v,
             Option<int>.None => 0,
         };

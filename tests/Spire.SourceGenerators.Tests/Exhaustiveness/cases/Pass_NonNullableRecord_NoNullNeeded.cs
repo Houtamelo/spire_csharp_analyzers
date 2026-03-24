@@ -1,6 +1,6 @@
 //@ should_pass
 #nullable enable
-// CS8509 suppressed — all record variants covered
+// Option<int> (non-nullable in #nullable enable) — no null arm needed
 using Spire;
 namespace TestNs
 {

@@ -59,10 +59,10 @@ internal sealed class UnionTypeInfo
         if (info is null)
             return null;
 
-        // Reference types: nullable only when explicitly annotated with ?
+        // Reference types: nullable unless explicitly non-nullable in #nullable enable context
         if (!isNullable && !type.IsValueType)
         {
-            isNullable = type.NullableAnnotation == NullableAnnotation.Annotated;
+            isNullable = type.NullableAnnotation != NullableAnnotation.NotAnnotated;
         }
 
         return info;

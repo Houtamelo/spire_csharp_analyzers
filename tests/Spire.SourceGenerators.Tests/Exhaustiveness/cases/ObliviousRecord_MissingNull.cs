@@ -1,6 +1,5 @@
-//@ should_pass
-#nullable enable
-// CS8509 suppressed — all record variants covered
+//@ should_fail
+// No #nullable — oblivious context, reference type is implicitly nullable
 using Spire;
 namespace TestNs
 {
@@ -12,7 +11,7 @@ namespace TestNs
     }
     class C
     {
-        int Test(Option<int> o) => o switch
+        int Test(Option<int> o) => o switch //~ ERROR
         {
             Option<int>.Some { Value: var v } => v,
             Option<int>.None => 0,

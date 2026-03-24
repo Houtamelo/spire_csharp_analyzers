@@ -1,6 +1,6 @@
-//@ should_pass
+//@ should_fail
 #nullable enable
-// CS8509 suppressed — all record variants covered
+// Option<int>? with all variants but missing null
 using Spire;
 namespace TestNs
 {
@@ -12,7 +12,7 @@ namespace TestNs
     }
     class C
     {
-        int Test(Option<int> o) => o switch
+        int Test(Option<int>? o) => o switch //~ ERROR
         {
             Option<int>.Some { Value: var v } => v,
             Option<int>.None => 0,

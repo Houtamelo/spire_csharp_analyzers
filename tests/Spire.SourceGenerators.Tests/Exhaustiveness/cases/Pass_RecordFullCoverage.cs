@@ -1,4 +1,5 @@
 //@ should_pass
+#nullable enable
 // All record variants covered
 using Spire;
 namespace TestNs

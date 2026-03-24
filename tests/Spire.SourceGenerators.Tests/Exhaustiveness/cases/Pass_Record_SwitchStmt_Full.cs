@@ -1,4 +1,5 @@
 //@ should_pass
+#nullable enable
 // Record union switch statement all variants covered — no diagnostic
 using Spire;
 namespace TestNs
