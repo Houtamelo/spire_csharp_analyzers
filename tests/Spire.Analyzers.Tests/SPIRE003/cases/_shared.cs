@@ -37,6 +37,14 @@ public struct MustInitStructWithNonAutoProperty
     public int Value { get => 42; }
 }
 
+[MustBeInit]
+public struct UnionLikeStruct
+{
+    public int Kind;
+    public double Value;
+    public UnionLikeStruct(int kind, double value) { Kind = kind; Value = value; }
+}
+
 #nullable enable
 
 [MustBeInit]
