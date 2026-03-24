@@ -48,7 +48,7 @@ internal static class SystemTextJsonEmitter
         var accessMod = string.IsNullOrEmpty(union.AccessibilityKeyword) ? "" : union.AccessibilityKeyword + " ";
         var readonlyMod = union.IsReadonly ? "readonly " : "";
         var refMod = union.IsRefStruct ? "ref " : "";
-        var abstractMod = IsRecordOrClass(union) ? "abstract " : "";
+        var abstractMod = IsRecord(union) ? "abstract " : "";
         sb.AppendLine($"[global::System.Text.Json.Serialization.JsonConverter(typeof({attrTarget}))]");
         sb.AppendLine($"{accessMod}{abstractMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType} {{ }}");
 
@@ -123,7 +123,7 @@ internal static class SystemTextJsonEmitter
 
             if (variant.Fields.Length == 0)
             {
-                var ctor = IsRecordOrClass(union)
+                var ctor = IsRecord(union)
                     ? $"new {unionType}.{variant.Name}()"
                     : $"{unionType}.{variant.Name}()";
                 sb.AppendLine($"\"{jsonName}\" => {ctor},");
@@ -137,7 +137,7 @@ internal static class SystemTextJsonEmitter
                         return $"root.GetProperty(\"{propName}\").Deserialize<{f.TypeFullName}>(options)!";
                     }));
 
-                var ctor = IsRecordOrClass(union)
+                var ctor = IsRecord(union)
                     ? $"new {unionType}.{variant.Name}({args})"
                     : $"{unionType}.{variant.Name}({args})";
                 sb.AppendLine($"\"{jsonName}\" => {ctor},");
@@ -160,7 +160,7 @@ internal static class SystemTextJsonEmitter
         sb.OpenBrace();
         sb.AppendLine("writer.WriteStartObject();");
 
-        if (IsRecordOrClass(union))
+        if (IsRecord(union))
             EmitWriteRecordOrClass(sb, union, unionType);
         else
             EmitWriteStruct(sb, union, unionType);
@@ -259,8 +259,8 @@ internal static class SystemTextJsonEmitter
 
     #region Utilities
 
-    private static bool IsRecordOrClass(UnionDeclaration union)
-        => union.Strategy == EmitStrategy.Record || union.Strategy == EmitStrategy.Class;
+    private static bool IsRecord(UnionDeclaration union)
+        => union.Strategy == EmitStrategy.Record;
 
     private static string FormatTypeParams(EquatableArray<string> typeParameters)
     {

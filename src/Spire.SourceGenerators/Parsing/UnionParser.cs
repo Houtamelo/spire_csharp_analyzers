@@ -56,26 +56,26 @@ internal static class UnionParser
                 HasInitProperties: false);
         }
 
-        // Warn when Layout is explicitly set on record/class (it's ignored)
+        // Warn when Layout is explicitly set on a record (it's ignored)
         UnionDiagnostic? layoutWarning = null;
-        if ((declKind == "record" || declKind == "class") && layout != 0)
+        if (declKind == "record" && layout != 0)
         {
             layoutWarning = CreateDiagnostic(
                 syntax,
                 "SPIRE_DU004",
-                "Layout parameter is ignored for record/class discriminated unions",
+                "Layout parameter is ignored for record discriminated unions",
                 isError: false);
         }
 
-        // Record/class paths discover variants as nested types inheriting from the parent.
+        // Record path discovers variants as nested types inheriting from the parent.
         // Struct paths discover variants as [Variant] static methods.
-        var variants = (declKind == "record" || declKind == "class")
+        var variants = declKind == "record"
             ? DiscoverNestedTypeVariants(typeSymbol)
             : DiscoverMethodVariants(typeSymbol);
 
         if (variants.Length == 0)
         {
-            var hint = (declKind == "record" || declKind == "class")
+            var hint = declKind == "record"
                 ? "No nested variant types found inheriting from the union type."
                 : "No [Variant] methods found on discriminated union type.";
             return new UnionDeclaration(
@@ -170,7 +170,7 @@ internal static class UnionParser
         return chain.ToImmutableArray();
     }
 
-    /// Returns "struct", "record", or "class".
+    /// Returns "struct" or "record". Returns null for unsupported declaration kinds (class).
     private static string? GetDeclarationKind(TypeDeclarationSyntax syntax)
     {
         return syntax switch
@@ -180,7 +180,6 @@ internal static class UnionParser
                 record.ClassOrStructKeyword.IsKind(SyntaxKind.StructKeyword)
                     ? "struct"
                     : "record",
-            ClassDeclarationSyntax => "class",
             _ => null,
         };
     }
@@ -279,9 +278,8 @@ internal static class UnionParser
     private static EmitStrategy ResolveStrategy(string declKind, int layout, bool isGeneric)
     {
         if (declKind == "record") return EmitStrategy.Record;
-        if (declKind == "class") return EmitStrategy.Class;
 
-        // struct paths
+        // struct paths (class declarations not supported — GetDeclarationKind returns null for unsupported types)
         return layout switch
         {
             0 => isGeneric ? EmitStrategy.BoxedFields : EmitStrategy.Overlap, // Auto

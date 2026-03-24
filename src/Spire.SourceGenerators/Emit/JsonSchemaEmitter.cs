@@ -32,7 +32,7 @@ internal static class JsonSchemaEmitter
         var accessMod = string.IsNullOrEmpty(union.AccessibilityKeyword) ? "" : union.AccessibilityKeyword + " ";
         var readonlyMod = union.IsReadonly ? "readonly " : "";
         var refMod = union.IsRefStruct ? "ref " : "";
-        var abstractMod = IsRecordOrClass(union) ? "abstract " : "";
+        var abstractMod = IsRecord(union) ? "abstract " : "";
         sb.AppendLine($"{accessMod}{abstractMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType}");
         sb.OpenBrace();
 
@@ -258,8 +258,8 @@ internal static class JsonSchemaEmitter
 
     #region Utilities
 
-    private static bool IsRecordOrClass(UnionDeclaration union)
-        => union.Strategy == EmitStrategy.Record || union.Strategy == EmitStrategy.Class;
+    private static bool IsRecord(UnionDeclaration union)
+        => union.Strategy == EmitStrategy.Record;
 
     private static string FormatTypeParams(EquatableArray<string> typeParameters)
     {

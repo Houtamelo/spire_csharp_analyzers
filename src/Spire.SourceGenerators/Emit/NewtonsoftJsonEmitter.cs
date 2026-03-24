@@ -50,7 +50,7 @@ internal static class NewtonsoftJsonEmitter
         var accessMod = string.IsNullOrEmpty(union.AccessibilityKeyword) ? "" : union.AccessibilityKeyword + " ";
         var readonlyMod = union.IsReadonly ? "readonly " : "";
         var refMod = union.IsRefStruct ? "ref " : "";
-        var abstractMod = IsRecordOrClass(union) ? "abstract " : "";
+        var abstractMod = IsRecord(union) ? "abstract " : "";
         sb.AppendLine($"[Newtonsoft.Json.JsonConverter(typeof({attrTarget}))]");
         sb.AppendLine($"{accessMod}{abstractMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType} {{ }}");
 
@@ -112,7 +112,7 @@ internal static class NewtonsoftJsonEmitter
         SourceBuilder sb, UnionDeclaration union,
         string converterName, string unionType, string typeParams)
     {
-        var isRefType = IsRecordOrClass(union);
+        var isRefType = IsRecord(union);
         var nullableUnion = isRefType ? $"{unionType}?" : unionType;
 
         sb.AppendLine($"internal sealed class {converterName}{typeParams} : JsonConverter<{unionType}>");
@@ -148,7 +148,7 @@ internal static class NewtonsoftJsonEmitter
 
             if (variant.Fields.Length == 0)
             {
-                var ctor = IsRecordOrClass(union)
+                var ctor = IsRecord(union)
                     ? $"new {unionType}.{variant.Name}()"
                     : $"{unionType}.{variant.Name}()";
                 sb.AppendLine($"\"{jsonName}\" => {ctor},");
@@ -162,7 +162,7 @@ internal static class NewtonsoftJsonEmitter
                         return $"obj[\"{propName}\"]!.ToObject<{f.TypeFullName}>(serializer)!";
                     }));
 
-                var ctor = IsRecordOrClass(union)
+                var ctor = IsRecord(union)
                     ? $"new {unionType}.{variant.Name}({args})"
                     : $"{unionType}.{variant.Name}({args})";
                 sb.AppendLine($"\"{jsonName}\" => {ctor},");
@@ -185,14 +185,14 @@ internal static class NewtonsoftJsonEmitter
         sb.AppendLine($"public override void WriteJson(JsonWriter writer, {nullableUnion} value, JsonSerializer serializer)");
         sb.OpenBrace();
 
-        if (IsRecordOrClass(union))
+        if (IsRecord(union))
         {
             sb.AppendLine("if (value is null) { writer.WriteNull(); return; }");
         }
 
         sb.AppendLine("writer.WriteStartObject();");
 
-        if (IsRecordOrClass(union))
+        if (IsRecord(union))
             EmitWriteRecordOrClass(sb, union, unionType);
         else
             EmitWriteStruct(sb, union, unionType);
@@ -294,8 +294,8 @@ internal static class NewtonsoftJsonEmitter
 
     #region Utilities
 
-    private static bool IsRecordOrClass(UnionDeclaration union)
-        => union.Strategy == EmitStrategy.Record || union.Strategy == EmitStrategy.Class;
+    private static bool IsRecord(UnionDeclaration union)
+        => union.Strategy == EmitStrategy.Record;
 
     private static string FormatTypeParams(EquatableArray<string> typeParameters)
     {

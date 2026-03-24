@@ -94,8 +94,8 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
             var hintPrefix = $"{union.TypeName}{arity}";
             ctx.AddSource($"{hintPrefix}.g.cs", source);
 
-            // ToString (record/class only — struct ToString is inline)
-            if (union.Strategy == EmitStrategy.Record || union.Strategy == EmitStrategy.Class)
+            // ToString (record only — struct ToString is inline)
+            if (union.Strategy == EmitStrategy.Record)
             {
                 var toStringSource = ToStringEmitter.EmitRecordClassToString(union);
                 ctx.AddSource($"{hintPrefix}.ToString.g.cs", toStringSource);
@@ -201,7 +201,6 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
     {
         EmitStrategy.Additive => AdditiveEmitter.Emit(union),
         EmitStrategy.Record => RecordEmitter.Emit(union),
-        EmitStrategy.Class => ClassEmitter.Emit(union),
         EmitStrategy.Overlap => OverlapEmitter.Emit(union),
         EmitStrategy.BoxedFields => BoxedFieldsEmitter.Emit(union),
         EmitStrategy.BoxedTuple => BoxedTupleEmitter.Emit(union),
