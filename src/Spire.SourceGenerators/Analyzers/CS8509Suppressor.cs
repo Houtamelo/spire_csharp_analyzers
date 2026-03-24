@@ -46,13 +46,17 @@ public sealed class CS8509Suppressor : DiagnosticSuppressor
                 .GetTypeByMetadataName("Spire.DiscriminatedUnionAttribute");
             if (duAttr is null) continue;
 
-            var unionInfo = UnionTypeInfo.TryCreate(subjectType, duAttr);
+            var unionInfo = UnionTypeInfo.TryCreateWithNullableUnwrap(
+                subjectType, duAttr, out var isNullable);
             if (unionInfo is null) continue;
 
             var coverage = PatternAnalyzer.AnalyzeExpression(switchOp, unionInfo);
             var missing = coverage.GetMissingVariants(unionInfo.VariantNames);
 
-            if (missing.IsEmpty || coverage.HasWildcard)
+            bool allVariantsCovered = missing.IsEmpty || coverage.HasWildcard;
+            bool nullSatisfied = !isNullable || coverage.CoversNull || coverage.HasWildcard;
+
+            if (allVariantsCovered && nullSatisfied)
             {
                 context.ReportSuppression(
                     Suppression.Create(Descriptor, diagnostic));
