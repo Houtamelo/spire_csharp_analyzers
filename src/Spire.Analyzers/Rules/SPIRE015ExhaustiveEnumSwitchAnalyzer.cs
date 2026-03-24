@@ -36,17 +36,18 @@ public sealed class SPIRE015ExhaustiveEnumSwitchAnalyzer : DiagnosticAnalyzer
     private static void AnalyzeSwitch(OperationAnalysisContext context, INamedTypeSymbol enforceType)
     {
         INamedTypeSymbol? enumType;
+        bool isNullable;
         Location switchKeywordLocation;
 
         if (context.Operation is ISwitchOperation switchOp)
         {
-            enumType = GetEnumType(switchOp.Value.Type);
+            (enumType, isNullable) = GetEnumTypeAndNullability(switchOp.Value.Type);
             if (switchOp.Syntax is not SwitchStatementSyntax switchStmtSyntax) return;
             switchKeywordLocation = switchStmtSyntax.SwitchKeyword.GetLocation();
         }
         else if (context.Operation is ISwitchExpressionOperation switchExprOp)
         {
-            enumType = GetEnumType(switchExprOp.Value.Type);
+            (enumType, isNullable) = GetEnumTypeAndNullability(switchExprOp.Value.Type);
             if (switchExprOp.Syntax is not SwitchExpressionSyntax switchExprSyntax) return;
             switchKeywordLocation = switchExprSyntax.SwitchKeyword.GetLocation();
         }
@@ -67,14 +68,16 @@ public sealed class SPIRE015ExhaustiveEnumSwitchAnalyzer : DiagnosticAnalyzer
 
         var isFlags = HasFlagsAttribute(enumType);
         var coveredValues = new HashSet<object>(ObjectEqualityComparer.Instance);
+        var coversNull = false;
 
         if (context.Operation is ISwitchOperation switchStmt)
-            CollectCoverageFromSwitchStatement(switchStmt, allMembers, coveredValues);
+            CollectCoverageFromSwitchStatement(switchStmt, allMembers, coveredValues, ref coversNull);
         else if (context.Operation is ISwitchExpressionOperation switchExpr)
-            CollectCoverageFromSwitchExpression(switchExpr, allMembers, coveredValues);
+            CollectCoverageFromSwitchExpression(switchExpr, allMembers, coveredValues, ref coversNull);
 
         if (isFlags)
             ExpandFlagsCoverage(allMembers, coveredValues);
+
         var missingGroups = new List<string>();
         var reportedValues = new HashSet<object>(ObjectEqualityComparer.Instance);
 
@@ -89,6 +92,9 @@ public sealed class SPIRE015ExhaustiveEnumSwitchAnalyzer : DiagnosticAnalyzer
             if (!coveredValues.Contains(val))
                 missingGroups.Add(member.Name);
         }
+
+        if (isNullable && !coversNull)
+            missingGroups.Add("null");
 
         if (missingGroups.Count == 0)
             return;
@@ -107,20 +113,20 @@ public sealed class SPIRE015ExhaustiveEnumSwitchAnalyzer : DiagnosticAnalyzer
                 missingStr));
     }
 
-    /// Unwraps Nullable<T> and returns the named type, or null if not applicable.
-    private static INamedTypeSymbol? GetEnumType(ITypeSymbol? type)
+    /// Unwraps Nullable<T> and returns the named type plus whether it was nullable.
+    private static (INamedTypeSymbol? enumType, bool isNullable) GetEnumTypeAndNullability(ITypeSymbol? type)
     {
         if (type is not INamedTypeSymbol named)
-            return null;
+            return (null, false);
 
         // Unwrap Nullable<T>
         if (named.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T
             && named.TypeArguments.Length == 1)
         {
-            return named.TypeArguments[0] as INamedTypeSymbol;
+            return (named.TypeArguments[0] as INamedTypeSymbol, true);
         }
 
-        return named;
+        return (named, false);
     }
 
     private static bool HasFlagsAttribute(INamedTypeSymbol enumType)
@@ -151,10 +157,35 @@ public sealed class SPIRE015ExhaustiveEnumSwitchAnalyzer : DiagnosticAnalyzer
         return result;
     }
 
+    /// Returns true if the pattern matches null (discard, var, null constant, or-pattern containing null).
+    private static bool PatternCoversNull(IPatternOperation pattern)
+    {
+        switch (pattern)
+        {
+            case IDiscardPatternOperation:
+                return true;
+
+            case IDeclarationPatternOperation decl:
+                if (decl.Syntax is Microsoft.CodeAnalysis.CSharp.Syntax.VarPatternSyntax)
+                    return true;
+                return decl.MatchesNull;
+
+            case IConstantPatternOperation c:
+                return c.Value.ConstantValue is { HasValue: true, Value: null };
+
+            case IBinaryPatternOperation { OperatorKind: BinaryOperatorKind.Or } binary:
+                return PatternCoversNull(binary.LeftPattern) || PatternCoversNull(binary.RightPattern);
+
+            default:
+                return false;
+        }
+    }
+
     private static void CollectCoverageFromSwitchStatement(
         ISwitchOperation switchOp,
         List<IFieldSymbol> allMembers,
-        HashSet<object> coveredValues)
+        HashSet<object> coveredValues,
+        ref bool coversNull)
     {
         foreach (var switchCase in switchOp.Cases)
         {
@@ -164,17 +195,28 @@ public sealed class SPIRE015ExhaustiveEnumSwitchAnalyzer : DiagnosticAnalyzer
             foreach (var clause in switchCase.Clauses)
             {
                 if (clause is IDefaultCaseClauseOperation)
-                    continue; // default: does not provide member coverage
+                {
+                    // default: covers null but does not provide member coverage
+                    if (!hasGuard)
+                        coversNull = true;
+                    continue;
+                }
 
                 if (hasGuard)
                     continue; // when guard disqualifies all clauses in this case section
 
                 if (clause is ISingleValueCaseClauseOperation singleValue)
                 {
-                    ExtractValueFromOperation(singleValue.Value, coveredValues);
+                    // Check if this is a null literal (case null:)
+                    if (singleValue.Value.ConstantValue is { HasValue: true, Value: null })
+                        coversNull = true;
+                    else
+                        ExtractValueFromOperation(singleValue.Value, coveredValues);
                 }
                 else if (clause is IPatternCaseClauseOperation patternClause)
                 {
+                    if (PatternCoversNull(patternClause.Pattern))
+                        coversNull = true;
                     ExtractCoverageFromPattern(patternClause.Pattern, coveredValues, allMembers);
                 }
             }
@@ -198,13 +240,17 @@ public sealed class SPIRE015ExhaustiveEnumSwitchAnalyzer : DiagnosticAnalyzer
     private static void CollectCoverageFromSwitchExpression(
         ISwitchExpressionOperation switchExprOp,
         List<IFieldSymbol> allMembers,
-        HashSet<object> coveredValues)
+        HashSet<object> coveredValues,
+        ref bool coversNull)
     {
         foreach (var arm in switchExprOp.Arms)
         {
             // Skip arms with when guard
             if (arm.Guard != null)
                 continue;
+
+            if (PatternCoversNull(arm.Pattern))
+                coversNull = true;
 
             ExtractCoverageFromPattern(arm.Pattern, coveredValues, allMembers);
         }
