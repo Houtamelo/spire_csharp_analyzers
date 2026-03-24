@@ -63,13 +63,10 @@ public sealed class SPIRE008GetUninitializedObjectOfMustBeInitStructAnalyzer : D
         if (targetType is not INamedTypeSymbol namedTarget)
             return;
 
-        if (namedTarget.TypeKind != TypeKind.Struct)
+        if (namedTarget.TypeKind != TypeKind.Struct && namedTarget.TypeKind != TypeKind.Enum)
             return;
 
-        if (!MustBeInitChecks.HasMustBeInitAttribute(namedTarget, mustBeInitType))
-            return;
-
-        if (!MustBeInitChecks.HasInstanceFields(namedTarget))
+        if (!MustBeInitChecks.IsDefaultValueInvalid(namedTarget, mustBeInitType))
             return;
 
         context.ReportDiagnostic(

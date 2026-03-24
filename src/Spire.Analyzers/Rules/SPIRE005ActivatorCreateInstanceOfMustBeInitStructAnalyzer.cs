@@ -90,13 +90,10 @@ public sealed class SPIRE005ActivatorCreateInstanceOfMustBeInitStructAnalyzer : 
         if (targetType is not INamedTypeSymbol namedTarget)
             return;
 
-        if (namedTarget.TypeKind != TypeKind.Struct)
+        if (namedTarget.TypeKind != TypeKind.Struct && namedTarget.TypeKind != TypeKind.Enum)
             return;
 
-        if (!MustBeInitChecks.HasMustBeInitAttribute(namedTarget, mustBeInitType))
-            return;
-
-        if (!MustBeInitChecks.HasInstanceFields(namedTarget))
+        if (!MustBeInitChecks.IsDefaultValueInvalid(namedTarget, mustBeInitType))
             return;
         if (argsParamIndex.HasValue)
         {

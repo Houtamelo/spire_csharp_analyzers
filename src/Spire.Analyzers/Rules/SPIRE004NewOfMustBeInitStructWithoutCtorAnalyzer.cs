@@ -48,25 +48,21 @@ public sealed class SPIRE004NewOfMustBeInitStructWithoutCtorAnalyzer : Diagnosti
         if (type is null)
             return;
 
-        // Must be a struct (covers struct, record struct, readonly struct, ref struct, etc.)
-        if (type.TypeKind != TypeKind.Struct)
+        if (type.TypeKind != TypeKind.Struct && type.TypeKind != TypeKind.Enum)
             return;
 
-        // Must have [MustBeInit] attribute
-        if (!MustBeInitChecks.HasMustBeInitAttribute(type, mustBeInitType))
+        if (!MustBeInitChecks.IsDefaultValueInvalid(type, mustBeInitType))
             return;
 
-        // Must have at least one instance field (auto-property backing fields count)
-        if (!MustBeInitChecks.HasInstanceFields(type))
-            return;
+        // Struct-specific: skip if user defined a parameterless ctor or all fields have initializers
+        if (type.TypeKind == TypeKind.Struct)
+        {
+            if (HasUserDefinedParameterlessCtor(type))
+                return;
 
-        // Skip if the struct has a user-defined parameterless constructor
-        if (HasUserDefinedParameterlessCtor(type))
-            return;
-
-        // Skip if ALL instance fields and auto-property backing fields have initializers
-        if (AllInstanceFieldsHaveInitializers(type))
-            return;
+            if (AllInstanceFieldsHaveInitializers(type))
+                return;
+        }
 
         context.ReportDiagnostic(
             Diagnostic.Create(

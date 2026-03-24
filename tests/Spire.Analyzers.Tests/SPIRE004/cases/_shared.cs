@@ -182,3 +182,14 @@ public readonly ref struct MustInitReadonlyRefNoCtor
 
 // Simple class for false-positive testing — new SomeClass() should never be flagged
 public class SomeClass { }
+
+/// [MustBeInit] enum with no zero-valued member — default(T) = 0 is unnamed
+[MustBeInit]
+public enum MustInitEnumNoZero { Active = 1, Inactive = 2, Pending = 3 }
+
+/// [MustBeInit] enum with zero-valued member — default(T) = None, valid
+[MustBeInit]
+public enum MustInitEnumWithZero { None = 0, Active = 1, Inactive = 2 }
+
+/// Plain enum (no [MustBeInit]) — never flagged
+public enum PlainEnum { A, B, C }

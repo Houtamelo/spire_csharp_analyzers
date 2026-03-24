@@ -68,13 +68,10 @@ public sealed class SPIRE006ClearOfMustBeInitElementsAnalyzer : DiagnosticAnalyz
         if (elementType is not INamedTypeSymbol namedElement)
             return;
 
-        if (namedElement.TypeKind != TypeKind.Struct && namedElement.TypeKind != TypeKind.Class)
+        if (namedElement.TypeKind != TypeKind.Struct && namedElement.TypeKind != TypeKind.Class && namedElement.TypeKind != TypeKind.Enum)
             return;
 
-        if (!MustBeInitChecks.HasMustBeInitAttribute(namedElement, mustBeInitType))
-            return;
-
-        if (!MustBeInitChecks.HasInstanceFields(namedElement))
+        if (!MustBeInitChecks.IsDefaultValueInvalid(namedElement, mustBeInitType))
             return;
 
         // For reference types, skip if nullable-annotated

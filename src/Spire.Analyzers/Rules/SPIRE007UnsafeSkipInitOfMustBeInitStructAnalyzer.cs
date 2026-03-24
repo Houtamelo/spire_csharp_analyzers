@@ -56,13 +56,14 @@ public sealed class SPIRE007UnsafeSkipInitOfMustBeInitStructAnalyzer : Diagnosti
         if (targetType is not INamedTypeSymbol namedTarget)
             return;
 
-        if (namedTarget.TypeKind != TypeKind.Struct)
+        if (namedTarget.TypeKind != TypeKind.Struct && namedTarget.TypeKind != TypeKind.Enum)
             return;
 
         if (!MustBeInitChecks.HasMustBeInitAttribute(namedTarget, mustBeInitType))
             return;
 
-        if (!MustBeInitChecks.HasInstanceFields(namedTarget))
+        // For structs: require instance fields. For enums: always flag (garbage data).
+        if (namedTarget.TypeKind == TypeKind.Struct && !MustBeInitChecks.HasInstanceFields(namedTarget))
             return;
 
         context.ReportDiagnostic(

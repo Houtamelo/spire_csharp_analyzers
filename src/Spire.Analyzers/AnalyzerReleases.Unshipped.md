@@ -11,3 +11,4 @@ SPIRE006 | Correctness | Error | Clearing array or span of [MustBeInit] type pro
 SPIRE007 | Correctness | Error | Unsafe.SkipInit on [MustBeInit] struct leaves it uninitialized
 SPIRE008 | Correctness | Error | RuntimeHelpers.GetUninitializedObject on [MustBeInit] struct bypasses all constructors
 SPIRE015 | Correctness | Error | Switch does not handle all members of [EnforceExhaustiveness] enum
+SPIRE016 | Correctness | Error | Operation may produce invalid value of [MustBeInit] enum

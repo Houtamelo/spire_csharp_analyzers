@@ -43,7 +43,7 @@ public sealed class SPIRE003DefaultOfMustBeInitStructAnalyzer : DiagnosticAnalyz
         if (type is null)
             return;
 
-        if (type.TypeKind != TypeKind.Struct && type.TypeKind != TypeKind.Class)
+        if (type.TypeKind != TypeKind.Struct && type.TypeKind != TypeKind.Class && type.TypeKind != TypeKind.Enum)
             return;
 
         // For reference types, skip if the user explicitly wrote a nullable type.
@@ -52,12 +52,7 @@ public sealed class SPIRE003DefaultOfMustBeInitStructAnalyzer : DiagnosticAnalyz
         if (type.IsReferenceType && IsNullableDefault(operation))
             return;
 
-        // Must have [MustBeInit] attribute
-        if (!MustBeInitChecks.HasMustBeInitAttribute(type, mustBeInitType))
-            return;
-
-        // Must have at least one instance field (auto-property backing fields count)
-        if (!MustBeInitChecks.HasInstanceFields(type))
+        if (!MustBeInitChecks.IsDefaultValueInvalid(type, mustBeInitType))
             return;
 
         // Skip if inside an equality/inequality binary operation (x == default, x != default)

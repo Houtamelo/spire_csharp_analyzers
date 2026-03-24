@@ -120,4 +120,18 @@ internal static class Descriptors
                    + "explicitly handle every named member. A default/discard arm does not count as coverage.",
         helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE015.md"
     );
+
+    public static readonly DiagnosticDescriptor SPIRE016_InvalidMustBeInitEnumValue = new(
+        id: "SPIRE016",
+        title: "Operation may produce invalid value of [MustBeInit] enum",
+        messageFormat: "{0} may produce a value of enum '{1}' marked with [MustBeInit] that is not a named member",
+        category: "Correctness",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "Enums marked with [MustBeInit] require all values to correspond to named members. "
+                   + "This rule flags operations that may produce unnamed values: default expressions (when no "
+                   + "zero-valued member exists), integer-to-enum casts with unknown or invalid values, and "
+                   + "unsafe operations that bypass zero-initialization entirely.",
+        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE016.md"
+    );
 }

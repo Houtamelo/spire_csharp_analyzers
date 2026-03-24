@@ -83,7 +83,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         var elementType = arrayType.ElementType;
 
         // Check if element type has [MustBeInit]
-        if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
+        if (!MustBeInitChecks.IsDefaultValueInvalid(elementType, mustBeInitType))
             return;
 
         // For reference types, skip if element is nullable-annotated (T?[])
@@ -169,7 +169,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
                 return;
         }
 
-        if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
+        if (!MustBeInitChecks.IsDefaultValueInvalid(elementType, mustBeInitType))
             return;
 
         // typeof() never carries nullable annotations — always flag
@@ -199,7 +199,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         if (OperationUtilities.IsKnownToBeZero(operation.Arguments[1].Value))
             return;
 
-        if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
+        if (!MustBeInitChecks.IsDefaultValueInvalid(elementType, mustBeInitType))
             return;
 
         if (MustBeInitChecks.IsNullableAnnotatedReference(elementType))
@@ -230,7 +230,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         if (OperationUtilities.IsKnownToBeZero(operation.Arguments[0].Value))
             return;
 
-        if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
+        if (!MustBeInitChecks.IsDefaultValueInvalid(elementType, mustBeInitType))
             return;
 
         if (MustBeInitChecks.IsNullableAnnotatedReference(elementType))
@@ -262,7 +262,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         if (OperationUtilities.IsKnownToBeZero(operation.Arguments[0].Value))
             return;
 
-        if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
+        if (!MustBeInitChecks.IsDefaultValueInvalid(elementType, mustBeInitType))
             return;
 
         if (MustBeInitChecks.IsNullableAnnotatedReference(elementType))
@@ -309,7 +309,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         if (OperationUtilities.IsKnownToBeZero(operation.Value))
             return;
 
-        if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
+        if (!MustBeInitChecks.IsDefaultValueInvalid(elementType, mustBeInitType))
             return;
 
         if (MustBeInitChecks.IsNullableAnnotatedReference(elementType))
@@ -348,7 +348,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
             return;
 
         // Check if element type has [MustBeInit]
-        if (!MustBeInitChecks.IsMustBeInitWithFields(elementType, mustBeInitType))
+        if (!MustBeInitChecks.IsDefaultValueInvalid(elementType, mustBeInitType))
             return;
 
         context.ReportDiagnostic(
