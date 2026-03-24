@@ -41,11 +41,11 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
         var subjectType = switchOp.Value.Type;
         if (subjectType is null) return;
 
-        var unionInfo = UnionTypeInfo.TryCreate(subjectType, duAttr);
+        var unionInfo = UnionTypeInfo.TryCreateWithNullableUnwrap(subjectType, duAttr, out var isNullable);
         if (unionInfo is null) return;
 
         var coverage = PatternAnalyzer.AnalyzeExpression(switchOp, unionInfo);
-        ReportDiagnostics(ctx, subjectType, unionInfo, coverage, switchOp.Syntax.GetLocation());
+        ReportDiagnostics(ctx, subjectType, unionInfo, coverage, isNullable, switchOp.Syntax.GetLocation());
     }
 
     private static void AnalyzeSwitchStatement(
@@ -55,11 +55,11 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
         var subjectType = switchOp.Value.Type;
         if (subjectType is null) return;
 
-        var unionInfo = UnionTypeInfo.TryCreate(subjectType, duAttr);
+        var unionInfo = UnionTypeInfo.TryCreateWithNullableUnwrap(subjectType, duAttr, out var isNullable);
         if (unionInfo is null) return;
 
         var coverage = PatternAnalyzer.AnalyzeStatement(switchOp, unionInfo);
-        ReportDiagnostics(ctx, subjectType, unionInfo, coverage, switchOp.Syntax.GetLocation());
+        ReportDiagnostics(ctx, subjectType, unionInfo, coverage, isNullable, switchOp.Syntax.GetLocation());
     }
 
     private static void ReportDiagnostics(
@@ -67,19 +67,30 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
         ITypeSymbol subjectType,
         UnionTypeInfo unionInfo,
         SwitchCoverage coverage,
+        bool isNullable,
         Location location)
     {
-        var missing = coverage.GetMissingVariants(unionInfo.VariantNames);
-        if (missing.IsEmpty) return;
-
-        var missingStr = string.Join(", ", missing.Select(v => $"'{v}'"));
-
-        var properties = ImmutableDictionary.CreateBuilder<string, string?>();
-        properties.Add("MissingVariants", string.Join(",", missing));
-
-        // Wildcard covers the missing variants — no error (refactoring handles it)
+        // Wildcard covers both all variants and null — nothing to report
         if (coverage.HasWildcard)
             return;
+
+        var missing = coverage.GetMissingVariants(unionInfo.VariantNames);
+        bool needsNull = isNullable && !coverage.CoversNull;
+
+        if (missing.IsEmpty && !needsNull)
+            return;
+
+        var missingParts = missing.Select(v => $"'{v}'").ToList();
+        if (needsNull)
+            missingParts.Add("'null'");
+        var missingStr = string.Join(", ", missingParts);
+
+        var propertyParts = missing.ToList();
+        if (needsNull)
+            propertyParts.Add("null");
+
+        var properties = ImmutableDictionary.CreateBuilder<string, string?>();
+        properties.Add("MissingVariants", string.Join(",", propertyParts));
 
         ctx.ReportDiagnostic(Diagnostic.Create(
             AnalyzerDescriptors.SPIRE009_SwitchNotExhaustive,

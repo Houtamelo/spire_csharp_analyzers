@@ -13,6 +13,7 @@ internal sealed class SwitchCoverage
     public HashSet<string> CoveredVariants { get; } = new HashSet<string>();
     public HashSet<string> GuardedVariants { get; } = new HashSet<string>();
     public bool HasWildcard { get; set; }
+    public bool CoversNull { get; set; }
 
     public ImmutableArray<string> GetMissingVariants(ImmutableArray<string> allVariants)
     {
@@ -40,6 +41,10 @@ internal static class PatternAnalyzer
             }
 
             bool hasGuard = arm.Guard is not null;
+
+            if (!hasGuard && IsNullPattern(arm.Pattern))
+                coverage.CoversNull = true;
+
             foreach (var v in variants)
             {
                 if (hasGuard)
@@ -64,6 +69,7 @@ internal static class PatternAnalyzer
                 if (clause is IDefaultCaseClauseOperation)
                 {
                     coverage.HasWildcard = true;
+                    coverage.CoversNull = true;
                     continue;
                 }
 
@@ -79,6 +85,10 @@ internal static class PatternAnalyzer
                     }
 
                     bool hasGuard = patternClause.Guard is not null;
+
+                    if (!hasGuard && IsNullPattern(patternClause.Pattern))
+                        coverage.CoversNull = true;
+
                     foreach (var v in variants)
                     {
                         if (hasGuard)
@@ -91,6 +101,26 @@ internal static class PatternAnalyzer
         }
 
         return coverage;
+    }
+
+    /// Checks whether a pattern covers the null value.
+    internal static bool IsNullPattern(IPatternOperation pattern)
+    {
+        switch (pattern)
+        {
+            case IDiscardPatternOperation:
+                return true;
+            case IDeclarationPatternOperation decl:
+                if (decl.Syntax is Microsoft.CodeAnalysis.CSharp.Syntax.VarPatternSyntax)
+                    return true;
+                return decl.MatchesNull;
+            case IConstantPatternOperation c:
+                return c.Value.ConstantValue is { HasValue: true, Value: null };
+            case IBinaryPatternOperation { OperatorKind: BinaryOperatorKind.Or } binary:
+                return IsNullPattern(binary.LeftPattern) || IsNullPattern(binary.RightPattern);
+            default:
+                return false;
+        }
     }
 
     /// Collects variant names from a pattern. Returns true if the pattern is a wildcard.

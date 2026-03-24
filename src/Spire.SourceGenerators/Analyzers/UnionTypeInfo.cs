@@ -39,6 +39,35 @@ internal sealed class UnionTypeInfo
             return TryCreateRecord(type);
     }
 
+    /// Unwraps Nullable<T> and checks reference type nullability.
+    /// Returns the union info (or null) and whether the type is nullable.
+    public static UnionTypeInfo? TryCreateWithNullableUnwrap(
+        ITypeSymbol type, INamedTypeSymbol duAttr, out bool isNullable)
+    {
+        isNullable = false;
+
+        // Unwrap Nullable<T> for value types
+        if (type is INamedTypeSymbol named
+            && named.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T
+            && named.TypeArguments.Length == 1)
+        {
+            type = named.TypeArguments[0];
+            isNullable = true;
+        }
+
+        var info = TryCreate(type, duAttr);
+        if (info is null)
+            return null;
+
+        // Reference types: nullable only when explicitly annotated with ?
+        if (!isNullable && !type.IsValueType)
+        {
+            isNullable = type.NullableAnnotation == NullableAnnotation.Annotated;
+        }
+
+        return info;
+    }
+
     private static UnionTypeInfo? TryCreateStruct(ITypeSymbol type)
     {
         // Struct unions have a nested "Kind" enum with one field per variant
