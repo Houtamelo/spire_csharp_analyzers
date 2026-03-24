@@ -9,7 +9,9 @@
 
 ## Description
 
-Structs marked with `[MustBeInit]` are expected to be explicitly initialized before use. This rule detects all ways of creating arrays (or array-like collections) of such structs where elements would be `default(T)` — the uninitialized state the attribute is meant to prevent.
+Types marked with `[MustBeInit]` are expected to be explicitly initialized before use. This rule detects all ways of creating arrays (or array-like collections) of such types where elements would be `default(T)` — the uninitialized state the attribute is meant to prevent.
+
+For enums marked with `[MustBeInit]`, the rule only flags when the enum has no zero-valued named member. When a zero member exists (e.g., `None = 0`), `default(T)` produces that valid variant and is not flagged.
 
 ### Flagged patterns
 

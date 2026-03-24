@@ -10,8 +10,10 @@
 ## Description
 
 `Unsafe.SkipInit<T>(out T)` bypasses zero-initialization entirely, leaving the value as
-whatever was previously in that memory location. When T is a struct marked with `[MustBeInit]`,
-this is worse than default — the instance contains garbage data.
+whatever was previously in that memory location. When T is a type marked with `[MustBeInit]`,
+this is worse than default — the value contains garbage data.
+
+For enums, this is always flagged regardless of whether a zero-valued member exists — garbage data is never a valid variant.
 
 ### Flagged patterns
 

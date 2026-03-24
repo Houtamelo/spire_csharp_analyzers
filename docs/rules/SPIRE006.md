@@ -9,9 +9,11 @@
 
 ## Description
 
-`Array.Clear` and `Span<T>.Clear()` reset elements to `default(T)`. When T is a struct
-marked with `[MustBeInit]`, this produces uninitialized instances — the same state the
+`Array.Clear` and `Span<T>.Clear()` reset elements to `default(T)`. When T is a type
+marked with `[MustBeInit]`, this produces uninitialized values — the same state the
 attribute exists to prevent.
+
+For enums marked with `[MustBeInit]`, the rule only flags when the enum has no zero-valued named member.
 
 ### Flagged patterns
 

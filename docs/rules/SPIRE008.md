@@ -10,8 +10,10 @@
 ## Description
 
 `RuntimeHelpers.GetUninitializedObject(Type)` bypasses all constructors and field initializers,
-producing a completely uninitialized instance. When the type is a struct marked with
-`[MustBeInit]`, this defeats the purpose of the attribute.
+producing a zero-initialized instance. When the type is marked with `[MustBeInit]`, this
+defeats the purpose of the attribute.
+
+For enums marked with `[MustBeInit]`, the rule only flags when the enum has no zero-valued named member.
 
 Only flags calls where the argument is a direct `typeof(T)` expression resolving to a concrete
 `[MustBeInit]` struct with fields. Indirect type references (variables, method returns, generic

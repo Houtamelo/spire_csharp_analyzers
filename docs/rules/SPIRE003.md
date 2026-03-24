@@ -9,7 +9,9 @@
 
 ## Description
 
-Structs marked with `[MustBeInit]` are expected to be explicitly initialized before use. Using `default(T)` or the `default` literal produces an uninitialized instance, defeating the purpose of the attribute. This rule flags all locations where a `[MustBeInit]` struct is produced via `default`.
+Types marked with `[MustBeInit]` are expected to be explicitly initialized before use. Using `default(T)` or the `default` literal produces an uninitialized value, defeating the purpose of the attribute. This rule flags all locations where a `[MustBeInit]` type is produced via `default`.
+
+For enums marked with `[MustBeInit]`, the rule only flags when the enum has no zero-valued named member. When a zero member exists (e.g., `None = 0`), `default(T)` produces that valid variant and is not flagged.
 
 ### Flagged patterns
 

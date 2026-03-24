@@ -11,6 +11,8 @@
 
 For structs without a user-defined parameterless constructor, `new T()` produces the exact same zeroed-out instance as `default(T)`. When the struct is marked with `[MustBeInit]`, this bypasses the required initialization and should be flagged.
 
+For enums marked with `[MustBeInit]`, `new T()` always produces `default(T) = 0`. When the enum has no zero-valued named member, this is flagged. Constructor and field-initializer checks do not apply to enums.
+
 This rule does **not** flag `new T()` when:
 - The struct has a user-defined parameterless constructor (the constructor performs meaningful initialization)
 - All instance fields and auto-properties have field/property initializers (the compiler generates a parameterless constructor that runs the initializers)

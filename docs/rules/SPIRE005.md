@@ -10,9 +10,11 @@
 ## Description
 
 `Activator.CreateInstance<T>()` and `Activator.CreateInstance(typeof(T))` produce default
-(zeroed) instances of value types without calling any constructor. When T is a struct marked
+(zeroed) instances of value types without calling any constructor. When T is a type marked
 with `[MustBeInit]`, this bypasses the required initialization the attribute is meant to
 enforce.
+
+For enums marked with `[MustBeInit]`, the rule only flags when the enum has no zero-valued named member.
 
 ### Flagged patterns
 
