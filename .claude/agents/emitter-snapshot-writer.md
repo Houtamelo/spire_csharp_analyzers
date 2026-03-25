@@ -57,7 +57,7 @@ Discovered by `SnapshotCaseDiscoveryAttribute` — any leaf directory under `cas
 - **Write exactly the cases in your assigned list** — no more, no less.
 - **Each case is one directory with input.cs and output.cs** — no other files.
 - **Study existing output.cs files** to match the emitter's code style (indentation, naming, structure).
-- **Do NOT read emitter implementation source code** (`src/Spire.SourceGenerators/Emit/`) — tests must be written from the design spec, not the implementation.
+- **Do NOT read emitter implementation source code** (`src/Spire.Analyzers/SourceGenerators/Emit/`) — tests must be written from the design spec, not the implementation.
 - **Do NOT edit existing test cases** — only create new ones.
 - **Do NOT edit source code files** — your scope is snapshot tests only.
 - **Do NOT install external tools, run Python scripts, or decompile DLLs** — use the project's existing resources.

@@ -20,13 +20,13 @@ Example: `/new-emitter verify Additive`
 
 1. Parse `$1` as the mode (`new` or `verify`) and `$2` as the emitter name — reject if missing
 2. If mode is `new`:
-   - Verify no existing emitter file matches `src/Spire.SourceGenerators/Emit/{EmitterName}Emitter.cs` — abort if duplicate
+   - Verify no existing emitter file matches `src/Spire.Analyzers/SourceGenerators/Emit/{EmitterName}Emitter.cs` — abort if duplicate
 3. If mode is `verify`:
-   - Verify the emitter file exists at `src/Spire.SourceGenerators/Emit/{EmitterName}Emitter.cs` — abort if missing
+   - Verify the emitter file exists at `src/Spire.Analyzers/SourceGenerators/Emit/{EmitterName}Emitter.cs` — abort if missing
 
 ## Mode: `new` — Scaffold
 
-4. Create emitter stub: `src/Spire.SourceGenerators/Emit/{EmitterName}Emitter.cs`
+4. Create emitter stub: `src/Spire.Analyzers/SourceGenerators/Emit/{EmitterName}Emitter.cs`
    - Include `using Spire.SourceGenerators.Model;` for the `UnionDeclaration` type
    - Minimal class with `internal static class {EmitterName}Emitter` and a `public static string Emit(UnionDeclaration union)` method returning `string.Empty`
 5. Create snapshot test category folder: `tests/Spire.SourceGenerators.Tests/cases/discriminated_union/{strategy_snake_case}/`

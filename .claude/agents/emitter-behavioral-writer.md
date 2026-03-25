@@ -88,7 +88,7 @@ Group tests by feature with `── Feature ───` section comments. One `[F
 - **Write exactly the types and tests in your assigned list** — no more, no less.
 - **Types and tests are tightly coupled** — a test method references types declared in the same session.
 - **If modifying existing files**, use Edit to append new types/tests. Do not overwrite existing content.
-- **Do NOT read emitter implementation source code** (`src/Spire.SourceGenerators/Emit/`) — tests must be written from the design spec, not the implementation.
+- **Do NOT read emitter implementation source code** (`src/Spire.Analyzers/SourceGenerators/Emit/`) — tests must be written from the design spec, not the implementation.
 - **Do NOT edit source code files** — your scope is behavioral tests only.
 - **Do NOT edit snapshot test files** — those are handled by the snapshot writer.
 - **Do NOT install external tools, run Python scripts, or decompile DLLs** — use the project's existing resources.

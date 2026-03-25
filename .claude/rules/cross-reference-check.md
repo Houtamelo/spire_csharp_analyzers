@@ -98,7 +98,7 @@ How analyzers that run on generator output are developed and tested.
 - `.claude/agents/coupled-analyzer-test-case-writer.md` — test cases
 - `.claude/agents/coupled-analyzer-implementer.md` — analyzer implementation
 - `tests/Spire.SourceGenerators.Tests/GeneratorAnalyzerTestBase.cs` — test framework
-- `src/Spire.SourceGenerators/AnalyzerDescriptors.cs` — descriptor registry
+- `src/Spire.Analyzers/SourceGenerators/AnalyzerDescriptors.cs` — descriptor registry
 
 ## Code fix workflow
 How code fix providers are developed and tested.
@@ -115,8 +115,8 @@ How benchmarks are structured, run, and results generated.
 - `benchmarks/Spire.Benchmarks/Helpers/BenchmarkConstants.cs` — shared N constant
 - `benchmarks/Spire.Benchmarks/Types/` — union type declarations ([BenchmarkUnion] + hand-written)
 - `benchmarks/Spire.Benchmarks/Benchmarks/` — hand-written benchmark classes
-- `src/Spire.SourceGenerators/BenchmarkUnionGenerator.cs` — [BenchmarkUnion] generator
-- `src/Spire.SourceGenerators/Attributes/BenchmarkAttributeSource.cs` — attribute source
+- `src/Spire.Analyzers/SourceGenerators/BenchmarkUnionGenerator.cs` — [BenchmarkUnion] generator
+- `src/Spire.Analyzers/SourceGenerators/Attributes/BenchmarkAttributeSource.cs` — attribute source
 - `docs/benchmark-results/` — auto-generated RESULTS_{job}.md files
 - `README.md` — layout strategy comparison table
 - `CLAUDE.md` — benchmark build commands
@@ -129,7 +129,7 @@ Project layout, build configuration, conventions.
 - `src/Spire/Spire.csproj`
 - `src/Spire.Core/Spire.Core.csproj`
 - `src/Spire.Analyzers/Spire.Analyzers.csproj`
-- `src/Spire.SourceGenerators/Spire.SourceGenerators.csproj`
+- `src/Spire.Analyzers/SourceGenerators/Spire.SourceGenerators.csproj`
 - `src/Spire.CodeFixes/Spire.CodeFixes.csproj`
 - `tests/Spire.Analyzers.Tests/Spire.Analyzers.Tests.csproj`
 - `tests/Spire.SourceGenerators.Tests/Spire.SourceGenerators.Tests.csproj`

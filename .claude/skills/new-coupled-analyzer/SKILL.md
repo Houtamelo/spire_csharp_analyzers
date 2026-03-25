@@ -19,11 +19,11 @@ Example: `/new-coupled-analyzer SPIRE016 "Variant field type mismatch"`
 
 1. Parse `$1` as the rule ID and everything after as the title
 2. Verify the rule ID matches `SPIRE` followed by a numeric ID — reject otherwise
-3. Verify no existing descriptor matches `id: "$1"` in `src/Spire.SourceGenerators/AnalyzerDescriptors.cs` — abort if duplicate
+3. Verify no existing descriptor matches `id: "$1"` in `src/Spire.Analyzers/SourceGenerators/AnalyzerDescriptors.cs` — abort if duplicate
 
 ## Scaffolding (TDD order — tests and descriptor BEFORE analyzer)
 
-4. Add descriptor to `src/Spire.SourceGenerators/AnalyzerDescriptors.cs`
+4. Add descriptor to `src/Spire.Analyzers/SourceGenerators/AnalyzerDescriptors.cs`
    - Field name: `{RuleId}_{TitlePascalCase}`
    - Follow existing descriptor pattern (see `SPIRE009`, `SPIRE011`, etc.)
 5. Create category folder from the rule title: `tests/Spire.SourceGenerators.Tests/{CategoryName}/`

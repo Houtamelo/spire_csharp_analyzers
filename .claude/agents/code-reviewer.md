@@ -22,7 +22,7 @@ The lead has already implemented an analyzer (via the `analyzer-implementer` age
 
 1. Read `.claude/rules/analyzer-conventions.md` and `docs/style-guide.md` for project conventions and documentation style.
 2. Read the rule description provided by the lead.
-3. Read all implementation files (analyzer, any helpers in `src/Spire.Analyzers.Utils/`).
+3. Read all implementation files (analyzer, any helpers in `src/Spire.Analyzers/Utils/`).
 4. Read test cases in the test folder to understand what scenarios are covered.
 5. Read the descriptor in `src/Spire.Analyzers/Descriptors.cs` for this rule.
 6. Produce the review report.

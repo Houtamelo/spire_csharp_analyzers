@@ -23,7 +23,7 @@ The lead has described what the emitter should generate. Your job is to **resear
 
 1. Read the emitter description provided by the lead — understand what input declarations produce what generated output.
 2. Study existing emitters and their tests for reference:
-   - Emitters: `src/Spire.SourceGenerators/Emit/` (e.g., `AdditiveEmitter.cs`)
+   - Emitters: `src/Spire.Analyzers/SourceGenerators/Emit/` (e.g., `AdditiveEmitter.cs`)
    - Snapshot tests: `tests/Spire.SourceGenerators.Tests/cases/discriminated_union/` (input.cs/output.cs pairs)
    - Behavioral types: `tests/Spire.BehavioralTests/Types/` (e.g., `AdditiveUnions.cs`)
    - Behavioral tests: `tests/Spire.BehavioralTests/Tests/` (e.g., `AdditiveTests.cs`)
@@ -78,7 +78,7 @@ Your matrix must include cases that **try to break the emitter**. Reference the 
 
 ## Constraints
 
-- **Do NOT read emitter implementation source code** (`src/Spire.SourceGenerators/Emit/`) — the matrix must be designed from the emitter spec, not the implementation.
+- **Do NOT read emitter implementation source code** (`src/Spire.Analyzers/SourceGenerators/Emit/`) — the matrix must be designed from the emitter spec, not the implementation.
 - **Don't be shallow** — if your matrix has fewer than 15 total snapshot cases, you almost certainly missed scenarios.
 - **Don't write test case files** — your only output is the coverage matrix.
 - **Don't invent emitter behavior** — if the description doesn't specify what happens in a particular scenario, note it with a `(?)` marker and message the lead.

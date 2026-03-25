@@ -4,7 +4,7 @@
 
 Roslyn-based C# analyzer
 
-- **Packages**: `Spire` (meta-package), `Spire.Core` (attributes/utilities), `Spire.Analyzers`, `Spire.SourceGenerators`, `Spire.CodeFixes`
+- **Packages**: `Spire` (meta-package), `Spire.Core` (attributes/utilities), `Spire.Analyzers` (analyzers + source generator), `Spire.CodeFixes`
 - **Rule prefix**: `SPIRE` (SPIRE001, SPIRE002, ...)
 - **User-facing API** in `Spire.Core` (namespace `Spire`) — `MustBeInitAttribute`, `EnforceExhaustivenessAttribute`, `IDiscriminatedUnion<TEnum>`, `SpireLINQ.OfKind`
 - **Code fixes** in separate `Spire.CodeFixes` project (standalone, no inter-project dependencies)
@@ -26,16 +26,16 @@ dotnet run -c Release --project benchmarks/Spire.Benchmarks/ -- --filter '*'    
 ```
 src/Spire/                        # Meta-package (no code, depends on all below)
 src/Spire.Core/                   # User-facing API: attributes, utilities (netstandard2.0)
-src/Spire.Analyzers/              # Analyzer (netstandard2.0)
+src/Spire.Analyzers/              # Analyzers + source generator (netstandard2.0)
   Rules/                          # One file per rule
   Descriptors.cs                  # Central DiagnosticDescriptor registry
-src/Spire.Analyzers.Utils/        # Shared utilities (netstandard2.0)
-  FlowAnalysis/                   # CFG-based flow analysis (InitState, KindState, NullState tracking)
-src/Spire.SourceGenerators/       # Discriminated union source generator (netstandard2.0)
-  Emit/                           # Per-strategy emitters (Additive, Overlap, BoxedFields, etc.)
-  Analyzers/                      # Generator-coupled analyzers (exhaustiveness, field access, type safety)
-  Model/                          # Union declaration model types
-  Parsing/                        # Attribute parsing
+  Utils/                          # Shared utilities (MustBeInitChecks, OperationUtilities, etc.)
+    FlowAnalysis/                 # CFG-based flow analysis (InitState, KindState, NullState tracking)
+  SourceGenerators/               # Discriminated union source generator
+    Emit/                         # Per-strategy emitters (Additive, Overlap, BoxedFields, etc.)
+    Analyzers/                    # Generator-coupled analyzers (exhaustiveness, field access, type safety)
+    Model/                        # Union declaration model types
+    Parsing/                      # Attribute parsing
 src/Spire.CodeFixes/              # Code fixes (standalone, no inter-project deps)
 tests/Spire.Analyzers.Tests/      # Analyzer xUnit tests (net10.0, C# 14)
   AnalyzerTestBase.cs             # Base class for all analyzer tests (discovery, parsing, verification)

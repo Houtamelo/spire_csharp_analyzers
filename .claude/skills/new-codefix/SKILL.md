@@ -20,7 +20,7 @@ Example: `/new-codefix SPIRE009`
 1. Parse `$1` as the rule ID — reject if missing
 2. Verify the diagnostic exists:
    - Check `src/Spire.Analyzers/Descriptors.cs` for `id: "$1"` OR
-   - Check `src/Spire.SourceGenerators/AnalyzerDescriptors.cs` for `id: "$1"`
+   - Check `src/Spire.Analyzers/SourceGenerators/AnalyzerDescriptors.cs` for `id: "$1"`
    - Abort if not found in either location
 3. Verify no existing code fix already handles this rule:
    - Grep `src/Spire.CodeFixes/` for `"$1"` in `FixableDiagnosticIds` — warn if found (may be adding to existing fix)
