@@ -60,7 +60,7 @@ public sealed class SPIRE016InvalidMustBeInitEnumValueAnalyzer : DiagnosticAnaly
         if (sourceType is null)
             return;
 
-        if (!IsIntegerType(sourceType))
+        if (!IsIntegerType(sourceType) && sourceType.TypeKind != TypeKind.Enum)
             return;
 
         var constantValue = operation.Operand.ConstantValue;
@@ -77,11 +77,13 @@ public sealed class SPIRE016InvalidMustBeInitEnumValueAnalyzer : DiagnosticAnaly
                 return;
         }
 
+        string castLabel = sourceType.TypeKind == TypeKind.Enum ? "Enum cast" : "Integer cast";
+
         context.ReportDiagnostic(
             Diagnostic.Create(
                 Descriptors.SPIRE016_InvalidMustBeInitEnumValue,
                 operation.Syntax.GetLocation(),
-                "Integer cast",
+                castLabel,
                 targetType.Name));
     }
 
