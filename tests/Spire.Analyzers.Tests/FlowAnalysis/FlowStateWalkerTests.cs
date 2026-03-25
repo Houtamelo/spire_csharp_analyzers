@@ -322,6 +322,7 @@ public class FlowStateWalkerTests
                 static Pkt Create() => new Pkt(1, 2, 3.0);
                 static void Send(Pkt p) { }
                 static void Log(Pkt p) { }
+                static void AfterInnerMerge(Pkt p) { }
                 static void Finalize(Pkt p) { }
 
                 void M(bool urgent, bool hasPayload, int mode)
@@ -342,6 +343,7 @@ public class FlowStateWalkerTests
                             pkt.Payload = 0.0;
                             Log(pkt);
                         }
+                        AfterInnerMerge(pkt);
                     }
                     else
                     {
@@ -370,6 +372,13 @@ public class FlowStateWalkerTests
         Assert.Equal(InitState.Initialized, sendState!.Value.InitState);
         Assert.Equal(3, sendState.Value.FieldStates.Length);
         Assert.All(sendState.Value.FieldStates, f => Assert.Equal(InitState.Initialized, f));
+
+        // AfterInnerMerge(pkt) — after if(hasPayload)/else merge:
+        // both paths set Payload, so merge should be Initialized
+        var afterMerge = ctx.StateAtInvocation("AfterInnerMerge");
+        Assert.NotNull(afterMerge);
+        Assert.Equal(InitState.Initialized, afterMerge!.Value.InitState);
+        Assert.All(afterMerge.Value.FieldStates, f => Assert.Equal(InitState.Initialized, f));
 
         // Finalize(pkt) — merge of all paths:
         //   urgent+hasPayload:    Initialized
