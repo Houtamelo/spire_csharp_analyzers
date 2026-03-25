@@ -1,4 +1,4 @@
-# SPIRE016: Integer cast to [MustBeInit] enum may produce invalid variant
+# SPIRE016: Cast to [MustBeInit] enum may produce invalid variant
 
 | Property    | Value           |
 |-------------|-----------------|
@@ -9,10 +9,11 @@
 
 ## Description
 
-Flags integer-to-enum casts on `[MustBeInit]` enums when the resulting value may not correspond to a valid variant.
+Flags casts to `[MustBeInit]` enums when the resulting value may not correspond to a valid variant. Covers both integer-to-enum and enum-to-enum casts.
 
 - **Non-constant casts** (`(MarkedEnum)variable`) — always flagged, value cannot be verified at compile time
 - **Constant casts** (`(MarkedEnum)42`) — flagged when the value doesn't match any named member
+- **Enum-to-enum casts** (`(MarkedEnum)(OtherEnum.Value)`) — same rules as integer casts, based on the source's underlying value
 - **`[Flags]` enums** — constant composite values are valid if all bits are covered by named members (e.g., `(Flags)3` where `Read=1, Write=2` is valid because `3 = Read|Write`)
 
 Other `[MustBeInit]` enum checks (default expressions, array allocation, Clear, SkipInit, etc.) are handled by SPIRE001–008.
