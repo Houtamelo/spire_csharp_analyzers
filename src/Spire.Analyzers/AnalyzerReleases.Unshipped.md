@@ -10,5 +10,19 @@ SPIRE005 | Correctness | Error | Activator.CreateInstance on [MustBeInit] struct
 SPIRE006 | Correctness | Error | Clearing array or span of [MustBeInit] type produces uninitialized elements
 SPIRE007 | Correctness | Error | Unsafe.SkipInit on [MustBeInit] struct leaves it uninitialized
 SPIRE008 | Correctness | Error | RuntimeHelpers.GetUninitializedObject on [MustBeInit] struct bypasses all constructors
+SPIRE009 | Correctness | Error | Switch does not handle all variants of discriminated union
+SPIRE011 | Correctness | Error | Discriminated union pattern field type mismatch
+SPIRE012 | Correctness | Error | Discriminated union pattern field count mismatch
+SPIRE013 | Correctness | Error | Accessing another variant's field
+SPIRE014 | Correctness | Warning | Accessing variant field without kind guard
 SPIRE015 | Correctness | Error | Switch does not handle all members of [EnforceExhaustiveness] enum
 SPIRE016 | Correctness | Error | Operation may produce invalid value of [MustBeInit] enum
+SPIRE_DU002 | SourceGeneration | Error | ref struct not supported for [DiscriminatedUnion]
+SPIRE_DU003 | SourceGeneration | Warning | No [Variant] methods found
+SPIRE_DU004 | SourceGeneration | Warning | Layout parameter is ignored for record discriminated unions
+SPIRE_DU005 | SourceGeneration | Error | Generic structs cannot use Overlap layout (CLR restriction)
+SPIRE_DU006 | SourceGeneration | Error | System.Text.Json not referenced
+SPIRE_DU007 | SourceGeneration | Error | Newtonsoft.Json not referenced
+SPIRE_DU008 | SourceGeneration | Error | ref struct cannot use JSON generation
+SPIRE_DU009 | SourceGeneration | Error | UnsafeOverlap layout requires AllowUnsafeBlocks
+SPIRE_DU010 | SourceGeneration | Error | Field name conflict across variants

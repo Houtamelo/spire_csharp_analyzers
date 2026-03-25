@@ -9,7 +9,7 @@
     <Version>1.0.0</Version>
     <Authors>houtamelo</Authors>
     <Copyright>Copyright (c) 2026 houtamelo</Copyright>
-    <Description>Meta-package: installs Spire.Core (attributes/utilities), Spire.Analyzers (struct correctness), Spire.SourceGenerators (discriminated unions), and Spire.CodeFixes.</Description>
+    <Description>Meta-package: installs Spire.Core (attributes/utilities), Spire.Analyzers (analyzers + source generator), and Spire.CodeFixes.</Description>
     <PackageTags>spire;roslyn;analyzer;source-generator;csharp</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/Houtamelo/spire_csharp_analyzers</PackageProjectUrl>
@@ -30,17 +30,12 @@
   -->
   <ItemGroup>
     <ProjectReference Include="..\Spire.Analyzers\Spire.Analyzers.csproj" PrivateAssets="all" />
-    <ProjectReference Include="..\Spire.SourceGenerators\Spire.SourceGenerators.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Spire.CodeFixes\Spire.CodeFixes.csproj" PrivateAssets="all" />
   </ItemGroup>
 
-  <!-- Vendor all analyzer/generator/codefix DLLs into the package -->
+  <!-- Vendor analyzer and codefix DLLs into the package -->
   <ItemGroup>
     <None Include="$(OutputPath)\Spire.Analyzers.dll"
-          PackagePath="analyzers/dotnet/cs" Pack="true" Visible="false" />
-    <None Include="$(OutputPath)\Spire.Analyzers.Utils.dll"
-          PackagePath="analyzers/dotnet/cs" Pack="true" Visible="false" />
-    <None Include="$(OutputPath)\Spire.SourceGenerators.dll"
           PackagePath="analyzers/dotnet/cs" Pack="true" Visible="false" />
     <None Include="$(OutputPath)\Spire.CodeFixes.dll"
           PackagePath="analyzers/dotnet/cs" Pack="true" Visible="false" />

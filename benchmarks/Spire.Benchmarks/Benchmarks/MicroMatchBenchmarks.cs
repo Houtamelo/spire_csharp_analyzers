@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using BenchmarkDotNet.Attributes;
 
 namespace Spire.Benchmarks;

@@ -3,8 +3,6 @@
     <Project Path="src/Spire/Spire.csproj" />
     <Project Path="src/Spire.Core/Spire.Core.csproj" />
     <Project Path="src/Spire.Analyzers/Spire.Analyzers.csproj" />
-    <Project Path="src/Spire.Analyzers.Utils/Spire.Analyzers.Utils.csproj" />
-    <Project Path="src/Spire.SourceGenerators/Spire.SourceGenerators.csproj" />
     <Project Path="src/Spire.CodeFixes/Spire.CodeFixes.csproj" />
   </Folder>
   <Folder Name="/tests/">
