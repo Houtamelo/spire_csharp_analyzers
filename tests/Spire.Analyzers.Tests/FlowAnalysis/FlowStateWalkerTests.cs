@@ -280,6 +280,115 @@ public class FlowStateWalkerTests
         Assert.Equal(InitState.Initialized, state!.Value.InitState);
     }
 
+    // ── Complex scenario ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task ComplexScenario_NestedBranches_FieldByField_CtorReassign_MethodCall()
+    {
+        // 3-field struct, nested if/else, switch with ctor reassign + method call + partial init.
+        // Tests: field-level tracking through branches, merge at join points,
+        //        cross-method return assumption, partial init detection after switch.
+        //
+        //  default(Pkt)                    → Id=Def, Seq=Def, Pay=Def
+        //  pkt.Id = 1                      → Id=Init, Seq=Def, Pay=Def
+        //  ┌─ if (urgent)
+        //  │   pkt.Seq = NextSeq()         → Id=Init, Seq=Init, Pay=Def
+        //  │   ┌─ if (hasPayload)
+        //  │   │   pkt.Payload = 3.14      → Id=Init, Seq=Init, Pay=Init ← FULLY INIT
+        //  │   │   Send(pkt)               state: Initialized
+        //  │   └─ else
+        //  │       pkt.Payload = 0.0       → Id=Init, Seq=Init, Pay=Init ← FULLY INIT
+        //  │       Send(pkt)               (same call name — only first found, both are Init)
+        //  └─ else
+        //      switch (mode)
+        //        case 0: pkt = new Pkt(…)  → all Init
+        //        case 1: pkt = Create()    → all Init (cross-method)
+        //        default: pkt.Seq = 99     → Id=Init, Seq=Init, Pay=Def
+        //      Log(pkt)                    state: MaybeDefault (default branch didn't init Payload)
+        //  Finalize(pkt)                   state: MaybeDefault (merge of urgent=all-init + else=maybe)
+
+        var ctx = await Analyze(@"
+            [Spire.MustBeInit]
+            struct Pkt
+            {
+                public int Id;
+                public int Seq;
+                public double Payload;
+                public Pkt(int id, int seq, double payload) { Id = id; Seq = seq; Payload = payload; }
+            }
+            class C
+            {
+                static int NextSeq() => 42;
+                static Pkt Create() => new Pkt(1, 2, 3.0);
+                static void Send(Pkt p) { }
+                static void Log(Pkt p) { }
+                static void Finalize(Pkt p) { }
+
+                void M(bool urgent, bool hasPayload, int mode)
+                {
+                    var pkt = default(Pkt);
+                    pkt.Id = 1;
+
+                    if (urgent)
+                    {
+                        pkt.Seq = NextSeq();
+                        if (hasPayload)
+                        {
+                            pkt.Payload = 3.14;
+                            Send(pkt);
+                        }
+                        else
+                        {
+                            pkt.Payload = 0.0;
+                            Log(pkt);
+                        }
+                    }
+                    else
+                    {
+                        switch (mode)
+                        {
+                            case 0:
+                                pkt = new Pkt(10, 20, 30.0);
+                                break;
+                            case 1:
+                                pkt = Create();
+                                break;
+                            default:
+                                pkt.Seq = 99;
+                                break;
+                        }
+                    }
+
+                    Finalize(pkt);
+                }
+            }
+        ", "M", "pkt");
+
+        // Send(pkt) — inside if(urgent)/if(hasPayload): all 3 fields initialized
+        var sendState = ctx.StateAtInvocation("Send");
+        Assert.NotNull(sendState);
+        Assert.Equal(InitState.Initialized, sendState!.Value.InitState);
+        Assert.Equal(3, sendState.Value.FieldStates.Length);
+        Assert.All(sendState.Value.FieldStates, f => Assert.Equal(InitState.Initialized, f));
+
+        // Finalize(pkt) — merge of all paths:
+        //   urgent+hasPayload:    Initialized
+        //   urgent+!hasPayload:   Initialized
+        //   !urgent+case0:        Initialized (ctor)
+        //   !urgent+case1:        Initialized (Create())
+        //   !urgent+default:      Id=Init, Seq=Init, Payload=Def → MaybeDefault
+        // Merge → MaybeDefault (at least one path has Payload=Default)
+        var finalState = ctx.StateAtInvocation("Finalize");
+        Assert.NotNull(finalState);
+        Assert.Equal(InitState.MaybeDefault, finalState!.Value.InitState);
+
+        // Field-level: Id and Seq should be Initialized on all paths
+        Assert.Equal(InitState.Initialized, finalState.Value.FieldStates[0]); // Id
+        Assert.Equal(InitState.Initialized, finalState.Value.FieldStates[1]); // Seq
+        // Payload: MaybeDefault (default switch branch didn't init it)
+        Assert.Equal(InitState.MaybeDefault, finalState.Value.FieldStates[2]); // Payload
+    }
+
     // ── Helper infrastructure ───────────────────────────────────────
 
     private static async Task<AnalysisContext> Analyze(string source, string methodName, string localName)
