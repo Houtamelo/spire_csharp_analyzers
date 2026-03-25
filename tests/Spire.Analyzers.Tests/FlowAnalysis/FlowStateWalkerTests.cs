@@ -23,7 +23,7 @@ public class FlowStateWalkerTests
     public async Task DefaultThenAllFieldsAssigned_InitStateIsInitialized()
     {
         var ctx = await Analyze(@"
-            [Spire.MustBeInit]
+            [Spire.EnforceInitialization]
             struct S { public int X; public int Y; public S(int x, int y) { X = x; Y = y; } }
             class C
             {
@@ -47,7 +47,7 @@ public class FlowStateWalkerTests
     public async Task DefaultThenPartialFieldAssigned_InitStateIsMaybeDefault()
     {
         var ctx = await Analyze(@"
-            [Spire.MustBeInit]
+            [Spire.EnforceInitialization]
             struct S { public int X; public int Y; public S(int x, int y) { X = x; Y = y; } }
             class C
             {
@@ -70,7 +70,7 @@ public class FlowStateWalkerTests
     public async Task DefaultThenCtorReassign_InitStateIsInitialized()
     {
         var ctx = await Analyze(@"
-            [Spire.MustBeInit]
+            [Spire.EnforceInitialization]
             struct S { public int X; public S(int x) { X = x; } }
             class C
             {
@@ -93,7 +93,7 @@ public class FlowStateWalkerTests
     public async Task DefaultNoReassign_InitStateIsDefault()
     {
         var ctx = await Analyze(@"
-            [Spire.MustBeInit]
+            [Spire.EnforceInitialization]
             struct S { public int X; public S(int x) { X = x; } }
             class C
             {
@@ -115,7 +115,7 @@ public class FlowStateWalkerTests
     public async Task BranchedInit_OnePathDefault_InitStateIsMaybeDefault()
     {
         var ctx = await Analyze(@"
-            [Spire.MustBeInit]
+            [Spire.EnforceInitialization]
             struct S { public int X; public S(int x) { X = x; } }
             class C
             {
@@ -141,7 +141,7 @@ public class FlowStateWalkerTests
     public async Task BranchedInit_BothPathsInitialized_InitStateIsInitialized()
     {
         var ctx = await Analyze(@"
-            [Spire.MustBeInit]
+            [Spire.EnforceInitialization]
             struct S { public int X; public S(int x) { X = x; } }
             class C
             {
@@ -167,7 +167,7 @@ public class FlowStateWalkerTests
     public async Task ParameterOfTrackedType_StartsInitialized()
     {
         var ctx = await Analyze(@"
-            [Spire.MustBeInit]
+            [Spire.EnforceInitialization]
             struct S { public int X; public S(int x) { X = x; } }
             class C
             {
@@ -185,10 +185,10 @@ public class FlowStateWalkerTests
     }
 
     [Fact]
-    public async Task NewParameterlessOnMustBeInit_InitStateIsDefault()
+    public async Task NewParameterlessOnEnforceInitialization_InitStateIsDefault()
     {
         var ctx = await Analyze(@"
-            [Spire.MustBeInit]
+            [Spire.EnforceInitialization]
             struct S { public int X; public S(int x) { X = x; } }
             class C
             {
@@ -212,7 +212,7 @@ public class FlowStateWalkerTests
     public async Task FieldStates_TrackIndividualFields()
     {
         var ctx = await Analyze(@"
-            [Spire.MustBeInit]
+            [Spire.EnforceInitialization]
             struct S { public int X; public int Y; public S(int x, int y) { X = x; Y = y; } }
             class C
             {
@@ -237,7 +237,7 @@ public class FlowStateWalkerTests
     public async Task FieldStates_CtorSetsAllFields()
     {
         var ctx = await Analyze(@"
-            [Spire.MustBeInit]
+            [Spire.EnforceInitialization]
             struct S { public int X; public int Y; public S(int x, int y) { X = x; Y = y; } }
             class C
             {
@@ -258,10 +258,10 @@ public class FlowStateWalkerTests
     // ── Cross-method reasoning ──────────────────────────────────────
 
     [Fact]
-    public async Task MethodReturningMustBeInitType_AssumedInitialized()
+    public async Task MethodReturningEnforceInitializationType_AssumedInitialized()
     {
         var ctx = await Analyze(@"
-            [Spire.MustBeInit]
+            [Spire.EnforceInitialization]
             struct S { public int X; public S(int x) { X = x; } }
             class C
             {
@@ -308,7 +308,7 @@ public class FlowStateWalkerTests
         //  Finalize(pkt)                   state: MaybeDefault (merge of urgent=all-init + else=maybe)
 
         var ctx = await Analyze(@"
-            [Spire.MustBeInit]
+            [Spire.EnforceInitialization]
             struct Pkt
             {
                 public int Id;
@@ -404,7 +404,7 @@ public class FlowStateWalkerTests
     {
         var refs = await ReferenceAssemblies.Net.Net80.ResolveAsync(
             LanguageNames.CSharp, CancellationToken.None);
-        var coreRef = MetadataReference.CreateFromFile(typeof(Spire.MustBeInitAttribute).Assembly.Location);
+        var coreRef = MetadataReference.CreateFromFile(typeof(Spire.EnforceInitializationAttribute).Assembly.Location);
 
         var tree = CSharpSyntaxTree.ParseText(source,
             CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest));
@@ -423,7 +423,7 @@ public class FlowStateWalkerTests
 
         var cfg = ControlFlowGraph.Create(methodDecl, model)!;
 
-        var mustBeInitType = compilation.GetTypeByMetadataName("Spire.MustBeInitAttribute")!;
+        var enforceInitializationType = compilation.GetTypeByMetadataName("Spire.EnforceInitializationAttribute")!;
 
         var initTypes = new List<INamedTypeSymbol>();
         foreach (var syntaxTree in compilation.SyntaxTrees)
@@ -432,13 +432,13 @@ public class FlowStateWalkerTests
             foreach (var typeDecl in syntaxTree.GetRoot().DescendantNodes().OfType<TypeDeclarationSyntax>())
             {
                 if (sm.GetDeclaredSymbol(typeDecl) is INamedTypeSymbol ts
-                    && MustBeInitChecks.HasMustBeInitAttribute(ts, mustBeInitType))
+                    && EnforceInitializationChecks.HasEnforceInitializationAttribute(ts, enforceInitializationType))
                     initTypes.Add(ts);
             }
         }
 
         var fieldMap = TrackedSymbolSet.BuildFieldMap(initTypes);
-        var symbols = new TrackedSymbolSet(mustBeInitType, fieldMap);
+        var symbols = new TrackedSymbolSet(enforceInitializationType, fieldMap);
         var methodSymbol = model.GetDeclaredSymbol(methodDecl)!;
 
         var result = FlowStateWalker.Analyze(cfg, symbols, methodSymbol);

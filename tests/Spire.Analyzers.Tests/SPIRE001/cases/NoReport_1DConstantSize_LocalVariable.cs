@@ -4,6 +4,6 @@ public class NoReport_1DConstantSize_LocalVariable
 {
     public void Method()
     {
-        var arr = new MustInitStruct[0];
+        var arr = new EnforceInitializationStruct[0];
     }
 }

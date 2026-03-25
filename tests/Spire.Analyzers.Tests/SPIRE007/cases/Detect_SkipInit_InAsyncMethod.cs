@@ -4,7 +4,7 @@ public class Detect_SkipInit_InAsyncMethod
 {
     public async Task Method()
     {
-        Unsafe.SkipInit(out MustInitStruct s); //~ ERROR
+        Unsafe.SkipInit(out EnforceInitializationStruct s); //~ ERROR
         await Task.CompletedTask;
     }
 }

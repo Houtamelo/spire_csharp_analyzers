@@ -4,10 +4,10 @@ public class Detect_SpanClear_InLambda
 {
     public void Method()
     {
-        var arr = new MustInitStruct[5];
+        var arr = new EnforceInitializationStruct[5];
         void Local()
         {
-            Span<MustInitStruct> span = arr;
+            Span<EnforceInitializationStruct> span = arr;
             span.Clear(); //~ ERROR
         }
         Local();

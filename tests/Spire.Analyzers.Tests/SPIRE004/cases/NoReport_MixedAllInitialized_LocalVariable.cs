@@ -4,6 +4,6 @@ public class NoReport_MixedAllInitialized_LocalVariable
 {
     public void Method()
     {
-        var x = new MustInitMixedAllInitialized();
+        var x = new EnforceInitializationMixedAllInitialized();
     }
 }

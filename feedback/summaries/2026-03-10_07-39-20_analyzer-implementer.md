@@ -8,7 +8,7 @@
 > ## Task
 
 ## Files Modified
-- `/home/houtamelo/Documents/projects/libraries/csharp_analyzer/src/Spire.Analyzers/Analyzers/SPIRE001ArrayOfMustBeInitStructAnalyzer.cs` (created)
+- `/home/houtamelo/Documents/projects/libraries/csharp_analyzer/src/Spire.Analyzers/Analyzers/SPIRE001ArrayOfEnforceInitializationStructAnalyzer.cs` (created)
 
 ## Build/Test Results
 - Test commands run: 1

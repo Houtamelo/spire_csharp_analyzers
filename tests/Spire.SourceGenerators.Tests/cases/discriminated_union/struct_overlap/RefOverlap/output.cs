@@ -6,7 +6,7 @@ using System.ComponentModel;
 
 namespace TestNs
 {
-    [global::Spire.MustBeInit]
+    [global::Spire.EnforceInitialization]
     [StructLayout(LayoutKind.Explicit)]
     partial struct Message : global::Spire.IDiscriminatedUnion<Message.Kind>
     {

@@ -4,6 +4,6 @@ public class NoReport_ArrayPoolShared_Rent_ZeroSize
 {
     public void Method()
     {
-        var arr = ArrayPool<MustInitStruct>.Shared.Rent(0);
+        var arr = ArrayPool<EnforceInitializationStruct>.Shared.Rent(0);
     }
 }

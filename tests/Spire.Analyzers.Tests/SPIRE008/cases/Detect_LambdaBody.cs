@@ -4,6 +4,6 @@ class TestClass
 {
     void Method()
     {
-        Func<object> factory = () => RuntimeHelpers.GetUninitializedObject(typeof(MustInitStruct)); //~ ERROR
+        Func<object> factory = () => RuntimeHelpers.GetUninitializedObject(typeof(EnforceInitializationStruct)); //~ ERROR
     }
 }

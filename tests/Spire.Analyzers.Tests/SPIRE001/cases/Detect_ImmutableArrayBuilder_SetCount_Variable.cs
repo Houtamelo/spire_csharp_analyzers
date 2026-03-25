@@ -4,7 +4,7 @@ public class Detect_ImmutableArrayBuilder_SetCount_Variable
 {
     public void Method(int n)
     {
-        var builder = ImmutableArray.CreateBuilder<MustInitStruct>();
+        var builder = ImmutableArray.CreateBuilder<EnforceInitializationStruct>();
         builder.Count = n; //~ ERROR
     }
 }

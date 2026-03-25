@@ -1,9 +1,9 @@
 //@ should_fail
-// Ensure that SPIRE004 IS triggered when `new MustInitAutoPropsNoCtor()` is returned from a method.
+// Ensure that SPIRE004 IS triggered when `new EnforceInitializationAutoPropsNoCtor()` is returned from a method.
 public class Detect_AutoPropsNoCtor_ReturnStatement
 {
-    public MustInitAutoPropsNoCtor Method()
+    public EnforceInitializationAutoPropsNoCtor Method()
     {
-        return new MustInitAutoPropsNoCtor(); //~ ERROR
+        return new EnforceInitializationAutoPropsNoCtor(); //~ ERROR
     }
 }

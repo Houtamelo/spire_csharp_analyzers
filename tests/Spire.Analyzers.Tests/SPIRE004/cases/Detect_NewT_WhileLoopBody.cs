@@ -1,13 +1,13 @@
 //@ should_fail
-// Ensure that SPIRE004 IS triggered when new MustInitNoCtor() appears inside a while loop body.
+// Ensure that SPIRE004 IS triggered when new EnforceInitializationNoCtor() appears inside a while loop body.
 public class Detect_NewT_WhileLoopBody
 {
     public void Method(bool condition)
     {
-        MustInitNoCtor x;
+        EnforceInitializationNoCtor x;
         while (condition)
         {
-            x = new MustInitNoCtor(); //~ ERROR
+            x = new EnforceInitializationNoCtor(); //~ ERROR
         }
     }
 }

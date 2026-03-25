@@ -4,7 +4,7 @@ public class Detect_RecordStruct_ImmutableArrayBuilder
 {
     public void Method()
     {
-        var builder = ImmutableArray.CreateBuilder<MustInitRecordStruct>();
+        var builder = ImmutableArray.CreateBuilder<EnforceInitializationRecordStruct>();
         builder.Count = 5; //~ ERROR
     }
 }

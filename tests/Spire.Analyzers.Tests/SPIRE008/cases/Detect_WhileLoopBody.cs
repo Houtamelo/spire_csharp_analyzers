@@ -6,7 +6,7 @@ class TestClass
     {
         while (condition)
         {
-            var x = RuntimeHelpers.GetUninitializedObject(typeof(MustInitStruct)); //~ ERROR
+            var x = RuntimeHelpers.GetUninitializedObject(typeof(EnforceInitializationStruct)); //~ ERROR
         }
     }
 }

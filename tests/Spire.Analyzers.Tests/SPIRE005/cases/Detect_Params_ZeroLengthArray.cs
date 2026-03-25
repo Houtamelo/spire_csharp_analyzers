@@ -4,6 +4,6 @@ public class Detect_Params_ZeroLengthArray
 {
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(MustInitStruct), new object[0]); //~ ERROR
+        var x = Activator.CreateInstance(typeof(EnforceInitializationStruct), new object[0]); //~ ERROR
     }
 }

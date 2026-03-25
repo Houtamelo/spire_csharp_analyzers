@@ -4,7 +4,7 @@ public class Detect_ArrayResize_ConstantSize
 {
     public void Method()
     {
-        MustInitStruct[]? arr = null;
+        EnforceInitializationStruct[]? arr = null;
         Array.Resize(ref arr, 5); //~ ERROR
     }
 }

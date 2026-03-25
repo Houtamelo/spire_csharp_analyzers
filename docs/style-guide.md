@@ -16,14 +16,14 @@ Code should be self-documenting: Comments explain why, not what.
 
 ## C# docs
 
-**Public API only** (attributes like `[MustBeInit]`, public utilities meant for consumers) gets full XML doc tags:
+**Public API only** (attributes like `[EnforceInitialization]`, public utilities meant for consumers) gets full XML doc tags:
 
 ```csharp
 /// <summary>
 /// Marks a struct as requiring explicit initialization.
 /// </summary>
 [AttributeUsage(AttributeTargets.Struct)]
-public sealed class MustBeInitAttribute : Attribute { }
+public sealed class EnforceInitializationAttribute : Attribute { }
 ```
 
 **Internal code** (analyzers, helpers, private/internal methods, tests) uses plain `///` comments without XML tags:

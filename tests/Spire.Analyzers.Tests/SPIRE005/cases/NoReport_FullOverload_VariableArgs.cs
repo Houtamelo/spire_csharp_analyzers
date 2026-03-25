@@ -7,6 +7,6 @@ public class NoReport_FullOverload_VariableArgs
     public void Method()
     {
         object[] args = new object[] { 42 };
-        var x = Activator.CreateInstance(typeof(MustInitStruct), BindingFlags.Default, null, args, null, null);
+        var x = Activator.CreateInstance(typeof(EnforceInitializationStruct), BindingFlags.Default, null, args, null, null);
     }
 }

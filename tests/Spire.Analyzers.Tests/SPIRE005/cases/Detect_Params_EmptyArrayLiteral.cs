@@ -4,6 +4,6 @@ public class Detect_Params_EmptyArrayLiteral
 {
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(MustInitStruct), new object[] { }); //~ ERROR
+        var x = Activator.CreateInstance(typeof(EnforceInitializationStruct), new object[] { }); //~ ERROR
     }
 }

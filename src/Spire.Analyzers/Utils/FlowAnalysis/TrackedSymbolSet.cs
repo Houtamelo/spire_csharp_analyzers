@@ -7,18 +7,18 @@ namespace Spire.Analyzers.Utils.FlowAnalysis;
 /// Resolved type metadata for flow analysis. Built once per compilation.
 public sealed class TrackedSymbolSet
 {
-    /// Types whose variables need init-state tracking (have [MustBeInit] + instance fields).
+    /// Types whose variables need init-state tracking (have [EnforceInitialization] + instance fields).
     /// Maps type → ordered list of instance fields (field ordinal = index in array).
     private readonly Dictionary<INamedTypeSymbol, ImmutableArray<IFieldSymbol>> _initTrackedTypes;
 
-    /// The [MustBeInit] attribute type, resolved from compilation.
-    public INamedTypeSymbol? MustBeInitType { get; }
+    /// The [EnforceInitialization] attribute type, resolved from compilation.
+    public INamedTypeSymbol? EnforceInitializationType { get; }
 
     public TrackedSymbolSet(
-        INamedTypeSymbol? mustBeInitType,
+        INamedTypeSymbol? enforceInitializationType,
         Dictionary<INamedTypeSymbol, ImmutableArray<IFieldSymbol>> initTrackedTypes)
     {
-        MustBeInitType = mustBeInitType;
+        EnforceInitializationType = enforceInitializationType;
         _initTrackedTypes = initTrackedTypes;
     }
 
@@ -63,11 +63,11 @@ public sealed class TrackedSymbolSet
 
     /// Registers a type for init tracking. Call during CompilationStartAction.
     public static Dictionary<INamedTypeSymbol, ImmutableArray<IFieldSymbol>> BuildFieldMap(
-        IEnumerable<INamedTypeSymbol> mustBeInitTypes)
+        IEnumerable<INamedTypeSymbol> enforceInitializationTypes)
     {
         var map = new Dictionary<INamedTypeSymbol, ImmutableArray<IFieldSymbol>>(SymbolEqualityComparer.Default);
 
-        foreach (var type in mustBeInitTypes)
+        foreach (var type in enforceInitializationTypes)
         {
             var fields = ImmutableArray.CreateBuilder<IFieldSymbol>();
             foreach (var member in type.GetMembers())

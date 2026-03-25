@@ -1,4 +1,4 @@
-# SPIRE002: [MustBeInit] on fieldless type has no effect
+# SPIRE002: [EnforceInitialization] on fieldless type has no effect
 
 | Property    | Value        |
 |-------------|--------------|
@@ -9,7 +9,7 @@
 
 ## Description
 
-The `[MustBeInit]` attribute marks struct types whose default value should be considered uninitialized. However, a struct with no instance fields has only one possible value — the default — so the attribute serves no purpose. This warning helps avoid false confidence that `[MustBeInit]` is providing protection when there is nothing to protect.
+The `[EnforceInitialization]` attribute marks struct types whose default value should be considered uninitialized. However, a struct with no instance fields has only one possible value — the default — so the attribute serves no purpose. This warning helps avoid false confidence that `[EnforceInitialization]` is providing protection when there is nothing to protect.
 
 **What counts as an instance field:**
 - Explicit instance fields (`public int X;`)
@@ -27,19 +27,19 @@ The `[MustBeInit]` attribute marks struct types whose default value should be co
 ### Violating code
 
 ```csharp
-[MustBeInit]                              // SPIRE002
+[EnforceInitialization]                              // SPIRE002
 struct Empty { }
 
-[MustBeInit]                              // SPIRE002
+[EnforceInitialization]                              // SPIRE002
 record struct EmptyRecord;
 
-[MustBeInit]                              // SPIRE002
+[EnforceInitialization]                              // SPIRE002
 struct OnlyComputed
 {
     public int Value => 42;
 }
 
-[MustBeInit]                              // SPIRE002
+[EnforceInitialization]                              // SPIRE002
 struct OnlyStatic
 {
     public static int Count;
@@ -50,29 +50,29 @@ struct OnlyStatic
 ### Compliant code
 
 ```csharp
-[MustBeInit]
+[EnforceInitialization]
 struct Config
 {
     public string Name;
 }
 
-[MustBeInit]
+[EnforceInitialization]
 struct WithAutoProperty
 {
     public int Value { get; set; }
 }
 
-[MustBeInit]
+[EnforceInitialization]
 record struct Point(int X, int Y);
 ```
 
 ## When to suppress
 
-Suppress if you intentionally use `[MustBeInit]` as a documentation marker regardless of whether the type has fields — for example, to signal intent for a type that will gain fields in the future.
+Suppress if you intentionally use `[EnforceInitialization]` as a documentation marker regardless of whether the type has fields — for example, to signal intent for a type that will gain fields in the future.
 
 ```csharp
 #pragma warning disable SPIRE002
-[MustBeInit]
+[EnforceInitialization]
 struct PlaceholderForFutureFields { }
 #pragma warning restore SPIRE002
 ```

@@ -1,13 +1,13 @@
 //@ should_fail
-// Ensure that SPIRE004 IS triggered when new MustInitNoCtor() is used as a collection initializer element.
+// Ensure that SPIRE004 IS triggered when new EnforceInitializationNoCtor() is used as a collection initializer element.
 public class Detect_NewT_CollectionInitializerElement
 {
     public void Method()
     {
-        var list = new List<MustInitNoCtor>
+        var list = new List<EnforceInitializationNoCtor>
         {
-            new MustInitNoCtor(1, "a"),
-            new MustInitNoCtor(), //~ ERROR
+            new EnforceInitializationNoCtor(1, "a"),
+            new EnforceInitializationNoCtor(), //~ ERROR
         };
     }
 }

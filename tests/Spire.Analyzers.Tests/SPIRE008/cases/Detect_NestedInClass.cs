@@ -6,7 +6,7 @@ class OuterClass
     {
         void Method()
         {
-            var obj = RuntimeHelpers.GetUninitializedObject(typeof(MustInitStruct)); //~ ERROR
+            var obj = RuntimeHelpers.GetUninitializedObject(typeof(EnforceInitializationStruct)); //~ ERROR
         }
     }
 }

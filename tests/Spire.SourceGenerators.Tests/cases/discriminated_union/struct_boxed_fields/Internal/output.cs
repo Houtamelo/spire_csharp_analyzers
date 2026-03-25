@@ -4,7 +4,7 @@ using System.ComponentModel;
 
 namespace TestNs
 {
-    [global::Spire.MustBeInit]
+    [global::Spire.EnforceInitialization]
     internal partial struct Internal : global::Spire.IDiscriminatedUnion<Internal.Kind>
     {
         public enum Kind : byte

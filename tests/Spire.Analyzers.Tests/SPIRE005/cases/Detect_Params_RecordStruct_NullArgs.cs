@@ -4,6 +4,6 @@ public class Detect_Params_RecordStruct_NullArgs
 {
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(MustInitRecordStruct), (object[])null); //~ ERROR
+        var x = Activator.CreateInstance(typeof(EnforceInitializationRecordStruct), (object[])null); //~ ERROR
     }
 }

@@ -11,10 +11,10 @@ using Spire.Analyzers.Utils.FlowAnalysis;
 namespace Spire.Analyzers.Rules;
 
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class SPIRE003DefaultOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
+public sealed class SPIRE003DefaultOfEnforceInitializationStructAnalyzer : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(Descriptors.SPIRE003_DefaultOfMustBeInitStruct);
+        ImmutableArray.Create(Descriptors.SPIRE003_DefaultOfEnforceInitializationStruct);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -23,21 +23,21 @@ public sealed class SPIRE003DefaultOfMustBeInitStructAnalyzer : DiagnosticAnalyz
 
         context.RegisterCompilationStartAction(compilationContext =>
         {
-            var mustBeInitType = compilationContext.Compilation
-                .GetTypeByMetadataName("Spire.MustBeInitAttribute");
+            var enforceInitializationType = compilationContext.Compilation
+                .GetTypeByMetadataName("Spire.EnforceInitializationAttribute");
 
-            if (mustBeInitType is null)
+            if (enforceInitializationType is null)
                 return;
 
             compilationContext.RegisterOperationAction(
-                operationContext => AnalyzeDefaultValue(operationContext, mustBeInitType),
+                operationContext => AnalyzeDefaultValue(operationContext, enforceInitializationType),
                 OperationKind.DefaultValue);
         });
     }
 
     private static void AnalyzeDefaultValue(
         OperationAnalysisContext context,
-        INamedTypeSymbol mustBeInitType)
+        INamedTypeSymbol enforceInitializationType)
     {
         var operation = (IDefaultValueOperation)context.Operation;
 
@@ -51,7 +51,7 @@ public sealed class SPIRE003DefaultOfMustBeInitStructAnalyzer : DiagnosticAnalyz
         if (type.IsReferenceType && IsNullableDefault(operation))
             return;
 
-        if (!MustBeInitChecks.IsDefaultValueInvalid(type, mustBeInitType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(type, enforceInitializationType))
             return;
 
         if (IsInsideEqualityComparison(operation))
@@ -60,12 +60,12 @@ public sealed class SPIRE003DefaultOfMustBeInitStructAnalyzer : DiagnosticAnalyz
         if (IsInsideIsPattern(operation))
             return;
 
-        if (IsFullyInitializedBeforeReads(operation, type, mustBeInitType))
+        if (IsFullyInitializedBeforeReads(operation, type, enforceInitializationType))
             return;
 
         context.ReportDiagnostic(
             Diagnostic.Create(
-                Descriptors.SPIRE003_DefaultOfMustBeInitStruct,
+                Descriptors.SPIRE003_DefaultOfEnforceInitializationStruct,
                 operation.Syntax.GetLocation(),
                 type.Name));
     }
@@ -75,11 +75,11 @@ public sealed class SPIRE003DefaultOfMustBeInitStructAnalyzer : DiagnosticAnalyz
     private static bool IsFullyInitializedBeforeReads(
         IDefaultValueOperation operation,
         INamedTypeSymbol type,
-        INamedTypeSymbol mustBeInitType)
+        INamedTypeSymbol enforceInitializationType)
     {
         try
         {
-            return IsFullyInitializedBeforeReadsCore(operation, type, mustBeInitType);
+            return IsFullyInitializedBeforeReadsCore(operation, type, enforceInitializationType);
         }
         catch
         {
@@ -90,7 +90,7 @@ public sealed class SPIRE003DefaultOfMustBeInitStructAnalyzer : DiagnosticAnalyz
     private static bool IsFullyInitializedBeforeReadsCore(
         IDefaultValueOperation operation,
         INamedTypeSymbol type,
-        INamedTypeSymbol mustBeInitType)
+        INamedTypeSymbol enforceInitializationType)
     {
         if (type.TypeKind != TypeKind.Struct)
             return false;
@@ -111,7 +111,7 @@ public sealed class SPIRE003DefaultOfMustBeInitStructAnalyzer : DiagnosticAnalyz
 
         // Build tracked symbol set for this type
         var fieldMap = TrackedSymbolSet.BuildFieldMap(new[] { type });
-        var symbols = new TrackedSymbolSet(mustBeInitType, fieldMap);
+        var symbols = new TrackedSymbolSet(enforceInitializationType, fieldMap);
 
         var owningSymbol = semanticModel.GetDeclaredSymbol(methodSyntax);
         if (owningSymbol is null)
@@ -228,7 +228,7 @@ public sealed class SPIRE003DefaultOfMustBeInitStructAnalyzer : DiagnosticAnalyz
         IOperation? parent = operation.Parent;
         while (parent is IConversionOperation { IsImplicit: true } conv)
         {
-            if (conv.Type is not null && MustBeInitChecks.IsNullableAnnotatedReference(conv.Type))
+            if (conv.Type is not null && EnforceInitializationChecks.IsNullableAnnotatedReference(conv.Type))
                 return true;
             parent = conv.Parent;
         }

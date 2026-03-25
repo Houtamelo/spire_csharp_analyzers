@@ -5,7 +5,7 @@ public class Detect_ArrayCreateInstance_TernaryExpression
     public Array Method(bool flag)
     {
         return flag
-            ? Array.CreateInstance(typeof(MustInitStruct), 5) //~ ERROR
-            : Array.CreateInstance(typeof(MustInitStruct), 0);
+            ? Array.CreateInstance(typeof(EnforceInitializationStruct), 5) //~ ERROR
+            : Array.CreateInstance(typeof(EnforceInitializationStruct), 0);
     }
 }

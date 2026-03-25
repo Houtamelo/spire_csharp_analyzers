@@ -4,6 +4,6 @@ public class Detect_1DVariableSize_LocalVariable
 {
     public void Method(int n)
     {
-        var arr = new MustInitStruct[n]; //~ ERROR
+        var arr = new EnforceInitializationStruct[n]; //~ ERROR
     }
 }

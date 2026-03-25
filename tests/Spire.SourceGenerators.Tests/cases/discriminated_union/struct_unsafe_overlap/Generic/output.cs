@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-[global::Spire.MustBeInit]
+[global::Spire.EnforceInitialization]
 partial struct Result<T> : global::Spire.IDiscriminatedUnion<Result<T>.Kind>
 {
     public enum Kind : byte

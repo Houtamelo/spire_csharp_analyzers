@@ -1,10 +1,10 @@
 //@ should_pass
-// Ensure that SPIRE001 is NOT triggered for empty array of [MustBeInit] class.
+// Ensure that SPIRE001 is NOT triggered for empty array of [EnforceInitialization] class.
 #nullable enable
 public class NoReport_EmptyArrayClass
 {
     void Ok()
     {
-        var arr = new MustInitClass[0];
+        var arr = new EnforceInitializationClass[0];
     }
 }

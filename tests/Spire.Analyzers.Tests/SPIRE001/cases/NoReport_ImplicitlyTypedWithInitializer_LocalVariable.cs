@@ -4,6 +4,6 @@ public class NoReport_ImplicitlyTypedWithInitializer_LocalVariable
 {
     public void Method()
     {
-        var arr = new[] { new MustInitStruct(1), new MustInitStruct(2) };
+        var arr = new[] { new EnforceInitializationStruct(1), new EnforceInitializationStruct(2) };
     }
 }

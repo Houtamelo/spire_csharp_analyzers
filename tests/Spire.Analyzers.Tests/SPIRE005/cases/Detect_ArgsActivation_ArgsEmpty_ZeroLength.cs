@@ -4,6 +4,6 @@ public class Detect_ArgsActivation_ArgsEmpty_ZeroLength
 {
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(MustInitStruct), new object[0], (object[])null); //~ ERROR
+        var x = Activator.CreateInstance(typeof(EnforceInitializationStruct), new object[0], (object[])null); //~ ERROR
     }
 }

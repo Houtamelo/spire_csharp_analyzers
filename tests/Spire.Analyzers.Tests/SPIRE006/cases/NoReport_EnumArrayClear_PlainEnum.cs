@@ -1,5 +1,5 @@
 //@ should_pass
-// Ensure that SPIRE006 is NOT triggered when Array.Clear is called on a PlainEnum[] because the enum is not marked with [MustBeInit].
+// Ensure that SPIRE006 is NOT triggered when Array.Clear is called on a PlainEnum[] because the enum is not marked with [EnforceInitialization].
 public class NoReport_EnumArrayClear_PlainEnum
 {
     public void Method()

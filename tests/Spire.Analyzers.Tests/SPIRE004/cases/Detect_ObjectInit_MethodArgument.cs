@@ -1,11 +1,11 @@
 //@ should_fail
-// Ensure that SPIRE004 IS triggered when `new MustInitNoCtor { }` is passed as a method argument.
+// Ensure that SPIRE004 IS triggered when `new EnforceInitializationNoCtor { }` is passed as a method argument.
 public class Detect_ObjectInit_MethodArgument
 {
-    private static void Consume(MustInitNoCtor value) { }
+    private static void Consume(EnforceInitializationNoCtor value) { }
 
     public void Method()
     {
-        Consume(new MustInitNoCtor { }); //~ ERROR
+        Consume(new EnforceInitializationNoCtor { }); //~ ERROR
     }
 }

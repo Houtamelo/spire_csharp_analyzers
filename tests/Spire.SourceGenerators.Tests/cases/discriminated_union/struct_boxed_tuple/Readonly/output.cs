@@ -4,7 +4,7 @@ using System.ComponentModel;
 
 namespace TestNs
 {
-    [global::Spire.MustBeInit]
+    [global::Spire.EnforceInitialization]
     readonly partial struct Immutable : global::Spire.IDiscriminatedUnion<Immutable.Kind>
     {
         public enum Kind : byte

@@ -1,9 +1,9 @@
 //@ should_fail
-// Ensure that SPIRE003 IS triggered when default(MustInitRecordStruct) is used in a local variable.
+// Ensure that SPIRE003 IS triggered when default(EnforceInitializationRecordStruct) is used in a local variable.
 public class Detect_RecordStruct_ExplicitDefault
 {
     public void Method()
     {
-        var s = default(MustInitRecordStruct); //~ ERROR
+        var s = default(EnforceInitializationRecordStruct); //~ ERROR
     }
 }

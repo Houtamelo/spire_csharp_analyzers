@@ -1,12 +1,12 @@
 //@ should_fail
-// Ensure that SPIRE004 IS triggered when new MustInitNoCtor() appears inside a nested class.
+// Ensure that SPIRE004 IS triggered when new EnforceInitializationNoCtor() appears inside a nested class.
 public class Detect_NewT_NestedInClass
 {
     public class Inner
     {
-        public MustInitNoCtor Method()
+        public EnforceInitializationNoCtor Method()
         {
-            return new MustInitNoCtor(); //~ ERROR
+            return new EnforceInitializationNoCtor(); //~ ERROR
         }
     }
 }

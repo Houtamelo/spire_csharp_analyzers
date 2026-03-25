@@ -4,6 +4,6 @@ public class Detect_ArgsActivation_ArgsEmpty_Literal
 {
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(MustInitStruct), new object[] { }, (object[])null); //~ ERROR
+        var x = Activator.CreateInstance(typeof(EnforceInitializationStruct), new object[] { }, (object[])null); //~ ERROR
     }
 }

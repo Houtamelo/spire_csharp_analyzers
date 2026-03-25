@@ -1,9 +1,9 @@
 //@ should_fail
-// Ensure that SPIRE004 IS triggered when a method returns new MustInitEnumNoZero() from a return statement.
+// Ensure that SPIRE004 IS triggered when a method returns new EnforceInitializationEnumNoZero() from a return statement.
 public class Detect_EnumNew_NoZeroMember_ReturnStatement
 {
-    MustInitEnumNoZero GetValue()
+    EnforceInitializationEnumNoZero GetValue()
     {
-        return new MustInitEnumNoZero(); //~ ERROR
+        return new EnforceInitializationEnumNoZero(); //~ ERROR
     }
 }

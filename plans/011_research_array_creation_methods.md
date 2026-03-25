@@ -5,7 +5,7 @@
 
 ## Purpose
 
-Comprehensive inventory of all .NET APIs that create or expand arrays where elements are initialized to `default(T)`. This is needed to define the detection surface for SPIRE001 (and future rules) -- any API that can produce an array of `[MustBeInitialized]` structs with uninitialized (default) elements is a potential diagnostic target.
+Comprehensive inventory of all .NET APIs that create or expand arrays where elements are initialized to `default(T)`. This is needed to define the detection surface for SPIRE001 (and future rules) -- any API that can produce an array of `[EnforceInitializationialized]` structs with uninitialized (default) elements is a potential diagnostic target.
 
 ---
 
@@ -162,7 +162,7 @@ Source: [GC.AllocateUninitializedArray](https://learn.microsoft.com/en-us/dotnet
 - **Generic type parameter**: `T` on the `ArrayPool<T>` class
 - **Size parameter**: `minimumLength` (1st parameter)
 - **Assessment**: Similar concern to `GC.AllocateUninitializedArray` -- elements are not guaranteed to be `default(T)`. However, `Rent` is a pool operation, not an allocation. The array was originally created elsewhere.
-- **Recommendation**: OUT OF SCOPE for SPIRE001. The primary concern of SPIRE001 is *creation* of arrays, not pool rental. `Rent` could be a separate rule (SPIRE-future) about "renting arrays of `[MustBeInitialized]` structs from pool without clearing".
+- **Recommendation**: OUT OF SCOPE for SPIRE001. The primary concern of SPIRE001 is *creation* of arrays, not pool rental. `Rent` could be a separate rule (SPIRE-future) about "renting arrays of `[EnforceInitializationialized]` structs from pool without clearing".
 
 Source: [ArrayPool\<T\>.Rent](https://learn.microsoft.com/en-us/dotnet/api/system.buffers.arraypool-1.rent?view=net-8.0)
 
@@ -269,12 +269,12 @@ Source: [ImmutableArray\<T\>.Builder.Count](https://learn.microsoft.com/en-us/do
 ### For `Array.CreateInstance` / `Array.CreateInstanceFromArrayType`
 
 These use `System.Type` parameters rather than generics. To determine the element type:
-1. Check if the argument is a `typeof(T)` expression -- if so, extract `T` and check for `[MustBeInitialized]`
+1. Check if the argument is a `typeof(T)` expression -- if so, extract `T` and check for `[EnforceInitializationialized]`
 2. If the argument is a variable or complex expression, the analyzer cannot statically determine the type -- skip (no false positives)
 
 ### For `Array.Resize<T>`
 
-The element type comes from the generic type argument. Detection should flag the call if `T` has `[MustBeInitialized]`. Note that `Resize` only creates default elements when *growing* the array, but statically determining growth vs shrink requires data-flow analysis of the size argument. Recommend: flag all `Array.Resize<T>` calls where `T` is `[MustBeInitialized]`, since the intent is ambiguous.
+The element type comes from the generic type argument. Detection should flag the call if `T` has `[EnforceInitializationialized]`. Note that `Resize` only creates default elements when *growing* the array, but statically determining growth vs shrink requires data-flow analysis of the size argument. Recommend: flag all `Array.Resize<T>` calls where `T` is `[EnforceInitializationialized]`, since the intent is ambiguous.
 
 ### For `GC.AllocateArray<T>` and `GC.AllocateUninitializedArray<T>`
 

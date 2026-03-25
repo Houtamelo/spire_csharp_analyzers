@@ -4,6 +4,6 @@ public class Detect_ArrayCreateInstance_LambdaBody
 {
     public void Method()
     {
-        Func<Array> factory = () => Array.CreateInstance(typeof(MustInitStruct), 5); //~ ERROR
+        Func<Array> factory = () => Array.CreateInstance(typeof(EnforceInitializationStruct), 5); //~ ERROR
     }
 }

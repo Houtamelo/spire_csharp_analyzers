@@ -6,7 +6,7 @@ class TestClass
     {
         return value switch
         {
-            1 => RuntimeHelpers.GetUninitializedObject(typeof(MustInitStruct)), //~ ERROR
+            1 => RuntimeHelpers.GetUninitializedObject(typeof(EnforceInitializationStruct)), //~ ERROR
             _ => null,
         };
     }

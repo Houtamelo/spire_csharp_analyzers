@@ -8,10 +8,10 @@ using Spire.Analyzers.Utils;
 namespace Spire.Analyzers.Rules;
 
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class SPIRE004NewOfMustBeInitStructWithoutCtorAnalyzer : DiagnosticAnalyzer
+public sealed class SPIRE004NewOfEnforceInitializationStructWithoutCtorAnalyzer : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(Descriptors.SPIRE004_NewOfMustBeInitStructWithoutCtor);
+        ImmutableArray.Create(Descriptors.SPIRE004_NewOfEnforceInitializationStructWithoutCtor);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -20,21 +20,21 @@ public sealed class SPIRE004NewOfMustBeInitStructWithoutCtorAnalyzer : Diagnosti
 
         context.RegisterCompilationStartAction(compilationContext =>
         {
-            var mustBeInitType = compilationContext.Compilation
-                .GetTypeByMetadataName("Spire.MustBeInitAttribute");
+            var enforceInitializationType = compilationContext.Compilation
+                .GetTypeByMetadataName("Spire.EnforceInitializationAttribute");
 
-            if (mustBeInitType is null)
+            if (enforceInitializationType is null)
                 return;
 
             compilationContext.RegisterOperationAction(
-                operationContext => AnalyzeObjectCreation(operationContext, mustBeInitType),
+                operationContext => AnalyzeObjectCreation(operationContext, enforceInitializationType),
                 OperationKind.ObjectCreation);
         });
     }
 
     private static void AnalyzeObjectCreation(
         OperationAnalysisContext context,
-        INamedTypeSymbol mustBeInitType)
+        INamedTypeSymbol enforceInitializationType)
     {
         var operation = (IObjectCreationOperation)context.Operation;
 
@@ -51,7 +51,7 @@ public sealed class SPIRE004NewOfMustBeInitStructWithoutCtorAnalyzer : Diagnosti
         if (type.TypeKind != TypeKind.Struct && type.TypeKind != TypeKind.Enum)
             return;
 
-        if (!MustBeInitChecks.IsDefaultValueInvalid(type, mustBeInitType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(type, enforceInitializationType))
             return;
 
         // Struct-specific: skip if user defined a parameterless ctor or all fields have initializers
@@ -66,7 +66,7 @@ public sealed class SPIRE004NewOfMustBeInitStructWithoutCtorAnalyzer : Diagnosti
 
         context.ReportDiagnostic(
             Diagnostic.Create(
-                Descriptors.SPIRE004_NewOfMustBeInitStructWithoutCtor,
+                Descriptors.SPIRE004_NewOfEnforceInitializationStructWithoutCtor,
                 operation.Syntax.GetLocation(),
                 type.Name));
     }

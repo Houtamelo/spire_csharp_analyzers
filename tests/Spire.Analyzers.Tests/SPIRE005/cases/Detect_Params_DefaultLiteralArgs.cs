@@ -4,6 +4,6 @@ public class Detect_Params_DefaultLiteralArgs
 {
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(MustInitStruct), (object[])default); //~ ERROR
+        var x = Activator.CreateInstance(typeof(EnforceInitializationStruct), (object[])default); //~ ERROR
     }
 }

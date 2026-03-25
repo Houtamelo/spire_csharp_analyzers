@@ -4,6 +4,6 @@ public class Detect_GCAllocateArray_LambdaBody
 {
     public void Method()
     {
-        Func<MustInitStruct[]> factory = () => GC.AllocateArray<MustInitStruct>(5); //~ ERROR
+        Func<EnforceInitializationStruct[]> factory = () => GC.AllocateArray<EnforceInitializationStruct>(5); //~ ERROR
     }
 }

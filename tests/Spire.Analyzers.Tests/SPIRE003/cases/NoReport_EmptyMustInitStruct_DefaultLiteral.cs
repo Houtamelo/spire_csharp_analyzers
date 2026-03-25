@@ -1,10 +1,10 @@
 //@ should_pass
-// Ensure that SPIRE003 is NOT triggered when `default` is assigned to an `EmptyMustInitStruct` variable, because the type is fieldless.
-public class NoReport_EmptyMustInitStruct_DefaultLiteral
+// Ensure that SPIRE003 is NOT triggered when `default` is assigned to an `EmptyEnforceInitializationStruct` variable, because the type is fieldless.
+public class NoReport_EmptyEnforceInitializationStruct_DefaultLiteral
 {
     public void Method()
     {
-        EmptyMustInitStruct s = default;
+        EmptyEnforceInitializationStruct s = default;
         _ = s;
     }
 }

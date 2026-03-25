@@ -6,9 +6,9 @@ Track variable state changes within method bodies using Roslyn's `ControlFlowGra
 
 ## Use Cases
 
-### 1. MustBeInit Struct Init-State Tracking (SPIRE003, SPIRE004)
+### 1. EnforceInitialization Struct Init-State Tracking (SPIRE003, SPIRE004)
 
-Currently, SPIRE003 flags every `default(T)` for `[MustBeInit]` structs regardless of subsequent reassignment. With flow analysis, SPIRE003 **suppresses** the diagnostic when all fields are initialized before any read of the variable:
+Currently, SPIRE003 flags every `default(T)` for `[EnforceInitialization]` structs regardless of subsequent reassignment. With flow analysis, SPIRE003 **suppresses** the diagnostic when all fields are initialized before any read of the variable:
 
 ```csharp
 var s = default(MyStruct);  // s.InitState = Default
@@ -83,15 +83,15 @@ Immutable state tracked per variable at each program point.
 ```
 VariableState {
     InitState    : Default | Initialized | MaybeDefault
-    FieldStates  : ImmutableArray<InitState>  // indexed by field ordinal, for [MustBeInit] structs
+    FieldStates  : ImmutableArray<InitState>  // indexed by field ordinal, for [EnforceInitialization] structs
     KindState    : KindStateValue             // see below
     NullState    : Null | NotNull | MaybeNull
 }
 ```
 
-`FieldStates` uses `ImmutableArray<InitState>` indexed by field ordinal (not a dictionary). Field ordinals are assigned during `CompilationStartAction` when resolving the type's field list via `INamedTypeSymbol.GetMembers()`. For non-`[MustBeInit]` types, `FieldStates` is empty (default `ImmutableArray`). Struct field counts are typically small (2-8), making array indexing both fast and memory-efficient.
+`FieldStates` uses `ImmutableArray<InitState>` indexed by field ordinal (not a dictionary). Field ordinals are assigned during `CompilationStartAction` when resolving the type's field list via `INamedTypeSymbol.GetMembers()`. For non-`[EnforceInitialization]` types, `FieldStates` is empty (default `ImmutableArray`). Struct field counts are typically small (2-8), making array indexing both fast and memory-efficient.
 
-**InitState lattice** (for `[MustBeInit]` structs):
+**InitState lattice** (for `[EnforceInitialization]` structs):
 - `Default` — assigned via `default`, `new T()` without user-defined ctor, etc.
 - `Initialized` — assigned via constructor with args, or all fields individually initialized
 - `MaybeDefault` — join of `Default` and `Initialized` branches
@@ -164,7 +164,7 @@ Rules use `RegisterOperationBlockStartAction` to access the CFG:
    d. Register inner OperationAction callbacks with captured result
 
 2. Inner OperationAction (e.g., SPIRE003 on IDefaultValueOperation):
-   a. Cheap pre-filter: is this a [MustBeInit] struct? If not, skip.
+   a. Cheap pre-filter: is this a [EnforceInitialization] struct? If not, skip.
    b. Query: result.GetStateAt(operation, targetVariable)
    c. If InitState == Initialized → suppress diagnostic
    d. If InitState == Default → report diagnostic
@@ -182,7 +182,7 @@ Operations that update state:
 | `ISimpleAssignmentOperation` | Update target variable/field state based on value |
 | `ICompoundAssignmentOperation` | Target field → `Initialized` (field is being written) |
 | `IIncrementOrDecrementOperation` | Target field → `Initialized` |
-| `IObjectCreationOperation` | Target → all fields `Initialized` (if has ctor args) or `Default` (if parameterless on `[MustBeInit]`) |
+| `IObjectCreationOperation` | Target → all fields `Initialized` (if has ctor args) or `Default` (if parameterless on `[EnforceInitialization]`) |
 | `IDefaultValueOperation` | Target → all fields `Default` |
 | `IFieldReferenceOperation` (write) | Specific field → `Initialized` |
 | `IPropertyReferenceOperation` (write) | Backing field → `Initialized` (for auto-props) |
@@ -208,7 +208,7 @@ In the CFG, conditional branches are represented via `BasicBlock.BranchValue` + 
 
 Intra-method analysis only, with conservative cross-method defaults:
 
-- Method returns `[MustBeInit]` struct → caller assumes `Initialized`. Rationale: SPIRE003 already flags `default(T)` inside the called method, so if the method compiles without diagnostics, its return value is properly initialized.
+- Method returns `[EnforceInitialization]` struct → caller assumes `Initialized`. Rationale: SPIRE003 already flags `default(T)` inside the called method, so if the method compiles without diagnostics, its return value is properly initialized.
 - Method takes `ref`/`out` parameter → after call, parameter state becomes `MaybeDefault` (conservative)
 - Return type `T?` (nullable) → `MaybeNull`
 - Return type `T` (non-nullable in `#nullable enable`) → `NotNull`

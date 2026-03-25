@@ -6,7 +6,7 @@ public class Detect_SkipInit_InNestedType
     {
         public void Method()
         {
-            Unsafe.SkipInit(out MustInitStruct s); //~ ERROR
+            Unsafe.SkipInit(out EnforceInitializationStruct s); //~ ERROR
         }
     }
 }

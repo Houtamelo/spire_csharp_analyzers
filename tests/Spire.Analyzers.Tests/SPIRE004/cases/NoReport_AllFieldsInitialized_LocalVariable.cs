@@ -4,6 +4,6 @@ public class NoReport_AllFieldsInitialized_LocalVariable
 {
     public void Method()
     {
-        var x = new MustInitAllFieldsInitialized();
+        var x = new EnforceInitializationAllFieldsInitialized();
     }
 }

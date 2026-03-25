@@ -1,14 +1,14 @@
 //@ should_pass
-// Ensure that SPIRE006 is NOT triggered when a user-defined void Clear() method is called on a custom type that holds MustInitStruct.
-public class NoReport_CustomClear_MustInitStruct
+// Ensure that SPIRE006 is NOT triggered when a user-defined void Clear() method is called on a custom type that holds EnforceInitializationStruct.
+public class NoReport_CustomClear_EnforceInitializationStruct
 {
     private class CustomContainer
     {
-        private MustInitStruct[] _items = new MustInitStruct[4];
+        private EnforceInitializationStruct[] _items = new EnforceInitializationStruct[4];
 
         public void Clear()
         {
-            _items = new MustInitStruct[4];
+            _items = new EnforceInitializationStruct[4];
         }
     }
 

@@ -4,7 +4,7 @@ public class NoReport_MultiDimensional_AllZero
 {
     public void Method()
     {
-        var arr2d = new MustInitStruct[0, 0];
-        var arr3d = new MustInitStruct[0, 0, 0];
+        var arr2d = new EnforceInitializationStruct[0, 0];
+        var arr3d = new EnforceInitializationStruct[0, 0, 0];
     }
 }

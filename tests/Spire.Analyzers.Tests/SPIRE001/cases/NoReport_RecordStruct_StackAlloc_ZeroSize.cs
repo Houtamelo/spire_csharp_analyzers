@@ -4,6 +4,6 @@ public class NoReport_RecordStruct_StackAlloc_ZeroSize
 {
     public void Method()
     {
-        Span<MustInitRecordStruct> span = stackalloc MustInitRecordStruct[0];
+        Span<EnforceInitializationRecordStruct> span = stackalloc EnforceInitializationRecordStruct[0];
     }
 }

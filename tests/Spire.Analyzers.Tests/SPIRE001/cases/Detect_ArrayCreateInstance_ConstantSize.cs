@@ -4,6 +4,6 @@ public class Detect_ArrayCreateInstance_ConstantSize
 {
     public void Method()
     {
-        var arr = Array.CreateInstance(typeof(MustInitStruct), 5); //~ ERROR
+        var arr = Array.CreateInstance(typeof(EnforceInitializationStruct), 5); //~ ERROR
     }
 }

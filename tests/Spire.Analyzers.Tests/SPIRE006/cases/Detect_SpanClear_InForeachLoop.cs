@@ -4,11 +4,11 @@ public class Detect_SpanClear_InForeachLoop
 {
     public void Method()
     {
-        var arr = new MustInitStruct[5];
+        var arr = new EnforceInitializationStruct[5];
         var items = new[] { 1, 2, 3 };
         foreach (var item in items)
         {
-            Span<MustInitStruct> span = arr;
+            Span<EnforceInitializationStruct> span = arr;
             span.Clear(); //~ ERROR
         }
     }

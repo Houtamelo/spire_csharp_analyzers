@@ -6,40 +6,40 @@ Research and proposal of 30 new analyzer rules that fit the Spire.Analyzers desi
 
 ---
 
-## Category A: `[MustBeInit]` Ecosystem Extensions
+## Category A: `[EnforceInitialization]` Ecosystem Extensions
 
-These extend the `[MustBeInit]` attribute system beyond array creation (SPIRE001).
+These extend the `[EnforceInitialization]` attribute system beyond array creation (SPIRE001).
 
-### SPIRE003: `default(T)` where T is `[MustBeInit]`
+### SPIRE003: `default(T)` where T is `[EnforceInitialization]`
 
 - **Severity:** Error
 - **Category:** Correctness
-- **Description:** Flags `default(T)` and `default` literals when T is a `[MustBeInit]` struct. The whole point of the attribute is to prevent default instances.
-- **Flagged:** `Config c = default;`, `return default;` (return type is `[MustBeInit]`), `default(Config)`, ternary/null-coalescing producing default
-- **Not flagged:** `[MustBeInit]` types that have no fields, `default` for non-`[MustBeInit]` types, `default` in comparison (`x == default` — detection only, not comparison)
+- **Description:** Flags `default(T)` and `default` literals when T is a `[EnforceInitialization]` struct. The whole point of the attribute is to prevent default instances.
+- **Flagged:** `Config c = default;`, `return default;` (return type is `[EnforceInitialization]`), `default(Config)`, ternary/null-coalescing producing default
+- **Not flagged:** `[EnforceInitialization]` types that have no fields, `default` for non-`[EnforceInitialization]` types, `default` in comparison (`x == default` — detection only, not comparison)
 
-### SPIRE005: `[MustBeInit]` field in another struct without initialization guarantee
+### SPIRE005: `[EnforceInitialization]` field in another struct without initialization guarantee
 
 - **Severity:** Warning
 - **Category:** Correctness
-- **Description:** A struct that contains a field of `[MustBeInit]` type is itself susceptible to producing uninitialized instances. Warns that the containing type should also be marked `[MustBeInit]` or must guarantee initialization.
-- **Flagged:** A struct (not marked `[MustBeInit]`) that has an instance field whose type is `[MustBeInit]`
-- **Not flagged:** Containing type is already `[MustBeInit]`, containing type is a class (classes have constructors that run), field is static
+- **Description:** A struct that contains a field of `[EnforceInitialization]` type is itself susceptible to producing uninitialized instances. Warns that the containing type should also be marked `[EnforceInitialization]` or must guarantee initialization.
+- **Flagged:** A struct (not marked `[EnforceInitialization]`) that has an instance field whose type is `[EnforceInitialization]`
+- **Not flagged:** Containing type is already `[EnforceInitialization]`, containing type is a class (classes have constructors that run), field is static
 
-### SPIRE006: `new T()` where T is `[MustBeInit]` with `new()` constraint
+### SPIRE006: `new T()` where T is `[EnforceInitialization]` with `new()` constraint
 
 - **Severity:** Error
 - **Category:** Correctness
-- **Description:** Generic `new T()` on a struct is equivalent to `default(T)`. When the type argument is `[MustBeInit]`, the result is uninitialized.
-- **Flagged:** `new T()` in generic context where T is constrained to `struct, new()` and the concrete type argument is `[MustBeInit]`
+- **Description:** Generic `new T()` on a struct is equivalent to `default(T)`. When the type argument is `[EnforceInitialization]`, the result is uninitialized.
+- **Flagged:** `new T()` in generic context where T is constrained to `struct, new()` and the concrete type argument is `[EnforceInitialization]`
 - **Not flagged:** `new T()` where T is a class (constructor runs), `new T(args)` with arguments (not parameterless)
 
-### SPIRE007: `[MustBeInit]` struct as `out` parameter not assigned on all paths
+### SPIRE007: `[EnforceInitialization]` struct as `out` parameter not assigned on all paths
 
 - **Severity:** Warning
 - **Category:** Correctness
-- **Description:** An `out` parameter of `[MustBeInit]` type that is assigned `default` or left to implicit default on some code path.
-- **Flagged:** `out` parameter of `[MustBeInit]` type assigned `= default` explicitly, or method with `out` parameter where some branch doesn't assign a meaningful value
+- **Description:** An `out` parameter of `[EnforceInitialization]` type that is assigned `default` or left to implicit default on some code path.
+- **Flagged:** `out` parameter of `[EnforceInitialization]` type assigned `= default` explicitly, or method with `out` parameter where some branch doesn't assign a meaningful value
 - **Not flagged:** `out` parameter properly assigned a constructed value on all paths
 
 ---
@@ -284,7 +284,7 @@ Structs have value semantics. Many bugs come from mutating a copy thinking you'r
 ### Tier 1: High Impact — Implement First
 | Rule | Rationale |
 |------|-----------|
-| SPIRE003 | Natural `[MustBeInit]` extension, straightforward IOperation detection |
+| SPIRE003 | Natural `[EnforceInitialization]` extension, straightforward IOperation detection |
 | SPIRE008 | #1 most-requested struct analyzer rule, defensive copy on `in` param |
 | SPIRE009 | #2 most-requested, defensive copy on `readonly` field |
 | SPIRE012 | Boxing detection is high value, high visibility |
@@ -293,8 +293,8 @@ Structs have value semantics. Many bugs come from mutating a copy thinking you'r
 ### Tier 2: Medium Impact — Good ROI
 | Rule | Rationale |
 |------|-----------|
-| SPIRE004 | Simple `[MustBeInit]` extension |
-| SPIRE005 | Transitive `[MustBeInit]` propagation |
+| SPIRE004 | Simple `[EnforceInitialization]` extension |
+| SPIRE005 | Transitive `[EnforceInitialization]` propagation |
 | SPIRE011 | Suggests `readonly struct`, prevents defensive copies proactively |
 | SPIRE013 | Enum.HasFlag boxing, simple to detect |
 | SPIRE016 | Dictionary key boxing, common perf issue |
@@ -331,4 +331,4 @@ Structs have value semantics. Many bugs come from mutating a copy thinking you'r
 - Large struct rules (SPIRE021/022/023/029) all need a size computation utility — implement once in `Spire.Analyzers.Utils`.
 - Defensive copy rules (SPIRE008/009/010) share detection logic — implement a shared helper for "is this a readonly context accessing a non-readonly struct member".
 - Boxing rules (SPIRE012/013/014/015/016) could share a "is this a boxing conversion" utility.
-- The `[MustBeInit]` rules (SPIRE003–007) naturally build on the existing SPIRE001/002 infrastructure.
+- The `[EnforceInitialization]` rules (SPIRE003–007) naturally build on the existing SPIRE001/002 infrastructure.

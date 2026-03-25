@@ -6,10 +6,10 @@ using Spire.Analyzers.Utils;
 namespace Spire.Analyzers.Rules;
 
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class SPIRE002MustBeInitOnFieldlessTypeAnalyzer : DiagnosticAnalyzer
+public sealed class SPIRE002EnforceInitializationOnFieldlessTypeAnalyzer : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(Descriptors.SPIRE002_MustBeInitOnFieldlessType);
+        ImmutableArray.Create(Descriptors.SPIRE002_EnforceInitializationOnFieldlessType);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -18,47 +18,47 @@ public sealed class SPIRE002MustBeInitOnFieldlessTypeAnalyzer : DiagnosticAnalyz
 
         context.RegisterCompilationStartAction(compilationContext =>
         {
-            var mustBeInitType = compilationContext.Compilation
-                .GetTypeByMetadataName("Spire.MustBeInitAttribute");
+            var enforceInitializationType = compilationContext.Compilation
+                .GetTypeByMetadataName("Spire.EnforceInitializationAttribute");
 
-            if (mustBeInitType is null)
+            if (enforceInitializationType is null)
                 return;
 
             compilationContext.RegisterSymbolAction(
-                symbolContext => AnalyzeNamedType(symbolContext, mustBeInitType),
+                symbolContext => AnalyzeNamedType(symbolContext, enforceInitializationType),
                 SymbolKind.NamedType);
         });
     }
 
     private static void AnalyzeNamedType(
         SymbolAnalysisContext context,
-        INamedTypeSymbol mustBeInitType)
+        INamedTypeSymbol enforceInitializationType)
     {
         var type = (INamedTypeSymbol)context.Symbol;
 
         if (type.TypeKind != TypeKind.Struct && type.TypeKind != TypeKind.Class)
             return;
 
-        // Find the [MustBeInit] attribute on this type
-        AttributeData? mustBeInitAttr = null;
+        // Find the [EnforceInitialization] attribute on this type
+        AttributeData? enforceInitializationAttr = null;
         foreach (var attr in type.GetAttributes())
         {
-            if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, mustBeInitType))
+            if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, enforceInitializationType))
             {
-                mustBeInitAttr = attr;
+                enforceInitializationAttr = attr;
                 break;
             }
         }
 
-        if (mustBeInitAttr is null)
+        if (enforceInitializationAttr is null)
             return;
 
-        if (MustBeInitChecks.HasInstanceFields(type))
+        if (EnforceInitializationChecks.HasInstanceFields(type))
             return;
 
         // Determine location: prefer the attribute application syntax, fall back to type declaration
         Location location;
-        var attrSyntax = mustBeInitAttr.ApplicationSyntaxReference?.GetSyntax();
+        var attrSyntax = enforceInitializationAttr.ApplicationSyntaxReference?.GetSyntax();
         if (attrSyntax != null)
             location = attrSyntax.GetLocation();
         else
@@ -66,7 +66,7 @@ public sealed class SPIRE002MustBeInitOnFieldlessTypeAnalyzer : DiagnosticAnalyz
 
         context.ReportDiagnostic(
             Diagnostic.Create(
-                Descriptors.SPIRE002_MustBeInitOnFieldlessType,
+                Descriptors.SPIRE002_EnforceInitializationOnFieldlessType,
                 location,
                 type.Name));
     }

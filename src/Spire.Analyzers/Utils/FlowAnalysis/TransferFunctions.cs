@@ -117,7 +117,7 @@ public static class TransferFunctions
             if (objCreate.Arguments.Length > 0 || objCreate.Initializer is not null)
                 return currentState.WithAllFields(InitState.Initialized).WithNullState(NullState.NotNull);
 
-            // new T() with no args on [MustBeInit] — same as default
+            // new T() with no args on [EnforceInitialization] — same as default
             return currentState.WithAllFields(InitState.Default).WithNullState(NullState.NotNull);
         }
 
@@ -125,12 +125,12 @@ public static class TransferFunctions
         if (value.ConstantValue is { HasValue: true, Value: null })
             return currentState.WithNullState(NullState.Null);
 
-        // Method call returning [MustBeInit] type → assume Initialized
-        if (value is IInvocationOperation invocation && symbols.MustBeInitType is not null)
+        // Method call returning [EnforceInitialization] type → assume Initialized
+        if (value is IInvocationOperation invocation && symbols.EnforceInitializationType is not null)
         {
             var returnType = invocation.TargetMethod.ReturnType;
             if (returnType is INamedTypeSymbol named
-                && MustBeInitChecks.HasMustBeInitAttribute(named, symbols.MustBeInitType))
+                && EnforceInitializationChecks.HasEnforceInitializationAttribute(named, symbols.EnforceInitializationType))
                 return currentState.WithAllFields(InitState.Initialized).WithNullState(NullState.NotNull);
         }
 

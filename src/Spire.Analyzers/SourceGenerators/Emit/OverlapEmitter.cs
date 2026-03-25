@@ -33,7 +33,7 @@ internal static class OverlapEmitter
         var readonlyMod = union.IsReadonly ? "readonly " : "";
         var refMod = union.IsRefStruct ? "ref " : "";
 
-        sb.AppendLine("[global::Spire.MustBeInit]");
+        sb.AppendLine("[global::Spire.EnforceInitialization]");
         sb.AppendLine($"[StructLayout(LayoutKind.Explicit)]");
         sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {union.TypeName} : global::Spire.IDiscriminatedUnion<{union.TypeName}.Kind>");
         sb.OpenBrace();

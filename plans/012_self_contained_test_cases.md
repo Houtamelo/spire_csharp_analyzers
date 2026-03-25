@@ -25,12 +25,12 @@ Every `.cs` file in `{RuleId}/cases/` (except `_shared.cs`) is a test case. The 
 
 ```csharp
 //@ should_fail
-// Detection: new T[n] allocates array of [MustBeInit] struct without initialization
+// Detection: new T[n] allocates array of [EnforceInitialization] struct without initialization
 public class Detect_1DConstantSize_LocalVariable
 {
     public void Method()
     {
-        var arr = new MustInitStruct[5]; //~ ERROR
+        var arr = new EnforceInitializationStruct[5]; //~ ERROR
     }
 }
 ```
@@ -42,7 +42,7 @@ public class NoReport_1DWithInitializer
 {
     public void Method()
     {
-        var arr = new MustInitStruct[] { new(1), new(2) };
+        var arr = new EnforceInitializationStruct[] { new(1), new(2) };
     }
 }
 ```
@@ -74,7 +74,7 @@ The test infrastructure must enforce:
 The test runner discovers cases at runtime by globbing `{RuleId}/cases/*.cs`, excluding `_shared.cs`. No `[InlineData]` needed.
 
 ```csharp
-public class SPIRE001Tests : AnalyzerTestBase<SPIRE001ArrayOfMustBeInitStructAnalyzer>
+public class SPIRE001Tests : AnalyzerTestBase<SPIRE001ArrayOfEnforceInitializationStructAnalyzer>
 {
     protected override string RuleId => "SPIRE001";
 }
@@ -171,7 +171,7 @@ The existing `{|SPIRE001:code|}` markup and `[InlineData]` pattern must be migra
 public async Task ShouldReportSPIRE001(string caseName)
 {
     var source = TestCaseLoader.LoadCase("SPIRE001", caseName);
-    await AnalyzerVerifier<SPIRE001ArrayOfMustBeInitStructAnalyzer>.VerifyAsync(source);
+    await AnalyzerVerifier<SPIRE001ArrayOfEnforceInitializationStructAnalyzer>.VerifyAsync(source);
 }
 ```
 
@@ -181,7 +181,7 @@ public class Detect_1DConstantSize_LocalVariable
 {
     public void Method()
     {
-        var arr = {|SPIRE001:new MustInitStruct[5]|};
+        var arr = {|SPIRE001:new EnforceInitializationStruct[5]|};
     }
 }
 ```
@@ -192,7 +192,7 @@ public class Detect_1DConstantSize_LocalVariable
 ```csharp
 using Spire.Analyzers.Rules;
 
-public class SPIRE001Tests : AnalyzerTestBase<SPIRE001ArrayOfMustBeInitStructAnalyzer>
+public class SPIRE001Tests : AnalyzerTestBase<SPIRE001ArrayOfEnforceInitializationStructAnalyzer>
 {
     protected override string RuleId => "SPIRE001";
 }
@@ -201,12 +201,12 @@ public class SPIRE001Tests : AnalyzerTestBase<SPIRE001ArrayOfMustBeInitStructAna
 **Case file**:
 ```csharp
 //@ should_fail
-// new T[n] allocates array of [MustBeInit] struct without initialization
+// new T[n] allocates array of [EnforceInitialization] struct without initialization
 public class Detect_1DConstantSize_LocalVariable
 {
     public void Method()
     {
-        var arr = new MustInitStruct[5]; //~ ERROR
+        var arr = new EnforceInitializationStruct[5]; //~ ERROR
     }
 }
 ```
@@ -218,7 +218,7 @@ public class Detect_1DConstantSize_LocalVariable
 ### Current infrastructure (what exists today)
 
 - `tests/Spire.Analyzers.Tests/Verifiers.cs` contains:
-  - `AnalyzerVerifier<TAnalyzer>` — wraps `CSharpAnalyzerTest<TAnalyzer, DefaultVerifier>`, adds `AnalyzerAssemblyReference` (so test code can resolve `Spire.Analyzers` types like `[MustBeInit]`), uses `ReferenceAssemblies.Net.Net80`
+  - `AnalyzerVerifier<TAnalyzer>` — wraps `CSharpAnalyzerTest<TAnalyzer, DefaultVerifier>`, adds `AnalyzerAssemblyReference` (so test code can resolve `Spire.Analyzers` types like `[EnforceInitialization]`), uses `ReferenceAssemblies.Net.Net80`
   - `TestCaseLoader` — reads `_shared.cs` + case file, concatenates them with `Environment.NewLine`
 - `AnalyzerVerifier.VerifyAsync(string source)` takes source with `{|DiagnosticId:code|}` markup — Roslyn's `CSharpAnalyzerTest` parses that markup internally
 - Test project targets `net10.0` with LangVersion 14, has `<NoWarn>NU1701;AD0001;xUnit1003</NoWarn>`

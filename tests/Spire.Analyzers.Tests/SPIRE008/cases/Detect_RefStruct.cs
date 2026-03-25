@@ -1,16 +1,16 @@
 //@ should_fail
-// Ensure that SPIRE008 IS triggered when target is a [MustBeInit] ref struct.
-[MustBeInit]
-ref struct RefMustInit
+// Ensure that SPIRE008 IS triggered when target is a [EnforceInitialization] ref struct.
+[EnforceInitialization]
+ref struct RefEnforceInitialization
 {
     public int Value;
-    public RefMustInit(int v) { Value = v; }
+    public RefEnforceInitialization(int v) { Value = v; }
 }
 
 class Detect_RefStruct
 {
     void Method()
     {
-        var obj = RuntimeHelpers.GetUninitializedObject(typeof(RefMustInit)); //~ ERROR
+        var obj = RuntimeHelpers.GetUninitializedObject(typeof(RefEnforceInitialization)); //~ ERROR
     }
 }

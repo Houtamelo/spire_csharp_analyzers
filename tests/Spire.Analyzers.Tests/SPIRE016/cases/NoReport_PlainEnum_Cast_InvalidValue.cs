@@ -1,5 +1,5 @@
 //@ should_pass
-// Ensure that SPIRE016 is NOT triggered when casting an integer to an enum not marked with [MustBeInit].
+// Ensure that SPIRE016 is NOT triggered when casting an integer to an enum not marked with [EnforceInitialization].
 public class NoReport_PlainEnum_Cast_InvalidValue
 {
     void M()

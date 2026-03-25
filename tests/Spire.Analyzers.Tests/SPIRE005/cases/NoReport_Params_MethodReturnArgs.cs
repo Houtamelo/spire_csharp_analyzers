@@ -6,6 +6,6 @@ public class NoReport_Params_MethodReturnArgs
 
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(MustInitStruct), GetArgs());
+        var x = Activator.CreateInstance(typeof(EnforceInitializationStruct), GetArgs());
     }
 }

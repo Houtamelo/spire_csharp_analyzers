@@ -1,13 +1,13 @@
 //@ should_fail
-// Ensure that SPIRE004 IS triggered when new MustInitNoCtor() appears inside a foreach loop body.
+// Ensure that SPIRE004 IS triggered when new EnforceInitializationNoCtor() appears inside a foreach loop body.
 public class Detect_NewT_ForeachLoopBody
 {
     public void Method(int[] items)
     {
-        MustInitNoCtor x;
+        EnforceInitializationNoCtor x;
         foreach (int item in items)
         {
-            x = new MustInitNoCtor(); //~ ERROR
+            x = new EnforceInitializationNoCtor(); //~ ERROR
         }
     }
 }

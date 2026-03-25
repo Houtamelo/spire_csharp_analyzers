@@ -27,7 +27,7 @@ public abstract class AnalyzerTestBase<TAnalyzer> where TAnalyzer : DiagnosticAn
         MetadataReference.CreateFromFile(typeof(TAnalyzer).Assembly.Location);
 
     private static readonly MetadataReference CoreAssemblyReference =
-        MetadataReference.CreateFromFile(typeof(Spire.MustBeInitAttribute).Assembly.Location);
+        MetadataReference.CreateFromFile(typeof(Spire.EnforceInitializationAttribute).Assembly.Location);
 
     private static readonly Lazy<Task<ImmutableArray<MetadataReference>>> CachedReferences =
         new(() => ResolveReferencesAsync());

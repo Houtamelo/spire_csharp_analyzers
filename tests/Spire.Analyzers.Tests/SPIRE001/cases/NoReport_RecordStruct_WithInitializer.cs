@@ -4,6 +4,6 @@ public class NoReport_RecordStruct_WithInitializer
 {
     public void Method()
     {
-        var arr = new MustInitRecordStruct[] { new MustInitRecordStruct(1), new MustInitRecordStruct(2) };
+        var arr = new EnforceInitializationRecordStruct[] { new EnforceInitializationRecordStruct(1), new EnforceInitializationRecordStruct(2) };
     }
 }

@@ -4,6 +4,6 @@ public class Detect_GCAllocateUninitializedArray_ConstantSize
 {
     public void Method()
     {
-        var arr = GC.AllocateUninitializedArray<MustInitStruct>(5); //~ ERROR
+        var arr = GC.AllocateUninitializedArray<EnforceInitializationStruct>(5); //~ ERROR
     }
 }

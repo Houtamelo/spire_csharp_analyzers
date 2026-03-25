@@ -1,4 +1,4 @@
 //@ should_pass
-// Ensure that SPIRE002 is NOT triggered when [MustBeInit] is on a record class with properties.
-[MustBeInit]
-public record MustInitRecordWithField(int Value);
+// Ensure that SPIRE002 is NOT triggered when [EnforceInitialization] is on a record class with properties.
+[EnforceInitialization]
+public record EnforceInitializationRecordWithField(int Value);

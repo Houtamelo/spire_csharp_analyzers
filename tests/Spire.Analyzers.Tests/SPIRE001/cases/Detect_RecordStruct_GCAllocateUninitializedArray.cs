@@ -4,6 +4,6 @@ public class Detect_RecordStruct_GCAllocateUninitializedArray
 {
     public void Method()
     {
-        var arr = GC.AllocateUninitializedArray<MustInitRecordStruct>(5); //~ ERROR
+        var arr = GC.AllocateUninitializedArray<EnforceInitializationRecordStruct>(5); //~ ERROR
     }
 }

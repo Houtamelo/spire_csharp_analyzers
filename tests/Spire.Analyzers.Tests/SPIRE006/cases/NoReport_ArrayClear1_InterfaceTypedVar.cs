@@ -6,7 +6,7 @@ public class NoReport_ArrayClear1_InterfaceTypedVar
 {
     public void Method()
     {
-        IList list = new MustInitStruct[5];
+        IList list = new EnforceInitializationStruct[5];
         Array.Clear((Array)list);
     }
 }

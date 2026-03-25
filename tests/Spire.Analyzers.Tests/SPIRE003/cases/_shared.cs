@@ -3,22 +3,22 @@ global using System.Collections.Generic;
 global using System.Threading.Tasks;
 global using Spire;
 
-[MustBeInit]
-public struct MustInitStruct
+[EnforceInitialization]
+public struct EnforceInitializationStruct
 {
     public int Value;
 
-    public MustInitStruct(int value)
+    public EnforceInitializationStruct(int value)
     {
         Value = value;
     }
 }
 
-[MustBeInit]
-public record struct MustInitRecordStruct(int Value);
+[EnforceInitialization]
+public record struct EnforceInitializationRecordStruct(int Value);
 
-[MustBeInit]
-public struct MustInitStructWithAutoProperty
+[EnforceInitialization]
+public struct EnforceInitializationStructWithAutoProperty
 {
     public int Value { get; set; }
 }
@@ -28,16 +28,16 @@ public struct PlainStruct
     public int Value;
 }
 
-[MustBeInit]
-public struct EmptyMustInitStruct { }
+[EnforceInitialization]
+public struct EmptyEnforceInitializationStruct { }
 
-[MustBeInit]
-public struct MustInitStructWithNonAutoProperty
+[EnforceInitialization]
+public struct EnforceInitializationStructWithNonAutoProperty
 {
     public int Value { get => 42; }
 }
 
-[MustBeInit]
+[EnforceInitialization]
 public struct UnionLikeStruct
 {
     public int Kind;
@@ -47,28 +47,28 @@ public struct UnionLikeStruct
 
 #nullable enable
 
-[MustBeInit]
-public class MustInitClass
+[EnforceInitialization]
+public class EnforceInitializationClass
 {
     public int Value;
-    public MustInitClass(int value) { Value = value; }
+    public EnforceInitializationClass(int value) { Value = value; }
 }
 
-[MustBeInit]
-public record MustInitRecord(int Value);
+[EnforceInitialization]
+public record EnforceInitializationRecord(int Value);
 
 public class PlainClass
 {
     public int Value;
 }
 
-/// [MustBeInit] enum with no zero-valued member — default(T) = 0 is unnamed
-[MustBeInit]
-public enum MustInitEnumNoZero { Active = 1, Inactive = 2, Pending = 3 }
+/// [EnforceInitialization] enum with no zero-valued member — default(T) = 0 is unnamed
+[EnforceInitialization]
+public enum EnforceInitializationEnumNoZero { Active = 1, Inactive = 2, Pending = 3 }
 
-/// [MustBeInit] enum with zero-valued member — default(T) = None, valid
-[MustBeInit]
-public enum MustInitEnumWithZero { None = 0, Active = 1, Inactive = 2 }
+/// [EnforceInitialization] enum with zero-valued member — default(T) = None, valid
+[EnforceInitialization]
+public enum EnforceInitializationEnumWithZero { None = 0, Active = 1, Inactive = 2 }
 
-/// Plain enum (no [MustBeInit]) — never flagged
+/// Plain enum (no [EnforceInitialization]) — never flagged
 public enum PlainEnum { A, B, C }

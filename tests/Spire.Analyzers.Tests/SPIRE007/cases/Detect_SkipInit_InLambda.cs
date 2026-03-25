@@ -6,7 +6,7 @@ public class Detect_SkipInit_InLambda
     {
         Action a = () =>
         {
-            Unsafe.SkipInit(out MustInitStruct s); //~ ERROR
+            Unsafe.SkipInit(out EnforceInitializationStruct s); //~ ERROR
         };
         a();
     }

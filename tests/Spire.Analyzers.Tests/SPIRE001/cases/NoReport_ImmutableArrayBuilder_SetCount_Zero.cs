@@ -4,7 +4,7 @@ public class NoReport_ImmutableArrayBuilder_SetCount_Zero
 {
     public void Method()
     {
-        var builder = ImmutableArray.CreateBuilder<MustInitStruct>();
+        var builder = ImmutableArray.CreateBuilder<EnforceInitializationStruct>();
         builder.Count = 0;
     }
 }

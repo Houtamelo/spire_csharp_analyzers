@@ -4,6 +4,6 @@ public class Detect_RecordStruct_ArrayPoolRent
 {
     public void Method()
     {
-        var arr = ArrayPool<MustInitRecordStruct>.Shared.Rent(5); //~ ERROR
+        var arr = ArrayPool<EnforceInitializationRecordStruct>.Shared.Rent(5); //~ ERROR
     }
 }

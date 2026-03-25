@@ -41,7 +41,7 @@ Source generators make all struct `[DiscriminatedUnion]` types implement this in
 
 **Breaking change:** struct emitters currently generate `kind` as a `public readonly` field. Fields don't satisfy interface property requirements. `kind` must become a public non-auto property with a getter (see Section 3). Each strategy decides its own backing storage.
 
-**Runtime dependency:** implementing `IDiscriminatedUnion<TEnum>` introduces a runtime dependency on `Spire.Core`. Acceptable — `Spire.Core` is already a compile-time dependency for attributes like `[MustBeInit]`.
+**Runtime dependency:** implementing `IDiscriminatedUnion<TEnum>` introduces a runtime dependency on `Spire.Core`. Acceptable — `Spire.Core` is already a compile-time dependency for attributes like `[EnforceInitialization]`.
 
 ### LINQ Extension (Spire.Core, namespace `Spire`)
 

@@ -4,6 +4,6 @@ public class Detect_ArrayCreateInstance_MultiDimensional
 {
     public void Method()
     {
-        var arr = Array.CreateInstance(typeof(MustInitStruct), 2, 3); //~ ERROR
+        var arr = Array.CreateInstance(typeof(EnforceInitializationStruct), 2, 3); //~ ERROR
     }
 }

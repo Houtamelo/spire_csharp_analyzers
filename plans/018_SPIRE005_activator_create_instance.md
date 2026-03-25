@@ -1,21 +1,21 @@
-# Plan 018: SPIRE005 — Activator.CreateInstance on [MustBeInit] struct
+# Plan 018: SPIRE005 — Activator.CreateInstance on [EnforceInitialization] struct
 
 **Status**: Ready for implementation
-**Goal**: Flag `Activator.CreateInstance` calls that produce default instances of `[MustBeInit]` structs.
+**Goal**: Flag `Activator.CreateInstance` calls that produce default instances of `[EnforceInitialization]` structs.
 
 ## Overview
 
 **ID**: SPIRE005
-**Title**: Activator.CreateInstance on [MustBeInit] struct produces a default instance
+**Title**: Activator.CreateInstance on [EnforceInitialization] struct produces a default instance
 **Category**: Correctness
 **Default severity**: Error
-**Message format**: `Activator.CreateInstance produces a default instance of struct '{0}' marked with [MustBeInit]`
+**Message format**: `Activator.CreateInstance produces a default instance of struct '{0}' marked with [EnforceInitialization]`
 **Enabled by default**: Yes
 
 ### What this rule does
 
 `Activator.CreateInstance` produces default (zeroed) instances of value types when called
-without constructor arguments. For structs marked with `[MustBeInit]`, this bypasses the
+without constructor arguments. For structs marked with `[EnforceInitialization]`, this bypasses the
 required initialization the attribute enforces.
 
 The rule covers all `Activator.CreateInstance` overloads where the target type is statically
@@ -43,15 +43,15 @@ are provided (or args are provably null/empty).
 | `Activator.CreateInstance(typeof(T), flags, null, null, null, null)` | Full overload with null args |
 | `Activator.CreateInstance(typeof(T), flags, null, new object[0], null, null)` | Full overload with empty args |
 
-Where T is any `[MustBeInit]` struct with instance fields.
+Where T is any `[EnforceInitialization]` struct with instance fields.
 
 ### NOT flagged
 
 | Code | Why |
 |------|-----|
-| `Activator.CreateInstance<PlainStruct>()` | Not `[MustBeInit]` |
-| `Activator.CreateInstance<EmptyMustInit>()` | Fieldless `[MustBeInit]` struct |
-| `Activator.CreateInstance<int>()` | Built-in type, not `[MustBeInit]` |
+| `Activator.CreateInstance<PlainStruct>()` | Not `[EnforceInitialization]` |
+| `Activator.CreateInstance<EmptyEnforceInitialization>()` | Fieldless `[EnforceInitialization]` struct |
+| `Activator.CreateInstance<int>()` | Built-in type, not `[EnforceInitialization]` |
 | `Activator.CreateInstance<string>()` | Reference type |
 | `Activator.CreateInstance<SomeClass>()` | Reference type |
 | `Activator.CreateInstance(typeof(T), 42)` | Has constructor arguments |
@@ -74,7 +74,7 @@ Where T is any `[MustBeInit]` struct with instance fields.
 
 ### Attribute/marker type
 
-None — reuses existing `MustBeInitAttribute`.
+None — reuses existing `EnforceInitializationAttribute`.
 
 ### Detection strategy
 
@@ -85,13 +85,13 @@ None — reuses existing `MustBeInitAttribute`.
      - Generic overload: type argument `T` from `CreateInstance<T>()`
      - Type overloads: first argument must be `typeof(X)` expression (`ITypeOfOperation`)
        — if not a typeof, skip (type not statically resolvable)
-  3. Resolved type is a struct with `[MustBeInit]` and has instance fields
+  3. Resolved type is a struct with `[EnforceInitialization]` and has instance fields
   4. For overloads with `object[] args` parameter: args must be provably null or empty
      - Literal null
      - `new object[0]`, `new object[] { }` (IArrayCreationOperation with 0 length / empty initializer)
      - `Array.Empty<object>()` (known method)
      - If args is a variable or other expression → don't flag (can't determine emptiness)
-- **Use `CompilationStartAction`**: Yes — resolve `System.Activator`, `MustBeInitAttribute`,
+- **Use `CompilationStartAction`**: Yes — resolve `System.Activator`, `EnforceInitializationAttribute`,
   and `System.Array` (for `Array.Empty`) once per compilation
 
 ### Overload discrimination
@@ -120,7 +120,7 @@ Anything else (variables, method returns, etc.) → assume non-empty, don't flag
 
 | File | Purpose | Created by |
 |------|---------|------------|
-| `src/Spire.Analyzers/Rules/SPIRE005ActivatorCreateInstanceOfMustBeInitStructAnalyzer.cs` | The analyzer | Implementer |
+| `src/Spire.Analyzers/Rules/SPIRE005ActivatorCreateInstanceOfEnforceInitializationStructAnalyzer.cs` | The analyzer | Implementer |
 | `tests/Spire.Analyzers.Tests/SPIRE005/SPIRE005Tests.cs` | Test runner | Lead |
 | `tests/Spire.Analyzers.Tests/SPIRE005/cases/_shared.cs` | Shared preamble | Lead |
 | `tests/Spire.Analyzers.Tests/SPIRE005/cases/*.cs` | Test case files | test-case-writer |

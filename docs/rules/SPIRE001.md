@@ -1,4 +1,4 @@
-# SPIRE001: Non-empty array of [MustBeInit] struct produces default instances
+# SPIRE001: Non-empty array of [EnforceInitialization] struct produces default instances
 
 | Property    | Value        |
 |-------------|--------------|
@@ -9,9 +9,9 @@
 
 ## Description
 
-Types marked with `[MustBeInit]` are expected to be explicitly initialized before use. This rule detects all ways of creating arrays (or array-like collections) of such types where elements would be `default(T)` — the uninitialized state the attribute is meant to prevent.
+Types marked with `[EnforceInitialization]` are expected to be explicitly initialized before use. This rule detects all ways of creating arrays (or array-like collections) of such types where elements would be `default(T)` — the uninitialized state the attribute is meant to prevent.
 
-For enums marked with `[MustBeInit]`, the rule only flags when the enum has no zero-valued named member. When a zero member exists (e.g., `None = 0`), `default(T)` produces that valid variant and is not flagged.
+For enums marked with `[EnforceInitialization]`, the rule only flags when the enum has no zero-valued named member. When a zero member exists (e.g., `None = 0`), `default(T)` produces that valid variant and is not flagged.
 
 ### Flagged patterns
 
@@ -37,14 +37,14 @@ For enums marked with `[MustBeInit]`, the rule only flags when the enum has no z
 - `stackalloc T[0]`, `stackalloc T[] { ... }` — empty or initialized stackallocs
 - `Array.Empty<T>()` — empty array (method call, no array creation)
 - API calls with size known to be zero
-- Arrays of structs without `[MustBeInit]`
+- Arrays of structs without `[EnforceInitialization]`
 
 ## Examples
 
 ### Violating code
 
 ```csharp
-[MustBeInit]
+[EnforceInitialization]
 struct Config { public string Name; public Config(string name) => Name = name; }
 
 var arr = new Config[3];                           // SPIRE001

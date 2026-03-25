@@ -4,7 +4,7 @@ public class NoReport_TypeVariable_TypeOnly
 {
     public void Method()
     {
-        Type t = typeof(MustInitStruct);
+        Type t = typeof(EnforceInitializationStruct);
         var x = Activator.CreateInstance(t);
     }
 }

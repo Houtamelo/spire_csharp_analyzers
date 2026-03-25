@@ -4,6 +4,6 @@ class TestClass
 {
     void Method()
     {
-        var x = RuntimeHelpers.GetUninitializedObject(typeof(MustInitStruct)); //~ ERROR
+        var x = RuntimeHelpers.GetUninitializedObject(typeof(EnforceInitializationStruct)); //~ ERROR
     }
 }

@@ -4,6 +4,6 @@ public class NoReport_AutoPropsAllInitialized_LocalVariable
 {
     public void Method()
     {
-        var x = new MustInitAutoPropsAllInitialized();
+        var x = new EnforceInitializationAutoPropsAllInitialized();
     }
 }

@@ -6,6 +6,6 @@ public class Detect_BindingFlags_DefaultArgs
 {
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(MustInitStruct), BindingFlags.Default, null, default(object[]), null); //~ ERROR
+        var x = Activator.CreateInstance(typeof(EnforceInitializationStruct), BindingFlags.Default, null, default(object[]), null); //~ ERROR
     }
 }

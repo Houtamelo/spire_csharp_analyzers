@@ -4,6 +4,6 @@ public class Detect_RecordStruct_1DConstantSize
 {
     public void Method()
     {
-        var arr = new MustInitRecordStruct[5]; //~ ERROR
+        var arr = new EnforceInitializationRecordStruct[5]; //~ ERROR
     }
 }

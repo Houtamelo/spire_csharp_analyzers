@@ -4,6 +4,6 @@ public class Detect_MultiDimensional_ConstantSize
 {
     public void Method()
     {
-        var arr = new MustInitStruct[2, 3]; //~ ERROR
+        var arr = new EnforceInitializationStruct[2, 3]; //~ ERROR
     }
 }

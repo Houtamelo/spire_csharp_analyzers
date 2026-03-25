@@ -4,11 +4,11 @@ public class Detect_DefaultBranchedInit
 {
     public void Method(bool cond)
     {
-        MustInitStruct s;
+        EnforceInitializationStruct s;
         if (cond)
-            s = new MustInitStruct(1);
+            s = new EnforceInitializationStruct(1);
         else
-            s = default(MustInitStruct); //~ ERROR
+            s = default(EnforceInitializationStruct); //~ ERROR
         _ = s;
     }
 }

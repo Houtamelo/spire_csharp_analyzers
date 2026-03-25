@@ -6,6 +6,6 @@ public class Detect_FullOverload_EmptyArrayLiteral
 {
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(MustInitStruct), BindingFlags.Default, null, new object[] { }, null, null); //~ ERROR
+        var x = Activator.CreateInstance(typeof(EnforceInitializationStruct), BindingFlags.Default, null, new object[] { }, null, null); //~ ERROR
     }
 }

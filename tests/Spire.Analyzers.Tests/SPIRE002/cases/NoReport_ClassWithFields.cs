@@ -1,7 +1,7 @@
 //@ should_pass
-// Ensure that SPIRE002 is NOT triggered when [MustBeInit] is on a class with instance fields.
-[MustBeInit]
-public class MustInitClassWithField
+// Ensure that SPIRE002 is NOT triggered when [EnforceInitialization] is on a class with instance fields.
+[EnforceInitialization]
+public class EnforceInitializationClassWithField
 {
     public int Value;
 }

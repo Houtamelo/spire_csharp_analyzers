@@ -5,6 +5,6 @@ public class NoReport_Params_NonNullVariableArgs_ConditionalContext
     public object Method(bool condition)
     {
         var args = condition ? new object[] { 1 } : new object[] { 2 };
-        return Activator.CreateInstance(typeof(MustInitStruct), args);
+        return Activator.CreateInstance(typeof(EnforceInitializationStruct), args);
     }
 }

@@ -6,8 +6,8 @@ public class Detect_SpanClear_InNestedType
     {
         public void Method()
         {
-            var arr = new MustInitStruct[5];
-            Span<MustInitStruct> span = arr;
+            var arr = new EnforceInitializationStruct[5];
+            Span<EnforceInitializationStruct> span = arr;
             span.Clear(); //~ ERROR
         }
     }

@@ -4,7 +4,7 @@ public class NoReport_WithCtor_LambdaBody
 {
     public void Method()
     {
-        Func<MustInitWithCtor> factory = () => new MustInitWithCtor();
+        Func<EnforceInitializationWithCtor> factory = () => new EnforceInitializationWithCtor();
         var result = factory();
     }
 }

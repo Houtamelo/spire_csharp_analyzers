@@ -1,9 +1,9 @@
 //@ should_fail
-// Ensure that SPIRE004 IS triggered when `new MustInitNoCtor { }` is used in a return statement.
+// Ensure that SPIRE004 IS triggered when `new EnforceInitializationNoCtor { }` is used in a return statement.
 public class Detect_ObjectInit_ReturnStatement
 {
-    public MustInitNoCtor Method()
+    public EnforceInitializationNoCtor Method()
     {
-        return new MustInitNoCtor { }; //~ ERROR
+        return new EnforceInitializationNoCtor { }; //~ ERROR
     }
 }

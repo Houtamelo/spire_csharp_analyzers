@@ -1,4 +1,4 @@
-# SPIRE016: Cast to [MustBeInit] enum may produce invalid variant
+# SPIRE016: Cast to [EnforceInitialization] enum may produce invalid variant
 
 | Property    | Value           |
 |-------------|-----------------|
@@ -9,28 +9,28 @@
 
 ## Description
 
-Flags casts to `[MustBeInit]` enums when the resulting value may not correspond to a valid variant. Covers both integer-to-enum and enum-to-enum casts.
+Flags casts to `[EnforceInitialization]` enums when the resulting value may not correspond to a valid variant. Covers both integer-to-enum and enum-to-enum casts.
 
 - **Non-constant casts** (`(MarkedEnum)variable`) — always flagged, value cannot be verified at compile time
 - **Constant casts** (`(MarkedEnum)42`) — flagged when the value doesn't match any named member
 - **Enum-to-enum casts** (`(MarkedEnum)(OtherEnum.Value)`) — same rules as integer casts, based on the source's underlying value
 - **`[Flags]` enums** — constant composite values are valid if all bits are covered by named members (e.g., `(Flags)3` where `Read=1, Write=2` is valid because `3 = Read|Write`)
 
-Other `[MustBeInit]` enum checks (default expressions, array allocation, Clear, SkipInit, etc.) are handled by SPIRE001–008.
+Other `[EnforceInitialization]` enum checks (default expressions, array allocation, Clear, SkipInit, etc.) are handled by SPIRE001–008.
 
 ## Examples
 
 ### Violating code
 
 ```csharp
-[MustBeInit]
+[EnforceInitialization]
 enum Status { Active = 1, Inactive = 2, Pending = 3 }
 
 Status s = (Status)42;                       // SPIRE016 — 42 is not a named member
 int unknown = GetValue();
 Status s2 = (Status)unknown;                 // SPIRE016 — value unknown at compile time
 
-[MustBeInit, Flags]
+[EnforceInitialization, Flags]
 enum Perms { Read = 1, Write = 2, Execute = 4 }
 
 Perms p = (Perms)8;                          // SPIRE016 — bit 3 not covered by any member

@@ -5,6 +5,6 @@ public class NoReport_Params_VariableArgs
     public void Method()
     {
         object[] args = new object[] { 42 };
-        var x = Activator.CreateInstance(typeof(MustInitStruct), args);
+        var x = Activator.CreateInstance(typeof(EnforceInitializationStruct), args);
     }
 }

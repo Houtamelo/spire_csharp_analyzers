@@ -8,7 +8,7 @@
 > Implement the SPIRE008 analyzer to make all existing tests pass.
 
 ## Files Modified
-- `/home/houtamelo/Documents/projects/libraries/csharp_analyzer/src/Spire.Analyzers/Rules/SPIRE008GetUninitializedObjectOfMustBeInitStructAnalyzer.cs` (created)
+- `/home/houtamelo/Documents/projects/libraries/csharp_analyzer/src/Spire.Analyzers/Rules/SPIRE008GetUninitializedObjectOfEnforceInitializationStructAnalyzer.cs` (created)
 
 ## Build/Test Results
 - Test commands run: 2

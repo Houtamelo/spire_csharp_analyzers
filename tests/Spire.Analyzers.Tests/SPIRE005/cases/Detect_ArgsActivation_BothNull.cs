@@ -4,6 +4,6 @@ public class Detect_ArgsActivation_BothNull
 {
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(MustInitStruct), (object[])null, (object[])null); //~ ERROR
+        var x = Activator.CreateInstance(typeof(EnforceInitializationStruct), (object[])null, (object[])null); //~ ERROR
     }
 }

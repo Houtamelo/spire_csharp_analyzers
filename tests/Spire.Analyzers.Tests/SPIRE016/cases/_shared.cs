@@ -5,24 +5,24 @@ global using System.Runtime.CompilerServices;
 global using Spire;
 
 /// Enum with no zero-valued member — default(StatusNoZero) = 0 is unnamed
-[MustBeInit]
+[EnforceInitialization]
 public enum StatusNoZero { Active = 1, Inactive = 2, Pending = 3 }
 
 /// Enum with a zero-valued member — default(StatusWithZero) = None, which is valid
-[MustBeInit]
+[EnforceInitialization]
 public enum StatusWithZero { None = 0, Active = 1, Inactive = 2 }
 
 /// Enum with implicit zero from first member — default(Color) = Red = 0, valid
-[MustBeInit]
+[EnforceInitialization]
 public enum ColorImplicitZero { Red, Green, Blue }
 
 /// [Flags] enum with zero as "None"
-[MustBeInit]
+[EnforceInitialization]
 [Flags]
 public enum FlagsWithZero { None = 0, Read = 1, Write = 2, Execute = 4 }
 
 /// [Flags] enum without zero member
-[MustBeInit]
+[EnforceInitialization]
 [Flags]
 public enum FlagsNoZero { Read = 1, Write = 2, Execute = 4 }
 

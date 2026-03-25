@@ -1,5 +1,5 @@
 //@ should_pass
-// Ensure that SPIRE004 is NOT triggered when new PlainStruct { Value = 42 } is used — PlainStruct has no [MustBeInit].
+// Ensure that SPIRE004 is NOT triggered when new PlainStruct { Value = 42 } is used — PlainStruct has no [EnforceInitialization].
 public class NoReport_PlainStruct_ObjectInitializerWithFields
 {
     public void Method()

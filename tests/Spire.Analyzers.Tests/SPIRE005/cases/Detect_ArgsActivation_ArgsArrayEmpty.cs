@@ -4,6 +4,6 @@ public class Detect_ArgsActivation_ArgsArrayEmpty
 {
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(MustInitStruct), Array.Empty<object>(), (object[])null); //~ ERROR
+        var x = Activator.CreateInstance(typeof(EnforceInitializationStruct), Array.Empty<object>(), (object[])null); //~ ERROR
     }
 }

@@ -4,6 +4,6 @@ public class Detect_StackAlloc_ConstantSize
 {
     public void Method()
     {
-        Span<MustInitStruct> span = stackalloc MustInitStruct[5]; //~ ERROR
+        Span<EnforceInitializationStruct> span = stackalloc EnforceInitializationStruct[5]; //~ ERROR
     }
 }

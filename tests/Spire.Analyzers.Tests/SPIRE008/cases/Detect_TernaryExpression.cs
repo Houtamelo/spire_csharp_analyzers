@@ -5,7 +5,7 @@ class TestClass
     object Method(bool condition)
     {
         return condition
-            ? RuntimeHelpers.GetUninitializedObject(typeof(MustInitStruct)) //~ ERROR
+            ? RuntimeHelpers.GetUninitializedObject(typeof(EnforceInitializationStruct)) //~ ERROR
             : null;
     }
 }

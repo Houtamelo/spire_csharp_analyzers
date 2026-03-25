@@ -4,6 +4,6 @@ public class Detect_RecordStruct_VariableSize
 {
     public void Method(int n)
     {
-        var arr = new MustInitRecordStruct[n]; //~ ERROR
+        var arr = new EnforceInitializationRecordStruct[n]; //~ ERROR
     }
 }

@@ -4,6 +4,6 @@ public class Detect_SkipInit_InStaticMethod
 {
     public static void Method()
     {
-        Unsafe.SkipInit(out MustInitStruct s); //~ ERROR
+        Unsafe.SkipInit(out EnforceInitializationStruct s); //~ ERROR
     }
 }

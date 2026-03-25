@@ -1,26 +1,26 @@
-# Plan 010: SPIRE001 — Array allocation creates default instances of [MustBeInitialized] struct
+# Plan 010: SPIRE001 — Array allocation creates default instances of [EnforceInitializationialized] struct
 
 **Status**: Ready for implementation
-**Goal**: Flag non-empty array allocations of structs marked with `[MustBeInitialized]`, since array allocation fills elements with `default(T)` bypassing any required initialization.
+**Goal**: Flag non-empty array allocations of structs marked with `[EnforceInitializationialized]`, since array allocation fills elements with `default(T)` bypassing any required initialization.
 
 ---
 
 ## Overview
 
 **ID**: SPIRE001
-**Title**: Array allocation creates default instances of [MustBeInitialized] struct
+**Title**: Array allocation creates default instances of [EnforceInitializationialized] struct
 **Category**: Correctness
 **Default severity**: Error
-**Message format**: `Array allocation creates default instance(s) of '{0}', which is marked with [MustBeInitialized]`
+**Message format**: `Array allocation creates default instance(s) of '{0}', which is marked with [EnforceInitializationialized]`
 **Enabled by default**: Yes
 
 ### What this rule does
 
-Array allocation in C# always fills elements with `default(T)`. For value types, this means zeroed memory — no constructor is called, even if the struct defines a parameterless constructor (C# 10+). This rule detects when a non-empty array is allocated with an element type that is a struct marked with `[MustBeInitialized]`, since such structs require explicit initialization.
+Array allocation in C# always fills elements with `default(T)`. For value types, this means zeroed memory — no constructor is called, even if the struct defines a parameterless constructor (C# 10+). This rule detects when a non-empty array is allocated with an element type that is a struct marked with `[EnforceInitializationialized]`, since such structs require explicit initialization.
 
 ---
 
-## The attribute: `[MustBeInitialized]`
+## The attribute: `[EnforceInitializationialized]`
 
 A marker attribute applied to struct declarations. It declares that the struct must always be explicitly initialized — using `default` or any mechanism that produces zeroed-out instances is incorrect.
 
@@ -28,7 +28,7 @@ A marker attribute applied to struct declarations. It declares that the struct m
 namespace Spire.Analyzers;
 
 [AttributeUsage(AttributeTargets.Struct, Inherited = false, AllowMultiple = false)]
-public sealed class MustBeInitializedAttribute : Attribute { }
+public sealed class EnforceInitializationializedAttribute : Attribute { }
 ```
 
 This attribute ships in the analyzer package itself (`src/Spire.Analyzers/`).
@@ -79,34 +79,34 @@ This attribute ships in the analyzer package itself (`src/Spire.Analyzers/`).
 
 ### Attribute/marker type
 
-`MustBeInitializedAttribute` — new file `src/Spire.Analyzers/MustBeInitializedAttribute.cs`.
+`EnforceInitializationializedAttribute` — new file `src/Spire.Analyzers/EnforceInitializationializedAttribute.cs`.
 
 ### Detection strategy
 
 - **IOperation kind(s)**: `OperationKind.ArrayCreation`
 - **Key checks**:
-  1. Element type is a struct with `[MustBeInitialized]`
+  1. Element type is a struct with `[EnforceInitializationialized]`
   2. No initializer with elements (i.e. `Initializer` is null or has zero `ElementValues`)
   3. No dimension is a compile-time constant zero
-- **Use `CompilationStartAction`**: Yes — resolve `Spire.Analyzers.MustBeInitializedAttribute` once per compilation
+- **Use `CompilationStartAction`**: Yes — resolve `Spire.Analyzers.EnforceInitializationializedAttribute` once per compilation
 
 ### File list
 
 | File | Purpose | Created by |
 |------|---------|------------|
-| `src/Spire.Analyzers/MustBeInitializedAttribute.cs` | The attribute definition | Lead |
-| `src/Spire.Analyzers/Descriptors.cs` | Add `SPIRE001_ArrayOfMustBeInitializedStruct` | Lead |
+| `src/Spire.Analyzers/EnforceInitializationializedAttribute.cs` | The attribute definition | Lead |
+| `src/Spire.Analyzers/Descriptors.cs` | Add `SPIRE001_ArrayOfEnforceInitializationializedStruct` | Lead |
 | `tests/Spire.Analyzers.Tests/SPIRE001/SPIRE001Tests.cs` | Test runner | Lead |
 | `tests/Spire.Analyzers.Tests/SPIRE001/cases/_shared.cs` | Shared preamble | Lead |
 | `tests/Spire.Analyzers.Tests/SPIRE001/cases/*.cs` | Test case files | test-case-writer |
-| `src/Spire.Analyzers/Analyzers/SPIRE001ArrayOfMustBeInitializedStructAnalyzer.cs` | The analyzer | Implementer |
+| `src/Spire.Analyzers/Analyzers/SPIRE001ArrayOfEnforceInitializationializedStructAnalyzer.cs` | The analyzer | Implementer |
 | `docs/rules/SPIRE001.md` | Rule documentation | Lead |
 
 ---
 
 ## Implementation Order (TDD)
 
-1. Create `MustBeInitializedAttribute.cs`
+1. Create `EnforceInitializationializedAttribute.cs`
 2. Add `SPIRE001` descriptor to `Descriptors.cs`
 3. Scaffold test folder, `_shared.cs`, and test runner `SPIRE001Tests.cs`
 4. Spawn test-case-writer agent to populate case files

@@ -1,6 +1,6 @@
 # 017: Default-Initialization Coverage Gap Analysis
 
-Research into all C# patterns that produce default-initialized `[MustBeInit]` structs,
+Research into all C# patterns that produce default-initialized `[EnforceInitialization]` structs,
 compared against SPIRE001-SPIRE004.
 
 ## Current Coverage
@@ -11,28 +11,28 @@ compared against SPIRE001-SPIRE004.
 | SPIRE003 | `default(T)` and `default` literal (excluding equality comparisons) |
 | SPIRE004 | `new T()` without user-defined parameterless ctor or incomplete field initializers |
 
-SPIRE002 is a warning about `[MustBeInit]` on fieldless types — not a detection rule.
+SPIRE002 is a warning about `[EnforceInitialization]` on fieldless types — not a detection rule.
 
 ## Gaps
 
-### P0 — Uninitialized fields of `[MustBeInit]` type in containing types
+### P0 — Uninitialized fields of `[EnforceInitialization]` type in containing types
 
 ```csharp
 class Container {
-    MustBeInitStruct _field; // zero-initialized by CLR, never explicitly set
+    EnforceInitializationStruct _field; // zero-initialized by CLR, never explicitly set
 }
 
 struct Outer {
-    MustBeInitStruct _inner; // same problem
+    EnforceInitializationStruct _inner; // same problem
 }
 ```
 
-The CLR zero-initializes all fields. If a class/struct has a field of a `[MustBeInit]` type
+The CLR zero-initializes all fields. If a class/struct has a field of a `[EnforceInitialization]` type
 and no constructor assigns it (and no field initializer exists), the field silently gets
 `default`. This is the most common and dangerous gap — it's the implicit default that
-`[MustBeInit]` exists to prevent.
+`[EnforceInitialization]` exists to prevent.
 
-**Detection strategy:** For every field/auto-property whose type is `[MustBeInit]`:
+**Detection strategy:** For every field/auto-property whose type is `[EnforceInitialization]`:
 - Check if it has a field/property initializer → OK
 - Check if ALL constructors assign it → OK
 - Otherwise → flag the field declaration
@@ -60,8 +60,8 @@ Creates a default instance for value types. Common in generic utility code, seri
 and DI containers.
 
 **Detection strategy:** Register on `IInvocationOperation` for:
-- `Activator.CreateInstance<T>()` where T is `[MustBeInit]`
-- `Activator.CreateInstance(Type)` where the Type argument resolves to a `[MustBeInit]` struct
+- `Activator.CreateInstance<T>()` where T is `[EnforceInitialization]`
+- `Activator.CreateInstance(Type)` where the Type argument resolves to a `[EnforceInitialization]` struct
 
 **Complexity:** Low. Straightforward method signature matching.
 
@@ -78,7 +78,7 @@ CollectionsMarshal.SetCount(list, 10); // 10 default Config items
 Semantically identical to array allocation for our purposes.
 
 **Detection strategy:** Register on `IInvocationOperation` for
-`CollectionsMarshal.SetCount<T>(List<T>, int)` where T is `[MustBeInit]`.
+`CollectionsMarshal.SetCount<T>(List<T>, int)` where T is `[EnforceInitialization]`.
 
 **Complexity:** Low.
 
@@ -92,12 +92,12 @@ configs.AsSpan().Clear();
 ```
 
 Resets existing elements to `default`. Semantically "destruction of initialized data" rather
-than "creation of new defaults", but the end result is the same: `[MustBeInit]` instances
+than "creation of new defaults", but the end result is the same: `[EnforceInitialization]` instances
 in the default state.
 
 **Detection strategy:** Register on `IInvocationOperation` for:
-- `Array.Clear(Array)` and `Array.Clear(Array, int, int)` where element type is `[MustBeInit]`
-- `Span<T>.Clear()` / `Memory<T>.Span` + `.Clear()` where T is `[MustBeInit]`
+- `Array.Clear(Array)` and `Array.Clear(Array, int, int)` where element type is `[EnforceInitialization]`
+- `Span<T>.Clear()` / `Memory<T>.Span` + `.Clear()` where T is `[EnforceInitialization]`
 
 **Complexity:** Low-Medium. Need to resolve the element type from the array/span.
 
@@ -112,13 +112,13 @@ Unsafe.SkipInit(out Config c); // c is uninitialized garbage
 Worse than default — leaves memory completely uninitialized. Niche but dangerous.
 
 **Detection strategy:** Register on `IInvocationOperation` for
-`Unsafe.SkipInit<T>(out T)` where T is `[MustBeInit]`.
+`Unsafe.SkipInit<T>(out T)` where T is `[EnforceInitialization]`.
 
 **Complexity:** Low.
 
 ---
 
-### P3 — Generic `new T()` resolving to `[MustBeInit]`
+### P3 — Generic `new T()` resolving to `[EnforceInitialization]`
 
 ```csharp
 T Create<T>() where T : new() => new T();
@@ -138,7 +138,7 @@ The definition site only sees the type parameter. To detect this:
 ### P3 — Constructor chaining with `: this()`
 
 ```csharp
-[MustBeInit]
+[EnforceInitialization]
 struct Config {
     public string Name;
     public Config(string name) : this() { Name = name; }
@@ -171,7 +171,7 @@ application code.
 
 ---
 
-### P3 — Inline arrays containing `[MustBeInit]` elements
+### P3 — Inline arrays containing `[EnforceInitialization]` elements
 
 ```csharp
 [InlineArray(10)]
@@ -179,9 +179,9 @@ struct Buffer { Config _element; }
 var buf = new Buffer(); // 10 default Config instances
 ```
 
-If only the element type `Config` has `[MustBeInit]` (not `Buffer` itself), this slips
+If only the element type `Config` has `[EnforceInitialization]` (not `Buffer` itself), this slips
 through all existing rules. Detecting this requires understanding inline array semantics
-and checking whether the single field's type is `[MustBeInit]`.
+and checking whether the single field's type is `[EnforceInitialization]`.
 
 **Complexity:** Medium. Niche feature.
 
@@ -223,11 +223,11 @@ These patterns produce defaults but are caught by existing rules:
 
 | New Rule | Gap | Severity |
 |----------|-----|----------|
-| SPIRE005 | Uninitialized fields of `[MustBeInit]` type in containing types | Error |
-| SPIRE006 | `Activator.CreateInstance` on `[MustBeInit]` struct | Error |
-| SPIRE007 | `CollectionsMarshal.SetCount` on `List<[MustBeInit]>` | Error |
-| SPIRE008 | `Array.Clear` / `Span.Clear` on `[MustBeInit]` elements | Warning |
-| SPIRE009 | `Unsafe.SkipInit` on `[MustBeInit]` struct | Error |
+| SPIRE005 | Uninitialized fields of `[EnforceInitialization]` type in containing types | Error |
+| SPIRE006 | `Activator.CreateInstance` on `[EnforceInitialization]` struct | Error |
+| SPIRE007 | `CollectionsMarshal.SetCount` on `List<[EnforceInitialization]>` | Error |
+| SPIRE008 | `Array.Clear` / `Span.Clear` on `[EnforceInitialization]` elements | Warning |
+| SPIRE009 | `Unsafe.SkipInit` on `[EnforceInitialization]` struct | Error |
 
 P3 items (generic `new T()`, ctor chaining, inline arrays, `Nullable.GetValueOrDefault`)
 are either out-of-scope, too noisy, or too niche to warrant dedicated rules at this time.

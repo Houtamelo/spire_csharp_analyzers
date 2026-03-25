@@ -37,7 +37,7 @@ Not opt-in. Every union gets `ToString()`.
 
 ### Default struct values
 
-Not handled specially. `default(Shape)` is prevented by `[MustBeInit]` analyzers (SPIRE001, SPIRE003, SPIRE004). If a user bypasses the analyzers, `ToString()` prints the first variant with zero/null field values.
+Not handled specially. `default(Shape)` is prevented by `[EnforceInitialization]` analyzers (SPIRE001, SPIRE003, SPIRE004). If a user bypasses the analyzers, `ToString()` prints the first variant with zero/null field values.
 
 ### Emitter file
 

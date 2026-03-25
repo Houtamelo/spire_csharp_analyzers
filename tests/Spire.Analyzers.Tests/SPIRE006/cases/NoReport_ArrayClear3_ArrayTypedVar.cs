@@ -4,7 +4,7 @@ public class NoReport_ArrayClear3_ArrayTypedVar
 {
     public void Method()
     {
-        Array arr = new MustInitStruct[5];
+        Array arr = new EnforceInitializationStruct[5];
         Array.Clear(arr, 0, 3);
     }
 }

@@ -4,6 +4,6 @@ public class Detect_GCAllocateArray_ConstantSize
 {
     public void Method()
     {
-        var arr = GC.AllocateArray<MustInitStruct>(5); //~ ERROR
+        var arr = GC.AllocateArray<EnforceInitializationStruct>(5); //~ ERROR
     }
 }

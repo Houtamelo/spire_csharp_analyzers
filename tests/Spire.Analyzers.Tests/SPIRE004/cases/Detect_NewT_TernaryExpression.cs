@@ -1,11 +1,11 @@
 //@ should_fail
-// Ensure that SPIRE004 IS triggered when `new MustInitNoCtor()` appears as a branch of a ternary expression.
+// Ensure that SPIRE004 IS triggered when `new EnforceInitializationNoCtor()` appears as a branch of a ternary expression.
 public class Detect_NewT_TernaryExpression
 {
-    public MustInitNoCtor Method(bool condition)
+    public EnforceInitializationNoCtor Method(bool condition)
     {
         return condition
-            ? new MustInitNoCtor(1, "set")
-            : new MustInitNoCtor(); //~ ERROR
+            ? new EnforceInitializationNoCtor(1, "set")
+            : new EnforceInitializationNoCtor(); //~ ERROR
     }
 }

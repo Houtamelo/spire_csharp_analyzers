@@ -6,6 +6,6 @@ class TestClass
 {
     void Method()
     {
-        var obj = GetUninitializedObject(typeof(MustInitStruct)); //~ ERROR
+        var obj = GetUninitializedObject(typeof(EnforceInitializationStruct)); //~ ERROR
     }
 }

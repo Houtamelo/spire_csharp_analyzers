@@ -7,10 +7,10 @@ using Spire.Analyzers.Utils;
 namespace Spire.Analyzers.Rules;
 
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class SPIRE007UnsafeSkipInitOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
+public sealed class SPIRE007UnsafeSkipInitOfEnforceInitializationStructAnalyzer : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(Descriptors.SPIRE007_UnsafeSkipInitOfMustBeInitStruct);
+        ImmutableArray.Create(Descriptors.SPIRE007_UnsafeSkipInitOfEnforceInitializationStruct);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -22,14 +22,14 @@ public sealed class SPIRE007UnsafeSkipInitOfMustBeInitStructAnalyzer : Diagnosti
             var unsafeType = compilationContext.Compilation
                 .GetTypeByMetadataName("System.Runtime.CompilerServices.Unsafe");
 
-            var mustBeInitType = compilationContext.Compilation
-                .GetTypeByMetadataName("Spire.MustBeInitAttribute");
+            var enforceInitializationType = compilationContext.Compilation
+                .GetTypeByMetadataName("Spire.EnforceInitializationAttribute");
 
-            if (unsafeType is null || mustBeInitType is null)
+            if (unsafeType is null || enforceInitializationType is null)
                 return;
 
             compilationContext.RegisterOperationAction(
-                operationContext => AnalyzeInvocation(operationContext, unsafeType, mustBeInitType),
+                operationContext => AnalyzeInvocation(operationContext, unsafeType, enforceInitializationType),
                 OperationKind.Invocation);
         });
     }
@@ -37,7 +37,7 @@ public sealed class SPIRE007UnsafeSkipInitOfMustBeInitStructAnalyzer : Diagnosti
     private static void AnalyzeInvocation(
         OperationAnalysisContext context,
         INamedTypeSymbol unsafeType,
-        INamedTypeSymbol mustBeInitType)
+        INamedTypeSymbol enforceInitializationType)
     {
         var operation = (IInvocationOperation)context.Operation;
         var method = operation.TargetMethod;
@@ -59,16 +59,16 @@ public sealed class SPIRE007UnsafeSkipInitOfMustBeInitStructAnalyzer : Diagnosti
         if (namedTarget.TypeKind != TypeKind.Struct && namedTarget.TypeKind != TypeKind.Enum)
             return;
 
-        if (!MustBeInitChecks.HasMustBeInitAttribute(namedTarget, mustBeInitType))
+        if (!EnforceInitializationChecks.HasEnforceInitializationAttribute(namedTarget, enforceInitializationType))
             return;
 
         // For structs: require instance fields. For enums: always flag (garbage data).
-        if (namedTarget.TypeKind == TypeKind.Struct && !MustBeInitChecks.HasInstanceFields(namedTarget))
+        if (namedTarget.TypeKind == TypeKind.Struct && !EnforceInitializationChecks.HasInstanceFields(namedTarget))
             return;
 
         context.ReportDiagnostic(
             Diagnostic.Create(
-                Descriptors.SPIRE007_UnsafeSkipInitOfMustBeInitStruct,
+                Descriptors.SPIRE007_UnsafeSkipInitOfEnforceInitializationStruct,
                 operation.Syntax.GetLocation(),
                 namedTarget.Name));
     }

@@ -6,7 +6,7 @@ public class Detect_ArrayClear1_InNestedType
     {
         public void Method()
         {
-            var arr = new MustInitStruct[5];
+            var arr = new EnforceInitializationStruct[5];
             Array.Clear(arr); //~ ERROR
         }
     }

@@ -4,7 +4,7 @@ public class Detect_ArrayResize_RecordStruct_VariableSize
 {
     public void Method(int n)
     {
-        MustInitRecordStruct[]? arr = null;
+        EnforceInitializationRecordStruct[]? arr = null;
         Array.Resize(ref arr, n); //~ ERROR
     }
 }

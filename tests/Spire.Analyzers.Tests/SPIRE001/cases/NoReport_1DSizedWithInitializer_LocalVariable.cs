@@ -4,6 +4,6 @@ public class NoReport_1DSizedWithInitializer_LocalVariable
 {
     public void Method()
     {
-        var arr = new MustInitStruct[2] { new MustInitStruct(1), new MustInitStruct(2) };
+        var arr = new EnforceInitializationStruct[2] { new EnforceInitializationStruct(1), new EnforceInitializationStruct(2) };
     }
 }

@@ -4,6 +4,6 @@ public class Detect_RecordStruct_ArrayCreateInstance
 {
     public void Method()
     {
-        var arr = Array.CreateInstance(typeof(MustInitRecordStruct), 5); //~ ERROR
+        var arr = Array.CreateInstance(typeof(EnforceInitializationRecordStruct), 5); //~ ERROR
     }
 }

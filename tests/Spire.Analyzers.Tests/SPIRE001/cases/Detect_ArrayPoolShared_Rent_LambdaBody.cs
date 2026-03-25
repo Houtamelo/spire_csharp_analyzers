@@ -4,6 +4,6 @@ public class Detect_ArrayPoolShared_Rent_LambdaBody
 {
     public void Method()
     {
-        Func<MustInitStruct[]> factory = () => ArrayPool<MustInitStruct>.Shared.Rent(5); //~ ERROR
+        Func<EnforceInitializationStruct[]> factory = () => ArrayPool<EnforceInitializationStruct>.Shared.Rent(5); //~ ERROR
     }
 }

@@ -7,10 +7,10 @@ using Spire.Analyzers.Utils;
 namespace Spire.Analyzers.Rules;
 
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class SPIRE006ClearOfMustBeInitElementsAnalyzer : DiagnosticAnalyzer
+public sealed class SPIRE006ClearOfEnforceInitializationElementsAnalyzer : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(Descriptors.SPIRE006_ClearOfMustBeInitElements);
+        ImmutableArray.Create(Descriptors.SPIRE006_ClearOfEnforceInitializationElements);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -25,14 +25,14 @@ public sealed class SPIRE006ClearOfMustBeInitElementsAnalyzer : DiagnosticAnalyz
             var spanType = compilationContext.Compilation
                 .GetTypeByMetadataName("System.Span`1");
 
-            var mustBeInitType = compilationContext.Compilation
-                .GetTypeByMetadataName("Spire.MustBeInitAttribute");
+            var enforceInitializationType = compilationContext.Compilation
+                .GetTypeByMetadataName("Spire.EnforceInitializationAttribute");
 
-            if (mustBeInitType is null)
+            if (enforceInitializationType is null)
                 return;
 
             compilationContext.RegisterOperationAction(
-                operationContext => AnalyzeInvocation(operationContext, arrayType, spanType, mustBeInitType),
+                operationContext => AnalyzeInvocation(operationContext, arrayType, spanType, enforceInitializationType),
                 OperationKind.Invocation);
         });
     }
@@ -41,7 +41,7 @@ public sealed class SPIRE006ClearOfMustBeInitElementsAnalyzer : DiagnosticAnalyz
         OperationAnalysisContext context,
         INamedTypeSymbol? arrayType,
         INamedTypeSymbol? spanType,
-        INamedTypeSymbol mustBeInitType)
+        INamedTypeSymbol enforceInitializationType)
     {
         var operation = (IInvocationOperation)context.Operation;
         var method = operation.TargetMethod;
@@ -71,16 +71,16 @@ public sealed class SPIRE006ClearOfMustBeInitElementsAnalyzer : DiagnosticAnalyz
         if (namedElement.TypeKind != TypeKind.Struct && namedElement.TypeKind != TypeKind.Class && namedElement.TypeKind != TypeKind.Enum)
             return;
 
-        if (!MustBeInitChecks.IsDefaultValueInvalid(namedElement, mustBeInitType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(namedElement, enforceInitializationType))
             return;
 
         // For reference types, skip if nullable-annotated
-        if (MustBeInitChecks.IsNullableAnnotatedReference(elementType))
+        if (EnforceInitializationChecks.IsNullableAnnotatedReference(elementType))
             return;
 
         context.ReportDiagnostic(
             Diagnostic.Create(
-                Descriptors.SPIRE006_ClearOfMustBeInitElements,
+                Descriptors.SPIRE006_ClearOfEnforceInitializationElements,
                 operation.Syntax.GetLocation(),
                 methodLabel,
                 namedElement.Name));
@@ -138,7 +138,7 @@ public sealed class SPIRE006ClearOfMustBeInitElementsAnalyzer : DiagnosticAnalyz
 
         elementType = containingType.TypeArguments[0];
 
-        // Skip unresolved generic type parameters — we can't know if they are [MustBeInit].
+        // Skip unresolved generic type parameters — we can't know if they are [EnforceInitialization].
         if (elementType.TypeKind == TypeKind.TypeParameter)
         {
             elementType = null;

@@ -4,6 +4,6 @@ public class Detect_Params_ArrayEmptyHelper
 {
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(MustInitStruct), Array.Empty<object>()); //~ ERROR
+        var x = Activator.CreateInstance(typeof(EnforceInitializationStruct), Array.Empty<object>()); //~ ERROR
     }
 }

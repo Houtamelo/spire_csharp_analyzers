@@ -1,5 +1,5 @@
 //@ should_pass
-// Ensure that SPIRE016 is NOT triggered when casting a [MustBeInit] enum value to int (enum-to-int, not int-to-enum).
+// Ensure that SPIRE016 is NOT triggered when casting a [EnforceInitialization] enum value to int (enum-to-int, not int-to-enum).
 public class NoReport_EnumToInt_Cast
 {
     void M()

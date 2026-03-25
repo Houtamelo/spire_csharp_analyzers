@@ -36,6 +36,7 @@ TestResults/
 feedback/transcripts/
 feedback/archived/
 feedback/skill-usage.log
+feedback/summaries/
 
 # User-local Claude Code settings (not tracked)
 .claude/settings.local.json

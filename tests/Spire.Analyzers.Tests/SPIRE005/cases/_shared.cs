@@ -4,26 +4,26 @@ global using System.Threading.Tasks;
 global using System.Reflection;
 global using Spire;
 
-[MustBeInit]
-public struct MustInitStruct
+[EnforceInitialization]
+public struct EnforceInitializationStruct
 {
     public int Value;
 
-    public MustInitStruct(int value)
+    public EnforceInitializationStruct(int value)
     {
         Value = value;
     }
 }
 
-[MustBeInit]
-public record struct MustInitRecordStruct(int Value);
+[EnforceInitialization]
+public record struct EnforceInitializationRecordStruct(int Value);
 
-[MustBeInit]
-public readonly struct MustInitReadonlyStruct
+[EnforceInitialization]
+public readonly struct EnforceInitializationReadonlyStruct
 {
     public readonly int Value;
 
-    public MustInitReadonlyStruct(int value)
+    public EnforceInitializationReadonlyStruct(int value)
     {
         Value = value;
     }
@@ -34,16 +34,16 @@ public struct PlainStruct
     public int Value;
 }
 
-[MustBeInit]
-public struct EmptyMustInitStruct { }
+[EnforceInitialization]
+public struct EmptyEnforceInitializationStruct { }
 
-/// [MustBeInit] enum with no zero-valued member — default(T) = 0 is unnamed
-[MustBeInit]
-public enum MustInitEnumNoZero { Active = 1, Inactive = 2, Pending = 3 }
+/// [EnforceInitialization] enum with no zero-valued member — default(T) = 0 is unnamed
+[EnforceInitialization]
+public enum EnforceInitializationEnumNoZero { Active = 1, Inactive = 2, Pending = 3 }
 
-/// [MustBeInit] enum with zero-valued member — default(T) = None, valid
-[MustBeInit]
-public enum MustInitEnumWithZero { None = 0, Active = 1, Inactive = 2 }
+/// [EnforceInitialization] enum with zero-valued member — default(T) = None, valid
+[EnforceInitialization]
+public enum EnforceInitializationEnumWithZero { None = 0, Active = 1, Inactive = 2 }
 
-/// Plain enum (no [MustBeInit]) — never flagged
+/// Plain enum (no [EnforceInitialization]) — never flagged
 public enum PlainEnum { A, B, C }

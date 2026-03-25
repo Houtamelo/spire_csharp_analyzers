@@ -3,178 +3,178 @@ global using System.Collections.Generic;
 global using System.Threading.Tasks;
 global using Spire;
 
-// [MustBeInit] struct without parameterless ctor — new T() == default(T)
-[MustBeInit]
-public struct MustInitNoCtor
+// [EnforceInitialization] struct without parameterless ctor — new T() == default(T)
+[EnforceInitialization]
+public struct EnforceInitializationNoCtor
 {
     public int Value;
     public string Name;
 
-    public MustInitNoCtor(int value, string name)
+    public EnforceInitializationNoCtor(int value, string name)
     {
         Value = value;
         Name = name;
     }
 }
 
-// [MustBeInit] struct WITH user-defined parameterless ctor — new T() should NOT be flagged
-[MustBeInit]
-public struct MustInitWithCtor
+// [EnforceInitialization] struct WITH user-defined parameterless ctor — new T() should NOT be flagged
+[EnforceInitialization]
+public struct EnforceInitializationWithCtor
 {
     public int Value;
 
-    public MustInitWithCtor()
+    public EnforceInitializationWithCtor()
     {
         Value = 42;
     }
 }
 
-// [MustBeInit] struct where ALL fields have initializers — new T() should NOT be flagged
-[MustBeInit]
-public struct MustInitAllFieldsInitialized
+// [EnforceInitialization] struct where ALL fields have initializers — new T() should NOT be flagged
+[EnforceInitialization]
+public struct EnforceInitializationAllFieldsInitialized
 {
     public int Value = 10;
     public string Name = "default";
 
-    public MustInitAllFieldsInitialized(int value, string name)
+    public EnforceInitializationAllFieldsInitialized(int value, string name)
     {
         Value = value;
         Name = name;
     }
 }
 
-// [MustBeInit] struct where SOME (not all) fields have initializers — new T() SHOULD be flagged
-[MustBeInit]
-public struct MustInitPartialFieldsInitialized
+// [EnforceInitialization] struct where SOME (not all) fields have initializers — new T() SHOULD be flagged
+[EnforceInitialization]
+public struct EnforceInitializationPartialFieldsInitialized
 {
     public int Value = 10;
     public string Name;
 
-    public MustInitPartialFieldsInitialized(int value, string name)
+    public EnforceInitializationPartialFieldsInitialized(int value, string name)
     {
         Value = value;
         Name = name;
     }
 }
 
-// [MustBeInit] record struct — no user-defined parameterless ctor
-[MustBeInit]
-public record struct MustInitRecordNoCtor(int Value);
+// [EnforceInitialization] record struct — no user-defined parameterless ctor
+[EnforceInitialization]
+public record struct EnforceInitializationRecordNoCtor(int Value);
 
-// [MustBeInit] struct with auto-properties, no parameterless ctor
-[MustBeInit]
-public struct MustInitAutoPropsNoCtor
+// [EnforceInitialization] struct with auto-properties, no parameterless ctor
+[EnforceInitialization]
+public struct EnforceInitializationAutoPropsNoCtor
 {
     public int Value { get; set; }
     public string Name { get; set; }
 }
 
-// [MustBeInit] struct with all auto-properties initialized — should NOT be flagged
-[MustBeInit]
-public struct MustInitAutoPropsAllInitialized
+// [EnforceInitialization] struct with all auto-properties initialized — should NOT be flagged
+[EnforceInitialization]
+public struct EnforceInitializationAutoPropsAllInitialized
 {
     public int Value { get; set; } = 10;
     public string Name { get; set; } = "default";
 
-    public MustInitAutoPropsAllInitialized(int value, string name)
+    public EnforceInitializationAutoPropsAllInitialized(int value, string name)
     {
         Value = value;
         Name = name;
     }
 }
 
-// [MustBeInit] struct with some auto-properties initialized — SHOULD be flagged
-[MustBeInit]
-public struct MustInitAutoPropsPartialInitialized
+// [EnforceInitialization] struct with some auto-properties initialized — SHOULD be flagged
+[EnforceInitialization]
+public struct EnforceInitializationAutoPropsPartialInitialized
 {
     public int Value { get; set; } = 10;
     public string Name { get; set; }
 
-    public MustInitAutoPropsPartialInitialized(int value, string name)
+    public EnforceInitializationAutoPropsPartialInitialized(int value, string name)
     {
         Value = value;
         Name = name;
     }
 }
 
-// Plain struct (no [MustBeInit]) — should never be flagged
+// Plain struct (no [EnforceInitialization]) — should never be flagged
 public struct PlainStruct
 {
     public int Value;
 }
 
-// [MustBeInit] empty struct — should NOT be flagged (no fields to initialize)
-[MustBeInit]
-public struct EmptyMustInitStruct { }
+// [EnforceInitialization] empty struct — should NOT be flagged (no fields to initialize)
+[EnforceInitialization]
+public struct EmptyEnforceInitializationStruct { }
 
-// [MustBeInit] struct with only non-auto (computed) properties — no instance fields
-[MustBeInit]
-public struct MustInitComputedOnly
+// [EnforceInitialization] struct with only non-auto (computed) properties — no instance fields
+[EnforceInitialization]
+public struct EnforceInitializationComputedOnly
 {
     public int Value { get => 42; }
 }
 
-// [MustBeInit] struct with mix of fields and auto-properties, all initialized
-[MustBeInit]
-public struct MustInitMixedAllInitialized
+// [EnforceInitialization] struct with mix of fields and auto-properties, all initialized
+[EnforceInitialization]
+public struct EnforceInitializationMixedAllInitialized
 {
     public int Field = 5;
     public string Prop { get; set; } = "hello";
 
-    public MustInitMixedAllInitialized(int field, string prop)
+    public EnforceInitializationMixedAllInitialized(int field, string prop)
     {
         Field = field;
         Prop = prop;
     }
 }
 
-// [MustBeInit] struct with mix of fields and auto-properties, not all initialized
-[MustBeInit]
-public struct MustInitMixedPartialInitialized
+// [EnforceInitialization] struct with mix of fields and auto-properties, not all initialized
+[EnforceInitialization]
+public struct EnforceInitializationMixedPartialInitialized
 {
     public int Field = 5;
     public string Prop { get; set; }
 
-    public MustInitMixedPartialInitialized(int field, string prop)
+    public EnforceInitializationMixedPartialInitialized(int field, string prop)
     {
         Field = field;
         Prop = prop;
     }
 }
 
-// [MustBeInit] record struct with regular fields (no primary ctor) — new T() SHOULD be flagged
-[MustBeInit]
-public record struct MustInitRecordStructWithFields
+// [EnforceInitialization] record struct with regular fields (no primary ctor) — new T() SHOULD be flagged
+[EnforceInitialization]
+public record struct EnforceInitializationRecordStructWithFields
 {
     public int Value;
     public string Name;
 }
 
-// [MustBeInit] readonly struct without parameterless ctor — new T() SHOULD be flagged
-[MustBeInit]
-public readonly struct MustInitReadonlyNoCtor
+// [EnforceInitialization] readonly struct without parameterless ctor — new T() SHOULD be flagged
+[EnforceInitialization]
+public readonly struct EnforceInitializationReadonlyNoCtor
 {
     public readonly int Value;
     public readonly string Name;
 
-    public MustInitReadonlyNoCtor(int value, string name)
+    public EnforceInitializationReadonlyNoCtor(int value, string name)
     {
         Value = value;
         Name = name;
     }
 }
 
-// [MustBeInit] ref struct without parameterless ctor — new T() SHOULD be flagged
-[MustBeInit]
-public ref struct MustInitRefNoCtor
+// [EnforceInitialization] ref struct without parameterless ctor — new T() SHOULD be flagged
+[EnforceInitialization]
+public ref struct EnforceInitializationRefNoCtor
 {
     public int Value;
     public string Name;
 }
 
-// [MustBeInit] readonly ref struct without parameterless ctor — new T() SHOULD be flagged
-[MustBeInit]
-public readonly ref struct MustInitReadonlyRefNoCtor
+// [EnforceInitialization] readonly ref struct without parameterless ctor — new T() SHOULD be flagged
+[EnforceInitialization]
+public readonly ref struct EnforceInitializationReadonlyRefNoCtor
 {
     public readonly int Value;
     public readonly string Name;
@@ -183,13 +183,13 @@ public readonly ref struct MustInitReadonlyRefNoCtor
 // Simple class for false-positive testing — new SomeClass() should never be flagged
 public class SomeClass { }
 
-/// [MustBeInit] enum with no zero-valued member — default(T) = 0 is unnamed
-[MustBeInit]
-public enum MustInitEnumNoZero { Active = 1, Inactive = 2, Pending = 3 }
+/// [EnforceInitialization] enum with no zero-valued member — default(T) = 0 is unnamed
+[EnforceInitialization]
+public enum EnforceInitializationEnumNoZero { Active = 1, Inactive = 2, Pending = 3 }
 
-/// [MustBeInit] enum with zero-valued member — default(T) = None, valid
-[MustBeInit]
-public enum MustInitEnumWithZero { None = 0, Active = 1, Inactive = 2 }
+/// [EnforceInitialization] enum with zero-valued member — default(T) = None, valid
+[EnforceInitialization]
+public enum EnforceInitializationEnumWithZero { None = 0, Active = 1, Inactive = 2 }
 
-/// Plain enum (no [MustBeInit]) — never flagged
+/// Plain enum (no [EnforceInitialization]) — never flagged
 public enum PlainEnum { A, B, C }

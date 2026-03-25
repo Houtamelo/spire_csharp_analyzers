@@ -1,12 +1,12 @@
 //@ should_fail
-// Ensure that SPIRE003 IS triggered when default is the value of a switch expression arm returning MustInitStruct.
+// Ensure that SPIRE003 IS triggered when default is the value of a switch expression arm returning EnforceInitializationStruct.
 public class Detect_DefaultLiteral_SwitchExpressionArm
 {
-    public MustInitStruct Method(int x)
+    public EnforceInitializationStruct Method(int x)
     {
         return x switch
         {
-            1 => new MustInitStruct(1),
+            1 => new EnforceInitializationStruct(1),
             _ => default, //~ ERROR
         };
     }

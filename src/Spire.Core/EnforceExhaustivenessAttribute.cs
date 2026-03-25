@@ -3,6 +3,6 @@ using System;
 namespace Spire;
 
 [AttributeUsage(AttributeTargets.Enum)]
-public sealed class EnforceExhaustivenessAttribute : MustBeInitAttribute
+public sealed class EnforceExhaustivenessAttribute : EnforceInitializationAttribute
 {
 }

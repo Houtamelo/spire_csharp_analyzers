@@ -1,11 +1,11 @@
 //@ should_pass
-// Ensure that SPIRE006 is NOT triggered when list.Clear() is called on a List<MustInitStruct>.
-public class NoReport_ListClear_MustInitStruct
+// Ensure that SPIRE006 is NOT triggered when list.Clear() is called on a List<EnforceInitializationStruct>.
+public class NoReport_ListClear_EnforceInitializationStruct
 {
     public void Method()
     {
-        var list = new List<MustInitStruct>();
-        list.Add(new MustInitStruct(1));
+        var list = new List<EnforceInitializationStruct>();
+        list.Add(new EnforceInitializationStruct(1));
         list.Clear();
     }
 }

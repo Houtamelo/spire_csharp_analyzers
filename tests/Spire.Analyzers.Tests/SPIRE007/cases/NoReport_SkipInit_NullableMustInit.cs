@@ -1,9 +1,9 @@
 //@ should_pass
-// Ensure that SPIRE007 is NOT triggered when Unsafe.SkipInit is called with Nullable<MustInitStruct>.
-public class NoReport_SkipInit_NullableMustInit
+// Ensure that SPIRE007 is NOT triggered when Unsafe.SkipInit is called with Nullable<EnforceInitializationStruct>.
+public class NoReport_SkipInit_NullableEnforceInitialization
 {
     public void Method()
     {
-        Unsafe.SkipInit(out MustInitStruct? s);
+        Unsafe.SkipInit(out EnforceInitializationStruct? s);
     }
 }

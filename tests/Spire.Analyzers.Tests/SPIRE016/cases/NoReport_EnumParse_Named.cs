@@ -1,5 +1,5 @@
 //@ should_pass
-// Ensure that SPIRE016 is NOT triggered when using Enum.Parse to produce a [MustBeInit] enum value.
+// Ensure that SPIRE016 is NOT triggered when using Enum.Parse to produce a [EnforceInitialization] enum value.
 public class NoReport_EnumParse_Named
 {
     void M()

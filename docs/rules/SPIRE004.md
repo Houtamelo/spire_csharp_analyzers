@@ -1,4 +1,4 @@
-# SPIRE004: new T() on [MustBeInit] struct without parameterless constructor
+# SPIRE004: new T() on [EnforceInitialization] struct without parameterless constructor
 
 | Property    | Value        |
 |-------------|--------------|
@@ -9,9 +9,9 @@
 
 ## Description
 
-For structs without a user-defined parameterless constructor, `new T()` produces the exact same zeroed-out instance as `default(T)`. When the struct is marked with `[MustBeInit]`, this bypasses the required initialization and should be flagged.
+For structs without a user-defined parameterless constructor, `new T()` produces the exact same zeroed-out instance as `default(T)`. When the struct is marked with `[EnforceInitialization]`, this bypasses the required initialization and should be flagged.
 
-For enums marked with `[MustBeInit]`, `new T()` always produces `default(T) = 0`. When the enum has no zero-valued named member, this is flagged. Constructor and field-initializer checks do not apply to enums.
+For enums marked with `[EnforceInitialization]`, `new T()` always produces `default(T) = 0`. When the enum has no zero-valued named member, this is flagged. Constructor and field-initializer checks do not apply to enums.
 
 This rule does **not** flag `new T()` when:
 - The struct has a user-defined parameterless constructor (the constructor performs meaningful initialization)
@@ -19,14 +19,14 @@ This rule does **not** flag `new T()` when:
 
 ### Flagged patterns
 
-- `new T()` where T is a `[MustBeInit]` struct without a user-defined parameterless constructor
-- `new T()` where T is a `[MustBeInit]` struct with some but not all fields/auto-properties initialized
+- `new T()` where T is a `[EnforceInitialization]` struct without a user-defined parameterless constructor
+- `new T()` where T is a `[EnforceInitialization]` struct with some but not all fields/auto-properties initialized
 
 ### Not flagged
 
 - `new T()` where T has a user-defined parameterless constructor
 - `new T()` where all fields and auto-properties have initializers
-- `new T()` where T is not marked with `[MustBeInit]`
+- `new T()` where T is not marked with `[EnforceInitialization]`
 - `new T()` where T has no instance fields (fieldless struct)
 - `new T(args)` with arguments (calls a parameterized constructor)
 
@@ -35,7 +35,7 @@ This rule does **not** flag `new T()` when:
 ### Violating code
 
 ```csharp
-[MustBeInit]
+[EnforceInitialization]
 struct Config
 {
     public string Name;
@@ -49,7 +49,7 @@ Config GetEmpty() => new();     // SPIRE004
 ### Compliant code
 
 ```csharp
-[MustBeInit]
+[EnforceInitialization]
 struct Config
 {
     public string Name;
@@ -65,7 +65,7 @@ struct Config
 var c = new Config();           // OK — calls the parameterless constructor
 var c2 = new Config("hello");   // OK — parameterized constructor
 
-[MustBeInit]
+[EnforceInitialization]
 struct Defaults
 {
     public string Name = "unnamed";  // all fields initialized

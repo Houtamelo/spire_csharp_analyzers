@@ -1,12 +1,12 @@
 //@ should_fail
-// Ensure that SPIRE004 IS triggered when new MustInitNoCtor() is returned from a property getter.
+// Ensure that SPIRE004 IS triggered when new EnforceInitializationNoCtor() is returned from a property getter.
 public class Detect_NewT_PropertyGetter
 {
-    public MustInitNoCtor Value
+    public EnforceInitializationNoCtor Value
     {
         get
         {
-            return new MustInitNoCtor(); //~ ERROR
+            return new EnforceInitializationNoCtor(); //~ ERROR
         }
     }
 }

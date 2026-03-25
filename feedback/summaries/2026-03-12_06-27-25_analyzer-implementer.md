@@ -8,7 +8,7 @@
 > Implement the SPIRE005 analyzer to make all 107 tests pass.
 
 ## Files Modified
-- `/home/houtamelo/Documents/projects/libraries/csharp_analyzer/src/Spire.Analyzers/Rules/SPIRE005ActivatorCreateInstanceOfMustBeInitStructAnalyzer.cs` (created)
+- `/home/houtamelo/Documents/projects/libraries/csharp_analyzer/src/Spire.Analyzers/Rules/SPIRE005ActivatorCreateInstanceOfEnforceInitializationStructAnalyzer.cs` (created)
 
 ## Build/Test Results
 - Test commands run: 2

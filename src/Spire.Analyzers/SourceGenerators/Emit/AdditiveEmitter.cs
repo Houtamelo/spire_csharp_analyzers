@@ -34,7 +34,7 @@ internal static class AdditiveEmitter
         var readonlyMod = union.IsReadonly ? "readonly " : "";
         var refMod = union.IsRefStruct ? "ref " : "";
 
-        sb.AppendLine("[global::Spire.MustBeInit]");
+        sb.AppendLine("[global::Spire.EnforceInitialization]");
         sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType} : global::Spire.IDiscriminatedUnion<{unionType}.Kind>");
         sb.OpenBrace();
 

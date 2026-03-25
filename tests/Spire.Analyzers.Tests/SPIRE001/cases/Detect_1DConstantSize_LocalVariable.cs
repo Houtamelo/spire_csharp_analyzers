@@ -4,6 +4,6 @@ public class Detect_1DConstantSize_LocalVariable
 {
     public void Method()
     {
-        var arr = new MustInitStruct[5]; //~ ERROR
+        var arr = new EnforceInitializationStruct[5]; //~ ERROR
     }
 }

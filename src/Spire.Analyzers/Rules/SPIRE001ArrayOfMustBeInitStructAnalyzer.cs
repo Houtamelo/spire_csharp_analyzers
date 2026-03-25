@@ -9,10 +9,10 @@ using Spire.Analyzers.Utils;
 namespace Spire.Analyzers.Rules;
 
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
+public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(Descriptors.SPIRE001_ArrayOfMustBeInitStruct);
+        ImmutableArray.Create(Descriptors.SPIRE001_ArrayOfEnforceInitializationStruct);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -21,10 +21,10 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
 
         context.RegisterCompilationStartAction(compilationContext =>
         {
-            var mustBeInitType = compilationContext.Compilation
-                .GetTypeByMetadataName("Spire.MustBeInitAttribute");
+            var enforceInitializationType = compilationContext.Compilation
+                .GetTypeByMetadataName("Spire.EnforceInitializationAttribute");
 
-            if (mustBeInitType is null)
+            if (enforceInitializationType is null)
                 return;
 
             var systemArrayType = compilationContext.Compilation
@@ -40,28 +40,28 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
                 .GetTypeByMetadataName("System.Collections.Immutable.ImmutableArray`1+Builder");
 
             compilationContext.RegisterOperationAction(
-                operationContext => AnalyzeArrayCreation(operationContext, mustBeInitType),
+                operationContext => AnalyzeArrayCreation(operationContext, enforceInitializationType),
                 OperationKind.ArrayCreation);
 
             compilationContext.RegisterOperationAction(
                 operationContext => AnalyzeInvocation(
-                    operationContext, mustBeInitType, systemArrayType, gcType, arrayPoolType),
+                    operationContext, enforceInitializationType, systemArrayType, gcType, arrayPoolType),
                 OperationKind.Invocation);
 
             compilationContext.RegisterOperationAction(
                 operationContext => AnalyzeSimpleAssignment(
-                    operationContext, mustBeInitType, immutableBuilderType),
+                    operationContext, enforceInitializationType, immutableBuilderType),
                 OperationKind.SimpleAssignment);
 
             compilationContext.RegisterSyntaxNodeAction(
-                syntaxContext => AnalyzeStackAlloc(syntaxContext, mustBeInitType),
+                syntaxContext => AnalyzeStackAlloc(syntaxContext, enforceInitializationType),
                 SyntaxKind.StackAllocArrayCreationExpression);
         });
     }
 
     private static void AnalyzeArrayCreation(
         OperationAnalysisContext context,
-        INamedTypeSymbol mustBeInitType)
+        INamedTypeSymbol enforceInitializationType)
     {
         var operation = (IArrayCreationOperation)context.Operation;
 
@@ -82,8 +82,8 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
 
         var elementType = arrayType.ElementType;
 
-        // Check if element type has [MustBeInit]
-        if (!MustBeInitChecks.IsDefaultValueInvalid(elementType, mustBeInitType))
+        // Check if element type has [EnforceInitialization]
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType))
             return;
 
         // For reference types, skip if element is nullable-annotated (T?[])
@@ -92,14 +92,14 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
 
         context.ReportDiagnostic(
             Diagnostic.Create(
-                Descriptors.SPIRE001_ArrayOfMustBeInitStruct,
+                Descriptors.SPIRE001_ArrayOfEnforceInitializationStruct,
                 operation.Syntax.GetLocation(),
                 elementType.Name));
     }
 
     private static void AnalyzeInvocation(
         OperationAnalysisContext context,
-        INamedTypeSymbol mustBeInitType,
+        INamedTypeSymbol enforceInitializationType,
         INamedTypeSymbol? systemArrayType,
         INamedTypeSymbol? gcType,
         INamedTypeSymbol? arrayPoolType)
@@ -112,7 +112,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
             && method.Name == "CreateInstance"
             && SymbolEqualityComparer.Default.Equals(method.ContainingType, systemArrayType))
         {
-            AnalyzeArrayCreateInstance(context, operation, mustBeInitType);
+            AnalyzeArrayCreateInstance(context, operation, enforceInitializationType);
             return;
         }
 
@@ -121,7 +121,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
             && method.Name == "Resize"
             && SymbolEqualityComparer.Default.Equals(method.ContainingType, systemArrayType))
         {
-            AnalyzeArrayResize(context, operation, method, mustBeInitType);
+            AnalyzeArrayResize(context, operation, method, enforceInitializationType);
             return;
         }
 
@@ -130,7 +130,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
             && (method.Name == "AllocateArray" || method.Name == "AllocateUninitializedArray")
             && SymbolEqualityComparer.Default.Equals(method.ContainingType, gcType))
         {
-            AnalyzeGCAllocate(context, operation, method, mustBeInitType);
+            AnalyzeGCAllocate(context, operation, method, enforceInitializationType);
             return;
         }
 
@@ -140,7 +140,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
             && SymbolEqualityComparer.Default.Equals(
                 method.ContainingType?.OriginalDefinition, arrayPoolType))
         {
-            AnalyzeArrayPoolRent(context, operation, method, mustBeInitType);
+            AnalyzeArrayPoolRent(context, operation, method, enforceInitializationType);
             return;
         }
     }
@@ -148,7 +148,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
     private static void AnalyzeArrayCreateInstance(
         OperationAnalysisContext context,
         IInvocationOperation operation,
-        INamedTypeSymbol mustBeInitType)
+        INamedTypeSymbol enforceInitializationType)
     {
         // First argument must be typeof(T) — if not, we can't determine the element type
         if (operation.Arguments.Length == 0)
@@ -169,13 +169,13 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
                 return;
         }
 
-        if (!MustBeInitChecks.IsDefaultValueInvalid(elementType, mustBeInitType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType))
             return;
 
         // typeof() never carries nullable annotations — always flag
         context.ReportDiagnostic(
             Diagnostic.Create(
-                Descriptors.SPIRE001_ArrayOfMustBeInitStruct,
+                Descriptors.SPIRE001_ArrayOfEnforceInitializationStruct,
                 operation.Syntax.GetLocation(),
                 elementType.Name));
     }
@@ -184,7 +184,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         OperationAnalysisContext context,
         IInvocationOperation operation,
         IMethodSymbol method,
-        INamedTypeSymbol mustBeInitType)
+        INamedTypeSymbol enforceInitializationType)
     {
         // Array.Resize<T>(ref T[] array, int newSize)
         if (method.TypeArguments.Length == 0)
@@ -199,15 +199,15 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         if (OperationUtilities.IsKnownToBeZero(operation.Arguments[1].Value))
             return;
 
-        if (!MustBeInitChecks.IsDefaultValueInvalid(elementType, mustBeInitType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType))
             return;
 
-        if (MustBeInitChecks.IsNullableAnnotatedReference(elementType))
+        if (EnforceInitializationChecks.IsNullableAnnotatedReference(elementType))
             return;
 
         context.ReportDiagnostic(
             Diagnostic.Create(
-                Descriptors.SPIRE001_ArrayOfMustBeInitStruct,
+                Descriptors.SPIRE001_ArrayOfEnforceInitializationStruct,
                 operation.Syntax.GetLocation(),
                 elementType.Name));
     }
@@ -216,7 +216,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         OperationAnalysisContext context,
         IInvocationOperation operation,
         IMethodSymbol method,
-        INamedTypeSymbol mustBeInitType)
+        INamedTypeSymbol enforceInitializationType)
     {
         // GC.AllocateArray<T>(int length, ...) / GC.AllocateUninitializedArray<T>(int length, ...)
         if (method.TypeArguments.Length == 0)
@@ -230,15 +230,15 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         if (OperationUtilities.IsKnownToBeZero(operation.Arguments[0].Value))
             return;
 
-        if (!MustBeInitChecks.IsDefaultValueInvalid(elementType, mustBeInitType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType))
             return;
 
-        if (MustBeInitChecks.IsNullableAnnotatedReference(elementType))
+        if (EnforceInitializationChecks.IsNullableAnnotatedReference(elementType))
             return;
 
         context.ReportDiagnostic(
             Diagnostic.Create(
-                Descriptors.SPIRE001_ArrayOfMustBeInitStruct,
+                Descriptors.SPIRE001_ArrayOfEnforceInitializationStruct,
                 operation.Syntax.GetLocation(),
                 elementType.Name));
     }
@@ -247,7 +247,7 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         OperationAnalysisContext context,
         IInvocationOperation operation,
         IMethodSymbol method,
-        INamedTypeSymbol mustBeInitType)
+        INamedTypeSymbol enforceInitializationType)
     {
         // ArrayPool<T>.Rent(int minimumLength)
         var containingType = method.ContainingType;
@@ -262,22 +262,22 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         if (OperationUtilities.IsKnownToBeZero(operation.Arguments[0].Value))
             return;
 
-        if (!MustBeInitChecks.IsDefaultValueInvalid(elementType, mustBeInitType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType))
             return;
 
-        if (MustBeInitChecks.IsNullableAnnotatedReference(elementType))
+        if (EnforceInitializationChecks.IsNullableAnnotatedReference(elementType))
             return;
 
         context.ReportDiagnostic(
             Diagnostic.Create(
-                Descriptors.SPIRE001_ArrayOfMustBeInitStruct,
+                Descriptors.SPIRE001_ArrayOfEnforceInitializationStruct,
                 operation.Syntax.GetLocation(),
                 elementType.Name));
     }
 
     private static void AnalyzeSimpleAssignment(
         OperationAnalysisContext context,
-        INamedTypeSymbol mustBeInitType,
+        INamedTypeSymbol enforceInitializationType,
         INamedTypeSymbol? immutableBuilderType)
     {
         if (immutableBuilderType is null)
@@ -309,22 +309,22 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         if (OperationUtilities.IsKnownToBeZero(operation.Value))
             return;
 
-        if (!MustBeInitChecks.IsDefaultValueInvalid(elementType, mustBeInitType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType))
             return;
 
-        if (MustBeInitChecks.IsNullableAnnotatedReference(elementType))
+        if (EnforceInitializationChecks.IsNullableAnnotatedReference(elementType))
             return;
 
         context.ReportDiagnostic(
             Diagnostic.Create(
-                Descriptors.SPIRE001_ArrayOfMustBeInitStruct,
+                Descriptors.SPIRE001_ArrayOfEnforceInitializationStruct,
                 operation.Syntax.GetLocation(),
                 elementType.Name));
     }
 
     private static void AnalyzeStackAlloc(
         SyntaxNodeAnalysisContext context,
-        INamedTypeSymbol mustBeInitType)
+        INamedTypeSymbol enforceInitializationType)
     {
         var node = (StackAllocArrayCreationExpressionSyntax)context.Node;
 
@@ -347,13 +347,13 @@ public sealed class SPIRE001ArrayOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
         if (elementType is null)
             return;
 
-        // Check if element type has [MustBeInit]
-        if (!MustBeInitChecks.IsDefaultValueInvalid(elementType, mustBeInitType))
+        // Check if element type has [EnforceInitialization]
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType))
             return;
 
         context.ReportDiagnostic(
             Diagnostic.Create(
-                Descriptors.SPIRE001_ArrayOfMustBeInitStruct,
+                Descriptors.SPIRE001_ArrayOfEnforceInitializationStruct,
                 node.GetLocation(),
                 elementType.Name));
     }

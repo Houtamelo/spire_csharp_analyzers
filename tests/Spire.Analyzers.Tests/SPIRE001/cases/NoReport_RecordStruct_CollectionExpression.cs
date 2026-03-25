@@ -4,6 +4,6 @@ public class NoReport_RecordStruct_CollectionExpression
 {
     public void Method()
     {
-        MustInitRecordStruct[] arr = [new MustInitRecordStruct(1)];
+        EnforceInitializationRecordStruct[] arr = [new EnforceInitializationRecordStruct(1)];
     }
 }

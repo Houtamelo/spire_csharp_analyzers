@@ -6,6 +6,6 @@ class TestClass
 
     void Method()
     {
-        Consume(RuntimeHelpers.GetUninitializedObject(typeof(MustInitStruct))); //~ ERROR
+        Consume(RuntimeHelpers.GetUninitializedObject(typeof(EnforceInitializationStruct))); //~ ERROR
     }
 }

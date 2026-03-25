@@ -6,7 +6,7 @@ using System.ComponentModel;
 
 namespace TestNs
 {
-    [global::Spire.MustBeInit]
+    [global::Spire.EnforceInitialization]
     [StructLayout(LayoutKind.Explicit)]
     readonly partial struct Immutable : global::Spire.IDiscriminatedUnion<Immutable.Kind>
     {

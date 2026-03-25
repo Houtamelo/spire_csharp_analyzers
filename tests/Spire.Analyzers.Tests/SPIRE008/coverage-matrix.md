@@ -8,16 +8,16 @@
 
 ---
 
-## Category A: Standard call — expression contexts with `MustInitStruct`
+## Category A: Standard call — expression contexts with `EnforceInitializationStruct`
 
-The core detection path: `RuntimeHelpers.GetUninitializedObject(typeof(MustInitStruct))` in various positions.
+The core detection path: `RuntimeHelpers.GetUninitializedObject(typeof(EnforceInitializationStruct))` in various positions.
 
 ### should_fail
 
 | File Name | Description |
 |-----------|-------------|
-| `Detect_LocalVariable` | Ensure that SPIRE008 IS triggered when the result is assigned to a local variable (`var x = RuntimeHelpers.GetUninitializedObject(typeof(MustInitStruct))`). |
-| `Detect_DiscardAssignment` | Ensure that SPIRE008 IS triggered when the result is discarded (`_ = RuntimeHelpers.GetUninitializedObject(typeof(MustInitStruct))`). |
+| `Detect_LocalVariable` | Ensure that SPIRE008 IS triggered when the result is assigned to a local variable (`var x = RuntimeHelpers.GetUninitializedObject(typeof(EnforceInitializationStruct))`). |
+| `Detect_DiscardAssignment` | Ensure that SPIRE008 IS triggered when the result is discarded (`_ = RuntimeHelpers.GetUninitializedObject(typeof(EnforceInitializationStruct))`). |
 | `Detect_ReturnStatement` | Ensure that SPIRE008 IS triggered when the call is directly returned from a method. |
 | `Detect_MethodArgument` | Ensure that SPIRE008 IS triggered when the call is passed as a method argument. |
 | `Detect_TernaryExpression` | Ensure that SPIRE008 IS triggered when the call appears in the true branch of a ternary expression. |
@@ -31,16 +31,16 @@ The core detection path: `RuntimeHelpers.GetUninitializedObject(typeof(MustInitS
 
 ## Category B: Struct variants
 
-Tests that all relevant `[MustBeInit]` struct variants are flagged.
+Tests that all relevant `[EnforceInitialization]` struct variants are flagged.
 
 ### should_fail
 
 | File Name | Description |
 |-----------|-------------|
-| `Detect_RecordStruct` | Ensure that SPIRE008 IS triggered when the target type is a `[MustBeInit]` record struct (`MustInitRecordStruct`). |
-| `Detect_ReadonlyStruct` | Ensure that SPIRE008 IS triggered when the target type is a `[MustBeInit]` readonly struct (`MustInitReadonlyStruct`). |
-| `Detect_ReadonlyRecordStruct` | Ensure that SPIRE008 IS triggered when the target type is a `[MustBeInit]` readonly record struct (defined inline in the case file). |
-| `Detect_RefStruct` | Ensure that SPIRE008 IS triggered when the target type is a `[MustBeInit]` ref struct (defined inline; `GetUninitializedObject` would fail at runtime, but should still be flagged). |
+| `Detect_RecordStruct` | Ensure that SPIRE008 IS triggered when the target type is a `[EnforceInitialization]` record struct (`EnforceInitializationRecordStruct`). |
+| `Detect_ReadonlyStruct` | Ensure that SPIRE008 IS triggered when the target type is a `[EnforceInitialization]` readonly struct (`EnforceInitializationReadonlyStruct`). |
+| `Detect_ReadonlyRecordStruct` | Ensure that SPIRE008 IS triggered when the target type is a `[EnforceInitialization]` readonly record struct (defined inline in the case file). |
+| `Detect_RefStruct` | Ensure that SPIRE008 IS triggered when the target type is a `[EnforceInitialization]` ref struct (defined inline; `GetUninitializedObject` would fail at runtime, but should still be flagged). |
 
 ## Category C: Alternative call forms
 
@@ -50,14 +50,14 @@ Tests that detection is not defeated by alternate syntax for the same call.
 
 | File Name | Description |
 |-----------|-------------|
-| `Detect_FullyQualifiedCall` | Ensure that SPIRE008 IS triggered when called with the fully qualified name `System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(MustInitStruct))`. |
-| `Detect_StaticImport` | Ensure that SPIRE008 IS triggered when called via `using static System.Runtime.CompilerServices.RuntimeHelpers;` and then `GetUninitializedObject(typeof(MustInitStruct))`. |
+| `Detect_FullyQualifiedCall` | Ensure that SPIRE008 IS triggered when called with the fully qualified name `System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(EnforceInitializationStruct))`. |
+| `Detect_StaticImport` | Ensure that SPIRE008 IS triggered when called via `using static System.Runtime.CompilerServices.RuntimeHelpers;` and then `GetUninitializedObject(typeof(EnforceInitializationStruct))`. |
 | `Detect_NestedInStaticClass` | Ensure that SPIRE008 IS triggered when the call appears inside a static method of a static class. |
 | `Detect_NestedInClass` | Ensure that SPIRE008 IS triggered when the call is made inside a method of a nested class. |
 
 ## Category D: Not flagged — unresolvable or non-concrete type argument
 
-The type argument cannot be resolved to a concrete `[MustBeInit]` struct.
+The type argument cannot be resolved to a concrete `[EnforceInitialization]` struct.
 
 ### should_pass
 
@@ -68,18 +68,18 @@ The type argument cannot be resolved to a concrete `[MustBeInit]` struct.
 | `NoReport_TypeVariable_MethodReturn` | Ensure that SPIRE008 is NOT triggered when the Type argument comes from a method return value (e.g., `obj.GetType()`). |
 | `NoReport_GenericTypeParam_Typeof` | Ensure that SPIRE008 is NOT triggered when `typeof(T)` is used inside a generic method where T is an unconstrained type parameter. |
 
-## Category E: Not flagged — wrong target type (not a [MustBeInit] struct)
+## Category E: Not flagged — wrong target type (not a [EnforceInitialization] struct)
 
-Tests that the analyzer does not fire on types that are not `[MustBeInit]` structs.
+Tests that the analyzer does not fire on types that are not `[EnforceInitialization]` structs.
 
 ### should_pass
 
 | File Name | Description |
 |-----------|-------------|
-| `NoReport_PlainStruct` | Ensure that SPIRE008 is NOT triggered when the target is a plain struct without `[MustBeInit]` (`typeof(PlainStruct)`). |
+| `NoReport_PlainStruct` | Ensure that SPIRE008 is NOT triggered when the target is a plain struct without `[EnforceInitialization]` (`typeof(PlainStruct)`). |
 | `NoReport_ClassType` | Ensure that SPIRE008 is NOT triggered when the target is a reference type (`typeof(object)`). |
 | `NoReport_BuiltinType_Int` | Ensure that SPIRE008 is NOT triggered when the target is a built-in value type (`typeof(int)`). |
 | `NoReport_StringType` | Ensure that SPIRE008 is NOT triggered when the target is `typeof(string)`. |
 | `NoReport_EnumType` | Ensure that SPIRE008 is NOT triggered when the target is an enum type (`typeof(MyEnum)`). |
 | `NoReport_InterfaceType` | Ensure that SPIRE008 is NOT triggered when the target is an interface type (`typeof(IMyInterface)`). |
-| `NoReport_EmptyMustInitStruct` | Ensure that SPIRE008 is NOT triggered when the target is a fieldless `[MustBeInit]` struct (SPIRE002 handles this case). |
+| `NoReport_EmptyEnforceInitializationStruct` | Ensure that SPIRE008 is NOT triggered when the target is a fieldless `[EnforceInitialization]` struct (SPIRE002 handles this case). |

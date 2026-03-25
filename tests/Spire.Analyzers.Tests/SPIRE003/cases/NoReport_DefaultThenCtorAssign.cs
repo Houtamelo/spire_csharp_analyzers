@@ -4,8 +4,8 @@ public class NoReport_DefaultThenCtorAssign
 {
     public void Method()
     {
-        var s = default(MustInitStruct);
-        s = new MustInitStruct(42);
+        var s = default(EnforceInitializationStruct);
+        s = new EnforceInitializationStruct(42);
         _ = s;
     }
 }

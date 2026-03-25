@@ -1,9 +1,9 @@
 //@ should_pass
-// default(MustInitStruct?) produces null — Nullable<T> does not have [MustBeInit]
+// default(EnforceInitializationStruct?) produces null — Nullable<T> does not have [EnforceInitialization]
 public class NoReport_ExplicitDefaultNullable_NullableStructVar
 {
     public void Method()
     {
-        MustInitStruct? val = default(MustInitStruct?);
+        EnforceInitializationStruct? val = default(EnforceInitializationStruct?);
     }
 }

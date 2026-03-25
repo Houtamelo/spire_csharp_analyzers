@@ -4,6 +4,6 @@ public class Detect_MultiDimensional_VariableSize
 {
     public void Method(int n, int m)
     {
-        var arr = new MustInitStruct[n, m]; //~ ERROR
+        var arr = new EnforceInitializationStruct[n, m]; //~ ERROR
     }
 }

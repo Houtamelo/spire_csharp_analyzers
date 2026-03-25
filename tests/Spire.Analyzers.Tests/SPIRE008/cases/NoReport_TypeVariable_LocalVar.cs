@@ -4,7 +4,7 @@ public class NoReport_TypeVariable_LocalVar
 {
     void Method()
     {
-        Type t = typeof(MustInitStruct);
+        Type t = typeof(EnforceInitializationStruct);
         var obj = RuntimeHelpers.GetUninitializedObject(t);
     }
 }

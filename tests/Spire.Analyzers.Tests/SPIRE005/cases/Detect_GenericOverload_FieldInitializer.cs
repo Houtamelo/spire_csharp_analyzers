@@ -1,6 +1,6 @@
 //@ should_fail
-// Ensure that SPIRE005 IS triggered when CreateInstance<MustInitStruct>() is used in a static field initializer.
+// Ensure that SPIRE005 IS triggered when CreateInstance<EnforceInitializationStruct>() is used in a static field initializer.
 public class Detect_GenericOverload_FieldInitializer
 {
-    public static readonly MustInitStruct Field = Activator.CreateInstance<MustInitStruct>(); //~ ERROR
+    public static readonly EnforceInitializationStruct Field = Activator.CreateInstance<EnforceInitializationStruct>(); //~ ERROR
 }

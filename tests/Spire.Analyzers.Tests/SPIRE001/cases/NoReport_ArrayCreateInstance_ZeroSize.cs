@@ -4,6 +4,6 @@ public class NoReport_ArrayCreateInstance_ZeroSize
 {
     public void Method()
     {
-        var arr = Array.CreateInstance(typeof(MustInitStruct), 0);
+        var arr = Array.CreateInstance(typeof(EnforceInitializationStruct), 0);
     }
 }

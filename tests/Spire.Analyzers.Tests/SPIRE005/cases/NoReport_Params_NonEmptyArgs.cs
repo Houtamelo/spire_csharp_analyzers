@@ -4,6 +4,6 @@ public class NoReport_Params_NonEmptyArgs
 {
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(MustInitStruct), new object[] { 42 });
+        var x = Activator.CreateInstance(typeof(EnforceInitializationStruct), new object[] { 42 });
     }
 }

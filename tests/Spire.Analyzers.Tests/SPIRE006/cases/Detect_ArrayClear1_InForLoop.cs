@@ -4,7 +4,7 @@ public class Detect_ArrayClear1_InForLoop
 {
     public void Method()
     {
-        var arr = new MustInitStruct[5];
+        var arr = new EnforceInitializationStruct[5];
         for (int i = 0; i < 1; i++)
         {
             Array.Clear(arr); //~ ERROR

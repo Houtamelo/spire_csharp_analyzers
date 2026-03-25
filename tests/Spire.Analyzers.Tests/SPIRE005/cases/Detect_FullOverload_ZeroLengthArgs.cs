@@ -6,6 +6,6 @@ public class Detect_FullOverload_ZeroLengthArgs
 {
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(MustInitStruct), BindingFlags.Default, null, new object[0], null, null); //~ ERROR
+        var x = Activator.CreateInstance(typeof(EnforceInitializationStruct), BindingFlags.Default, null, new object[0], null, null); //~ ERROR
     }
 }

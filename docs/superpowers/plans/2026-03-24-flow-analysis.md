@@ -4,7 +4,7 @@
 
 **Goal:** Build a custom lightweight flow analysis infrastructure over Roslyn's `ControlFlowGraph` API that tracks init-state, kind-state, and null-state per variable within method bodies, cached per compilation for shared use by multiple analyzer rules.
 
-**Architecture:** Worklist-based fixed-point analysis over CFG basic blocks. Three small lattices (InitState 3-value, KindState set-based, NullState 3-value) with per-field init tracking for `[MustBeInit]` structs. Results cached in `ConcurrentDictionary<ISymbol, FlowAnalysisResult>`, computed lazily on first request per method body.
+**Architecture:** Worklist-based fixed-point analysis over CFG basic blocks. Three small lattices (InitState 3-value, KindState set-based, NullState 3-value) with per-field init tracking for `[EnforceInitialization]` structs. Results cached in `ConcurrentDictionary<ISymbol, FlowAnalysisResult>`, computed lazily on first request per method body.
 
 **Tech Stack:** `Microsoft.CodeAnalysis.CSharp` 5.0.0, `Microsoft.CodeAnalysis.FlowAnalysis` (part of core), netstandard2.0 + PolySharp.
 
@@ -370,7 +370,7 @@ public class VariableStateMergeTests
     [Fact]
     public void Merge_EmptyFieldStates_InitStateBasedOnNullState()
     {
-        // Non-MustBeInit type (no fields tracked): InitState derived from NullState
+        // Non-EnforceInitialization type (no fields tracked): InitState derived from NullState
         var a = new VariableState(ImmutableArray<InitState>.Empty, KindState.Unknown, NullState.NotNull);
         var b = new VariableState(ImmutableArray<InitState>.Empty, KindState.Unknown, NullState.Null);
         var merged = VariableState.Merge(a, b);
@@ -564,18 +564,18 @@ namespace Spire.Analyzers.Utils.FlowAnalysis;
 /// Resolved type metadata for flow analysis. Built once per compilation.
 public sealed class TrackedSymbolSet
 {
-    /// Types whose variables need init-state tracking (have [MustBeInit] + instance fields).
+    /// Types whose variables need init-state tracking (have [EnforceInitialization] + instance fields).
     /// Maps type → ordered list of instance fields (field ordinal = index in array).
     private readonly Dictionary<INamedTypeSymbol, ImmutableArray<IFieldSymbol>> _initTrackedTypes;
 
-    /// The [MustBeInit] attribute type, resolved from compilation.
-    public INamedTypeSymbol? MustBeInitType { get; }
+    /// The [EnforceInitialization] attribute type, resolved from compilation.
+    public INamedTypeSymbol? EnforceInitializationType { get; }
 
     public TrackedSymbolSet(
-        INamedTypeSymbol? mustBeInitType,
+        INamedTypeSymbol? enforceInitializationType,
         Dictionary<INamedTypeSymbol, ImmutableArray<IFieldSymbol>> initTrackedTypes)
     {
-        MustBeInitType = mustBeInitType;
+        EnforceInitializationType = enforceInitializationType;
         _initTrackedTypes = initTrackedTypes;
     }
 
@@ -620,11 +620,11 @@ public sealed class TrackedSymbolSet
 
     /// Registers a type for init tracking. Call during CompilationStartAction.
     public static Dictionary<INamedTypeSymbol, ImmutableArray<IFieldSymbol>> BuildFieldMap(
-        IEnumerable<INamedTypeSymbol> mustBeInitTypes)
+        IEnumerable<INamedTypeSymbol> enforceInitializationTypes)
     {
         var map = new Dictionary<INamedTypeSymbol, ImmutableArray<IFieldSymbol>>(SymbolEqualityComparer.Default);
 
-        foreach (var type in mustBeInitTypes)
+        foreach (var type in enforceInitializationTypes)
         {
             var fields = ImmutableArray.CreateBuilder<IFieldSymbol>();
             foreach (var member in type.GetMembers())
@@ -1136,7 +1136,7 @@ public static class TransferFunctions
             if (objCreate.Arguments.Length > 0 || objCreate.Initializer is not null)
                 return currentState.WithAllFields(InitState.Initialized).WithNullState(NullState.NotNull);
 
-            // new T() with no args on [MustBeInit] — same as default
+            // new T() with no args on [EnforceInitialization] — same as default
             return currentState.WithAllFields(InitState.Default).WithNullState(NullState.NotNull);
         }
 
@@ -1144,12 +1144,12 @@ public static class TransferFunctions
         if (value.ConstantValue is { HasValue: true, Value: null })
             return currentState.WithNullState(NullState.Null);
 
-        // Method call returning [MustBeInit] type → assume Initialized
-        if (value is IInvocationOperation invocation && symbols.MustBeInitType is not null)
+        // Method call returning [EnforceInitialization] type → assume Initialized
+        if (value is IInvocationOperation invocation && symbols.EnforceInitializationType is not null)
         {
             var returnType = invocation.TargetMethod.ReturnType;
             if (returnType is INamedTypeSymbol named
-                && MustBeInitChecks.HasMustBeInitAttribute(named, symbols.MustBeInitType))
+                && EnforceInitializationChecks.HasEnforceInitializationAttribute(named, symbols.EnforceInitializationType))
                 return currentState.WithAllFields(InitState.Initialized).WithNullState(NullState.NotNull);
         }
 
@@ -1221,7 +1221,7 @@ public class FlowStateWalkerTests
         // var s = default(MyStruct); s.X = 1; s.Y = 2; Use(s);
         // At Use(s), s should be Initialized.
         var result = await AnalyzeMethod(@"
-            [Spire.MustBeInit]
+            [Spire.EnforceInitialization]
             struct MyStruct { public int X; public int Y; public MyStruct(int x, int y) { X = x; Y = y; } }
             class C
             {
@@ -1246,7 +1246,7 @@ public class FlowStateWalkerTests
     public async Task BranchedInit_OnePathDefault_ResultsMaybeDefault()
     {
         var result = await AnalyzeMethod(@"
-            [Spire.MustBeInit]
+            [Spire.EnforceInitialization]
             struct MyStruct { public int X; public MyStruct(int x) { X = x; } }
             class C
             {
@@ -1270,7 +1270,7 @@ public class FlowStateWalkerTests
     {
         var refs = await ReferenceAssemblies.Net.Net80.ResolveAsync(
             LanguageNames.CSharp, CancellationToken.None);
-        var coreRef = MetadataReference.CreateFromFile(typeof(Spire.MustBeInitAttribute).Assembly.Location);
+        var coreRef = MetadataReference.CreateFromFile(typeof(Spire.EnforceInitializationAttribute).Assembly.Location);
 
         var tree = CSharpSyntaxTree.ParseText(source,
             CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest));
@@ -1285,11 +1285,11 @@ public class FlowStateWalkerTests
 
         var cfg = ControlFlowGraph.Create(methodDecl, model);
 
-        var mustBeInitType = compilation.GetTypeByMetadataName("Spire.MustBeInitAttribute");
-        if (mustBeInitType is null)
+        var enforceInitializationType = compilation.GetTypeByMetadataName("Spire.EnforceInitializationAttribute");
+        if (enforceInitializationType is null)
             return null;
 
-        // Find all [MustBeInit] types in the compilation
+        // Find all [EnforceInitialization] types in the compilation
         var initTypes = new System.Collections.Generic.List<INamedTypeSymbol>();
         foreach (var syntaxTree in compilation.SyntaxTrees)
         {
@@ -1297,13 +1297,13 @@ public class FlowStateWalkerTests
             foreach (var typeDecl in syntaxTree.GetRoot().DescendantNodes().OfType<TypeDeclarationSyntax>())
             {
                 var typeSymbol = sm.GetDeclaredSymbol(typeDecl) as INamedTypeSymbol;
-                if (typeSymbol is not null && MustBeInitChecks.HasMustBeInitAttribute(typeSymbol, mustBeInitType))
+                if (typeSymbol is not null && EnforceInitializationChecks.HasEnforceInitializationAttribute(typeSymbol, enforceInitializationType))
                     initTypes.Add(typeSymbol);
             }
         }
 
         var fieldMap = TrackedSymbolSet.BuildFieldMap(initTypes);
-        var symbols = new TrackedSymbolSet(mustBeInitType, fieldMap);
+        var symbols = new TrackedSymbolSet(enforceInitializationType, fieldMap);
 
         var methodSymbol = model.GetDeclaredSymbol(methodDecl)!;
         return FlowStateWalker.Analyze(cfg, symbols, methodSymbol);
@@ -1606,7 +1606,7 @@ git commit -m "feat(flow): add FlowAnalysisCache for per-compilation caching"
 ### Task 8: Integrate Flow Analysis into SPIRE003
 
 **Files:**
-- Modify: `src/Spire.Analyzers/Rules/SPIRE003DefaultOfMustBeInitStructAnalyzer.cs`
+- Modify: `src/Spire.Analyzers/Rules/SPIRE003DefaultOfEnforceInitializationStructAnalyzer.cs`
 - Create: `tests/Spire.Analyzers.Tests/SPIRE003/cases/NoReport_DefaultThenFieldInit.cs`
 - Create: `tests/Spire.Analyzers.Tests/SPIRE003/cases/NoReport_DefaultThenCtorAssign.cs`
 - Create: `tests/Spire.Analyzers.Tests/SPIRE003/cases/Detect_DefaultNoReassign.cs` (verify existing behavior preserved)
@@ -1623,7 +1623,7 @@ public class NoReport_DefaultThenFieldInit
 {
     public void Method()
     {
-        var s = default(MustInitStruct);
+        var s = default(EnforceInitializationStruct);
         s.Value = 42;
         _ = s;
     }
@@ -1638,8 +1638,8 @@ public class NoReport_DefaultThenCtorAssign
 {
     public void Method()
     {
-        var s = default(MustInitStruct);
-        s = new MustInitStruct(42);
+        var s = default(EnforceInitializationStruct);
+        s = new EnforceInitializationStruct(42);
         _ = s;
     }
 }
@@ -1669,11 +1669,11 @@ public class Detect_DefaultBranchedInit
 {
     public void Method(bool cond)
     {
-        MustInitStruct s;
+        EnforceInitializationStruct s;
         if (cond)
-            s = new MustInitStruct(1);
+            s = new EnforceInitializationStruct(1);
         else
-            s = default(MustInitStruct); //~ ERROR
+            s = default(EnforceInitializationStruct); //~ ERROR
         _ = s;
     }
 }
@@ -1686,31 +1686,31 @@ Expected: `NoReport_DefaultThenFieldInit` and `NoReport_DefaultThenCtorAssign` F
 
 - [ ] **Step 3: Modify SPIRE003 analyzer to use flow analysis**
 
-Update `SPIRE003DefaultOfMustBeInitStructAnalyzer` to:
+Update `SPIRE003DefaultOfEnforceInitializationStructAnalyzer` to:
 1. Switch from `RegisterOperationAction` to `RegisterOperationBlockStartAction`
-2. Build `FlowAnalysisCache` with tracked `[MustBeInit]` types
+2. Build `FlowAnalysisCache` with tracked `[EnforceInitialization]` types
 3. In the inner `RegisterOperationAction` for `OperationKind.DefaultValue`, query flow state
 4. Suppress diagnostic when the target variable reaches `Initialized` before any read
 
-Key changes to `SPIRE003DefaultOfMustBeInitStructAnalyzer.Initialize`:
+Key changes to `SPIRE003DefaultOfEnforceInitializationStructAnalyzer.Initialize`:
 
 ```csharp
 // Replace the simple RegisterOperationAction with OperationBlockStartAction
 context.RegisterCompilationStartAction(compilationContext =>
 {
-    var mustBeInitType = compilationContext.Compilation
-        .GetTypeByMetadataName("Spire.MustBeInitAttribute");
-    if (mustBeInitType is null) return;
+    var enforceInitializationType = compilationContext.Compilation
+        .GetTypeByMetadataName("Spire.EnforceInitializationAttribute");
+    if (enforceInitializationType is null) return;
 
-    // Build tracked symbol set — discover [MustBeInit] types lazily as they're encountered
+    // Build tracked symbol set — discover [EnforceInitialization] types lazily as they're encountered
     // For now, use a shared cache that tracks types on-demand
     var cache = new FlowAnalysisCache(
-        new TrackedSymbolSet(mustBeInitType, new Dictionary<INamedTypeSymbol, ImmutableArray<IFieldSymbol>>(SymbolEqualityComparer.Default)));
+        new TrackedSymbolSet(enforceInitializationType, new Dictionary<INamedTypeSymbol, ImmutableArray<IFieldSymbol>>(SymbolEqualityComparer.Default)));
 
     compilationContext.RegisterOperationBlockStartAction(blockStartContext =>
     {
         blockStartContext.RegisterOperationAction(
-            opContext => AnalyzeDefaultValue(opContext, mustBeInitType, cache, blockStartContext),
+            opContext => AnalyzeDefaultValue(opContext, enforceInitializationType, cache, blockStartContext),
             OperationKind.DefaultValue);
     });
 });
@@ -1731,7 +1731,7 @@ Expected: All tests PASS.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/Spire.Analyzers/Rules/SPIRE003DefaultOfMustBeInitStructAnalyzer.cs \
+git add src/Spire.Analyzers/Rules/SPIRE003DefaultOfEnforceInitializationStructAnalyzer.cs \
         tests/Spire.Analyzers.Tests/SPIRE003/cases/NoReport_DefaultThenFieldInit.cs \
         tests/Spire.Analyzers.Tests/SPIRE003/cases/NoReport_DefaultThenCtorAssign.cs \
         tests/Spire.Analyzers.Tests/SPIRE003/cases/Detect_DefaultPartialFieldInit.cs \

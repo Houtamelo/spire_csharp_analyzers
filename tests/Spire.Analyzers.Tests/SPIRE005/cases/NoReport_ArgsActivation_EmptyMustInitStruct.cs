@@ -1,9 +1,9 @@
 //@ should_pass
-// Ensure that SPIRE005 is NOT triggered when args+activationAttributes overload is called with EmptyMustInitStruct and null args.
-public class NoReport_ArgsActivation_EmptyMustInitStruct
+// Ensure that SPIRE005 is NOT triggered when args+activationAttributes overload is called with EmptyEnforceInitializationStruct and null args.
+public class NoReport_ArgsActivation_EmptyEnforceInitializationStruct
 {
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(EmptyMustInitStruct), (object[])null, (object[])null);
+        var x = Activator.CreateInstance(typeof(EmptyEnforceInitializationStruct), (object[])null, (object[])null);
     }
 }

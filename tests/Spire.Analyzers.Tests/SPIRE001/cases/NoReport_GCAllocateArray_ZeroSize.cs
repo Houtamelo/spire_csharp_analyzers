@@ -4,6 +4,6 @@ public class NoReport_GCAllocateArray_ZeroSize
 {
     public void Method()
     {
-        var arr = GC.AllocateArray<MustInitStruct>(0);
+        var arr = GC.AllocateArray<EnforceInitializationStruct>(0);
     }
 }

@@ -1,6 +1,6 @@
 # SPIRE016 Test Coverage Matrix
 
-## Category A: `default` / `default(T)` on [MustBeInit] enum with no zero-valued member
+## Category A: `default` / `default(T)` on [EnforceInitialization] enum with no zero-valued member
 
 All cases use `StatusNoZero` (Active=1, Inactive=2, Pending=3) or `FlagsNoZero` (Read=1, Write=2, Execute=4).
 `default(T)` produces value 0, which is not a named member — always flagged.
@@ -27,7 +27,7 @@ All cases use `StatusNoZero` (Active=1, Inactive=2, Pending=3) or `FlagsNoZero` 
 
 ---
 
-## Category B: `default` / `default(T)` on [MustBeInit] enum WITH zero-valued member — not flagged
+## Category B: `default` / `default(T)` on [EnforceInitialization] enum WITH zero-valued member — not flagged
 
 All cases use `StatusWithZero` (None=0), `ColorImplicitZero` (Red=0 implicit), or `FlagsWithZero` (None=0).
 `default(T)` produces value 0, which matches a named member — safe.
@@ -109,10 +109,10 @@ Tests `(MarkedEnum)N` where N is a compile-time constant that exactly matches a 
 
 ---
 
-## Category F: `Unsafe.SkipInit<TEnum>` on [MustBeInit] enum
+## Category F: `Unsafe.SkipInit<TEnum>` on [EnforceInitialization] enum
 
 `Unsafe.SkipInit` leaves the value as whatever garbage memory contained.
-Flagged for all [MustBeInit] enums regardless of whether a zero member exists.
+Flagged for all [EnforceInitialization] enums regardless of whether a zero member exists.
 
 ### should_fail
 
@@ -137,7 +137,7 @@ Flagged for all [MustBeInit] enums regardless of whether a zero member exists.
 
 ---
 
-## Category G: Array allocation (`new T[n]`) on [MustBeInit] enum arrays
+## Category G: Array allocation (`new T[n]`) on [EnforceInitialization] enum arrays
 
 Array elements default to `0` on allocation. Flagged when no named member has value 0.
 
@@ -164,7 +164,7 @@ Array elements default to `0` on allocation. Flagged when no named member has va
 
 ---
 
-## Category H: `Array.Clear` and `Span<T>.Clear()` on [MustBeInit] enum collections
+## Category H: `Array.Clear` and `Span<T>.Clear()` on [EnforceInitialization] enum collections
 
 Clearing resets elements to `default(T)=0`. Flagged when no named member has value 0.
 
@@ -190,7 +190,7 @@ Clearing resets elements to `default(T)=0`. Flagged when no named member has val
 
 ---
 
-## Category I: `Activator.CreateInstance` on [MustBeInit] enum types
+## Category I: `Activator.CreateInstance` on [EnforceInitialization] enum types
 
 `Activator.CreateInstance` returns `default(T)=0` for value types. Flagged when no named member has value 0.
 
@@ -225,7 +225,7 @@ Direct use of named enum members and operations that do not produce unnamed valu
 | `NoReport_NamedMember_MethodArgument` | Ensure that SPIRE016 is NOT triggered when `StatusNoZero.Pending` is passed as a method argument. |
 | `NoReport_NamedMember_TernaryExpression` | Ensure that SPIRE016 is NOT triggered when both branches of a ternary expression return named `StatusNoZero` members. |
 | `NoReport_NamedMember_ArrayInitializerElement` | Ensure that SPIRE016 is NOT triggered when a `StatusNoZero[]` is initialized with named member elements: `{ StatusNoZero.Active, StatusNoZero.Inactive }`. |
-| `NoReport_PlainEnum_Default` | Ensure that SPIRE016 is NOT triggered when `default(PlainEnum)` is used (enum not marked `[MustBeInit]`). |
+| `NoReport_PlainEnum_Default` | Ensure that SPIRE016 is NOT triggered when `default(PlainEnum)` is used (enum not marked `[EnforceInitialization]`). |
 | `NoReport_PlainEnum_Cast_InvalidValue` | Ensure that SPIRE016 is NOT triggered when `(PlainEnum)999` is used (enum not marked). |
 | `NoReport_Equality_DefaultComparison` | Ensure that SPIRE016 is NOT triggered when `someStatus == default` is an equality comparison (checking, not producing a value). |
 | `NoReport_IsPattern_Default` | Ensure that SPIRE016 is NOT triggered when `someStatus is default(StatusNoZero)` is a pattern check (not creating a value). |

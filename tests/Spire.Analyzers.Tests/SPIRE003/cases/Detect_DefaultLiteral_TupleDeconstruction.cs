@@ -1,9 +1,9 @@
 //@ should_fail
-// Ensure that SPIRE003 IS triggered when default is used in a tuple deconstruction targeting MustInitStruct.
+// Ensure that SPIRE003 IS triggered when default is used in a tuple deconstruction targeting EnforceInitializationStruct.
 public class Detect_DefaultLiteral_TupleDeconstruction
 {
     public void Method()
     {
-        (MustInitStruct a, MustInitStruct b) = (default, default); //~ ERROR
+        (EnforceInitializationStruct a, EnforceInitializationStruct b) = (default, default); //~ ERROR
     }
 }

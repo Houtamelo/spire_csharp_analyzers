@@ -1,6 +1,6 @@
 //@ should_fail
-// Ensure that SPIRE002 IS triggered when [MustBeInit] is applied to a struct with multiple static fields and no instance fields.
-[MustBeInit] //~ ERROR
+// Ensure that SPIRE002 IS triggered when [EnforceInitialization] is applied to a struct with multiple static fields and no instance fields.
+[EnforceInitialization] //~ ERROR
 public struct Detect_MultipleStaticFields_Struct
 {
     public static int A;

@@ -4,6 +4,6 @@ public class Detect_RecordStruct_MultiDimensional
 {
     public void Method()
     {
-        var arr = new MustInitRecordStruct[2, 3]; //~ ERROR
+        var arr = new EnforceInitializationRecordStruct[2, 3]; //~ ERROR
     }
 }

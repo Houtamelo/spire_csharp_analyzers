@@ -73,7 +73,7 @@ git commit -m "feat(core): add IDiscriminatedUnion interface and OfKind LINQ ext
 
 ### Task 2: Add HasInitProperties flag to UnionDeclaration model
 
-The generator needs to know at emit time whether C# 9+ `init` is available in the consuming compilation. This check happens at the generator driver level (where `Compilation` is accessible) and flows into the model. `IDiscriminatedUnion` does not need a guard — Spire.Core is always present (emitters already emit `[global::Spire.MustBeInit]` unconditionally).
+The generator needs to know at emit time whether C# 9+ `init` is available in the consuming compilation. This check happens at the generator driver level (where `Compilation` is accessible) and flows into the model. `IDiscriminatedUnion` does not need a guard — Spire.Core is always present (emitters already emit `[global::Spire.EnforceInitialization]` unconditionally).
 
 **Files:**
 - Modify: `src/Spire.SourceGenerators/Model/UnionDeclaration.cs` — add `HasInitProperties` boolean field

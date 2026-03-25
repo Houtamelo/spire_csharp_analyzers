@@ -79,14 +79,14 @@ dotnet add package Spire.Analyzers
 
 | Rule | Description |
 |------|-------------|
-| [SPIRE001](docs/rules/SPIRE001.md) | Array allocation of `[MustBeInit]` struct |
-| [SPIRE002](docs/rules/SPIRE002.md) | `[MustBeInit]` on fieldless type |
-| [SPIRE003](docs/rules/SPIRE003.md) | `default(T)` of `[MustBeInit]` struct |
-| [SPIRE004](docs/rules/SPIRE004.md) | `new T()` of `[MustBeInit]` struct without parameterless ctor |
-| [SPIRE005](docs/rules/SPIRE005.md) | `Activator.CreateInstance` of `[MustBeInit]` struct |
-| [SPIRE006](docs/rules/SPIRE006.md) | `Array.Clear`/`Span<T>.Clear` on `[MustBeInit]` struct |
-| [SPIRE007](docs/rules/SPIRE007.md) | `Unsafe.SkipInit` on `[MustBeInit]` struct |
-| [SPIRE008](docs/rules/SPIRE008.md) | `RuntimeHelpers.GetUninitializedObject` on `[MustBeInit]` struct |
+| [SPIRE001](docs/rules/SPIRE001.md) | Array allocation of `[EnforceInitialization]` struct |
+| [SPIRE002](docs/rules/SPIRE002.md) | `[EnforceInitialization]` on fieldless type |
+| [SPIRE003](docs/rules/SPIRE003.md) | `default(T)` of `[EnforceInitialization]` struct |
+| [SPIRE004](docs/rules/SPIRE004.md) | `new T()` of `[EnforceInitialization]` struct without parameterless ctor |
+| [SPIRE005](docs/rules/SPIRE005.md) | `Activator.CreateInstance` of `[EnforceInitialization]` struct |
+| [SPIRE006](docs/rules/SPIRE006.md) | `Array.Clear`/`Span<T>.Clear` on `[EnforceInitialization]` struct |
+| [SPIRE007](docs/rules/SPIRE007.md) | `Unsafe.SkipInit` on `[EnforceInitialization]` struct |
+| [SPIRE008](docs/rules/SPIRE008.md) | `RuntimeHelpers.GetUninitializedObject` on `[EnforceInitialization]` struct |
 
 ## License
 

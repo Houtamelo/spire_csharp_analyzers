@@ -6,7 +6,7 @@ Roslyn-based C# analyzer
 
 - **Packages**: `Spire` (meta-package), `Spire.Core` (attributes/utilities), `Spire.Analyzers` (analyzers + source generator), `Spire.CodeFixes`
 - **Rule prefix**: `SPIRE` (SPIRE001, SPIRE002, ...)
-- **User-facing API** in `Spire.Core` (namespace `Spire`) — `MustBeInitAttribute`, `EnforceExhaustivenessAttribute`, `IDiscriminatedUnion<TEnum>`, `SpireLINQ.OfKind`
+- **User-facing API** in `Spire.Core` (namespace `Spire`) — `EnforceInitializationAttribute`, `EnforceExhaustivenessAttribute`, `IDiscriminatedUnion<TEnum>`, `SpireLINQ.OfKind`
 - **Code fixes** in separate `Spire.CodeFixes` project (standalone, no inter-project dependencies)
 
 ## Build Commands
@@ -29,7 +29,7 @@ src/Spire.Core/                   # User-facing API: attributes, utilities (nets
 src/Spire.Analyzers/              # Analyzers + source generator (netstandard2.0)
   Rules/                          # One file per rule
   Descriptors.cs                  # Central DiagnosticDescriptor registry
-  Utils/                          # Shared utilities (MustBeInitChecks, OperationUtilities, etc.)
+  Utils/                          # Shared utilities (EnforceInitializationChecks, OperationUtilities, etc.)
     FlowAnalysis/                 # CFG-based flow analysis (InitState, KindState, NullState tracking)
   SourceGenerators/               # Discriminated union source generator
     Emit/                         # Per-strategy emitters (Additive, Overlap, BoxedFields, etc.)
@@ -83,7 +83,7 @@ Key points:
 
 | Type | Pattern | Example |
 |------|---------|---------|
-| Analyzer | `Rules/{RuleId}{ShortName}Analyzer.cs` | `SPIRE001ArrayOfMustBeInitStructAnalyzer.cs` |
+| Analyzer | `Rules/{RuleId}{ShortName}Analyzer.cs` | `SPIRE001ArrayOfEnforceInitializationStructAnalyzer.cs` |
 | Test folder | `{RuleId}/` | `SPIRE001/` |
 | Test runner | `{RuleId}/{RuleId}Tests.cs` | `SPIRE001/SPIRE001Tests.cs` |
 | Test case | `{RuleId}/cases/{CaseName}.cs` | `SPIRE001/cases/NonEmptyArray.cs` |

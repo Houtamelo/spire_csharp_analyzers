@@ -1,4 +1,4 @@
-# SPIRE008: RuntimeHelpers.GetUninitializedObject on [MustBeInit] struct
+# SPIRE008: RuntimeHelpers.GetUninitializedObject on [EnforceInitialization] struct
 
 | Property    | Value        |
 |-------------|--------------|
@@ -10,23 +10,23 @@
 ## Description
 
 `RuntimeHelpers.GetUninitializedObject(Type)` bypasses all constructors and field initializers,
-producing a zero-initialized instance. When the type is marked with `[MustBeInit]`, this
+producing a zero-initialized instance. When the type is marked with `[EnforceInitialization]`, this
 defeats the purpose of the attribute.
 
-For enums marked with `[MustBeInit]`, the rule only flags when the enum has no zero-valued named member.
+For enums marked with `[EnforceInitialization]`, the rule only flags when the enum has no zero-valued named member.
 
 Only flags calls where the argument is a direct `typeof(T)` expression resolving to a concrete
-`[MustBeInit]` struct with fields. Indirect type references (variables, method returns, generic
+`[EnforceInitialization]` struct with fields. Indirect type references (variables, method returns, generic
 type parameters) are not tracked.
 
 ### Flagged patterns
 
-- `RuntimeHelpers.GetUninitializedObject(typeof(MustInitStruct))` where `MustInitStruct` is a `[MustBeInit]` struct with fields
+- `RuntimeHelpers.GetUninitializedObject(typeof(EnforceInitializationStruct))` where `EnforceInitializationStruct` is a `[EnforceInitialization]` struct with fields
 
 ### Not flagged
 
-- Types not marked `[MustBeInit]`
-- Fieldless `[MustBeInit]` structs (SPIRE002 handles this)
+- Types not marked `[EnforceInitialization]`
+- Fieldless `[EnforceInitialization]` structs (SPIRE002 handles this)
 - Indirect type arguments: `Type t = typeof(T); GetUninitializedObject(t);`
 - Generic type parameters: `GetUninitializedObject(typeof(T))` in generic method
 
@@ -35,7 +35,7 @@ type parameters) are not tracked.
 ### Violating code
 
 ```csharp
-[MustBeInit]
+[EnforceInitialization]
 struct Config { public string Name; public Config(string name) => Name = name; }
 
 var obj = RuntimeHelpers.GetUninitializedObject(typeof(Config)); // SPIRE008

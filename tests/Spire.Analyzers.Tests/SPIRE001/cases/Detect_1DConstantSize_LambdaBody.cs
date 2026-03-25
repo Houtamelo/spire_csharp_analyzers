@@ -4,6 +4,6 @@ public class Detect_1DConstantSize_LambdaBody
 {
     public void Method()
     {
-        Func<MustInitStruct[]> factory = () => new MustInitStruct[5]; //~ ERROR
+        Func<EnforceInitializationStruct[]> factory = () => new EnforceInitializationStruct[5]; //~ ERROR
     }
 }

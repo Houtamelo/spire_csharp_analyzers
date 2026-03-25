@@ -6,7 +6,7 @@ public class Detect_1DConstantSize_ForLoopBody
     {
         for (int i = 0; i < 3; i++)
         {
-            var arr = new MustInitStruct[5]; //~ ERROR
+            var arr = new EnforceInitializationStruct[5]; //~ ERROR
         }
     }
 }

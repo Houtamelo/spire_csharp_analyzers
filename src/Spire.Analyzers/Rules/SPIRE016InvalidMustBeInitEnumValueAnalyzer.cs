@@ -9,10 +9,10 @@ namespace Spire.Analyzers.Rules;
 /// Flags integer-to-enum casts where the value may not correspond to a named member.
 /// Other enum-related checks (default, array, clear, SkipInit, etc.) are handled by SPIRE001-008.
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class SPIRE016InvalidMustBeInitEnumValueAnalyzer : DiagnosticAnalyzer
+public sealed class SPIRE016InvalidEnforceInitializationEnumValueAnalyzer : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(Descriptors.SPIRE016_InvalidMustBeInitEnumValue);
+        ImmutableArray.Create(Descriptors.SPIRE016_InvalidEnforceInitializationEnumValue);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -21,24 +21,24 @@ public sealed class SPIRE016InvalidMustBeInitEnumValueAnalyzer : DiagnosticAnaly
 
         context.RegisterCompilationStartAction(compilationContext =>
         {
-            var mustBeInitType = compilationContext.Compilation
-                .GetTypeByMetadataName("Spire.MustBeInitAttribute");
+            var enforceInitializationType = compilationContext.Compilation
+                .GetTypeByMetadataName("Spire.EnforceInitializationAttribute");
 
-            if (mustBeInitType is null)
+            if (enforceInitializationType is null)
                 return;
 
             var flagsAttributeType = compilationContext.Compilation
                 .GetTypeByMetadataName("System.FlagsAttribute");
 
             compilationContext.RegisterOperationAction(
-                operationContext => AnalyzeConversion(operationContext, mustBeInitType, flagsAttributeType),
+                operationContext => AnalyzeConversion(operationContext, enforceInitializationType, flagsAttributeType),
                 OperationKind.Conversion);
         });
     }
 
     private static void AnalyzeConversion(
         OperationAnalysisContext context,
-        INamedTypeSymbol mustBeInitType,
+        INamedTypeSymbol enforceInitializationType,
         INamedTypeSymbol? flagsAttributeType)
     {
         var operation = (IConversionOperation)context.Operation;
@@ -53,7 +53,7 @@ public sealed class SPIRE016InvalidMustBeInitEnumValueAnalyzer : DiagnosticAnaly
         if (targetType.TypeKind != TypeKind.Enum)
             return;
 
-        if (!MustBeInitChecks.HasMustBeInitAttribute(targetType, mustBeInitType))
+        if (!EnforceInitializationChecks.HasEnforceInitializationAttribute(targetType, enforceInitializationType))
             return;
 
         var sourceType = operation.Operand.Type;
@@ -81,7 +81,7 @@ public sealed class SPIRE016InvalidMustBeInitEnumValueAnalyzer : DiagnosticAnaly
 
         context.ReportDiagnostic(
             Diagnostic.Create(
-                Descriptors.SPIRE016_InvalidMustBeInitEnumValue,
+                Descriptors.SPIRE016_InvalidEnforceInitializationEnumValue,
                 operation.Syntax.GetLocation(),
                 castLabel,
                 targetType.Name));

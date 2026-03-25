@@ -2,8 +2,8 @@
 // Ensure that SPIRE001 IS triggered when calling GC.AllocateUninitializedArray in a return statement.
 public class Detect_GCAllocateUninitializedArray_ReturnStatement
 {
-    public MustInitStruct[] Method()
+    public EnforceInitializationStruct[] Method()
     {
-        return GC.AllocateUninitializedArray<MustInitStruct>(5); //~ ERROR
+        return GC.AllocateUninitializedArray<EnforceInitializationStruct>(5); //~ ERROR
     }
 }

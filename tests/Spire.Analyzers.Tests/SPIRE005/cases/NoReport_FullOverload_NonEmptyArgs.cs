@@ -6,6 +6,6 @@ public class NoReport_FullOverload_NonEmptyArgs
 {
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(MustInitStruct), BindingFlags.Default, null, new object[] { 42 }, null, null);
+        var x = Activator.CreateInstance(typeof(EnforceInitializationStruct), BindingFlags.Default, null, new object[] { 42 }, null, null);
     }
 }

@@ -4,6 +4,6 @@ public class Detect_ArrayPoolShared_Rent_VariableSize
 {
     public void Method(int n)
     {
-        var arr = ArrayPool<MustInitStruct>.Shared.Rent(n); //~ ERROR
+        var arr = ArrayPool<EnforceInitializationStruct>.Shared.Rent(n); //~ ERROR
     }
 }

@@ -4,6 +4,6 @@ public class NoReport_NonEmptyCollectionExpression_LocalVariable
 {
     public void Method()
     {
-        MustInitStruct[] arr = [new MustInitStruct(1), new MustInitStruct(2)];
+        EnforceInitializationStruct[] arr = [new EnforceInitializationStruct(1), new EnforceInitializationStruct(2)];
     }
 }

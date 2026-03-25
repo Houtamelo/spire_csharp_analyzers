@@ -6,6 +6,6 @@ public class Detect_ArrayCreateInstance_MethodArgument
 
     public void Method()
     {
-        Consume(Array.CreateInstance(typeof(MustInitStruct), 5)); //~ ERROR
+        Consume(Array.CreateInstance(typeof(EnforceInitializationStruct), 5)); //~ ERROR
     }
 }

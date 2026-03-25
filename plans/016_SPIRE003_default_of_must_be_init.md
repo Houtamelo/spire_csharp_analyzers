@@ -1,22 +1,22 @@
-# Plan 016: SPIRE003 — default(T) where T is [MustBeInit]
+# Plan 016: SPIRE003 — default(T) where T is [EnforceInitialization]
 
 **Status**: Ready for implementation
-**Goal**: Flag all uses of `default(T)` or `default` literal where T is a `[MustBeInit]` struct with instance fields.
+**Goal**: Flag all uses of `default(T)` or `default` literal where T is a `[EnforceInitialization]` struct with instance fields.
 
 ---
 
 ## Overview
 
 **ID**: SPIRE003
-**Title**: default(T) where T is a [MustBeInit] struct produces an uninitialized instance
+**Title**: default(T) where T is a [EnforceInitialization] struct produces an uninitialized instance
 **Category**: Correctness
 **Default severity**: Error
-**Message format**: `default value of struct '{0}' marked with [MustBeInit] bypasses required initialization`
+**Message format**: `default value of struct '{0}' marked with [EnforceInitialization] bypasses required initialization`
 **Enabled by default**: Yes
 
 ### What this rule does
 
-Structs marked with `[MustBeInit]` require explicit initialization — using `default(T)` or the `default` literal produces a zeroed-out instance, defeating the purpose of the attribute. This rule flags every expression where a `[MustBeInit]` struct is produced via `default`, including explicit `default(T)`, implicit `default` literals in assignments, returns, arguments, ternaries, and optional parameter defaults.
+Structs marked with `[EnforceInitialization]` require explicit initialization — using `default(T)` or the `default` literal produces a zeroed-out instance, defeating the purpose of the attribute. This rule flags every expression where a `[EnforceInitialization]` struct is produced via `default`, including explicit `default(T)`, implicit `default` literals in assignments, returns, arguments, ternaries, and optional parameter defaults.
 
 ---
 
@@ -26,28 +26,28 @@ Structs marked with `[MustBeInit]` require explicit initialization — using `de
 
 | Code | Why |
 |------|-----|
-| `default(Config)` | Explicit default expression with [MustBeInit] type |
-| `Config c = default;` | Default literal assigned to [MustBeInit] variable |
-| `return default;` (return type is [MustBeInit]) | Default literal returned as [MustBeInit] type |
-| `void Foo(Config c = default)` — the `default` in the parameter | Default literal in optional parameter of [MustBeInit] type |
-| `Foo(default)` where parameter is [MustBeInit] | Default literal passed as argument to [MustBeInit] parameter |
+| `default(Config)` | Explicit default expression with [EnforceInitialization] type |
+| `Config c = default;` | Default literal assigned to [EnforceInitialization] variable |
+| `return default;` (return type is [EnforceInitialization]) | Default literal returned as [EnforceInitialization] type |
+| `void Foo(Config c = default)` — the `default` in the parameter | Default literal in optional parameter of [EnforceInitialization] type |
+| `Foo(default)` where parameter is [EnforceInitialization] | Default literal passed as argument to [EnforceInitialization] parameter |
 | `condition ? validConfig : default` — the `default` | Default literal branch in conditional expression |
-| `config ?? default` — the `default` (for `Config?`) | Default literal in null-coalescing with [MustBeInit] target |
-| `Config c; c = default;` | Default literal in assignment to [MustBeInit] variable |
-| `Config[] arr = { default, default };` | Default literal in collection/array initializer of [MustBeInit] element type |
-| `(Config a, Config b) = (default, default);` — each `default` | Default in tuple deconstruction targeting [MustBeInit] |
+| `config ?? default` — the `default` (for `Config?`) | Default literal in null-coalescing with [EnforceInitialization] target |
+| `Config c; c = default;` | Default literal in assignment to [EnforceInitialization] variable |
+| `Config[] arr = { default, default };` | Default literal in collection/array initializer of [EnforceInitialization] element type |
+| `(Config a, Config b) = (default, default);` — each `default` | Default in tuple deconstruction targeting [EnforceInitialization] |
 
 ### NOT flagged
 
 | Code | Why |
 |------|-----|
-| `default(PlainStruct)` | PlainStruct is not [MustBeInit] |
-| `int x = default;` | Built-in types are never [MustBeInit] |
+| `default(PlainStruct)` | PlainStruct is not [EnforceInitialization] |
+| `int x = default;` | Built-in types are never [EnforceInitialization] |
 | `c == default` | Equality comparison, not creation |
 | `c != default` | Inequality comparison, not creation |
-| `default(EmptyMustInitStruct)` | Fieldless [MustBeInit] type — default is the only value |
+| `default(EmptyEnforceInitializationStruct)` | Fieldless [EnforceInitialization] type — default is the only value |
 | `EqualityComparer<Config>.Default` | Property access, not default expression |
-| `default(T)` in generic method without concrete [MustBeInit] type | Generic type parameter — concrete type unknown at definition site |
+| `default(T)` in generic method without concrete [EnforceInitialization] type | Generic type parameter — concrete type unknown at definition site |
 
 ### Out of scope
 
@@ -63,18 +63,18 @@ Structs marked with `[MustBeInit]` require explicit initialization — using `de
 
 ### Attribute/marker type
 
-None — reuses existing `MustBeInitAttribute` from `src/Spire.Analyzers/MustBeInitAttribute.cs`.
+None — reuses existing `EnforceInitializationAttribute` from `src/Spire.Analyzers/EnforceInitializationAttribute.cs`.
 
 ### Detection strategy
 
 - **IOperation kind(s)**: `OperationKind.DefaultValue` — covers both `default(T)` and `default` literal
 - **Key checks**:
   1. Get the type of the `IDefaultValueOperation` — this is the type being defaulted
-  2. Check if the type is a struct marked with `[MustBeInit]`
+  2. Check if the type is a struct marked with `[EnforceInitialization]`
   3. Check if the type has at least one instance field (skip fieldless types — those are SPIRE002's concern)
   4. Check the operation is NOT inside an equality/inequality comparison (`IOperation.Parent` is `IBinaryOperation` with `BinaryOperatorKind.Equals` or `BinaryOperatorKind.NotEquals`)
   5. Report diagnostic at the `default` keyword location
-- **Use `CompilationStartAction`**: Yes — resolve `MustBeInitAttribute` via `GetTypeByMetadataName("Spire.Analyzers.MustBeInitAttribute")` once per compilation
+- **Use `CompilationStartAction`**: Yes — resolve `EnforceInitializationAttribute` via `GetTypeByMetadataName("Spire.Analyzers.EnforceInitializationAttribute")` once per compilation
 
 ### Comparison exclusion logic
 
@@ -84,7 +84,7 @@ Walk up to the parent operation. If the parent is `IBinaryOperation` with operat
 
 | File | Purpose | Created by |
 |------|---------|------------|
-| `src/Spire.Analyzers/Rules/SPIRE003DefaultOfMustBeInitStructAnalyzer.cs` | The analyzer | Implementer |
+| `src/Spire.Analyzers/Rules/SPIRE003DefaultOfEnforceInitializationStructAnalyzer.cs` | The analyzer | Implementer |
 | `tests/Spire.Analyzers.Tests/SPIRE003/SPIRE003Tests.cs` | Test runner | Lead |
 | `tests/Spire.Analyzers.Tests/SPIRE003/cases/_shared.cs` | Shared preamble | Lead |
 | `tests/Spire.Analyzers.Tests/SPIRE003/cases/*.cs` | Test case files | test-case-writer |

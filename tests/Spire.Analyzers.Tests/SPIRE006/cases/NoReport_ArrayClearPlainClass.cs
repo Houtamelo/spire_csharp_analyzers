@@ -1,5 +1,5 @@
 //@ should_pass
-// Ensure that SPIRE006 is NOT triggered when clearing array of class without [MustBeInit].
+// Ensure that SPIRE006 is NOT triggered when clearing array of class without [EnforceInitialization].
 #nullable enable
 public class NoReport_ArrayClearPlainClass
 {

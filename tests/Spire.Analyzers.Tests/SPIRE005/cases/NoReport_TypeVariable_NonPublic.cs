@@ -4,7 +4,7 @@ public class NoReport_TypeVariable_NonPublic
 {
     public void Method()
     {
-        Type t = typeof(MustInitStruct);
+        Type t = typeof(EnforceInitializationStruct);
         var x = Activator.CreateInstance(t, nonPublic: true);
     }
 }

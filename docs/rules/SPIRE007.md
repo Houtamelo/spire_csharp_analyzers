@@ -1,4 +1,4 @@
-# SPIRE007: Unsafe.SkipInit on [MustBeInit] struct
+# SPIRE007: Unsafe.SkipInit on [EnforceInitialization] struct
 
 | Property    | Value        |
 |-------------|--------------|
@@ -10,19 +10,19 @@
 ## Description
 
 `Unsafe.SkipInit<T>(out T)` bypasses zero-initialization entirely, leaving the value as
-whatever was previously in that memory location. When T is a type marked with `[MustBeInit]`,
+whatever was previously in that memory location. When T is a type marked with `[EnforceInitialization]`,
 this is worse than default — the value contains garbage data.
 
 For enums, this is always flagged regardless of whether a zero-valued member exists — garbage data is never a valid variant.
 
 ### Flagged patterns
 
-- `Unsafe.SkipInit(out MustInitStruct s)` where `MustInitStruct` is a `[MustBeInit]` struct with fields
+- `Unsafe.SkipInit(out EnforceInitializationStruct s)` where `EnforceInitializationStruct` is a `[EnforceInitialization]` struct with fields
 
 ### Not flagged
 
-- Types not marked `[MustBeInit]`
-- Fieldless `[MustBeInit]` structs (SPIRE002 handles this)
+- Types not marked `[EnforceInitialization]`
+- Fieldless `[EnforceInitialization]` structs (SPIRE002 handles this)
 - Generic `Unsafe.SkipInit<T>(out T)` where T is a type parameter
 
 ## Examples
@@ -30,7 +30,7 @@ For enums, this is always flagged regardless of whether a zero-valued member exi
 ### Violating code
 
 ```csharp
-[MustBeInit]
+[EnforceInitialization]
 struct Config { public string Name; public Config(string name) => Name = name; }
 
 Unsafe.SkipInit(out Config c); // SPIRE007

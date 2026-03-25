@@ -6,7 +6,7 @@ using System.ComponentModel;
 
 namespace My.Deep.Namespace
 {
-    [global::Spire.MustBeInit]
+    [global::Spire.EnforceInitialization]
     [StructLayout(LayoutKind.Explicit)]
     partial struct Result : global::Spire.IDiscriminatedUnion<Result.Kind>
     {

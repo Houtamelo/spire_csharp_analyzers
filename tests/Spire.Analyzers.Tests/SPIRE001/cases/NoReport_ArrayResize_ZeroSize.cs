@@ -4,7 +4,7 @@ public class NoReport_ArrayResize_ZeroSize
 {
     public void Method()
     {
-        MustInitStruct[]? arr = null;
+        EnforceInitializationStruct[]? arr = null;
         Array.Resize(ref arr, 0);
     }
 }

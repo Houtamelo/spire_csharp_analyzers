@@ -6,7 +6,7 @@ public class Detect_SkipInit_InForLoop
     {
         for (int i = 0; i < 10; i++)
         {
-            Unsafe.SkipInit(out MustInitStruct s); //~ ERROR
+            Unsafe.SkipInit(out EnforceInitializationStruct s); //~ ERROR
         }
     }
 }

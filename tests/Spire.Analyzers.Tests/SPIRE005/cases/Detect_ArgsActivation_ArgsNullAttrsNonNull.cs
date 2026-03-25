@@ -4,6 +4,6 @@ public class Detect_ArgsActivation_ArgsNullAttrsNonNull
 {
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(MustInitStruct), (object[])null, new object[] { "attr" }); //~ ERROR
+        var x = Activator.CreateInstance(typeof(EnforceInitializationStruct), (object[])null, new object[] { "attr" }); //~ ERROR
     }
 }

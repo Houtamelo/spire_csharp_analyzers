@@ -117,9 +117,9 @@ Nested union declarations (`class Outer { [DiscriminatedUnion] partial struct In
 
 Fieldless variants (0 fields) are a distinct arity group. In the shared-arity `(out Kind, out object?)` Deconstruct, fieldless variants return `null` for the payload. Pattern: `case (Shape.None, _)` — the discard ignores the null. If a fieldless variant is the ONLY variant with 0 fields, it gets a unique-arity typed Deconstruct with just `(out Kind kind)` — a single out param.
 
-### MustBeInit Integration (deferred)
+### EnforceInitialization Integration (deferred)
 
-The generator can optionally emit `[MustBeInit]` on struct unions, conditionally injecting the attribute if `Spire.Analyzers` is not referenced. Deferred to a follow-up task after the core generator works.
+The generator can optionally emit `[EnforceInitialization]` on struct unions, conditionally injecting the attribute if `Spire.Analyzers` is not referenced. Deferred to a follow-up task after the core generator works.
 
 ---
 
@@ -1420,5 +1420,5 @@ Alternative if more aggressive parallelism desired: Tasks 2-6 can all run in par
 1. **Analyzers plan** — Exhaustiveness checking, type safety, variant field access safety
 2. **Code fixes plan** — Add missing arms, fix wrong types, expand wildcards
 3. **CS8509 suppressor** — Suppress "switch expression does not handle all possible values"
-4. **MustBeInit integration** — Emit `[MustBeInit]` on struct unions
+4. **EnforceInitialization integration** — Emit `[EnforceInitialization]` on struct unions
 5. **ToString / Equality** (struct path) — Generate readable ToString and IEquatable

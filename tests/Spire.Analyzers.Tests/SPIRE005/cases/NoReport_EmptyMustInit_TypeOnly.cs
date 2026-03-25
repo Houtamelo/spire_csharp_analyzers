@@ -1,9 +1,9 @@
 //@ should_pass
-// Ensure that SPIRE005 is NOT triggered when CreateInstance(typeof(EmptyMustInitStruct)) is used on a fieldless [MustBeInit] struct.
-public class NoReport_EmptyMustInit_TypeOnly
+// Ensure that SPIRE005 is NOT triggered when CreateInstance(typeof(EmptyEnforceInitializationStruct)) is used on a fieldless [EnforceInitialization] struct.
+public class NoReport_EmptyEnforceInitialization_TypeOnly
 {
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(EmptyMustInitStruct));
+        var x = Activator.CreateInstance(typeof(EmptyEnforceInitializationStruct));
     }
 }

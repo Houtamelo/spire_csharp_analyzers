@@ -7,10 +7,10 @@ using Spire.Analyzers.Utils;
 namespace Spire.Analyzers.Rules;
 
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class SPIRE005ActivatorCreateInstanceOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
+public sealed class SPIRE005ActivatorCreateInstanceOfEnforceInitializationStructAnalyzer : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(Descriptors.SPIRE005_ActivatorCreateInstanceOfMustBeInitStruct);
+        ImmutableArray.Create(Descriptors.SPIRE005_ActivatorCreateInstanceOfEnforceInitializationStruct);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -22,17 +22,17 @@ public sealed class SPIRE005ActivatorCreateInstanceOfMustBeInitStructAnalyzer : 
             var activatorType = compilationContext.Compilation
                 .GetTypeByMetadataName("System.Activator");
 
-            var mustBeInitType = compilationContext.Compilation
-                .GetTypeByMetadataName("Spire.MustBeInitAttribute");
+            var enforceInitializationType = compilationContext.Compilation
+                .GetTypeByMetadataName("Spire.EnforceInitializationAttribute");
 
             var arrayType = compilationContext.Compilation
                 .GetTypeByMetadataName("System.Array");
 
-            if (activatorType is null || mustBeInitType is null)
+            if (activatorType is null || enforceInitializationType is null)
                 return;
 
             compilationContext.RegisterOperationAction(
-                operationContext => AnalyzeInvocation(operationContext, activatorType, mustBeInitType, arrayType),
+                operationContext => AnalyzeInvocation(operationContext, activatorType, enforceInitializationType, arrayType),
                 OperationKind.Invocation);
         });
     }
@@ -40,7 +40,7 @@ public sealed class SPIRE005ActivatorCreateInstanceOfMustBeInitStructAnalyzer : 
     private static void AnalyzeInvocation(
         OperationAnalysisContext context,
         INamedTypeSymbol activatorType,
-        INamedTypeSymbol mustBeInitType,
+        INamedTypeSymbol enforceInitializationType,
         INamedTypeSymbol? arrayType)
     {
         var operation = (IInvocationOperation)context.Operation;
@@ -93,7 +93,7 @@ public sealed class SPIRE005ActivatorCreateInstanceOfMustBeInitStructAnalyzer : 
         if (namedTarget.TypeKind != TypeKind.Struct && namedTarget.TypeKind != TypeKind.Enum)
             return;
 
-        if (!MustBeInitChecks.IsDefaultValueInvalid(namedTarget, mustBeInitType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(namedTarget, enforceInitializationType))
             return;
         if (argsParamIndex.HasValue)
         {
@@ -110,7 +110,7 @@ public sealed class SPIRE005ActivatorCreateInstanceOfMustBeInitStructAnalyzer : 
 
         context.ReportDiagnostic(
             Diagnostic.Create(
-                Descriptors.SPIRE005_ActivatorCreateInstanceOfMustBeInitStruct,
+                Descriptors.SPIRE005_ActivatorCreateInstanceOfEnforceInitializationStruct,
                 operation.Syntax.GetLocation(),
                 namedTarget.Name));
     }

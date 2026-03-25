@@ -4,6 +4,6 @@ public class Detect_StackAlloc_VariableSize
 {
     public void Method(int n)
     {
-        Span<MustInitStruct> span = stackalloc MustInitStruct[n]; //~ ERROR
+        Span<EnforceInitializationStruct> span = stackalloc EnforceInitializationStruct[n]; //~ ERROR
     }
 }

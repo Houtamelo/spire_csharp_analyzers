@@ -6,6 +6,6 @@ public class Detect_BindingFlags_ArrayEmptyHelper
 {
     public void Method()
     {
-        var x = Activator.CreateInstance(typeof(MustInitStruct), BindingFlags.Default, null, Array.Empty<object>(), null); //~ ERROR
+        var x = Activator.CreateInstance(typeof(EnforceInitializationStruct), BindingFlags.Default, null, Array.Empty<object>(), null); //~ ERROR
     }
 }

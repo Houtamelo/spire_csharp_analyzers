@@ -7,10 +7,10 @@ using Spire.Analyzers.Utils;
 namespace Spire.Analyzers.Rules;
 
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class SPIRE008GetUninitializedObjectOfMustBeInitStructAnalyzer : DiagnosticAnalyzer
+public sealed class SPIRE008GetUninitializedObjectOfEnforceInitializationStructAnalyzer : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(Descriptors.SPIRE008_GetUninitializedObjectOfMustBeInitStruct);
+        ImmutableArray.Create(Descriptors.SPIRE008_GetUninitializedObjectOfEnforceInitializationStruct);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -22,14 +22,14 @@ public sealed class SPIRE008GetUninitializedObjectOfMustBeInitStructAnalyzer : D
             var runtimeHelpersType = compilationContext.Compilation
                 .GetTypeByMetadataName("System.Runtime.CompilerServices.RuntimeHelpers");
 
-            var mustBeInitType = compilationContext.Compilation
-                .GetTypeByMetadataName("Spire.MustBeInitAttribute");
+            var enforceInitializationType = compilationContext.Compilation
+                .GetTypeByMetadataName("Spire.EnforceInitializationAttribute");
 
-            if (runtimeHelpersType is null || mustBeInitType is null)
+            if (runtimeHelpersType is null || enforceInitializationType is null)
                 return;
 
             compilationContext.RegisterOperationAction(
-                operationContext => AnalyzeInvocation(operationContext, runtimeHelpersType, mustBeInitType),
+                operationContext => AnalyzeInvocation(operationContext, runtimeHelpersType, enforceInitializationType),
                 OperationKind.Invocation);
         });
     }
@@ -37,7 +37,7 @@ public sealed class SPIRE008GetUninitializedObjectOfMustBeInitStructAnalyzer : D
     private static void AnalyzeInvocation(
         OperationAnalysisContext context,
         INamedTypeSymbol runtimeHelpersType,
-        INamedTypeSymbol mustBeInitType)
+        INamedTypeSymbol enforceInitializationType)
     {
         var operation = (IInvocationOperation)context.Operation;
         var method = operation.TargetMethod;
@@ -66,12 +66,12 @@ public sealed class SPIRE008GetUninitializedObjectOfMustBeInitStructAnalyzer : D
         if (namedTarget.TypeKind != TypeKind.Struct && namedTarget.TypeKind != TypeKind.Enum)
             return;
 
-        if (!MustBeInitChecks.IsDefaultValueInvalid(namedTarget, mustBeInitType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(namedTarget, enforceInitializationType))
             return;
 
         context.ReportDiagnostic(
             Diagnostic.Create(
-                Descriptors.SPIRE008_GetUninitializedObjectOfMustBeInitStruct,
+                Descriptors.SPIRE008_GetUninitializedObjectOfEnforceInitializationStruct,
                 operation.Syntax.GetLocation(),
                 namedTarget.Name));
     }

@@ -12,13 +12,13 @@ Enforces exhaustive handling of all named members in switch statements and switc
 
 ## Attribute
 
-`EnforceExhaustivenessAttribute` inherits `MustBeInitAttribute`. Defined in `src/Spire.Core/EnforceExhaustivenessAttribute.cs`.
+`EnforceExhaustivenessAttribute` inherits `EnforceInitializationAttribute`. Defined in `src/Spire.Core/EnforceExhaustivenessAttribute.cs`.
 
-`MustBeInitAttribute` currently has `[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]`. Must be updated to include `AttributeTargets.Enum` so that `[EnforceExhaustiveness]` (and `[MustBeInit]` directly) can be applied to enums.
+`EnforceInitializationAttribute` currently has `[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]`. Must be updated to include `AttributeTargets.Enum` so that `[EnforceExhaustiveness]` (and `[EnforceInitialization]` directly) can be applied to enums.
 
 `EnforceExhaustivenessAttribute` declares `[AttributeUsage(AttributeTargets.Enum)]` — it only makes sense on enums, even though the base class allows structs/classes.
 
-Consequence of inheritance: all existing SPIRE001-008 rules that check for `[MustBeInit]` will also fire on `[EnforceExhaustiveness]` enums (where applicable — e.g., SPIRE003 flags `default(MyEnum)`). This is intentional.
+Consequence of inheritance: all existing SPIRE001-008 rules that check for `[EnforceInitialization]` will also fire on `[EnforceExhaustiveness]` enums (where applicable — e.g., SPIRE003 flags `default(MyEnum)`). This is intentional.
 
 ### Utility Refactor
 

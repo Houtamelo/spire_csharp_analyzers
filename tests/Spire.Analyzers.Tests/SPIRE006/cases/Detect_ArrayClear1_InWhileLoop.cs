@@ -4,7 +4,7 @@ public class Detect_ArrayClear1_InWhileLoop
 {
     public void Method()
     {
-        var arr = new MustInitStruct[5];
+        var arr = new EnforceInitializationStruct[5];
         bool condition = false;
         while (condition)
         {

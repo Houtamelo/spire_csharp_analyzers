@@ -4,6 +4,6 @@ public class NoReport_RecordStruct_ZeroSize
 {
     public void Method()
     {
-        var arr = new MustInitRecordStruct[0];
+        var arr = new EnforceInitializationRecordStruct[0];
     }
 }

@@ -4,6 +4,6 @@ public class Detect_RecordStruct_StackAlloc
 {
     public void Method()
     {
-        Span<MustInitRecordStruct> span = stackalloc MustInitRecordStruct[5]; //~ ERROR
+        Span<EnforceInitializationRecordStruct> span = stackalloc EnforceInitializationRecordStruct[5]; //~ ERROR
     }
 }

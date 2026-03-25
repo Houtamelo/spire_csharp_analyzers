@@ -4,8 +4,8 @@ public class Detect_SpanClear_InWhileLoop
 {
     public void Method()
     {
-        var arr = new MustInitStruct[5];
-        Span<MustInitStruct> span = arr;
+        var arr = new EnforceInitializationStruct[5];
+        Span<EnforceInitializationStruct> span = arr;
         bool condition = false;
         while (condition)
         {

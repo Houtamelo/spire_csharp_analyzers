@@ -5,6 +5,6 @@ public class NoReport_ConstZeroVariable
     public void Method()
     {
         const int n = 0;
-        var arr = new MustInitStruct[n];
+        var arr = new EnforceInitializationStruct[n];
     }
 }

@@ -1,9 +1,9 @@
 //@ should_fail
-// Ensure that SPIRE004 IS triggered when `new MustInitNoCtor()` appears as the right operand of a null-coalescing expression.
+// Ensure that SPIRE004 IS triggered when `new EnforceInitializationNoCtor()` appears as the right operand of a null-coalescing expression.
 public class Detect_NewT_NullCoalescing
 {
-    public MustInitNoCtor Method(MustInitNoCtor? maybeValue)
+    public EnforceInitializationNoCtor Method(EnforceInitializationNoCtor? maybeValue)
     {
-        return maybeValue ?? new MustInitNoCtor(); //~ ERROR
+        return maybeValue ?? new EnforceInitializationNoCtor(); //~ ERROR
     }
 }

@@ -4,7 +4,7 @@ public class NoReport_DefaultThenFieldInit
 {
     public void Method()
     {
-        var s = default(MustInitStruct);
+        var s = default(EnforceInitializationStruct);
         s.Value = 42;
         _ = s;
     }

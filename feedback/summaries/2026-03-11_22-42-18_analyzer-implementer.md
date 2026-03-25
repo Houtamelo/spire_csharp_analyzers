@@ -8,7 +8,7 @@
 > Implement the SPIRE004 analyzer to make all 67 existing tests pass.
 
 ## Files Modified
-- `/home/houtamelo/Documents/projects/libraries/csharp_analyzer/src/Spire.Analyzers/Rules/SPIRE004NewOfMustBeInitStructWithoutCtorAnalyzer.cs` (created)
+- `/home/houtamelo/Documents/projects/libraries/csharp_analyzer/src/Spire.Analyzers/Rules/SPIRE004NewOfEnforceInitializationStructWithoutCtorAnalyzer.cs` (created)
 - `/home/houtamelo/Documents/projects/libraries/csharp_analyzer/tmp/spire004_fields.cs` (created)
 
 ## Build/Test Results

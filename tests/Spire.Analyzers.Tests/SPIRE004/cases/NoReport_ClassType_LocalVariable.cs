@@ -1,5 +1,5 @@
 //@ should_pass
-// Ensure that SPIRE004 is NOT triggered when new T() is used on a class type, even without [MustBeInit].
+// Ensure that SPIRE004 is NOT triggered when new T() is used on a class type, even without [EnforceInitialization].
 public class NoReport_ClassType_LocalVariable
 {
     public void Method()

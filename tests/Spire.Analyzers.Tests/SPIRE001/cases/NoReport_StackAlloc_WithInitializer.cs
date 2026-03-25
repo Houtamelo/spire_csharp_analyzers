@@ -4,6 +4,6 @@ public class NoReport_StackAlloc_WithInitializer
 {
     public void Method()
     {
-        Span<MustInitStruct> span = stackalloc MustInitStruct[] { new MustInitStruct(1), new MustInitStruct(2) };
+        Span<EnforceInitializationStruct> span = stackalloc EnforceInitializationStruct[] { new EnforceInitializationStruct(1), new EnforceInitializationStruct(2) };
     }
 }

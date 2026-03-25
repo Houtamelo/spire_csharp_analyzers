@@ -8,7 +8,7 @@ namespace TestNs
 {
     public partial class Outer
     {
-        [global::Spire.MustBeInit]
+        [global::Spire.EnforceInitialization]
         [StructLayout(LayoutKind.Explicit)]
         internal partial struct Shape : global::Spire.IDiscriminatedUnion<Shape.Kind>
         {

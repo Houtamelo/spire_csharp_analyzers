@@ -8,7 +8,7 @@
 > Implement the SPIRE002 analyzer to make all existing tests pass.
 
 ## Files Modified
-- `/home/houtamelo/Documents/projects/libraries/csharp_analyzer/src/Spire.Analyzers/Rules/SPIRE002MustBeInitOnFieldlessTypeAnalyzer.cs` (created)
+- `/home/houtamelo/Documents/projects/libraries/csharp_analyzer/src/Spire.Analyzers/Rules/SPIRE002EnforceInitializationOnFieldlessTypeAnalyzer.cs` (created)
 
 ## Build/Test Results
 - Build commands run: 1

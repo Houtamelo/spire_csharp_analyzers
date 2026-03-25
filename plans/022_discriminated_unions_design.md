@@ -33,7 +33,7 @@ partial record Option<T> {
 }
 ```
 
-- `[DiscriminatedUnion]` inherits `[MustBeInit]` (struct path only)
+- `[DiscriminatedUnion]` inherits `[EnforceInitialization]` (struct path only)
 - `[Variant]` marks static partial methods as variant constructors
 - Source generator reads `struct` vs `record` keyword to decide shape
 - `Layout` enum controls struct storage strategy (ignored for records)
@@ -77,7 +77,7 @@ public enum Layout {
 For the `Shape` example above, the generator produces:
 
 ```csharp
-[MustBeInit]
+[EnforceInitialization]
 [StructLayout(LayoutKind.Explicit)]
 readonly partial struct Shape {
     // Nested tag enum (public, visibility controlled by containing struct)
@@ -339,7 +339,7 @@ as `partial record` or `partial class` for the class hierarchy path.
 
 ## Default Value
 
-**Struct path**: `[DiscriminatedUnion]` inherits `[MustBeInit]`, so existing
+**Struct path**: `[DiscriminatedUnion]` inherits `[EnforceInitialization]`, so existing
 SPIRE rules catch:
 - `default(Shape)` — SPIRE003
 - `new Shape()` — SPIRE004

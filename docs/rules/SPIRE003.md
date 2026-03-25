@@ -1,4 +1,4 @@
-# SPIRE003: default(T) where T is a [MustBeInit] struct
+# SPIRE003: default(T) where T is a [EnforceInitialization] struct
 
 | Property    | Value        |
 |-------------|--------------|
@@ -9,24 +9,24 @@
 
 ## Description
 
-Types marked with `[MustBeInit]` are expected to be explicitly initialized before use. Using `default(T)` or the `default` literal produces an uninitialized value, defeating the purpose of the attribute. This rule flags all locations where a `[MustBeInit]` type is produced via `default`.
+Types marked with `[EnforceInitialization]` are expected to be explicitly initialized before use. Using `default(T)` or the `default` literal produces an uninitialized value, defeating the purpose of the attribute. This rule flags all locations where a `[EnforceInitialization]` type is produced via `default`.
 
-For enums marked with `[MustBeInit]`, the rule only flags when the enum has no zero-valued named member. When a zero member exists (e.g., `None = 0`), `default(T)` produces that valid variant and is not flagged.
+For enums marked with `[EnforceInitialization]`, the rule only flags when the enum has no zero-valued named member. When a zero member exists (e.g., `None = 0`), `default(T)` produces that valid variant and is not flagged.
 
 ### Flagged patterns
 
-- `default(T)` where T is a `[MustBeInit]` struct
-- `default` literal in contexts where the target type is a `[MustBeInit]` struct:
+- `default(T)` where T is a `[EnforceInitialization]` struct
+- `default` literal in contexts where the target type is a `[EnforceInitialization]` struct:
   - Variable declaration: `Config c = default;`
-  - Return statement: `return default;` (when return type is `[MustBeInit]`)
+  - Return statement: `return default;` (when return type is `[EnforceInitialization]`)
   - Ternary/null-coalescing producing `default`
-  - Method argument: `Foo(default)` where parameter type is `[MustBeInit]`
+  - Method argument: `Foo(default)` where parameter type is `[EnforceInitialization]`
   - Assignment: `c = default;`
 
 ### Not flagged
 
-- `default` for non-`[MustBeInit]` types
-- `[MustBeInit]` types that have no instance fields (fieldless types)
+- `default` for non-`[EnforceInitialization]` types
+- `[EnforceInitialization]` types that have no instance fields (fieldless types)
 - `default` used in equality comparisons (`x == default`) — this is a detection/comparison pattern, not a creation pattern
 
 ## Examples
@@ -34,7 +34,7 @@ For enums marked with `[MustBeInit]`, the rule only flags when the enum has no z
 ### Violating code
 
 ```csharp
-[MustBeInit]
+[EnforceInitialization]
 struct Config { public string Name; public Config(string name) => Name = name; }
 
 Config c = default;                          // SPIRE003

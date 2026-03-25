@@ -1,9 +1,9 @@
 //@ should_fail
-// Ensure that SPIRE004 IS triggered when new MustInitNoCtor() is assigned to an out parameter.
+// Ensure that SPIRE004 IS triggered when new EnforceInitializationNoCtor() is assigned to an out parameter.
 public class Detect_NewT_OutParameterAssignment
 {
-    public void Method(out MustInitNoCtor result)
+    public void Method(out EnforceInitializationNoCtor result)
     {
-        result = new MustInitNoCtor(); //~ ERROR
+        result = new EnforceInitializationNoCtor(); //~ ERROR
     }
 }

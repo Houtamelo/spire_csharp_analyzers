@@ -2,13 +2,13 @@ using Microsoft.CodeAnalysis;
 
 namespace Spire.Analyzers.Utils;
 
-public static class MustBeInitChecks
+public static class EnforceInitializationChecks
 {
-    public static bool HasMustBeInitAttribute(ITypeSymbol type, INamedTypeSymbol mustBeInitType)
+    public static bool HasEnforceInitializationAttribute(ITypeSymbol type, INamedTypeSymbol enforceInitializationType)
     {
         foreach (var attr in type.GetAttributes())
         {
-            if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, mustBeInitType))
+            if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, enforceInitializationType))
                 return true;
         }
 
@@ -27,17 +27,17 @@ public static class MustBeInitChecks
     }
 
     /// Combines attribute + field checks. Does NOT check TypeKind — callers handle that.
-    public static bool IsMustBeInitWithFields(ITypeSymbol type, INamedTypeSymbol mustBeInitType)
+    public static bool IsEnforceInitializationWithFields(ITypeSymbol type, INamedTypeSymbol enforceInitializationType)
     {
-        return HasMustBeInitAttribute(type, mustBeInitType) && HasInstanceFields(type);
+        return HasEnforceInitializationAttribute(type, enforceInitializationType) && HasInstanceFields(type);
     }
 
-    /// Returns true if default(T) is invalid for this [MustBeInit] type.
-    /// For structs/classes: requires instance fields (same as IsMustBeInitWithFields).
+    /// Returns true if default(T) is invalid for this [EnforceInitialization] type.
+    /// For structs/classes: requires instance fields (same as IsEnforceInitializationWithFields).
     /// For enums: requires no zero-valued named member (default = 0 is unnamed).
-    public static bool IsDefaultValueInvalid(ITypeSymbol type, INamedTypeSymbol mustBeInitType)
+    public static bool IsDefaultValueInvalid(ITypeSymbol type, INamedTypeSymbol enforceInitializationType)
     {
-        if (!HasMustBeInitAttribute(type, mustBeInitType))
+        if (!HasEnforceInitializationAttribute(type, enforceInitializationType))
             return false;
 
         if (type.TypeKind == TypeKind.Enum)

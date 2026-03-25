@@ -38,15 +38,15 @@ Spire.CodeFixes        →  Microsoft.CodeAnalysis.CSharp.Workspaces (standalone
 |------|-------------|
 | New project | `src/Spire.Core/` — attributes moved here, namespace `Spire` |
 | New project | `src/Spire/` — meta-package (no code) |
-| Namespace | `Spire.Analyzers.MustBeInitAttribute` → `Spire.MustBeInitAttribute` |
+| Namespace | `Spire.Analyzers.EnforceInitializationAttribute` → `Spire.EnforceInitializationAttribute` |
 | Namespace | `Spire.Analyzers.EnforceExhaustivenessAttribute` → `Spire.EnforceExhaustivenessAttribute` |
 | Metadata strings | 8 analyzers: `GetTypeByMetadataName` updated |
-| Emitter strings | 5 emitters: `[global::Spire.Analyzers.MustBeInit]` → `[global::Spire.MustBeInit]` |
+| Emitter strings | 5 emitters: `[global::Spire.Analyzers.EnforceInitialization]` → `[global::Spire.EnforceInitialization]` |
 | Phantom refs | `Spire.SourceGenerators → Spire.Analyzers` removed |
 | Phantom refs | `Spire.CodeFixes → Spire.SourceGenerators` removed |
 | Test infra | `AnalyzerTestBase`, `GeneratorTestHelper`, `BehavioralTestBase` updated |
 | Test cases | 9 `_shared.cs` files: `global using Spire.Analyzers` → `global using Spire` |
-| Snapshots | 27 `output.cs` files: `Spire.Analyzers.MustBeInit` → `Spire.MustBeInit` |
+| Snapshots | 27 `output.cs` files: `Spire.Analyzers.EnforceInitialization` → `Spire.EnforceInitialization` |
 | Consumer projects | `BehavioralTests`, `Benchmarks`: ref `Spire.Core` instead of `Spire.Analyzers` |
 | NuGet packaging | All 5 projects get proper pack metadata |
 | Solution | `Spire.Analyzers.slnx` updated |
@@ -57,7 +57,7 @@ Spire.CodeFixes        →  Microsoft.CodeAnalysis.CSharp.Workspaces (standalone
 
 **Files:**
 - Create: `src/Spire.Core/Spire.Core.csproj`
-- Create: `src/Spire.Core/MustBeInitAttribute.cs`
+- Create: `src/Spire.Core/EnforceInitializationAttribute.cs`
 - Create: `src/Spire.Core/EnforceExhaustivenessAttribute.cs`
 
 - [ ] **Step 1: Create project directory**
@@ -91,7 +91,7 @@ Run: `mkdir -p src/Spire.Core`
 </Project>
 ```
 
-- [ ] **Step 3: Create MustBeInitAttribute.cs**
+- [ ] **Step 3: Create EnforceInitializationAttribute.cs**
 
 ```csharp
 using System;
@@ -99,7 +99,7 @@ using System;
 namespace Spire;
 
 [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Enum)]
-public class MustBeInitAttribute : Attribute
+public class EnforceInitializationAttribute : Attribute
 {
 }
 ```
@@ -112,7 +112,7 @@ using System;
 namespace Spire;
 
 [AttributeUsage(AttributeTargets.Enum)]
-public sealed class EnforceExhaustivenessAttribute : MustBeInitAttribute
+public sealed class EnforceExhaustivenessAttribute : EnforceInitializationAttribute
 {
 }
 ```
@@ -126,7 +126,7 @@ Expected: Build succeeded
 
 ```
 git add src/Spire.Core/
-git commit -m "feat: create Spire.Core project with MustBeInit and EnforceExhaustiveness attributes"
+git commit -m "feat: create Spire.Core project with EnforceInitialization and EnforceExhaustiveness attributes"
 ```
 
 ---
@@ -134,7 +134,7 @@ git commit -m "feat: create Spire.Core project with MustBeInit and EnforceExhaus
 ### Task 2: Remove attributes from Spire.Analyzers and remove phantom ProjectReferences
 
 **Files:**
-- Delete: `src/Spire.Analyzers/MustBeInitAttribute.cs`
+- Delete: `src/Spire.Analyzers/EnforceInitializationAttribute.cs`
 - Delete: `src/Spire.Analyzers/EnforceExhaustivenessAttribute.cs`
 - Modify: `src/Spire.SourceGenerators/Spire.SourceGenerators.csproj` (remove phantom ref)
 - Modify: `src/Spire.CodeFixes/Spire.CodeFixes.csproj` (remove phantom ref)
@@ -143,7 +143,7 @@ git commit -m "feat: create Spire.Core project with MustBeInit and EnforceExhaus
 
 Run:
 ```
-rm src/Spire.Analyzers/MustBeInitAttribute.cs
+rm src/Spire.Analyzers/EnforceInitializationAttribute.cs
 rm src/Spire.Analyzers/EnforceExhaustivenessAttribute.cs
 ```
 
@@ -183,7 +183,7 @@ Expected: Build succeeded — no analyzer file has a compile-time dependency on 
 - [ ] **Step 7: Commit**
 
 ```
-git rm src/Spire.Analyzers/MustBeInitAttribute.cs src/Spire.Analyzers/EnforceExhaustivenessAttribute.cs
+git rm src/Spire.Analyzers/EnforceInitializationAttribute.cs src/Spire.Analyzers/EnforceExhaustivenessAttribute.cs
 git add src/Spire.SourceGenerators/Spire.SourceGenerators.csproj src/Spire.CodeFixes/Spire.CodeFixes.csproj
 git commit -m "refactor: remove attributes from Spire.Analyzers, remove phantom ProjectReferences"
 ```
@@ -195,25 +195,25 @@ git commit -m "refactor: remove attributes from Spire.Analyzers, remove phantom 
 All analyzers resolve attributes via `GetTypeByMetadataName`. Namespace changed from `Spire.Analyzers` to `Spire`.
 
 **Files (all in `src/Spire.Analyzers/Rules/`):**
-- `SPIRE001ArrayOfMustBeInitStructAnalyzer.cs`
-- `SPIRE002MustBeInitOnFieldlessTypeAnalyzer.cs`
-- `SPIRE003DefaultOfMustBeInitStructAnalyzer.cs`
-- `SPIRE004NewOfMustBeInitStructWithoutCtorAnalyzer.cs`
-- `SPIRE005ActivatorCreateInstanceOfMustBeInitStructAnalyzer.cs`
-- `SPIRE006ClearOfMustBeInitElementsAnalyzer.cs`
-- `SPIRE007UnsafeSkipInitOfMustBeInitStructAnalyzer.cs`
-- `SPIRE008GetUninitializedObjectOfMustBeInitStructAnalyzer.cs`
+- `SPIRE001ArrayOfEnforceInitializationStructAnalyzer.cs`
+- `SPIRE002EnforceInitializationOnFieldlessTypeAnalyzer.cs`
+- `SPIRE003DefaultOfEnforceInitializationStructAnalyzer.cs`
+- `SPIRE004NewOfEnforceInitializationStructWithoutCtorAnalyzer.cs`
+- `SPIRE005ActivatorCreateInstanceOfEnforceInitializationStructAnalyzer.cs`
+- `SPIRE006ClearOfEnforceInitializationElementsAnalyzer.cs`
+- `SPIRE007UnsafeSkipInitOfEnforceInitializationStructAnalyzer.cs`
+- `SPIRE008GetUninitializedObjectOfEnforceInitializationStructAnalyzer.cs`
 - `SPIRE015ExhaustiveEnumSwitchAnalyzer.cs`
 
-- [ ] **Step 1: Replace all MustBeInitAttribute metadata names**
+- [ ] **Step 1: Replace all EnforceInitializationAttribute metadata names**
 
 In each of the 8 files listed above (SPIRE001–008), replace:
 ```csharp
-.GetTypeByMetadataName("Spire.Analyzers.MustBeInitAttribute");
+.GetTypeByMetadataName("Spire.Analyzers.EnforceInitializationAttribute");
 ```
 with:
 ```csharp
-.GetTypeByMetadataName("Spire.MustBeInitAttribute");
+.GetTypeByMetadataName("Spire.EnforceInitializationAttribute");
 ```
 
 - [ ] **Step 2: Replace EnforceExhaustivenessAttribute metadata name**
@@ -254,11 +254,11 @@ git commit -m "refactor: update GetTypeByMetadataName strings to Spire namespace
 
 In each file, replace:
 ```csharp
-sb.AppendLine("[global::Spire.Analyzers.MustBeInit]");
+sb.AppendLine("[global::Spire.Analyzers.EnforceInitialization]");
 ```
 with:
 ```csharp
-sb.AppendLine("[global::Spire.MustBeInit]");
+sb.AppendLine("[global::Spire.EnforceInitialization]");
 ```
 
 - [ ] **Step 2: Verify Spire.SourceGenerators builds**
@@ -270,7 +270,7 @@ Expected: Build succeeded
 
 ```
 git add src/Spire.SourceGenerators/Emit/
-git commit -m "refactor: update emitted MustBeInit attribute to Spire namespace"
+git commit -m "refactor: update emitted EnforceInitialization attribute to Spire namespace"
 ```
 
 ---
@@ -298,7 +298,7 @@ Keep the existing `Spire.Analyzers` ProjectReference (provides analyzer types fo
 After the existing `AnalyzerAssemblyReference` field (line 26-27), add:
 ```csharp
     private static readonly MetadataReference CoreAssemblyReference =
-        MetadataReference.CreateFromFile(typeof(Spire.MustBeInitAttribute).Assembly.Location);
+        MetadataReference.CreateFromFile(typeof(Spire.EnforceInitializationAttribute).Assembly.Location);
 ```
 
 Update `ResolveReferencesAsync` (line 184-189) — change the return to include both references:
@@ -328,12 +328,12 @@ Keep the `Spire.SourceGenerators` and `Spire.CodeFixes` ProjectReferences unchan
 Replace (line 13-14):
 ```csharp
     private static readonly MetadataReference AnalyzerAssemblyReference =
-        MetadataReference.CreateFromFile(typeof(Spire.Analyzers.MustBeInitAttribute).Assembly.Location);
+        MetadataReference.CreateFromFile(typeof(Spire.Analyzers.EnforceInitializationAttribute).Assembly.Location);
 ```
 with:
 ```csharp
     private static readonly MetadataReference CoreAssemblyReference =
-        MetadataReference.CreateFromFile(typeof(Spire.MustBeInitAttribute).Assembly.Location);
+        MetadataReference.CreateFromFile(typeof(Spire.EnforceInitializationAttribute).Assembly.Location);
 ```
 
 Also update line 28 where it's appended to references:
@@ -348,15 +348,15 @@ Also update line 28 where it's appended to references:
 
 Replace (lines 28-30):
 ```csharp
-        // Spire.Analyzers — provides [MustBeInit] and other marker attributes
+        // Spire.Analyzers — provides [EnforceInitialization] and other marker attributes
         refs.Add(MetadataReference.CreateFromFile(
-            typeof(Spire.Analyzers.MustBeInitAttribute).Assembly.Location));
+            typeof(Spire.Analyzers.EnforceInitializationAttribute).Assembly.Location));
 ```
 with:
 ```csharp
-        // Spire.Core — provides [MustBeInit] and other marker attributes
+        // Spire.Core — provides [EnforceInitialization] and other marker attributes
         refs.Add(MetadataReference.CreateFromFile(
-            typeof(Spire.MustBeInitAttribute).Assembly.Location));
+            typeof(Spire.EnforceInitializationAttribute).Assembly.Location));
 ```
 
 - [ ] **Step 6: Update Spire.BehavioralTests.csproj**
@@ -424,22 +424,22 @@ Files:
 
 In all 27 output.cs files under `tests/Spire.SourceGenerators.Tests/cases/`, replace:
 ```
-Spire.Analyzers.MustBeInit
+Spire.Analyzers.EnforceInitialization
 ```
 with:
 ```
-Spire.MustBeInit
+Spire.EnforceInitialization
 ```
 
 Use find+sed for efficiency:
 ```bash
 find tests/Spire.SourceGenerators.Tests/cases -name "output.cs" \
-  -exec sed -i 's/Spire\.Analyzers\.MustBeInit/Spire.MustBeInit/g' {} +
+  -exec sed -i 's/Spire\.Analyzers\.EnforceInitialization/Spire.EnforceInitialization/g' {} +
 ```
 
 - [ ] **Step 3: Verify no stale references remain**
 
-Run: `grep -r "Spire\.Analyzers\.MustBeInit\|Spire\.Analyzers\.EnforceExhaustiveness" tests/`
+Run: `grep -r "Spire\.Analyzers\.EnforceInitialization\|Spire\.Analyzers\.EnforceExhaustiveness" tests/`
 Expected: No matches
 
 - [ ] **Step 4: Commit**
@@ -481,7 +481,7 @@ Expected: All tests pass
 
 - [ ] **Step 4: Verify no stale references remain anywhere**
 
-Run: `grep -r "Spire\.Analyzers\.MustBeInit\|Spire\.Analyzers\.EnforceExhaustiveness" src/ tests/ benchmarks/`
+Run: `grep -r "Spire\.Analyzers\.EnforceInitialization\|Spire\.Analyzers\.EnforceExhaustiveness" src/ tests/ benchmarks/`
 Expected: No matches (only in git history)
 
 - [ ] **Step 5: Commit**
@@ -724,7 +724,7 @@ Expected: All tests pass
 
 - [ ] **Step 3: Verify no stale namespace references**
 
-Run: `grep -rn "Spire\.Analyzers\.MustBeInit\|Spire\.Analyzers\.EnforceExhaustiveness" src/ tests/ benchmarks/`
+Run: `grep -rn "Spire\.Analyzers\.EnforceInitialization\|Spire\.Analyzers\.EnforceExhaustiveness" src/ tests/ benchmarks/`
 Expected: No matches
 
 - [ ] **Step 4: Verify pack succeeds for each project**

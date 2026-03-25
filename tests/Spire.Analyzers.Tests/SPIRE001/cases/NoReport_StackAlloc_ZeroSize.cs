@@ -4,6 +4,6 @@ public class NoReport_StackAlloc_ZeroSize
 {
     public void Method()
     {
-        Span<MustInitStruct> span = stackalloc MustInitStruct[0];
+        Span<EnforceInitializationStruct> span = stackalloc EnforceInitializationStruct[0];
     }
 }
