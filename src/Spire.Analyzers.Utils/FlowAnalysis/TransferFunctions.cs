@@ -14,6 +14,10 @@ public static class TransferFunctions
         Dictionary<ISymbol, VariableState> states,
         TrackedSymbolSet symbols)
     {
+        // CFG blocks wrap most statements in IExpressionStatementOperation — unwrap
+        if (operation is IExpressionStatementOperation exprStmt)
+            operation = exprStmt.Operation;
+
         return operation switch
         {
             ISimpleAssignmentOperation assignment => ApplyAssignment(assignment, states, symbols),
