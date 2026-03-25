@@ -30,6 +30,7 @@ src/Spire.Analyzers/              # Analyzer (netstandard2.0)
   Rules/                          # One file per rule
   Descriptors.cs                  # Central DiagnosticDescriptor registry
 src/Spire.Analyzers.Utils/        # Shared utilities (netstandard2.0)
+  FlowAnalysis/                   # CFG-based flow analysis (InitState, KindState, NullState tracking)
 src/Spire.SourceGenerators/       # Discriminated union source generator (netstandard2.0)
   Emit/                           # Per-strategy emitters (Additive, Overlap, BoxedFields, etc.)
   Analyzers/                      # Generator-coupled analyzers (exhaustiveness, field access, type safety)
@@ -38,6 +39,7 @@ src/Spire.SourceGenerators/       # Discriminated union source generator (netsta
 src/Spire.CodeFixes/              # Code fixes (standalone, no inter-project deps)
 tests/Spire.Analyzers.Tests/      # Analyzer xUnit tests (net10.0, C# 14)
   AnalyzerTestBase.cs             # Base class for all analyzer tests (discovery, parsing, verification)
+  FlowAnalysis/                   # Flow analysis infrastructure unit + integration tests
   {RuleId}/                       # One folder per rule
     {RuleId}Tests.cs              # Test runner (inherits AnalyzerTestBase)
     cases/
