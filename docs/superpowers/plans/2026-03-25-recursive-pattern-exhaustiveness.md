@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build `Spire.PatternAnalysis`, a standalone library that determines whether C# switch expressions/statements exhaustively cover all possible input patterns, including nested/recursive patterns.
+**Goal:** Build `Houtamelo.Spire.PatternAnalysis`, a standalone library that determines whether C# switch expressions/statements exhaustively cover all possible input patterns, including nested/recursive patterns.
 
 **Architecture:** Maranget's decision-tree algorithm operating on Roslyn's public `IPatternOperation` API. Value domains model the set of possible values per type. Pattern matrix rows = switch arms, columns = slots. Column specialization + recursion determines exhaustiveness.
 
@@ -14,11 +14,11 @@
 
 ## File Map
 
-### Library (`src/Spire.PatternAnalysis/`)
+### Library (`src/Houtamelo.Spire.PatternAnalysis/`)
 
 | File | Responsibility |
 |------|---------------|
-| `Spire.PatternAnalysis.csproj` | Project file (netstandard2.0, Roslyn 5.0.0, PolySharp) |
+| `Houtamelo.Spire.PatternAnalysis.csproj` | Project file (netstandard2.0, Roslyn 5.0.0, PolySharp) |
 | `ExhaustivenessChecker.cs` | Public entry point: `Check(Compilation, ISwitchExpressionOperation)` and `Check(Compilation, ISwitchOperation)` |
 | `ExhaustivenessResult.cs` | `ExhaustivenessResult`, `MissingCase`, `SlotConstraint` |
 | `SlotIdentifier.cs` | `SlotIdentifier` hierarchy: `PropertySlot`, `TupleSlot`, `DeconstructSlot` |
@@ -40,11 +40,11 @@
 | `Algorithm/DecisionTreeBuilder.cs` | Maranget core loop: column selection, specialization, recursion |
 | `Resolution/TypeHierarchyResolver.cs` | Assembly walk with visibility scoping, cached |
 
-### Tests (`tests/Spire.PatternAnalysis.Tests/`)
+### Tests (`tests/Houtamelo.Spire.PatternAnalysis.Tests/`)
 
 | File | Responsibility |
 |------|---------------|
-| `Spire.PatternAnalysis.Tests.csproj` | Test project (net10.0, xUnit, references Spire.PatternAnalysis + Spire.Core) |
+| `Houtamelo.Spire.PatternAnalysis.Tests.csproj` | Test project (net10.0, xUnit, references Houtamelo.Spire.PatternAnalysis + Houtamelo.Spire.Core) |
 | `ExhaustivenessTestBase.cs` | File-based test discovery for integration tests |
 | `Domains/BoolDomainTests.cs` | BoolDomain unit tests |
 | `Domains/EnumDomainTests.cs` | EnumDomain unit tests |
@@ -61,7 +61,7 @@
 
 **Known limitation:** All numeric domains use `double` internally for interval arithmetic. This loses precision for `long` values near `long.MaxValue` and for `decimal` beyond 53 bits of significand. In practice, nobody writes switch arms distinguishing `long.MaxValue` from `long.MaxValue - 1`, so this is acceptable. Document in code.
 
-**Note on DiscriminatedUnionAttribute:** This attribute is source-generated (not in `Spire.Core`). Test compilations for DU domains must include the attribute declaration as a raw C# string in their `_shared.cs` files. `DomainResolver` resolves it via `GetTypeByMetadataName("Houtamelo.Spire.DiscriminatedUnionAttribute")` which works in production (generator emits it) and in tests (included as source text).
+**Note on DiscriminatedUnionAttribute:** This attribute is source-generated (not in `Houtamelo.Spire.Core`). Test compilations for DU domains must include the attribute declaration as a raw C# string in their `_shared.cs` files. `DomainResolver` resolves it via `GetTypeByMetadataName("Houtamelo.Spire.DiscriminatedUnionAttribute")` which works in production (generator emits it) and in tests (included as source text).
 
 **Note on StructuralDomain set operations:** The Maranget algorithm uses `Split()` and `Intersect()` during column specialization, but does NOT call `Subtract()` or `Complement()` on structural/composite domains. Cross-product subtraction is inherently complex and unnecessary — the matrix specialization handles decomposition implicitly. `StructuralDomain` implements `Subtract`/`Complement` as `throw new NotSupportedException()`.
 
@@ -72,7 +72,7 @@
 ## Task 0: Prerequisite — Expand EnforceExhaustivenessAttribute
 
 **Files:**
-- Modify: `src/Spire.Core/EnforceExhaustivenessAttribute.cs`
+- Modify: `src/Houtamelo.Spire.Core/EnforceExhaustivenessAttribute.cs`
 
 Must be done first — needed by EnforceExhaustiveDomain tests and TypeHierarchy integration tests.
 
@@ -93,7 +93,7 @@ Expected: ALL PASS (expanding attribute targets is backwards-compatible).
 - [ ] **Step 3: Commit**
 
 ```bash
-git add src/Spire.Core/EnforceExhaustivenessAttribute.cs
+git add src/Houtamelo.Spire.Core/EnforceExhaustivenessAttribute.cs
 git commit -m "feat(core): expand EnforceExhaustivenessAttribute to support class and interface targets"
 ```
 
@@ -102,14 +102,14 @@ git commit -m "feat(core): expand EnforceExhaustivenessAttribute to support clas
 ## Task 1: Project Scaffolding
 
 **Files:**
-- Create: `src/Spire.PatternAnalysis/Spire.PatternAnalysis.csproj`
-- Create: `tests/Spire.PatternAnalysis.Tests/Spire.PatternAnalysis.Tests.csproj`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/Houtamelo.Spire.PatternAnalysis.csproj`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Houtamelo.Spire.PatternAnalysis.Tests.csproj`
 - Modify: `Spire.Analyzers.slnx`
 
 - [ ] **Step 1: Create library project**
 
 ```xml
-<!-- src/Spire.PatternAnalysis/Spire.PatternAnalysis.csproj -->
+<!-- src/Houtamelo.Spire.PatternAnalysis/Houtamelo.Spire.PatternAnalysis.csproj -->
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -123,10 +123,10 @@ git commit -m "feat(core): expand EnforceExhaustivenessAttribute to support clas
 
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-      <_Parameter1>Spire.Analyzers</_Parameter1>
+      <_Parameter1>Houtamelo.Spire.Analyzers</_Parameter1>
     </AssemblyAttribute>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-      <_Parameter1>Spire.PatternAnalysis.Tests</_Parameter1>
+      <_Parameter1>Houtamelo.Spire.PatternAnalysis.Tests</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
 </Project>
@@ -135,7 +135,7 @@ git commit -m "feat(core): expand EnforceExhaustivenessAttribute to support clas
 - [ ] **Step 2: Create test project**
 
 ```xml
-<!-- tests/Spire.PatternAnalysis.Tests/Spire.PatternAnalysis.Tests.csproj -->
+<!-- tests/Houtamelo.Spire.PatternAnalysis.Tests/Houtamelo.Spire.PatternAnalysis.Tests.csproj -->
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -150,8 +150,8 @@ git commit -m "feat(core): expand EnforceExhaustivenessAttribute to support clas
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Spire.PatternAnalysis\Spire.PatternAnalysis.csproj" />
-    <ProjectReference Include="..\..\src\Spire.Core\Spire.Core.csproj" />
+    <ProjectReference Include="..\..\src\Houtamelo.Spire.PatternAnalysis\Houtamelo.Spire.PatternAnalysis.csproj" />
+    <ProjectReference Include="..\..\src\Houtamelo.Spire.Core\Houtamelo.Spire.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -169,11 +169,11 @@ Add to `Spire.Analyzers.slnx`:
 ```xml
 <Folder Name="/src/">
   <!-- existing entries -->
-  <Project Path="src/Spire.PatternAnalysis/Spire.PatternAnalysis.csproj" />
+  <Project Path="src/Houtamelo.Spire.PatternAnalysis/Houtamelo.Spire.PatternAnalysis.csproj" />
 </Folder>
 <Folder Name="/tests/">
   <!-- existing entries -->
-  <Project Path="tests/Spire.PatternAnalysis.Tests/Spire.PatternAnalysis.Tests.csproj" />
+  <Project Path="tests/Houtamelo.Spire.PatternAnalysis.Tests/Houtamelo.Spire.PatternAnalysis.Tests.csproj" />
 </Folder>
 ```
 
@@ -185,8 +185,8 @@ Expected: Success with no errors.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/Spire.PatternAnalysis/ tests/Spire.PatternAnalysis.Tests/ Spire.Analyzers.slnx
-git commit -m "scaffold: add Spire.PatternAnalysis project and test project"
+git add src/Houtamelo.Spire.PatternAnalysis/ tests/Houtamelo.Spire.PatternAnalysis.Tests/ Spire.Analyzers.slnx
+git commit -m "scaffold: add Houtamelo.Spire.PatternAnalysis project and test project"
 ```
 
 ---
@@ -194,18 +194,18 @@ git commit -m "scaffold: add Spire.PatternAnalysis project and test project"
 ## Task 2: Core Types
 
 **Files:**
-- Create: `src/Spire.PatternAnalysis/Domains/IValueDomain.cs`
-- Create: `src/Spire.PatternAnalysis/SlotIdentifier.cs`
-- Create: `src/Spire.PatternAnalysis/ExhaustivenessResult.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/Domains/IValueDomain.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/SlotIdentifier.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/ExhaustivenessResult.cs`
 
 - [ ] **Step 1: Create IValueDomain interface**
 
 ```csharp
-// src/Spire.PatternAnalysis/Domains/IValueDomain.cs
+// src/Houtamelo.Spire.PatternAnalysis/Domains/IValueDomain.cs
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 
-namespace Spire.PatternAnalysis.Domains;
+namespace Houtamelo.Spire.PatternAnalysis.Domains;
 
 /// Interface for a set of possible values of a given type.
 /// Each domain represents the "universe" of values that a pattern slot can hold,
@@ -239,10 +239,10 @@ internal interface IValueDomain
 - [ ] **Step 2: Create SlotIdentifier hierarchy**
 
 ```csharp
-// src/Spire.PatternAnalysis/SlotIdentifier.cs
+// src/Houtamelo.Spire.PatternAnalysis/SlotIdentifier.cs
 using Microsoft.CodeAnalysis;
 
-namespace Spire.PatternAnalysis;
+namespace Houtamelo.Spire.PatternAnalysis;
 
 /// Identifies a position within a pattern that a constraint applies to.
 internal abstract class SlotIdentifier
@@ -271,11 +271,11 @@ internal abstract class SlotIdentifier
 - [ ] **Step 3: Create result types**
 
 ```csharp
-// src/Spire.PatternAnalysis/ExhaustivenessResult.cs
+// src/Houtamelo.Spire.PatternAnalysis/ExhaustivenessResult.cs
 using System.Collections.Immutable;
 using Houtamelo.Spire.PatternAnalysis.Domains;
 
-namespace Spire.PatternAnalysis;
+namespace Houtamelo.Spire.PatternAnalysis;
 
 /// Result of exhaustiveness analysis on a switch expression/statement.
 internal readonly struct ExhaustivenessResult(ImmutableArray<MissingCase> missingCases)
@@ -306,7 +306,7 @@ Expected: Success.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/Spire.PatternAnalysis/
+git add src/Houtamelo.Spire.PatternAnalysis/
 git commit -m "feat(pattern-analysis): add core types — IValueDomain, SlotIdentifier, ExhaustivenessResult"
 ```
 
@@ -315,10 +315,10 @@ git commit -m "feat(pattern-analysis): add core types — IValueDomain, SlotIden
 ## Task 3: Interval + IntervalSet (TDD)
 
 **Files:**
-- Create: `src/Spire.PatternAnalysis/Domains/Numeric/Interval.cs`
-- Create: `src/Spire.PatternAnalysis/Domains/Numeric/IntervalSet.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/Domains/Numeric/IntervalTests.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/Domains/Numeric/IntervalSetTests.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/Domains/Numeric/Interval.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/Domains/Numeric/IntervalSet.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Domains/Numeric/IntervalTests.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Domains/Numeric/IntervalSetTests.cs`
 
 Interval arithmetic is the foundation for NumericDomain. Build and test this independently first.
 
@@ -335,7 +335,7 @@ All numeric values are represented as `double` internally. Integer bounds are re
 
 - [ ] **Step 2: Run tests — verify they fail**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~IntervalTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~IntervalTests"`
 Expected: FAIL (types don't exist yet).
 
 - [ ] **Step 3: Implement Interval**
@@ -351,7 +351,7 @@ Expected: FAIL (types don't exist yet).
 
 - [ ] **Step 4: Run tests — verify they pass**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~IntervalTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~IntervalTests"`
 Expected: PASS.
 
 - [ ] **Step 5: Write IntervalSet tests**
@@ -369,7 +369,7 @@ Test cases for `IntervalSet`:
 
 - [ ] **Step 6: Run tests — verify they fail**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~IntervalSetTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~IntervalSetTests"`
 Expected: FAIL.
 
 - [ ] **Step 7: Implement IntervalSet**
@@ -387,13 +387,13 @@ Normalization on construction: sort intervals by lo, merge overlapping/adjacent 
 
 - [ ] **Step 8: Run tests — verify they pass**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~IntervalSetTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~IntervalSetTests"`
 Expected: PASS.
 
 - [ ] **Step 9: Commit**
 
 ```bash
-git add src/Spire.PatternAnalysis/Domains/Numeric/ tests/Spire.PatternAnalysis.Tests/Domains/Numeric/
+git add src/Houtamelo.Spire.PatternAnalysis/Domains/Numeric/ tests/Houtamelo.Spire.PatternAnalysis.Tests/Domains/Numeric/
 git commit -m "feat(pattern-analysis): add Interval and IntervalSet with tests"
 ```
 
@@ -402,10 +402,10 @@ git commit -m "feat(pattern-analysis): add Interval and IntervalSet with tests"
 ## Task 4: BoolDomain + EnumDomain (TDD)
 
 **Files:**
-- Create: `src/Spire.PatternAnalysis/Domains/BoolDomain.cs`
-- Create: `src/Spire.PatternAnalysis/Domains/EnumDomain.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/Domains/BoolDomainTests.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/Domains/EnumDomainTests.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/Domains/BoolDomain.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/Domains/EnumDomain.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Domains/BoolDomainTests.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Domains/EnumDomainTests.cs`
 
 - [ ] **Step 1: Write BoolDomain tests**
 
@@ -447,7 +447,7 @@ private static INamedTypeSymbol GetEnumSymbol(string enumDeclaration)
 
 - [ ] **Step 3: Run tests — verify they fail**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~BoolDomain or FullyQualifiedName~EnumDomain"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~BoolDomain or FullyQualifiedName~EnumDomain"`
 Expected: FAIL.
 
 - [ ] **Step 4: Implement BoolDomain**
@@ -460,13 +460,13 @@ Internally tracks `ImmutableHashSet<IFieldSymbol>` (named enum members present).
 
 - [ ] **Step 6: Run tests — verify they pass**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~BoolDomain or FullyQualifiedName~EnumDomain"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~BoolDomain or FullyQualifiedName~EnumDomain"`
 Expected: PASS.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/Spire.PatternAnalysis/Domains/BoolDomain.cs src/Spire.PatternAnalysis/Domains/EnumDomain.cs tests/Spire.PatternAnalysis.Tests/Domains/
+git add src/Houtamelo.Spire.PatternAnalysis/Domains/BoolDomain.cs src/Houtamelo.Spire.PatternAnalysis/Domains/EnumDomain.cs tests/Houtamelo.Spire.PatternAnalysis.Tests/Domains/
 git commit -m "feat(pattern-analysis): add BoolDomain and EnumDomain with tests"
 ```
 
@@ -475,8 +475,8 @@ git commit -m "feat(pattern-analysis): add BoolDomain and EnumDomain with tests"
 ## Task 5: NumericDomain (TDD)
 
 **Files:**
-- Create: `src/Spire.PatternAnalysis/Domains/NumericDomain.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/Domains/NumericDomainTests.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/Domains/NumericDomain.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Domains/NumericDomainTests.cs`
 
 - [ ] **Step 1: Write NumericDomain tests**
 
@@ -494,7 +494,7 @@ NumericDomain wraps `IntervalSet` and adds type-specific universe bounds. Constr
 
 - [ ] **Step 2: Run tests — verify they fail**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~NumericDomainTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~NumericDomainTests"`
 Expected: FAIL.
 
 - [ ] **Step 3: Implement NumericDomain**
@@ -509,13 +509,13 @@ Factory: `static NumericDomain Universe(ITypeSymbol type)` — resolves `Special
 
 - [ ] **Step 4: Run tests — verify they pass**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~NumericDomainTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~NumericDomainTests"`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/Spire.PatternAnalysis/Domains/NumericDomain.cs tests/Spire.PatternAnalysis.Tests/Domains/NumericDomainTests.cs
+git add src/Houtamelo.Spire.PatternAnalysis/Domains/NumericDomain.cs tests/Houtamelo.Spire.PatternAnalysis.Tests/Domains/NumericDomainTests.cs
 git commit -m "feat(pattern-analysis): add NumericDomain with tests"
 ```
 
@@ -524,8 +524,8 @@ git commit -m "feat(pattern-analysis): add NumericDomain with tests"
 ## Task 6: NullableDomain (TDD)
 
 **Files:**
-- Create: `src/Spire.PatternAnalysis/Domains/NullableDomain.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/Domains/NullableDomainTests.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/Domains/NullableDomain.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Domains/NullableDomainTests.cs`
 
 - [ ] **Step 1: Write NullableDomain tests**
 
@@ -543,7 +543,7 @@ NullableDomain wraps an `IValueDomain` inner domain and adds a `bool _hasNull` f
 
 - [ ] **Step 2: Run tests — verify they fail**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~NullableDomainTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~NullableDomainTests"`
 Expected: FAIL.
 
 - [ ] **Step 3: Implement NullableDomain**
@@ -559,13 +559,13 @@ Fields: `IValueDomain _inner`, `bool _hasNull`, `ITypeSymbol _type`.
 
 - [ ] **Step 4: Run tests — verify they pass**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~NullableDomainTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~NullableDomainTests"`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/Spire.PatternAnalysis/Domains/NullableDomain.cs tests/Spire.PatternAnalysis.Tests/Domains/NullableDomainTests.cs
+git add src/Houtamelo.Spire.PatternAnalysis/Domains/NullableDomain.cs tests/Houtamelo.Spire.PatternAnalysis.Tests/Domains/NullableDomainTests.cs
 git commit -m "feat(pattern-analysis): add NullableDomain with tests"
 ```
 
@@ -574,10 +574,10 @@ git commit -m "feat(pattern-analysis): add NullableDomain with tests"
 ## Task 7: StructuralDomain + TupleDomain + PropertyPatternDomain (TDD)
 
 **Files:**
-- Create: `src/Spire.PatternAnalysis/Domains/StructuralDomain.cs`
-- Create: `src/Spire.PatternAnalysis/Domains/TupleDomain.cs`
-- Create: `src/Spire.PatternAnalysis/Domains/PropertyPatternDomain.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/Domains/StructuralDomainTests.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/Domains/StructuralDomain.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/Domains/TupleDomain.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/Domains/PropertyPatternDomain.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Domains/StructuralDomainTests.cs`
 
 StructuralDomain is the abstract base. TupleDomain and PropertyPatternDomain inherit it and add positional vs named access semantics.
 
@@ -601,7 +601,7 @@ Test cases:
 
 - [ ] **Step 3: Run tests — verify they fail**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~StructuralDomainTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~StructuralDomainTests"`
 Expected: FAIL.
 
 - [ ] **Step 4: Implement StructuralDomain (abstract)**
@@ -622,13 +622,13 @@ Extends `StructuralDomain`. Slots are named (`PropertySlot`). Constructed from p
 
 - [ ] **Step 7: Run tests — verify they pass**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~StructuralDomainTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~StructuralDomainTests"`
 Expected: PASS.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/Spire.PatternAnalysis/Domains/StructuralDomain.cs src/Spire.PatternAnalysis/Domains/TupleDomain.cs src/Spire.PatternAnalysis/Domains/PropertyPatternDomain.cs tests/Spire.PatternAnalysis.Tests/Domains/StructuralDomainTests.cs
+git add src/Houtamelo.Spire.PatternAnalysis/Domains/StructuralDomain.cs src/Houtamelo.Spire.PatternAnalysis/Domains/TupleDomain.cs src/Houtamelo.Spire.PatternAnalysis/Domains/PropertyPatternDomain.cs tests/Houtamelo.Spire.PatternAnalysis.Tests/Domains/StructuralDomainTests.cs
 git commit -m "feat(pattern-analysis): add StructuralDomain, TupleDomain, PropertyPatternDomain with tests"
 ```
 
@@ -637,8 +637,8 @@ git commit -m "feat(pattern-analysis): add StructuralDomain, TupleDomain, Proper
 ## Task 8: TypeHierarchyResolver (TDD)
 
 **Files:**
-- Create: `src/Spire.PatternAnalysis/Resolution/TypeHierarchyResolver.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/Resolution/TypeHierarchyResolverTests.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/Resolution/TypeHierarchyResolver.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Resolution/TypeHierarchyResolverTests.cs`
 
 - [ ] **Step 1: Write TypeHierarchyResolver tests**
 
@@ -658,7 +658,7 @@ Test cases:
 
 - [ ] **Step 2: Run tests — verify they fail**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~TypeHierarchyResolverTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~TypeHierarchyResolverTests"`
 Expected: FAIL.
 
 - [ ] **Step 3: Implement TypeHierarchyResolver**
@@ -689,13 +689,13 @@ Walk `INamespaceSymbol` tree recursively. For each `INamedTypeSymbol`, check `Ba
 
 - [ ] **Step 4: Run tests — verify they pass**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~TypeHierarchyResolverTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~TypeHierarchyResolverTests"`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/Spire.PatternAnalysis/Resolution/ tests/Spire.PatternAnalysis.Tests/Resolution/
+git add src/Houtamelo.Spire.PatternAnalysis/Resolution/ tests/Houtamelo.Spire.PatternAnalysis.Tests/Resolution/
 git commit -m "feat(pattern-analysis): add TypeHierarchyResolver with visibility scoping and tests"
 ```
 
@@ -704,8 +704,8 @@ git commit -m "feat(pattern-analysis): add TypeHierarchyResolver with visibility
 ## Task 9: EnforceExhaustiveDomain (TDD)
 
 **Files:**
-- Create: `src/Spire.PatternAnalysis/Domains/EnforceExhaustiveDomain.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/Domains/EnforceExhaustiveDomainTests.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/Domains/EnforceExhaustiveDomain.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Domains/EnforceExhaustiveDomainTests.cs`
 
 - [ ] **Step 1: Write EnforceExhaustiveDomain tests**
 
@@ -718,7 +718,7 @@ Test cases (using compilations with sealed class hierarchies):
 
 - [ ] **Step 2: Run tests — verify they fail**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~EnforceExhaustiveDomainTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~EnforceExhaustiveDomainTests"`
 Expected: FAIL.
 
 - [ ] **Step 3: Implement EnforceExhaustiveDomain**
@@ -731,13 +731,13 @@ Uses `TypeHierarchyResolver` to discover concrete types from the base type + com
 
 - [ ] **Step 4: Run tests — verify they pass**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~EnforceExhaustiveDomainTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~EnforceExhaustiveDomainTests"`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/Spire.PatternAnalysis/Domains/EnforceExhaustiveDomain.cs tests/Spire.PatternAnalysis.Tests/Domains/EnforceExhaustiveDomainTests.cs
+git add src/Houtamelo.Spire.PatternAnalysis/Domains/EnforceExhaustiveDomain.cs tests/Houtamelo.Spire.PatternAnalysis.Tests/Domains/EnforceExhaustiveDomainTests.cs
 git commit -m "feat(pattern-analysis): add EnforceExhaustiveDomain with tests"
 ```
 
@@ -746,9 +746,9 @@ git commit -m "feat(pattern-analysis): add EnforceExhaustiveDomain with tests"
 ## Task 10: DU Domains (TDD)
 
 **Files:**
-- Create: `src/Spire.PatternAnalysis/Domains/DiscriminatedUnion/DUTupleDomain.cs`
-- Create: `src/Spire.PatternAnalysis/Domains/DiscriminatedUnion/DUPropertyPatternDomain.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/Domains/DiscriminatedUnion/DUDomainTests.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/Domains/DiscriminatedUnion/DUTupleDomain.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/Domains/DiscriminatedUnion/DUPropertyPatternDomain.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Domains/DiscriminatedUnion/DUDomainTests.cs`
 
 These domains extend TupleDomain and PropertyPatternDomain with Spire-specific union semantics.
 
@@ -761,7 +761,7 @@ Test cases (using compilations with Spire-generated union types):
 - `Split()` returns partitions per Kind member
 - Per-variant field coverage: Circle covered in 2 arms with different radius ranges
 
-Note: Tests need `Spire.Core` reference to define `[DiscriminatedUnion]` types. The test project already references Spire.Core.
+Note: Tests need `Houtamelo.Spire.Core` reference to define `[DiscriminatedUnion]` types. The test project already references Houtamelo.Spire.Core.
 
 - [ ] **Step 2: Write DUPropertyPatternDomain tests**
 
@@ -772,7 +772,7 @@ Test cases:
 
 - [ ] **Step 3: Run tests — verify they fail**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~DUDomainTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~DUDomainTests"`
 Expected: FAIL.
 
 - [ ] **Step 4: Implement DUTupleDomain**
@@ -793,13 +793,13 @@ Extends `PropertyPatternDomain`. Knows:
 
 - [ ] **Step 6: Run tests — verify they pass**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~DUDomainTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~DUDomainTests"`
 Expected: PASS.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/Spire.PatternAnalysis/Domains/DiscriminatedUnion/ tests/Spire.PatternAnalysis.Tests/Domains/DiscriminatedUnion/
+git add src/Houtamelo.Spire.PatternAnalysis/Domains/DiscriminatedUnion/ tests/Houtamelo.Spire.PatternAnalysis.Tests/Domains/DiscriminatedUnion/
 git commit -m "feat(pattern-analysis): add DUTupleDomain and DUPropertyPatternDomain with tests"
 ```
 
@@ -808,8 +808,8 @@ git commit -m "feat(pattern-analysis): add DUTupleDomain and DUPropertyPatternDo
 ## Task 11: DomainResolver (TDD)
 
 **Files:**
-- Create: `src/Spire.PatternAnalysis/DomainResolver.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/DomainResolverTests.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/DomainResolver.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/DomainResolverTests.cs`
 
 - [ ] **Step 1: Write DomainResolver tests**
 
@@ -829,7 +829,7 @@ Test cases (compilations with various types):
 
 - [ ] **Step 2: Run tests — verify they fail**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~DomainResolverTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~DomainResolverTests"`
 Expected: FAIL.
 
 - [ ] **Step 3: Implement DomainResolver**
@@ -866,13 +866,13 @@ Resolution order from spec:
 
 - [ ] **Step 4: Run tests — verify they pass**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~DomainResolverTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~DomainResolverTests"`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/Spire.PatternAnalysis/DomainResolver.cs tests/Spire.PatternAnalysis.Tests/DomainResolverTests.cs
+git add src/Houtamelo.Spire.PatternAnalysis/DomainResolver.cs tests/Houtamelo.Spire.PatternAnalysis.Tests/DomainResolverTests.cs
 git commit -m "feat(pattern-analysis): add DomainResolver — maps ITypeSymbol to IValueDomain"
 ```
 
@@ -881,8 +881,8 @@ git commit -m "feat(pattern-analysis): add DomainResolver — maps ITypeSymbol t
 ## Task 12: PatternMatrix (TDD)
 
 **Files:**
-- Create: `src/Spire.PatternAnalysis/Algorithm/PatternMatrix.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/Algorithm/PatternMatrixTests.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/Algorithm/PatternMatrix.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Algorithm/PatternMatrixTests.cs`
 
 The matrix is the core data structure the algorithm operates on.
 
@@ -903,7 +903,7 @@ Matrix cells are one of: `Wildcard`, `Constraint(IValueDomain)`. The constraint 
 
 - [ ] **Step 2: Run tests — verify they fail**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~PatternMatrixTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~PatternMatrixTests"`
 Expected: FAIL.
 
 - [ ] **Step 3: Implement PatternMatrix**
@@ -950,13 +950,13 @@ internal readonly struct Column(SlotIdentifier slot, IValueDomain domain) { ... 
 
 - [ ] **Step 4: Run tests — verify they pass**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~PatternMatrixTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~PatternMatrixTests"`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/Spire.PatternAnalysis/Algorithm/PatternMatrix.cs tests/Spire.PatternAnalysis.Tests/Algorithm/PatternMatrixTests.cs
+git add src/Houtamelo.Spire.PatternAnalysis/Algorithm/PatternMatrix.cs tests/Houtamelo.Spire.PatternAnalysis.Tests/Algorithm/PatternMatrixTests.cs
 git commit -m "feat(pattern-analysis): add PatternMatrix — rows, columns, cells, specialization"
 ```
 
@@ -965,8 +965,8 @@ git commit -m "feat(pattern-analysis): add PatternMatrix — rows, columns, cell
 ## Task 13: DecisionTreeBuilder (TDD)
 
 **Files:**
-- Create: `src/Spire.PatternAnalysis/Algorithm/DecisionTreeBuilder.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/Algorithm/DecisionTreeBuilderTests.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/Algorithm/DecisionTreeBuilder.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Algorithm/DecisionTreeBuilderTests.cs`
 
 The core Maranget algorithm.
 
@@ -989,7 +989,7 @@ Test cases using pre-built `PatternMatrix` instances:
 
 - [ ] **Step 2: Run tests — verify they fail**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~DecisionTreeBuilderTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~DecisionTreeBuilderTests"`
 Expected: FAIL.
 
 - [ ] **Step 3: Implement DecisionTreeBuilder**
@@ -1047,13 +1047,13 @@ Column selection heuristic: prefer columns with the smallest `Split()` count (fe
 
 - [ ] **Step 4: Run tests — verify they pass**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~DecisionTreeBuilderTests"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~DecisionTreeBuilderTests"`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/Spire.PatternAnalysis/Algorithm/DecisionTreeBuilder.cs tests/Spire.PatternAnalysis.Tests/Algorithm/DecisionTreeBuilderTests.cs
+git add src/Houtamelo.Spire.PatternAnalysis/Algorithm/DecisionTreeBuilder.cs tests/Houtamelo.Spire.PatternAnalysis.Tests/Algorithm/DecisionTreeBuilderTests.cs
 git commit -m "feat(pattern-analysis): add DecisionTreeBuilder — Maranget algorithm core"
 ```
 
@@ -1062,21 +1062,21 @@ git commit -m "feat(pattern-analysis): add DecisionTreeBuilder — Maranget algo
 ## Task 14: ExhaustivenessChecker (entry point)
 
 **Files:**
-- Create: `src/Spire.PatternAnalysis/ExhaustivenessChecker.cs`
+- Create: `src/Houtamelo.Spire.PatternAnalysis/ExhaustivenessChecker.cs`
 
 Wires everything together: DomainResolver → PatternMatrix.Build → DecisionTreeBuilder.Check.
 
 - [ ] **Step 1: Implement ExhaustivenessChecker**
 
 ```csharp
-// src/Spire.PatternAnalysis/ExhaustivenessChecker.cs
+// src/Houtamelo.Spire.PatternAnalysis/ExhaustivenessChecker.cs
 using System.Collections.Concurrent;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 using Houtamelo.Spire.PatternAnalysis.Algorithm;
 using Houtamelo.Spire.PatternAnalysis.Resolution;
 
-namespace Spire.PatternAnalysis;
+namespace Houtamelo.Spire.PatternAnalysis;
 
 internal static class ExhaustivenessChecker
 {
@@ -1106,21 +1106,21 @@ internal static class ExhaustivenessChecker
 }
 ```
 
-Note: In production use (from Spire.Analyzers), the `TypeHierarchyResolver` should be created once per compilation in `CompilationStartAction` and reused. The entry point may need an overload accepting a pre-created resolver. Defer this optimization to the integration task (Task 17).
+Note: In production use (from Houtamelo.Spire.Analyzers), the `TypeHierarchyResolver` should be created once per compilation in `CompilationStartAction` and reused. The entry point may need an overload accepting a pre-created resolver. Defer this optimization to the integration task (Task 17).
 
 - [ ] **Step 2: Write a minimal end-to-end smoke test**
 
-Create `tests/Spire.PatternAnalysis.Tests/ExhaustivenessCheckerSmokeTest.cs`. Compile a trivial bool switch (`true => 1, false => 2`), extract the `ISwitchExpressionOperation`, call `ExhaustivenessChecker.Check()`, assert `IsExhaustive == true`. This validates the full pipeline wiring.
+Create `tests/Houtamelo.Spire.PatternAnalysis.Tests/ExhaustivenessCheckerSmokeTest.cs`. Compile a trivial bool switch (`true => 1, false => 2`), extract the `ISwitchExpressionOperation`, call `ExhaustivenessChecker.Check()`, assert `IsExhaustive == true`. This validates the full pipeline wiring.
 
 - [ ] **Step 3: Run smoke test**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~SmokeTest"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~SmokeTest"`
 Expected: PASS.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add src/Spire.PatternAnalysis/ExhaustivenessChecker.cs tests/Spire.PatternAnalysis.Tests/ExhaustivenessCheckerSmokeTest.cs
+git add src/Houtamelo.Spire.PatternAnalysis/ExhaustivenessChecker.cs tests/Houtamelo.Spire.PatternAnalysis.Tests/ExhaustivenessCheckerSmokeTest.cs
 git commit -m "feat(pattern-analysis): add ExhaustivenessChecker entry point"
 ```
 
@@ -1129,7 +1129,7 @@ git commit -m "feat(pattern-analysis): add ExhaustivenessChecker entry point"
 ## Task 15: Integration Test Infrastructure
 
 **Files:**
-- Create: `tests/Spire.PatternAnalysis.Tests/ExhaustivenessTestBase.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/ExhaustivenessTestBase.cs`
 
 Adapts the `AnalyzerTestBase` pattern for exhaustiveness testing. File-based discovery, but instead of checking diagnostics, it calls `ExhaustivenessChecker.Check()` and asserts the result.
 
@@ -1160,7 +1160,7 @@ Test discovery attribute scans `Integration/{Category}/cases/` for `.cs` files w
 
 Compilation setup:
 - Parse `_shared.cs` + case file as separate syntax trees
-- Create `CSharpCompilation` with `Net80` references + `Spire.Core` assembly reference
+- Create `CSharpCompilation` with `Net80` references + `Houtamelo.Spire.Core` assembly reference
 - Extract `ISwitchExpressionOperation` or `ISwitchOperation` from the case file's semantic model
 - Run `ExhaustivenessChecker.Check(compilation, switchOp)`
 - Assert result matches header
@@ -1175,7 +1175,7 @@ Expected: Success. (No test cases exist yet, so no tests run.)
 - [ ] **Step 3: Commit**
 
 ```bash
-git add tests/Spire.PatternAnalysis.Tests/ExhaustivenessTestBase.cs
+git add tests/Houtamelo.Spire.PatternAnalysis.Tests/ExhaustivenessTestBase.cs
 git commit -m "feat(pattern-analysis): add ExhaustivenessTestBase — file-based integration test infrastructure"
 ```
 
@@ -1184,15 +1184,15 @@ git commit -m "feat(pattern-analysis): add ExhaustivenessTestBase — file-based
 ## Task 16: Integration Tests — Bool + Enum + NumericRange
 
 **Files:**
-- Create: `tests/Spire.PatternAnalysis.Tests/Integration/Bool/BoolTests.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/Integration/Bool/cases/_shared.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/Integration/Bool/cases/*.cs` (4-6 cases)
-- Create: `tests/Spire.PatternAnalysis.Tests/Integration/Enum/EnumTests.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/Integration/Enum/cases/_shared.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/Integration/Enum/cases/*.cs` (4-6 cases)
-- Create: `tests/Spire.PatternAnalysis.Tests/Integration/NumericRange/NumericRangeTests.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/Integration/NumericRange/cases/_shared.cs`
-- Create: `tests/Spire.PatternAnalysis.Tests/Integration/NumericRange/cases/*.cs` (4-6 cases)
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/Bool/BoolTests.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/Bool/cases/_shared.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/Bool/cases/*.cs` (4-6 cases)
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/Enum/EnumTests.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/Enum/cases/_shared.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/Enum/cases/*.cs` (4-6 cases)
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/NumericRange/NumericRangeTests.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/NumericRange/cases/_shared.cs`
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/NumericRange/cases/*.cs` (4-6 cases)
 
 - [ ] **Step 1: Create Bool test runner and shared preamble**
 
@@ -1287,13 +1287,13 @@ Cases: `IntFullPartition.cs` (`> 0` + `<= 0`, exhaustive), `IntMissingZero.cs` (
 
 - [ ] **Step 5: Run all integration tests**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~Integration"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~Integration"`
 Expected: ALL PASS.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add tests/Spire.PatternAnalysis.Tests/Integration/Bool/ tests/Spire.PatternAnalysis.Tests/Integration/Enum/ tests/Spire.PatternAnalysis.Tests/Integration/NumericRange/
+git add tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/Bool/ tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/Enum/ tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/NumericRange/
 git commit -m "test(pattern-analysis): add Bool, Enum, NumericRange integration tests"
 ```
 
@@ -1302,10 +1302,10 @@ git commit -m "test(pattern-analysis): add Bool, Enum, NumericRange integration 
 ## Task 17: Integration Tests — Null + Tuple + PropertyPattern + NestedRecursive
 
 **Files:**
-- Create: `tests/Spire.PatternAnalysis.Tests/Integration/Null/` (runner, shared, cases)
-- Create: `tests/Spire.PatternAnalysis.Tests/Integration/Tuple/` (runner, shared, cases)
-- Create: `tests/Spire.PatternAnalysis.Tests/Integration/PropertyPattern/` (runner, shared, cases)
-- Create: `tests/Spire.PatternAnalysis.Tests/Integration/NestedRecursive/` (runner, shared, cases)
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/Null/` (runner, shared, cases)
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/Tuple/` (runner, shared, cases)
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/PropertyPattern/` (runner, shared, cases)
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/NestedRecursive/` (runner, shared, cases)
 
 - [ ] **Step 1: Create Null category**
 
@@ -1358,13 +1358,13 @@ public class ShapeConditionMissing
 
 - [ ] **Step 5: Run all integration tests**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~Integration"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~Integration"`
 Expected: ALL PASS.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add tests/Spire.PatternAnalysis.Tests/Integration/Null/ tests/Spire.PatternAnalysis.Tests/Integration/Tuple/ tests/Spire.PatternAnalysis.Tests/Integration/PropertyPattern/ tests/Spire.PatternAnalysis.Tests/Integration/NestedRecursive/
+git add tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/Null/ tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/Tuple/ tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/PropertyPattern/ tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/NestedRecursive/
 git commit -m "test(pattern-analysis): add Null, Tuple, PropertyPattern, NestedRecursive integration tests"
 ```
 
@@ -1373,9 +1373,9 @@ git commit -m "test(pattern-analysis): add Null, Tuple, PropertyPattern, NestedR
 ## Task 18: Integration Tests — Union + TypeHierarchy + MixedDomain
 
 **Files:**
-- Create: `tests/Spire.PatternAnalysis.Tests/Integration/Union/` (runner, shared, cases)
-- Create: `tests/Spire.PatternAnalysis.Tests/Integration/TypeHierarchy/` (runner, shared, cases)
-- Create: `tests/Spire.PatternAnalysis.Tests/Integration/MixedDomain/` (runner, shared, cases)
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/Union/` (runner, shared, cases)
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/TypeHierarchy/` (runner, shared, cases)
+- Create: `tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/MixedDomain/` (runner, shared, cases)
 
 - [ ] **Step 1: Create Union category**
 
@@ -1399,18 +1399,18 @@ Cases: `EnumBoolNullable.cs` (cross-product of enum + bool? + relational), `Unio
 
 - [ ] **Step 4: Run all integration tests**
 
-Run: `dotnet test --project tests/Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~Integration"`
+Run: `dotnet test --project tests/Houtamelo.Spire.PatternAnalysis.Tests/ --filter "FullyQualifiedName~Integration"`
 Expected: ALL PASS.
 
 - [ ] **Step 5: Run full test suite**
 
 Run: `dotnet test`
-Expected: ALL PASS (both PatternAnalysis tests and existing Spire.Analyzers tests).
+Expected: ALL PASS (both PatternAnalysis tests and existing Houtamelo.Spire.Analyzers tests).
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add tests/Spire.PatternAnalysis.Tests/Integration/Union/ tests/Spire.PatternAnalysis.Tests/Integration/TypeHierarchy/ tests/Spire.PatternAnalysis.Tests/Integration/MixedDomain/
+git add tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/Union/ tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/TypeHierarchy/ tests/Houtamelo.Spire.PatternAnalysis.Tests/Integration/MixedDomain/
 git commit -m "test(pattern-analysis): add Union, TypeHierarchy, MixedDomain integration tests"
 ```
 
