@@ -4,7 +4,7 @@ using System.ComponentModel;
 
 namespace TestNs
 {
-    [global::Houtamelo.Spire.Core.EnforceInitializationAttribute]
+    [global::Houtamelo.Spire.Core.EnforceInitialization]
     readonly partial struct Immutable : global::Houtamelo.Spire.Core.IDiscriminatedUnion<Immutable.Kind>
     {
         public enum Kind : byte

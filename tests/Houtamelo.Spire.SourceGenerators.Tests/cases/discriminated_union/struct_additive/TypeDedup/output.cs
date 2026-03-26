@@ -2,7 +2,7 @@
 #nullable enable
 using System.ComponentModel;
 
-[global::Houtamelo.Spire.Core.EnforceInitializationAttribute]
+[global::Houtamelo.Spire.Core.EnforceInitialization]
 partial struct Shape : global::Houtamelo.Spire.Core.IDiscriminatedUnion<Shape.Kind>
 {
     public enum Kind : byte

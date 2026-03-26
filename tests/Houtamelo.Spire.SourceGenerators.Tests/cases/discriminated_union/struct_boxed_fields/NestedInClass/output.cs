@@ -6,7 +6,7 @@ namespace TestNs
 {
     public static partial class Unions
     {
-        [global::Houtamelo.Spire.Core.EnforceInitializationAttribute]
+        [global::Houtamelo.Spire.Core.EnforceInitialization]
         internal partial struct Token : global::Houtamelo.Spire.Core.IDiscriminatedUnion<Token.Kind>
         {
             public enum Kind : byte

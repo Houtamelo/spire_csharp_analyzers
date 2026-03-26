@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-[global::Houtamelo.Spire.Core.EnforceInitializationAttribute]
+[global::Houtamelo.Spire.Core.EnforceInitialization]
 partial struct Shape : global::Houtamelo.Spire.Core.IDiscriminatedUnion<Shape.Kind>
 {
     public enum Kind : byte

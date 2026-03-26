@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace TestNs
 {
-    [global::Houtamelo.Spire.Core.EnforceInitializationAttribute]
+    [global::Houtamelo.Spire.Core.EnforceInitialization]
     partial struct Event : global::Houtamelo.Spire.Core.IDiscriminatedUnion<Event.Kind>
     {
         public enum Kind : byte

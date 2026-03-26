@@ -3,7 +3,7 @@ global using System.Buffers;
 global using System.Collections.Generic;
 global using System.Collections.Immutable;
 global using System.Threading.Tasks;
-global using Houtamelo.Spire;
+global using Houtamelo.Spire.Core;
 
 [EnforceInitialization]
 public struct EnforceInitializationStruct

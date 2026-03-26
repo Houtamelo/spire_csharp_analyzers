@@ -1,7 +1,7 @@
 global using System;
 global using System.Collections.Generic;
 global using System.Threading.Tasks;
-global using Houtamelo.Spire;
+global using Houtamelo.Spire.Core;
 
 [EnforceInitialization]
 public struct EnforceInitializationStruct

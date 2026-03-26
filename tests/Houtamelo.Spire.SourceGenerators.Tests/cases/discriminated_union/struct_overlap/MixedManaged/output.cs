@@ -6,7 +6,7 @@ using System.ComponentModel;
 
 namespace TestNs
 {
-    [global::Houtamelo.Spire.Core.EnforceInitializationAttribute]
+    [global::Houtamelo.Spire.Core.EnforceInitialization]
     [StructLayout(LayoutKind.Explicit)]
     partial struct Event : global::Houtamelo.Spire.Core.IDiscriminatedUnion<Event.Kind>
     {
