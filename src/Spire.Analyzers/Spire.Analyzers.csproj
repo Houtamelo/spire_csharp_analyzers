@@ -7,7 +7,7 @@
     <!-- NuGet package metadata -->
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <DevelopmentDependency>true</DevelopmentDependency>
-    <PackageId>Spire.Analyzers</PackageId>
+    <PackageId>Houtamelo.Spire.Analyzers</PackageId>
     <Version>2.0.0</Version>
     <Authors>houtamelo</Authors>
     <Copyright>Copyright (c) 2026 houtamelo</Copyright>
