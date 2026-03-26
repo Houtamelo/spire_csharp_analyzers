@@ -38,7 +38,6 @@ jobs:
         run: |
           dotnet pack src/Spire.Core/ -c Release --no-build -o ./nupkgs
           dotnet pack src/Spire.Analyzers/ -c Release --no-build -o ./nupkgs
-          dotnet pack src/Spire.SourceGenerators/ -c Release --no-build -o ./nupkgs
           dotnet pack src/Spire.CodeFixes/ -c Release --no-build -o ./nupkgs
           dotnet pack src/Spire/ -c Release --no-build -o ./nupkgs
 

@@ -4,7 +4,6 @@ set -euo pipefail
 PROJECTS=(
     "src/Spire.Core/Spire.Core.csproj"
     "src/Spire.Analyzers/Spire.Analyzers.csproj"
-    "src/Spire.SourceGenerators/Spire.SourceGenerators.csproj"
     "src/Spire.CodeFixes/Spire.CodeFixes.csproj"
     "src/Spire/Spire.csproj"
 )
