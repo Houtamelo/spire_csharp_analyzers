@@ -35,9 +35,9 @@
 
   <!-- Vendor analyzer and codefix DLLs into the package -->
   <ItemGroup>
-    <None Include="$(OutputPath)\Spire.Analyzers.dll"
+    <None Include="$(OutputPath)\Houtamelo.Spire.Analyzers.dll"
           PackagePath="analyzers/dotnet/cs" Pack="true" Visible="false" />
-    <None Include="$(OutputPath)\Spire.CodeFixes.dll"
+    <None Include="$(OutputPath)\Houtamelo.Spire.CodeFixes.dll"
           PackagePath="analyzers/dotnet/cs" Pack="true" Visible="false" />
   </ItemGroup>
 
