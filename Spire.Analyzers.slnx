@@ -4,6 +4,7 @@
     <Project Path="src\Houtamelo.Spire.CodeFixes\Houtamelo.Spire.CodeFixes.csproj" />
     <Project Path="src\Houtamelo.Spire.Core\Houtamelo.Spire.Core.csproj" />
     <Project Path="src\Houtamelo.Spire\Houtamelo.Spire.csproj" />
+    <Project Path="src\Houtamelo.Spire.PatternAnalysis\Houtamelo.Spire.PatternAnalysis.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <File Path="tests\Spire.BehavioralTests\bin\Debug\net10.0\.msCoverageSourceRootsMapping_Spire.BehavioralTests" />
@@ -135,6 +136,7 @@
     <File Path="tests\Spire.BehavioralTests\Types\UnsafeOverlapUnions.cs" />
     <Project Path="tests\Houtamelo.Spire.Analyzers.Tests\Houtamelo.Spire.Analyzers.Tests.csproj" />
     <Project Path="tests\Houtamelo.Spire.SourceGenerators.Tests\Houtamelo.Spire.SourceGenerators.Tests.csproj" />
+    <Project Path="tests\Houtamelo.Spire.PatternAnalysis.Tests\Houtamelo.Spire.PatternAnalysis.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/DevTools/DevTools.csproj" />
