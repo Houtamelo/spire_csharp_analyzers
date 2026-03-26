@@ -129,7 +129,6 @@ Project layout, build configuration, conventions.
 - `src/Spire/Spire.csproj`
 - `src/Spire.Core/Spire.Core.csproj`
 - `src/Spire.Analyzers/Spire.Analyzers.csproj`
-- `src/Spire.Analyzers/SourceGenerators/Spire.SourceGenerators.csproj`
 - `src/Spire.CodeFixes/Spire.CodeFixes.csproj`
 - `tests/Spire.Analyzers.Tests/Spire.Analyzers.Tests.csproj`
 - `tests/Spire.SourceGenerators.Tests/Spire.SourceGenerators.Tests.csproj`
