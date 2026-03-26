@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>14</LangVersion>
+    <IsTestProject>true</IsTestProject>
+    <!-- Microsoft.CodeAnalysis.CSharp.Analyzer.Testing 1.1.3 pulls old Roslyn transitive deps -->
+    <!-- AD0001: transitive Microsoft.CodeAnalysis.Analyzers crashes on .NET 10 -->
+    <!-- xUnit1003: suppressed during scaffolding — Theory methods get InlineData from test-case-writer -->
+    <NoWarn>$(NoWarn);NU1701;AD0001;xUnit1003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="**/cases/**" />
+    <None Include="**/cases/**" Exclude="bin/**;obj/**" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Remove="Experiment.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Houtamelo.Spire.Analyzers\Houtamelo.Spire.Analyzers.csproj" />
+    <ProjectReference Include="..\..\src\Houtamelo.Spire.Core\Houtamelo.Spire.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing" Version="1.1.3" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+  </ItemGroup>
+</Project>
