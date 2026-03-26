@@ -5,7 +5,7 @@
 
     <!-- NuGet package metadata -->
     <PackageId>Spire.Core</PackageId>
-    <Version>1.0.0</Version>
+    <Version>2.0.0</Version>
     <Authors>houtamelo</Authors>
     <Copyright>Copyright (c) 2026 houtamelo</Copyright>
     <Description>Core types, attributes, and utilities for the Spire analyzer suite.</Description>
