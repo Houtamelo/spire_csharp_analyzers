@@ -2,10 +2,10 @@
 set -euo pipefail
 
 PROJECTS=(
-    "src/Spire.Core/Spire.Core.csproj"
-    "src/Spire.Analyzers/Spire.Analyzers.csproj"
-    "src/Spire.CodeFixes/Spire.CodeFixes.csproj"
-    "src/Spire/Spire.csproj"
+    "src/Houtamelo.Spire.Core/Houtamelo.Spire.Core.csproj"
+    "src/Houtamelo.Spire.Analyzers/Houtamelo.Spire.Analyzers.csproj"
+    "src/Houtamelo.Spire.CodeFixes/Houtamelo.Spire.CodeFixes.csproj"
+    "src/Houtamelo.Spire/Houtamelo.Spire.csproj"
 )
 
 if [ $# -lt 1 ]; then

@@ -36,10 +36,10 @@ jobs:
 
       - name: Pack all projects
         run: |
-          dotnet pack src/Spire.Core/ -c Release --no-build -o ./nupkgs
-          dotnet pack src/Spire.Analyzers/ -c Release --no-build -o ./nupkgs
-          dotnet pack src/Spire.CodeFixes/ -c Release --no-build -o ./nupkgs
-          dotnet pack src/Spire/ -c Release --no-build -o ./nupkgs
+          dotnet pack src/Houtamelo.Spire.Core/ -c Release --no-build -o ./nupkgs
+          dotnet pack src/Houtamelo.Spire.Analyzers/ -c Release --no-build -o ./nupkgs
+          dotnet pack src/Houtamelo.Spire.CodeFixes/ -c Release --no-build -o ./nupkgs
+          dotnet pack src/Houtamelo.Spire/ -c Release --no-build -o ./nupkgs
 
       - name: Push to NuGet
         run: >
