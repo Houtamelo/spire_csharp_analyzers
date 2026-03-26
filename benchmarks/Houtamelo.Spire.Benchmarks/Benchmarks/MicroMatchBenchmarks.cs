@@ -1,6 +1,6 @@
 using BenchmarkDotNet.Attributes;
 
-namespace Spire.Benchmarks;
+namespace Houtamelo.Spire.Benchmarks.Benchmarks;
 
 /// Single match operation per strategy. DisassemblyDiagnoser shows JIT codegen.
 [Config(typeof(SpireDisasmConfig))]

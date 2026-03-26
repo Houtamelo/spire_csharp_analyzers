@@ -27,11 +27,11 @@ Example: `/new-emitter verify Additive`
 ## Mode: `new` — Scaffold
 
 4. Create emitter stub: `src/Spire.Analyzers/SourceGenerators/Emit/{EmitterName}Emitter.cs`
-   - Include `using Spire.SourceGenerators.Model;` for the `UnionDeclaration` type
+   - Include `using Houtamelo.Spire.SourceGenerators.Model;` for the `UnionDeclaration` type
    - Minimal class with `internal static class {EmitterName}Emitter` and a `public static string Emit(UnionDeclaration union)` method returning `string.Empty`
 5. Create snapshot test category folder: `tests/Spire.SourceGenerators.Tests/cases/discriminated_union/{strategy_snake_case}/`
 6. Create behavioral test stubs (empty files with correct namespace/class):
-   - `tests/Spire.BehavioralTests/Types/{EmitterName}Unions.cs` — placeholder with `using Spire;`
+   - `tests/Spire.BehavioralTests/Types/{EmitterName}Unions.cs` — placeholder with `using Houtamelo.Spire;`
    - `tests/Spire.BehavioralTests/Tests/{EmitterName}Tests.cs` — placeholder test class with `using Xunit;`
 7. Run `dotnet build` — must succeed
 8. Report all created files

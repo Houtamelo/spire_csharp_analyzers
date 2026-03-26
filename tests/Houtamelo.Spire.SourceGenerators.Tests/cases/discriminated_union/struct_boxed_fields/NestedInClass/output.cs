@@ -6,8 +6,8 @@ namespace TestNs
 {
     public static partial class Unions
     {
-        [global::Spire.EnforceInitialization]
-        internal partial struct Token : global::Spire.IDiscriminatedUnion<Token.Kind>
+        [global::Houtamelo.Spire.Core.EnforceInitializationAttribute]
+        internal partial struct Token : global::Houtamelo.Spire.Core.IDiscriminatedUnion<Token.Kind>
         {
             public enum Kind : byte
             {

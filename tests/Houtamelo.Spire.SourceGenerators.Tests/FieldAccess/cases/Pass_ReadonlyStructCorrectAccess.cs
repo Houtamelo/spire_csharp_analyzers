@@ -1,6 +1,6 @@
 //@ should_pass
 // readonly partial struct — correct field accessed inside matching switch arm
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

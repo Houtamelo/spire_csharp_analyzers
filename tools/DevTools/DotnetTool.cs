@@ -11,7 +11,7 @@ public static class DotnetTool
     [McpServerTool(Name = "dotnet_build")]
     [Description("Run 'dotnet build' on a project or solution. Returns stdout and stderr. Use to verify compilation after writing code.")]
     public static string DotnetBuild(
-        [Description("Project or solution path relative to repo root (e.g. 'src/Spire.Analyzers/Spire.Analyzers.csproj'). Omit to build entire solution.")] string? project = null)
+        [Description("Project or solution path relative to repo root (e.g. 'src/Houtamelo.Spire.Analyzers/Houtamelo.Spire.Analyzers.csproj'). Omit to build entire solution.")] string? project = null)
     {
         var args = "build --verbosity quiet";
         if (!string.IsNullOrWhiteSpace(project))
@@ -22,7 +22,7 @@ public static class DotnetTool
     [McpServerTool(Name = "dotnet_test")]
     [Description("Run 'dotnet test' on a project or solution. Returns stdout and stderr. Use to verify tests pass after implementation.")]
     public static string DotnetTest(
-        [Description("Project path relative to repo root (e.g. 'tests/Spire.Analyzers.Tests/'). Omit to test entire solution.")] string? project = null,
+        [Description("Project path relative to repo root (e.g. 'tests/Houtamelo.Spire.Analyzers.Tests/'). Omit to test entire solution.")] string? project = null,
         [Description("Test filter expression (e.g. 'FullyQualifiedName~SPIRE001'). Omit to run all tests.")] string? filter = null)
     {
         var args = "test --verbosity quiet";

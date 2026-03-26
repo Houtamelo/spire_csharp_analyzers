@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 using Xunit.Sdk;
 
-namespace Spire.SourceGenerators.Tests;
+namespace Houtamelo.Spire.SourceGenerators.Tests;
 
 /// <summary>
 /// Abstract base class for generator diagnostic tests. Concrete test classes only need

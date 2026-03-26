@@ -1,6 +1,6 @@
 //@ should_fail
 // SPIRE_DU008: ref struct cannot use JSON generation
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion(Json = JsonLibrary.None | JsonLibrary.SystemTextJson)]

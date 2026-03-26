@@ -1,6 +1,6 @@
 //@ should_pass
 // readonly struct Result all variants covered — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

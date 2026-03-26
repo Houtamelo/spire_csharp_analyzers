@@ -1,4 +1,4 @@
-namespace Spire.SourceGenerators.Tests.Diagnostic;
+namespace Houtamelo.Spire.SourceGenerators.Tests.Diagnostic;
 
 public class DiagnosticTests : GeneratorDiagnosticTestBase
 {

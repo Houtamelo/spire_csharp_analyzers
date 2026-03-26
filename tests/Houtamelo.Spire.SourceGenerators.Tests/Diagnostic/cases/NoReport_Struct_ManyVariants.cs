@@ -1,6 +1,6 @@
 //@ should_pass
 // No diagnostics: struct with 5 variant methods is valid
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

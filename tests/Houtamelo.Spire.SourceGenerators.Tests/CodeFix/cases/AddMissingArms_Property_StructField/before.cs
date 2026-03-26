@@ -1,4 +1,4 @@
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     struct Point { public int X; public int Y; }

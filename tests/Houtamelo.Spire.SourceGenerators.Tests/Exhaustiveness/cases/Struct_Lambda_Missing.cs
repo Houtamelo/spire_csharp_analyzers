@@ -1,6 +1,6 @@
 //@ should_fail
 // Switch inside Func<LambdaShape, int> lambda, missing LambdaSquare variant — SPIRE009
-using Spire;
+using Houtamelo.Spire;
 using System;
 namespace TestNs
 {

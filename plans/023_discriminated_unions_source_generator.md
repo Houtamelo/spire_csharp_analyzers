@@ -434,7 +434,7 @@ using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Spire.SourceGenerators.Model;
+using Houtamelo.Spire.SourceGenerators.Model;
 
 namespace Spire.SourceGenerators.Parsing;
 
@@ -555,10 +555,10 @@ internal sealed class SourceBuilder
 ```csharp
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Spire.SourceGenerators.Attributes;
-using Spire.SourceGenerators.Emit;
-using Spire.SourceGenerators.Model;
-using Spire.SourceGenerators.Parsing;
+using Houtamelo.Spire.SourceGenerators.Attributes;
+using Houtamelo.Spire.SourceGenerators.Emit;
+using Houtamelo.Spire.SourceGenerators.Model;
+using Houtamelo.Spire.SourceGenerators.Parsing;
 
 namespace Spire.SourceGenerators;
 
@@ -578,7 +578,7 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
         });
 
         var unions = context.SyntaxProvider.ForAttributeWithMetadataName(
-            "Spire.DiscriminatedUnionAttribute",
+            "Houtamelo.Spire.DiscriminatedUnionAttribute",
             predicate: static (node, _) => node is TypeDeclarationSyntax,
             transform: static (ctx, ct) => UnionParser.Parse(ctx, ct)
         ).Where(static u => u is not null);
@@ -711,7 +711,7 @@ public class AttributeInjectionTests
     public void Attributes_AreInjected_AndCompile()
     {
         var source = """
-            using Spire;
+            using Houtamelo.Spire;
 
             [DiscriminatedUnion]
             partial struct Dummy
@@ -727,14 +727,14 @@ public class AttributeInjectionTests
 
         // Verify the attribute types exist in compilation
         var duAttr = compilation.GetTypeByMetadataName(
-            "Spire.DiscriminatedUnionAttribute");
+            "Houtamelo.Spire.DiscriminatedUnionAttribute");
         Assert.NotNull(duAttr);
 
         var variantAttr = compilation.GetTypeByMetadataName(
-            "Spire.VariantAttribute");
+            "Houtamelo.Spire.VariantAttribute");
         Assert.NotNull(variantAttr);
 
-        var layoutEnum = compilation.GetTypeByMetadataName("Spire.Layout");
+        var layoutEnum = compilation.GetTypeByMetadataName("Houtamelo.Spire.Layout");
         Assert.NotNull(layoutEnum);
     }
 }
@@ -824,7 +824,7 @@ The variant name comes from the nested type's name. Fields come from the primary
 Each test:
 ```csharp
 var source = @"
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs {
     [DiscriminatedUnion]
     partial record Option<T> {

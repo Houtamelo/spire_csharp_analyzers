@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using Spire.SourceGenerators.Model;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 
-namespace Spire.SourceGenerators.Emit;
+namespace Houtamelo.Spire.Analyzers.SourceGenerators.Emit;
 
 internal static class BoxedFieldsEmitter
 {
@@ -31,8 +31,8 @@ internal static class BoxedFieldsEmitter
         var readonlyMod = union.IsReadonly ? "readonly " : "";
         var refMod = union.IsRefStruct ? "ref " : "";
 
-        sb.AppendLine("[global::Houtamelo.Spire.EnforceInitialization]");
-        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType} : global::Houtamelo.Spire.IDiscriminatedUnion<{unionType}.Kind>");
+        sb.AppendLine("[global::Houtamelo.Spire.Core.EnforceInitialization]");
+        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType} : global::Houtamelo.Spire.Core.IDiscriminatedUnion<{unionType}.Kind>");
         sb.OpenBrace();
 
         // Kind enum

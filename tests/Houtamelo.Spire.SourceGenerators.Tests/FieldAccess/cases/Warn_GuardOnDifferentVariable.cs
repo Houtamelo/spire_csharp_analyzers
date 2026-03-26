@@ -1,6 +1,6 @@
 //@ should_fail
 // SPIRE014: kind guard is on a different variable — s.radius is still unguarded
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

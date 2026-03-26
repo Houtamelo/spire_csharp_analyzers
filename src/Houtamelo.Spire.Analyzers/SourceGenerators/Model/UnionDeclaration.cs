@@ -1,6 +1,6 @@
 using System;
 
-namespace Spire.SourceGenerators.Model;
+namespace Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 
 internal enum EmitStrategy { Record, Overlap, BoxedFields, BoxedTuple, Additive, UnsafeOverlap }
 

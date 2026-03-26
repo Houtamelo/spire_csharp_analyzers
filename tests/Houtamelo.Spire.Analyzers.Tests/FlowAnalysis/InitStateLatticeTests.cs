@@ -1,7 +1,7 @@
 using Houtamelo.Spire.Analyzers.Utils.FlowAnalysis;
 using Xunit;
 
-namespace Spire.Analyzers.Tests.FlowAnalysis;
+namespace Houtamelo.Spire.Analyzers.Tests.FlowAnalysis;
 
 public class InitStateLatticeTests
 {

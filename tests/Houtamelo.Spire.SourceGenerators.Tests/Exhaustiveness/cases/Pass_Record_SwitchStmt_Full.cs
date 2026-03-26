@@ -1,7 +1,7 @@
 //@ should_pass
 #nullable enable
 // Record union switch statement all variants covered — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

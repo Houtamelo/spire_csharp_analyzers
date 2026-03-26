@@ -1,6 +1,6 @@
 //@ should_fail
 // SPIRE014: two different variant fields accessed without guard in same method
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

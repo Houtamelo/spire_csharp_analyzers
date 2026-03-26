@@ -1,6 +1,6 @@
 //@ should_pass
 // Wildcard covers missing variants — no diagnostic (refactoring only)
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

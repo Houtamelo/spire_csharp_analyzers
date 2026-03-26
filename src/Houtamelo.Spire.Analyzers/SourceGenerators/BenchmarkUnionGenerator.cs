@@ -1,15 +1,15 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Text;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Attributes;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Emit;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Spire.SourceGenerators.Attributes;
-using Spire.SourceGenerators.Emit;
-using Spire.SourceGenerators.Model;
 
-namespace Spire.SourceGenerators;
+namespace Houtamelo.Spire.Analyzers.SourceGenerators;
 
 /// Generates benchmark type implementations and benchmark classes from a [BenchmarkUnion] declaration.
 /// Emits complete DU implementations for each layout strategy (calls the same emitters as DiscriminatedUnionGenerator).

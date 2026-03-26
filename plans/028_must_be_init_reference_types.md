@@ -337,7 +337,7 @@ if (EnforceInitializationChecks.IsNullableAnnotatedReference(type))
 
 Note: `type` here is `operation.Type as INamedTypeSymbol`. For `default(T?)` where T is a reference type, `operation.Type` will have `NullableAnnotation.Annotated`, so we skip. For `default(T)` where T is non-nullable, it will be `NotAnnotated`, so we flag.
 
-Add `using Spire.Analyzers.Utils;` if not present.
+Add `using Houtamelo.Spire.Analyzers.Utils;` if not present.
 
 - [ ] **Step 10: Run tests — verify all pass**
 

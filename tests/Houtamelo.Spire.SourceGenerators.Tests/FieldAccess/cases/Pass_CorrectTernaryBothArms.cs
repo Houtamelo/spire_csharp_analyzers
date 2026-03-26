@@ -1,6 +1,6 @@
 //@ should_pass
 // Ternary true branch uses the correct guarded variant's field
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

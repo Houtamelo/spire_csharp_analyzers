@@ -1,6 +1,6 @@
 //@ should_fail
 // SPIRE_DU004: layout parameter ignored for record union
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion(Layout.Additive)]

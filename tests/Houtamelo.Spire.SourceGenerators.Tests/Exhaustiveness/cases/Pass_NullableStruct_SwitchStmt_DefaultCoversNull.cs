@@ -1,6 +1,6 @@
 //@ should_pass
 // Switch statement on Shape? with all variants + default covers null — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

@@ -1,6 +1,6 @@
 //@ should_pass
 // Property pattern — inherently guarded
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

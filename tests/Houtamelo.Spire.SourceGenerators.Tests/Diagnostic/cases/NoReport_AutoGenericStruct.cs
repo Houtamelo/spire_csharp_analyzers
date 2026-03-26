@@ -1,6 +1,6 @@
 //@ should_pass
 // No diagnostics: Auto on generic struct silently uses BoxedFields
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

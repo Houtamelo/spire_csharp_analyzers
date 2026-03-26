@@ -74,7 +74,7 @@ None — reuses existing `EnforceInitializationAttribute` from `src/Spire.Analyz
   3. Check if the type has at least one instance field (skip fieldless types — those are SPIRE002's concern)
   4. Check the operation is NOT inside an equality/inequality comparison (`IOperation.Parent` is `IBinaryOperation` with `BinaryOperatorKind.Equals` or `BinaryOperatorKind.NotEquals`)
   5. Report diagnostic at the `default` keyword location
-- **Use `CompilationStartAction`**: Yes — resolve `EnforceInitializationAttribute` via `GetTypeByMetadataName("Spire.Analyzers.EnforceInitializationAttribute")` once per compilation
+- **Use `CompilationStartAction`**: Yes — resolve `EnforceInitializationAttribute` via `GetTypeByMetadataName("Houtamelo.Spire.Analyzers.EnforceInitializationAttribute")` once per compilation
 
 ### Comparison exclusion logic
 

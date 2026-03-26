@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 
-namespace Spire.Analyzers.Utils.FlowAnalysis;
+namespace Houtamelo.Spire.Analyzers.Utils.FlowAnalysis;
 
 public enum ReadOrWrite : byte { Read, Write }
 

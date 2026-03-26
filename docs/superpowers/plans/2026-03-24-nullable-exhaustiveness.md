@@ -364,7 +364,7 @@ Create `NullableStruct_MissingVariantAndNull.cs`:
 ```csharp
 //@ should_fail
 // Shape? switch missing Square variant and null
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]
@@ -389,7 +389,7 @@ Create `NullableStruct_MissingNull.cs`:
 ```csharp
 //@ should_fail
 // Shape? switch covers all variants but not null
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]
@@ -415,7 +415,7 @@ Create `NullableStruct_AllMissing.cs`:
 ```csharp
 //@ should_fail
 // Shape? switch with only a non-null constant — everything missing
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]
@@ -440,7 +440,7 @@ Create `NullableStruct_SwitchStmt_MissingNull.cs`:
 ```csharp
 //@ should_fail
 // Switch statement on Shape? covers all variants but not null and no default
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]
@@ -471,7 +471,7 @@ Create `NullableStruct_NotNullDoesNotCoverNull.cs`:
 ```csharp
 //@ should_fail
 // Shape? with not-null arm covering all variants but null is NOT covered
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]
@@ -499,7 +499,7 @@ Create `Pass_NullableStruct_AllCoveredWithNull.cs`:
 ```csharp
 //@ should_pass
 // Shape? with all variants + explicit null arm — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]
@@ -526,7 +526,7 @@ Create `Pass_NullableStruct_WildcardCoversNull.cs`:
 ```csharp
 //@ should_pass
 // Shape? with all variants + discard covers null — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]
@@ -553,7 +553,7 @@ Create `Pass_NullableStruct_SwitchStmt_DefaultCoversNull.cs`:
 ```csharp
 //@ should_pass
 // Switch statement on Shape? with all variants + default covers null — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]
@@ -586,7 +586,7 @@ Create `Pass_NullableStruct_VarCoversNull.cs`:
 ```csharp
 //@ should_pass
 // Shape? with all variants + var covers null — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]
@@ -770,7 +770,7 @@ Create `NullableRecord_MissingNull.cs`:
 //@ should_fail
 #nullable enable
 // Option<int>? with all variants but missing null
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]
@@ -795,7 +795,7 @@ Create `ObliviousRecord_MissingNull.cs`:
 ```csharp
 //@ should_fail
 // No #nullable — oblivious context, reference type is implicitly nullable
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]
@@ -823,7 +823,7 @@ Create `Pass_NullableRecord_WithNull.cs`:
 //@ should_pass
 #nullable enable
 // Option<int>? with all variants + null arm — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]
@@ -850,7 +850,7 @@ Create `Pass_NonNullableRecord_NoNullNeeded.cs`:
 //@ should_pass
 #nullable enable
 // Option<int> (non-nullable in #nullable enable) — no null arm needed
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]
@@ -875,7 +875,7 @@ Create `Pass_ObliviousRecord_WithNull.cs`:
 ```csharp
 //@ should_pass
 // No #nullable — oblivious context, but null arm present — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]
@@ -938,7 +938,7 @@ Create `Pass_Suppressor_NullableStruct_AllWithNull.cs`:
 ```csharp
 //@ should_pass
 // All struct variants + null covered on Shape? — CS8509 suppressed, no SPIRE009
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

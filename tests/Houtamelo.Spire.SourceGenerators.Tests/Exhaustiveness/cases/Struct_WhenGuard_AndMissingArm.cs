@@ -1,6 +1,6 @@
 //@ should_fail
 // Circle arm has when guard AND WhenSquare variant is missing entirely — SPIRE009
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

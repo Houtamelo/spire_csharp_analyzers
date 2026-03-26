@@ -168,7 +168,7 @@ public override void Initialize(AnalysisContext context)
 
         // Resolve types once
         var requireInitAttr = compilation.GetTypeByMetadataName(
-            "Spire.Analyzers.RequireInitializationAttribute");
+            "Houtamelo.Spire.Analyzers.RequireInitializationAttribute");
 
         if (requireInitAttr is null)
             return; // Attribute not referenced -- nothing to analyze

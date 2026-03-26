@@ -1,6 +1,6 @@
 using System;
 
-namespace Spire.SourceGenerators.Model;
+namespace Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 
 /// Region classification for Overlap layout field placement.
 internal enum FieldRegion { Unmanaged, Reference, Boxed }

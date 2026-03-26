@@ -1,6 +1,6 @@
 //@ should_fail
 // Missing None variant
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

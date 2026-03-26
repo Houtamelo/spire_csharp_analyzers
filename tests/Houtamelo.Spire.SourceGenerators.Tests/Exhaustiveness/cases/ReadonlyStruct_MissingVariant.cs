@@ -1,6 +1,6 @@
 //@ should_fail
 // readonly struct Result missing Err variant — SPIRE009
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

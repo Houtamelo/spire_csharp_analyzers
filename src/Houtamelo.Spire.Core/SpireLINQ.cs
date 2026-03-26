@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Spire;
+namespace Houtamelo.Spire.Core;
 
 public static class SpireLINQ
 {

@@ -1,4 +1,4 @@
-using Spire;
+using Houtamelo.Spire;
 
 // Custom discriminator name
 [DiscriminatedUnion(Layout.Additive, Json = JsonLibrary.SystemTextJson, JsonDiscriminator = "type")]

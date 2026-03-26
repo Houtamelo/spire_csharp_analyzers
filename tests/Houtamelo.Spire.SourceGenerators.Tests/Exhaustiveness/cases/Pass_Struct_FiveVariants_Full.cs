@@ -1,6 +1,6 @@
 //@ should_pass
 // 5-variant struct all 5 covered — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

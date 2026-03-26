@@ -51,7 +51,7 @@ src/Spire.CodeFixes/
     ExpandWildcardCodeFix.cs
 
 src/Spire.SourceGenerators/
-    (add [InternalsVisibleTo("Spire.CodeFixes")])
+    (add [InternalsVisibleTo("Houtamelo.Spire.CodeFixes")])
     Analyzers/ExhaustivenessAnalyzer.cs  -- add Diagnostic.Properties
     Analyzers/TypeSafetyAnalyzer.cs      -- add Diagnostic.Properties
 ```
@@ -61,7 +61,7 @@ src/Spire.SourceGenerators/
 ### Task 1: Project scaffold + analyzer properties
 
 - Create `src/Spire.CodeFixes/Spire.CodeFixes.csproj` (netstandard2.0, CSharp.Workspaces 5.0.0, references Spire.SourceGenerators)
-- Add `[InternalsVisibleTo("Spire.CodeFixes")]` to Spire.SourceGenerators
+- Add `[InternalsVisibleTo("Houtamelo.Spire.CodeFixes")]` to Spire.SourceGenerators
 - Update solution file
 - Update ExhaustivenessAnalyzer to emit `Properties["MissingVariants"]` on SPIRE009/SPIRE010
 - Update TypeSafetyAnalyzer to emit `Properties["ExpectedType"]` + `Properties["FieldIndex"]` on SPIRE011

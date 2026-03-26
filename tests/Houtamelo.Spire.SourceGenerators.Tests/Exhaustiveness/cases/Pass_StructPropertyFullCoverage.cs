@@ -1,6 +1,6 @@
 //@ should_pass
 // Property pattern covering all variants — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

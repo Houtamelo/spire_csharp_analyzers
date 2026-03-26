@@ -1,6 +1,6 @@
 //@ should_fail
 // or pattern covers Circle and Square but not Rectangle
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

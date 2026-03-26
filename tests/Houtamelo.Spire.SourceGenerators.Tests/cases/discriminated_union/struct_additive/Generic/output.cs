@@ -2,8 +2,8 @@
 #nullable enable
 using System.ComponentModel;
 
-[global::Spire.EnforceInitialization]
-partial struct Option<T> : global::Spire.IDiscriminatedUnion<Option<T>.Kind>
+[global::Houtamelo.Spire.Core.EnforceInitializationAttribute]
+partial struct Option<T> : global::Houtamelo.Spire.Core.IDiscriminatedUnion<Option<T>.Kind>
 {
     public enum Kind : byte
     {

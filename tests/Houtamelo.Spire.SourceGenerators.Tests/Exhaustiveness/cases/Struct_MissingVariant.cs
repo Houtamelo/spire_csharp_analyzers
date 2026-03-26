@@ -1,6 +1,6 @@
 //@ should_fail
 // Switch expression missing Square variant — SPIRE009
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

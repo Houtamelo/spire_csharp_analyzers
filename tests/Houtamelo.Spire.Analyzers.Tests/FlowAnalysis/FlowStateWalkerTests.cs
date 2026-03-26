@@ -11,9 +11,10 @@ using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Testing;
 using Houtamelo.Spire.Analyzers.Utils;
 using Houtamelo.Spire.Analyzers.Utils.FlowAnalysis;
+using Houtamelo.Spire.Core;
 using Xunit;
 
-namespace Spire.Analyzers.Tests.FlowAnalysis;
+namespace Houtamelo.Spire.Analyzers.Tests.FlowAnalysis;
 
 public class FlowStateWalkerTests
 {
@@ -404,7 +405,7 @@ public class FlowStateWalkerTests
     {
         var refs = await ReferenceAssemblies.Net.Net80.ResolveAsync(
             LanguageNames.CSharp, CancellationToken.None);
-        var coreRef = MetadataReference.CreateFromFile(typeof(Spire.EnforceInitializationAttribute).Assembly.Location);
+        var coreRef = MetadataReference.CreateFromFile(typeof(EnforceInitializationAttribute).Assembly.Location);
 
         var tree = CSharpSyntaxTree.ParseText(source,
             CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest));

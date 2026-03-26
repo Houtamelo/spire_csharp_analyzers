@@ -54,7 +54,7 @@ Your goal is to write tests that **try to break the analyzer**. Don't write triv
 ```csharp
 //@ should_fail
 // Switch expression missing Square variant — SPIRE009
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

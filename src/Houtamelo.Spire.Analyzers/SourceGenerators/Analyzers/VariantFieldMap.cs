@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 
-namespace Spire.SourceGenerators.Analyzers;
+namespace Houtamelo.Spire.Analyzers.SourceGenerators.Analyzers;
 
 /// Maps generated variant field/property names to their owning variant name(s)
 /// for struct discriminated unions.

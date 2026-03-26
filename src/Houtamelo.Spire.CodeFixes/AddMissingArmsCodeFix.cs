@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Spire.CodeFixes;
+namespace Houtamelo.Spire.CodeFixes;
 
 [ExportCodeFixProvider(LanguageNames.CSharp)]
 [Shared]

@@ -1,6 +1,6 @@
 //@ should_pass
 // All struct variants + null covered on Shape? — CS8509 suppressed, no SPIRE009
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

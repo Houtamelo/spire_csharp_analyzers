@@ -1,6 +1,6 @@
 //@ should_fail
 // 5-variant struct, switch covers 4, missing Pentagon — SPIRE009
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

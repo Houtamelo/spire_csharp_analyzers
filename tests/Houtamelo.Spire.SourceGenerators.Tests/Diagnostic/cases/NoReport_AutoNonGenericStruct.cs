@@ -1,6 +1,6 @@
 //@ should_pass
 // No diagnostics for Auto layout on non-generic struct
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

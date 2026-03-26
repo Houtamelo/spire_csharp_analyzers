@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 
-namespace Spire.Analyzers.Utils.FlowAnalysis;
+namespace Houtamelo.Spire.Analyzers.Utils.FlowAnalysis;
 
 /// Worklist-based fixed-point flow analysis over a ControlFlowGraph.
 public static class FlowStateWalker

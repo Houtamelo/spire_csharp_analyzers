@@ -1,6 +1,6 @@
 //@ should_fail
 // Switch inside local function, missing LocalErr variant — SPIRE009
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

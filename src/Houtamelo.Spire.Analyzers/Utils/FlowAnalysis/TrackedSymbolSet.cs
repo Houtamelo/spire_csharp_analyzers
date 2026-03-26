@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 
-namespace Spire.Analyzers.Utils.FlowAnalysis;
+namespace Houtamelo.Spire.Analyzers.Utils.FlowAnalysis;
 
 /// Resolved type metadata for flow analysis. Built once per compilation.
 public sealed class TrackedSymbolSet

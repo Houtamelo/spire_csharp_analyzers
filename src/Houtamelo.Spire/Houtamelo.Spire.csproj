@@ -21,7 +21,7 @@
 
   <!-- Spire.Core flows as a lib dependency to consumers -->
   <ItemGroup>
-    <ProjectReference Include="..\Spire.Core\Spire.Core.csproj" PrivateAssets="none" />
+    <ProjectReference Include="..\Houtamelo.Spire.Core\Houtamelo.Spire.Core.csproj" PrivateAssets="none" />
   </ItemGroup>
 
   <!--
@@ -29,8 +29,8 @@
     NOT declared as NuGet dependencies — DLLs are vendored below.
   -->
   <ItemGroup>
-    <ProjectReference Include="..\Spire.Analyzers\Spire.Analyzers.csproj" PrivateAssets="all" />
-    <ProjectReference Include="..\Spire.CodeFixes\Spire.CodeFixes.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\Houtamelo.Spire.Analyzers\Houtamelo.Spire.Analyzers.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\Houtamelo.Spire.CodeFixes\Houtamelo.Spire.CodeFixes.csproj" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- Vendor analyzer and codefix DLLs into the package -->

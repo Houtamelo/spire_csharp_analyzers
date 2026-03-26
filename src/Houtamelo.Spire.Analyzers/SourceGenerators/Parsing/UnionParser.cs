@@ -2,12 +2,12 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Spire.SourceGenerators.Model;
 
-namespace Spire.SourceGenerators.Parsing;
+namespace Houtamelo.Spire.Analyzers.SourceGenerators.Parsing;
 
 internal static class UnionParser
 {

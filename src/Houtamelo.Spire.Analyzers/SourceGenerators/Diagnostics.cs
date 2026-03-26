@@ -1,8 +1,8 @@
 using System.Collections.Generic;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 using Microsoft.CodeAnalysis;
-using Spire.SourceGenerators.Model;
 
-namespace Spire.SourceGenerators;
+namespace Houtamelo.Spire.Analyzers.SourceGenerators;
 
 internal static class Diagnostics
 {

@@ -5,12 +5,14 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Houtamelo.Spire.Analyzers.SourceGenerators;
+using Houtamelo.Spire.Core;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Xunit;
 
-namespace Spire.SourceGenerators.Tests.Behavioral;
+namespace Houtamelo.Spire.SourceGenerators.Tests.Behavioral;
 
 public abstract class BehavioralTestBase
 {
@@ -25,9 +27,9 @@ public abstract class BehavioralTestBase
             .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
             .ToList();
 
-        // Houtamelo.Houtamelo.Spire.Core — provides [EnforceInitialization] and other marker attributes
+        // Houtamelo.Spire.Core — provides [EnforceInitialization] and other marker attributes
         refs.Add(MetadataReference.CreateFromFile(
-            typeof(Spire.EnforceInitializationAttribute).Assembly.Location));
+            typeof(EnforceInitializationAttribute).Assembly.Location));
 
         // Newtonsoft.Json — not a platform assembly, needed for NSJ converter compilation
         refs.Add(MetadataReference.CreateFromFile(

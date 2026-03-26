@@ -1,3 +1,3 @@
-namespace Spire.Benchmarks.Helpers;
+namespace Houtamelo.Spire.Benchmarks.Helpers;
 
 public enum Distribution { Uniform, Skewed80 }

@@ -1,6 +1,6 @@
 //@ should_fail
 // SPIRE_DU004: layout ignored for record
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion(Layout.Overlap)]

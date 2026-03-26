@@ -1,6 +1,6 @@
 //@ should_fail
 // SPIRE013: 3-variant union — accessing Triangle's field inside Circle arm
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

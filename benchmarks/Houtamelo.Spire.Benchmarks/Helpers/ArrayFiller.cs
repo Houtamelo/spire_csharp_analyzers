@@ -1,4 +1,4 @@
-namespace Spire.Benchmarks.Helpers;
+namespace Houtamelo.Spire.Benchmarks.Helpers;
 
 /// Fills union arrays with consistent random data across all strategies.
 static class ArrayFiller

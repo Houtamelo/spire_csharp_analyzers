@@ -1,4 +1,4 @@
-using Spire;
+using Houtamelo.Spire;
 
 [DiscriminatedUnion(Layout.Additive)]
 partial struct Option<T>

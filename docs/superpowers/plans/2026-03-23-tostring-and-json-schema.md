@@ -93,7 +93,7 @@ Create `src/Spire.SourceGenerators/Emit/ToStringEmitter.cs`:
 
 ```csharp
 using System.Linq;
-using Spire.SourceGenerators.Model;
+using Houtamelo.Spire.SourceGenerators.Model;
 
 namespace Spire.SourceGenerators.Emit;
 
@@ -418,7 +418,7 @@ public sealed class ToStringCaseDiscoveryAttribute : DataAttribute
 Create `tests/Spire.SourceGenerators.Tests/cases/discriminated_union/tostring/record/NonGeneric/input.cs`:
 
 ```csharp
-using Spire;
+using Houtamelo.Spire;
 
 namespace Shapes
 {
@@ -463,7 +463,7 @@ namespace Shapes
 Create `tests/Spire.SourceGenerators.Tests/cases/discriminated_union/tostring/class/NonGeneric/input.cs`:
 
 ```csharp
-using Spire;
+using Houtamelo.Spire;
 
 namespace Commands
 {
@@ -536,7 +536,7 @@ Create `src/Spire.SourceGenerators/Emit/JsonSchemaEmitter.cs`:
 ```csharp
 using System.Linq;
 using System.Text;
-using Spire.SourceGenerators.Model;
+using Houtamelo.Spire.SourceGenerators.Model;
 
 namespace Spire.SourceGenerators.Emit;
 
@@ -861,7 +861,7 @@ public sealed class JsonSchemaCaseDiscoveryAttribute : DataAttribute
 Create `tests/Spire.SourceGenerators.Tests/cases/discriminated_union/json_schema/struct_stj/Basic/input.cs`:
 
 ```csharp
-using Spire;
+using Houtamelo.Spire;
 
 [DiscriminatedUnion(Layout.Additive, Json = JsonLibrary.SystemTextJson)]
 partial struct Shape
@@ -925,7 +925,7 @@ partial struct Shape
 Create `tests/Spire.SourceGenerators.Tests/cases/discriminated_union/json_schema/record_nsj/Basic/input.cs`:
 
 ```csharp
-using Spire;
+using Houtamelo.Spire;
 
 namespace Shapes
 {
@@ -963,7 +963,7 @@ namespace Shapes
 Create `tests/Spire.SourceGenerators.Tests/cases/discriminated_union/json_schema/custom/JsonName/input.cs`:
 
 ```csharp
-using Spire;
+using Houtamelo.Spire;
 
 [DiscriminatedUnion(Layout.Additive, Json = JsonLibrary.SystemTextJson, JsonDiscriminator = "type")]
 partial struct Event

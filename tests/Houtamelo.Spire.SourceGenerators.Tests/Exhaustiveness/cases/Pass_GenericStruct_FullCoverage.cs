@@ -1,6 +1,6 @@
 //@ should_pass
 // Generic struct Option<T> all variants covered — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

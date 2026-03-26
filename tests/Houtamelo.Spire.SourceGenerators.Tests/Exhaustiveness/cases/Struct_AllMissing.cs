@@ -1,6 +1,6 @@
 //@ should_pass
 // Empty switch with wildcard — all variants covered by wildcard, no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

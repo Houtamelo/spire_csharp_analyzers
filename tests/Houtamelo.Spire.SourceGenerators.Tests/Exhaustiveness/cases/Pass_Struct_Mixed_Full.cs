@@ -1,6 +1,6 @@
 //@ should_pass
 // Mix of fielded and fieldless variants all covered — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

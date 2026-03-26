@@ -1,6 +1,6 @@
 //@ should_pass
 // Shape? with all variants + explicit null arm — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

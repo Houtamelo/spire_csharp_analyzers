@@ -1,6 +1,6 @@
 using Microsoft.CodeAnalysis;
 
-namespace Spire.Analyzers.Utils;
+namespace Houtamelo.Spire.Analyzers.Utils;
 
 /// <summary>
 /// Utilities for attribute class hierarchy checks.

@@ -1,6 +1,6 @@
 //@ should_fail
 // Circle arm has when guard — not fully covered — SPIRE009
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

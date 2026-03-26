@@ -1,9 +1,8 @@
 using System.Collections.Immutable;
-using Microsoft.CodeAnalysis;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Analyzers;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Spire.SourceGenerators.Analyzers;
 
-namespace Spire.SourceGenerators.Tests;
+namespace Houtamelo.Spire.SourceGenerators.Tests.Exhaustiveness;
 
 public class ExhaustivenessTests : GeneratorAnalyzerTestBase
 {

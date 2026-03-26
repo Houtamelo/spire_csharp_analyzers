@@ -1,4 +1,4 @@
-namespace Spire.Benchmarks.Types;
+namespace Houtamelo.Spire.Benchmarks.Types;
 
 // 8 variants, all unmanaged fields:
 //   Idle()                                                    — 0 fields

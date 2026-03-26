@@ -1,6 +1,6 @@
 //@ should_pass
 // ref struct is allowed for [DiscriminatedUnion]
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

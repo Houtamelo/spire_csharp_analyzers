@@ -1,6 +1,6 @@
 //@ should_fail
 // SPIRE014: accessing variant field without kind guard
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

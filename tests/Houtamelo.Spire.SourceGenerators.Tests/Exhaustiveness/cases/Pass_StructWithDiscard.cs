@@ -1,6 +1,6 @@
 //@ should_pass
 // All variants covered plus redundant discard — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

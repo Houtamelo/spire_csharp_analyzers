@@ -1,6 +1,6 @@
 //@ should_fail
 // SPIRE014: variant field in string interpolation with no kind guard
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

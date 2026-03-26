@@ -30,7 +30,7 @@ Example: `/new-rule {RuleId} "Large struct passed by value"`
 6. Create test case folder: `tests/Spire.Analyzers.Tests/{RuleId}/cases/`
 7. Create shared preamble: `tests/Spire.Analyzers.Tests/{RuleId}/cases/_shared.cs`
    - Use `global using` directives (not plain `using`) — they apply to all case files since `_shared.cs` is a separate syntax tree in the same compilation
-   - Always include: `global using System;`, `global using System.Collections.Generic;`, `global using System.Threading.Tasks;`, `global using Spire.Analyzers;`
+   - Always include: `global using System;`, `global using System.Collections.Generic;`, `global using System.Threading.Tasks;`, `global using Houtamelo.Spire.Analyzers;`
    - Add rule-specific `global using` directives as needed (e.g., `global using System.Buffers;`)
    - Include shared type definitions relevant to the rule
 8. Create test runner from template: `tests/Spire.Analyzers.Tests/{RuleId}/{RuleId}Tests.cs`

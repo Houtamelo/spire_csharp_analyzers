@@ -338,7 +338,7 @@ public class UnionGenerator : IIncrementalGenerator
     {
         var unions = context.SyntaxProvider
             .ForAttributeWithMetadataName(
-                "Spire.UnionAttribute",
+                "Houtamelo.Spire.UnionAttribute",
                 predicate: (node, _) => node is TypeDeclarationSyntax,
                 transform: (ctx, ct) => ExtractUnionModel(ctx, ct))
             .Where(static m => m is not null);

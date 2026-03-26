@@ -1,6 +1,6 @@
 //@ should_fail
 // Some has when guard
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

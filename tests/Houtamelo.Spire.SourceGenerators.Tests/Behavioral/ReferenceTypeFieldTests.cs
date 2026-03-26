@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace Spire.SourceGenerators.Tests.Behavioral;
+namespace Houtamelo.Spire.SourceGenerators.Tests.Behavioral;
 
 public class ReferenceTypeFieldTests : BehavioralTestBase
 {

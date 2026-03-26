@@ -1,6 +1,6 @@
 //@ should_pass
 // No diagnostics: record union with two proper nested variant records
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

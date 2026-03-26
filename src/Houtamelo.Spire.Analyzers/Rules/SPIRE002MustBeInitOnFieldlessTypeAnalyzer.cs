@@ -1,9 +1,9 @@
 using System.Collections.Immutable;
+using Houtamelo.Spire.Analyzers.Utils;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Spire.Analyzers.Utils;
 
-namespace Spire.Analyzers.Rules;
+namespace Houtamelo.Spire.Analyzers.Rules;
 
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class SPIRE002EnforceInitializationOnFieldlessTypeAnalyzer : DiagnosticAnalyzer

@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace Spire.SourceGenerators.Tests;
+namespace Houtamelo.Spire.SourceGenerators.Tests;
 
 public class AttributeInjectionTests
 {

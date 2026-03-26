@@ -1,6 +1,6 @@
 using Microsoft.CodeAnalysis;
 
-namespace Spire.SourceGenerators;
+namespace Houtamelo.Spire.Analyzers.SourceGenerators;
 
 internal static class AnalyzerDescriptors
 {

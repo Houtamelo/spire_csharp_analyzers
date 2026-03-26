@@ -1,4 +1,4 @@
-using Spire;
+using Houtamelo.Spire;
 
 [DiscriminatedUnion(Json = JsonLibrary.SystemTextJson)]
 partial struct Shape

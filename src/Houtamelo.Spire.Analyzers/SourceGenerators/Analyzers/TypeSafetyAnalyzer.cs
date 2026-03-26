@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 
-namespace Spire.SourceGenerators.Analyzers;
+namespace Houtamelo.Spire.Analyzers.SourceGenerators.Analyzers;
 
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer

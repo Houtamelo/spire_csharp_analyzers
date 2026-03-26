@@ -1,6 +1,6 @@
 //@ should_fail
 // No #nullable — oblivious context, reference type is implicitly nullable
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

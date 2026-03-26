@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 
-namespace Spire.SourceGenerators.Analyzers;
+namespace Houtamelo.Spire.Analyzers.SourceGenerators.Analyzers;
 
 /// Detects whether a type symbol is a discriminated union and extracts variant info.
 internal sealed class UnionTypeInfo

@@ -4,7 +4,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 
-namespace Spire.SourceGenerators.Analyzers;
+namespace Houtamelo.Spire.Analyzers.SourceGenerators.Analyzers;
 
 /// Analyzes switch expression/statement patterns to determine which
 /// discriminated union variants are covered.

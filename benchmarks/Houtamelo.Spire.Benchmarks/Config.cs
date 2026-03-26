@@ -2,7 +2,7 @@ using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Diagnosers;
 
-namespace Spire.Benchmarks;
+namespace Houtamelo.Spire.Benchmarks;
 
 public class SpireConfig : ManualConfig
 {

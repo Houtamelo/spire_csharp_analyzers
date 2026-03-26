@@ -1,5 +1,5 @@
 //@ should_fail
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

@@ -1,6 +1,6 @@
 //@ should_fail
 // Generic struct Option<T> switch missing None variant — SPIRE009
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

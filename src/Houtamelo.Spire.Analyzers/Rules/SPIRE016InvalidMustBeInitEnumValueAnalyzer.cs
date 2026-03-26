@@ -1,10 +1,10 @@
 using System.Collections.Immutable;
+using Houtamelo.Spire.Analyzers.Utils;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
-using Spire.Analyzers.Utils;
 
-namespace Spire.Analyzers.Rules;
+namespace Houtamelo.Spire.Analyzers.Rules;
 
 /// Flags integer-to-enum casts where the value may not correspond to a named member.
 /// Other enum-related checks (default, array, clear, SkipInit, etc.) are handled by SPIRE001-008.

@@ -1,6 +1,6 @@
 using Houtamelo.Spire.Analyzers.Rules;
 
-namespace Spire.Analyzers.Tests.SPIRE007;
+namespace Houtamelo.Spire.Analyzers.Tests.SPIRE007;
 
 public class SPIRE007Tests : AnalyzerTestBase<SPIRE007UnsafeSkipInitOfEnforceInitializationStructAnalyzer>
 {

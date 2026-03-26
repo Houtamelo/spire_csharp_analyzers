@@ -1,4 +1,4 @@
-namespace Spire.Benchmarks.Types;
+namespace Houtamelo.Spire.Benchmarks.Types;
 
 // ── Scenario 1: WideTypes ──
 // Many unique field types across variants → maximum slot/field count.

@@ -1,6 +1,6 @@
 //@ should_pass
 // Accessing Circle's field inside Circle arm — OK
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

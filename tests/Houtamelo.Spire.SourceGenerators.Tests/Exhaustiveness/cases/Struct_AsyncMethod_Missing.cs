@@ -1,6 +1,6 @@
 //@ should_fail
 // Switch inside async Task<int> method, missing Err variant — SPIRE009
-using Spire;
+using Houtamelo.Spire;
 using System.Threading.Tasks;
 namespace TestNs
 {

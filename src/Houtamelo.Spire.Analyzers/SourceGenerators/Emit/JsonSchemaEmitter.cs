@@ -1,7 +1,7 @@
 using System.Text;
-using Spire.SourceGenerators.Model;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 
-namespace Spire.SourceGenerators.Emit;
+namespace Houtamelo.Spire.Analyzers.SourceGenerators.Emit;
 
 /// Generates a Lazy<string> JsonSchema property for JSON-enabled discriminated unions.
 /// Produces a separate .Schema.g.cs file with two tiers:

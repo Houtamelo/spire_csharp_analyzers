@@ -1,6 +1,6 @@
 //@ should_fail
 // SPIRE014: else branch is NOT considered guarded
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

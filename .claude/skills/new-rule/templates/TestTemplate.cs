@@ -1,4 +1,4 @@
-using Spire.Analyzers.Rules;
+using Houtamelo.Spire.Analyzers.Rules;
 
 namespace Spire.Analyzers.Tests.{{RULE_ID}};
 

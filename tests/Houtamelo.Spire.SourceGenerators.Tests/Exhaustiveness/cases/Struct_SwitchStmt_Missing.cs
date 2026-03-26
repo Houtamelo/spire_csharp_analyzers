@@ -1,6 +1,6 @@
 //@ should_fail
 // Switch statement missing Rectangle and Square — SPIRE009
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

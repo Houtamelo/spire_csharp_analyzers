@@ -1,6 +1,6 @@
 //@ should_pass
 // Expression-bodied property with switch, all variants covered — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

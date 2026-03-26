@@ -1,6 +1,6 @@
 //@ should_fail
 // SPIRE_DU003: no variants found
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

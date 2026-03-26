@@ -1,6 +1,6 @@
 //@ should_pass
 // No diagnostics: Additive layout on generic struct is valid
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion(Layout.Additive)]

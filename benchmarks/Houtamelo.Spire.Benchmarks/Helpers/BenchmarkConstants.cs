@@ -1,4 +1,4 @@
-namespace Spire.Benchmarks.Helpers;
+namespace Houtamelo.Spire.Benchmarks.Helpers;
 
 static class BenchN
 {

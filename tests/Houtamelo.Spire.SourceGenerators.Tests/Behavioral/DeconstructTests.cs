@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
-namespace Spire.SourceGenerators.Tests.Behavioral;
+namespace Houtamelo.Spire.SourceGenerators.Tests.Behavioral;
 
 public class DeconstructTests : BehavioralTestBase
 {

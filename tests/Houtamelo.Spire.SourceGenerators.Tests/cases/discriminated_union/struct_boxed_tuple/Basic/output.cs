@@ -4,8 +4,8 @@ using System.ComponentModel;
 
 namespace TestNs
 {
-    [global::Spire.EnforceInitialization]
-    partial struct Shape : global::Spire.IDiscriminatedUnion<Shape.Kind>
+    [global::Houtamelo.Spire.Core.EnforceInitializationAttribute]
+    partial struct Shape : global::Houtamelo.Spire.Core.IDiscriminatedUnion<Shape.Kind>
     {
         public enum Kind : byte
         {

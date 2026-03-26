@@ -1,6 +1,6 @@
 //@ should_fail
 // Record union in switch statement missing Pending variant — SPIRE009
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

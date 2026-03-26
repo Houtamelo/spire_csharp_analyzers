@@ -1,6 +1,6 @@
 using Houtamelo.Spire.Analyzers.Rules;
 
-namespace Spire.Analyzers.Tests.SPIRE002;
+namespace Houtamelo.Spire.Analyzers.Tests.SPIRE002;
 
 public class SPIRE002Tests : AnalyzerTestBase<SPIRE002EnforceInitializationOnFieldlessTypeAnalyzer>
 {

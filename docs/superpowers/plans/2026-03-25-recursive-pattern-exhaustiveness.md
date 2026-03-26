@@ -61,11 +61,11 @@
 
 **Known limitation:** All numeric domains use `double` internally for interval arithmetic. This loses precision for `long` values near `long.MaxValue` and for `decimal` beyond 53 bits of significand. In practice, nobody writes switch arms distinguishing `long.MaxValue` from `long.MaxValue - 1`, so this is acceptable. Document in code.
 
-**Note on DiscriminatedUnionAttribute:** This attribute is source-generated (not in `Spire.Core`). Test compilations for DU domains must include the attribute declaration as a raw C# string in their `_shared.cs` files. `DomainResolver` resolves it via `GetTypeByMetadataName("Spire.DiscriminatedUnionAttribute")` which works in production (generator emits it) and in tests (included as source text).
+**Note on DiscriminatedUnionAttribute:** This attribute is source-generated (not in `Spire.Core`). Test compilations for DU domains must include the attribute declaration as a raw C# string in their `_shared.cs` files. `DomainResolver` resolves it via `GetTypeByMetadataName("Houtamelo.Spire.DiscriminatedUnionAttribute")` which works in production (generator emits it) and in tests (included as source text).
 
 **Note on StructuralDomain set operations:** The Maranget algorithm uses `Split()` and `Intersect()` during column specialization, but does NOT call `Subtract()` or `Complement()` on structural/composite domains. Cross-product subtraction is inherently complex and unnecessary — the matrix specialization handles decomposition implicitly. `StructuralDomain` implements `Subtract`/`Complement` as `throw new NotSupportedException()`.
 
-**Visibility:** All library types are `internal`. Add `[InternalsVisibleTo("Spire.Analyzers")]` and `[InternalsVisibleTo("Spire.PatternAnalysis.Tests")]` to the library project.
+**Visibility:** All library types are `internal`. Add `[InternalsVisibleTo("Houtamelo.Spire.Analyzers")]` and `[InternalsVisibleTo("Houtamelo.Spire.PatternAnalysis.Tests")]` to the library project.
 
 ---
 
@@ -273,7 +273,7 @@ internal abstract class SlotIdentifier
 ```csharp
 // src/Spire.PatternAnalysis/ExhaustivenessResult.cs
 using System.Collections.Immutable;
-using Spire.PatternAnalysis.Domains;
+using Houtamelo.Spire.PatternAnalysis.Domains;
 
 namespace Spire.PatternAnalysis;
 
@@ -846,8 +846,8 @@ internal sealed class DomainResolver
     {
         _compilation = compilation;
         _hierarchyResolver = hierarchyResolver;
-        _enforceExhaustivenessAttr = compilation.GetTypeByMetadataName("Spire.EnforceExhaustivenessAttribute");
-        _discriminatedUnionAttr = compilation.GetTypeByMetadataName("Spire.DiscriminatedUnionAttribute");
+        _enforceExhaustivenessAttr = compilation.GetTypeByMetadataName("Houtamelo.Spire.EnforceExhaustivenessAttribute");
+        _discriminatedUnionAttr = compilation.GetTypeByMetadataName("Houtamelo.Spire.DiscriminatedUnionAttribute");
     }
 
     public IValueDomain Resolve(ITypeSymbol type) { ... }
@@ -1073,8 +1073,8 @@ Wires everything together: DomainResolver → PatternMatrix.Build → DecisionTr
 using System.Collections.Concurrent;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
-using Spire.PatternAnalysis.Algorithm;
-using Spire.PatternAnalysis.Resolution;
+using Houtamelo.Spire.PatternAnalysis.Algorithm;
+using Houtamelo.Spire.PatternAnalysis.Resolution;
 
 namespace Spire.PatternAnalysis;
 

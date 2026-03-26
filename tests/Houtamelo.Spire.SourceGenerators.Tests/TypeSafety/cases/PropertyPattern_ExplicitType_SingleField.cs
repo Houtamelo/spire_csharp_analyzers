@@ -1,6 +1,6 @@
 //@ should_pass
 // Correct explicit type in property pattern is not flagged — only wrong types trigger SPIRE011
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

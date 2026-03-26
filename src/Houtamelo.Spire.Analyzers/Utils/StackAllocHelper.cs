@@ -1,7 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Spire.Analyzers.Utils;
+namespace Houtamelo.Spire.Analyzers.Utils;
 
 /// <summary>
 /// Utilities for extracting information from stackalloc expressions.

@@ -157,7 +157,7 @@ The lead gives you a **list of snapshot test cases to create** from the coverage
 
 Each case is a leaf directory containing exactly two files:
 
-- **input.cs** — a complete C# file with `using Spire;` and a `[DiscriminatedUnion]` type declaration. Must be a valid compilation unit.
+- **input.cs** — a complete C# file with `using Houtamelo.Spire;` and a `[DiscriminatedUnion]` type declaration. Must be a valid compilation unit.
 - **output.cs** — the expected generated source for the union type. Must match what the emitter would produce (same structure as existing output.cs files).
 
 Discovered by `SnapshotCaseDiscoveryAttribute` — any leaf directory under `cases/` with both files is automatically a test case.
@@ -231,7 +231,7 @@ The lead gives you **type definitions and test cases** from the coverage matrix.
 
 Struct unions:
 ```csharp
-using Spire;
+using Houtamelo.Spire;
 
 [DiscriminatedUnion(Layout.{Strategy})]
 partial struct Shape{Suffix}
@@ -490,7 +490,7 @@ Test case files contain `[DiscriminatedUnion]` declarations. The generator runs 
 ```csharp
 //@ should_fail
 // Switch expression missing Square variant — SPIRE009
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]
@@ -717,7 +717,7 @@ Pipeline: generator runs on before.cs → analyzers run → code fix applies →
 
 **before.cs** — complete C# file with a pattern that triggers the diagnostic:
 ```csharp
-using Spire;
+using Houtamelo.Spire;
 [DiscriminatedUnion]
 public abstract partial record Shape
 {
@@ -737,7 +737,7 @@ public class Usage
 
 **after.cs** — same file with the fix applied:
 ```csharp
-using Spire;
+using Houtamelo.Spire;
 [DiscriminatedUnion]
 public abstract partial record Shape
 {
@@ -906,11 +906,11 @@ Example: `/new-emitter verify Additive`
 ## Mode: `new` — Scaffold
 
 4. Create emitter stub: `src/Spire.SourceGenerators/Emit/{EmitterName}Emitter.cs`
-   - Include `using Spire.SourceGenerators.Model;` for the `UnionDeclaration` type
+   - Include `using Houtamelo.Spire.SourceGenerators.Model;` for the `UnionDeclaration` type
    - Minimal class with `internal static class {EmitterName}Emitter` and a `public static string Emit(UnionDeclaration union)` method returning `string.Empty`
 5. Create snapshot test category folder: `tests/Spire.SourceGenerators.Tests/cases/discriminated_union/{strategy_snake_case}/`
 6. Create behavioral test stubs (empty files with correct namespace/class):
-   - `tests/Spire.BehavioralTests/Types/{EmitterName}Unions.cs` — placeholder with `using Spire;`
+   - `tests/Spire.BehavioralTests/Types/{EmitterName}Unions.cs` — placeholder with `using Houtamelo.Spire;`
    - `tests/Spire.BehavioralTests/Tests/{EmitterName}Tests.cs` — placeholder test class with `using Xunit;`
 7. Run `dotnet build` — must succeed
 8. Report all created files

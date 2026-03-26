@@ -1,6 +1,6 @@
 //@ should_fail
 // SPIRE013: ternary true branch uses wrong variant's field
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

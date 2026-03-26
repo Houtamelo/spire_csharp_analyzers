@@ -1,7 +1,7 @@
 using System.Reflection;
 using Xunit;
 
-namespace Spire.SourceGenerators.Tests.Behavioral;
+namespace Houtamelo.Spire.SourceGenerators.Tests.Behavioral;
 
 public class GenericUnionTests : BehavioralTestBase
 {

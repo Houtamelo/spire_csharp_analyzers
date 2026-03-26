@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using System.Linq;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Attributes;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Emit;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Parsing;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Spire.SourceGenerators.Attributes;
-using Spire.SourceGenerators.Emit;
-using Spire.SourceGenerators.Model;
-using Spire.SourceGenerators.Parsing;
 
-namespace Spire.SourceGenerators;
+namespace Houtamelo.Spire.Analyzers.SourceGenerators;
 
 [Generator(LanguageNames.CSharp)]
 public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator

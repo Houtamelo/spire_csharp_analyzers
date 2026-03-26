@@ -1,7 +1,7 @@
 //@ should_pass
 #nullable enable
 // All generic record variants covered with type patterns
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

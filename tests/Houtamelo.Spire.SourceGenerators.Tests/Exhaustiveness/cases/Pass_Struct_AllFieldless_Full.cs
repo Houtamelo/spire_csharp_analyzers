@@ -1,6 +1,6 @@
 //@ should_pass
 // All-fieldless union all variants covered via (Kind.X, _) — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

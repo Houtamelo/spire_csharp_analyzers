@@ -1,7 +1,7 @@
 //@ should_pass
 #nullable enable
 // CS8509 suppressed — all record variants covered
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

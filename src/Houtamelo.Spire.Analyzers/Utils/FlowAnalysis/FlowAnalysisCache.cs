@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 
-namespace Spire.Analyzers.Utils.FlowAnalysis;
+namespace Houtamelo.Spire.Analyzers.Utils.FlowAnalysis;
 
 /// Thread-safe, per-compilation cache for flow analysis results.
 /// Created once in CompilationStartAction, shared across all rules.

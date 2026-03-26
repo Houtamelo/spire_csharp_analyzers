@@ -1,6 +1,6 @@
 //@ should_pass
 // Accessing Circle's field inside kind==Circle guard — OK
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

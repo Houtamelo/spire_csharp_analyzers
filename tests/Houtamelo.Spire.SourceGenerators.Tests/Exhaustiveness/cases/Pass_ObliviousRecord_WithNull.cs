@@ -1,6 +1,6 @@
 //@ should_pass
 // No #nullable — oblivious context, but null arm present — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

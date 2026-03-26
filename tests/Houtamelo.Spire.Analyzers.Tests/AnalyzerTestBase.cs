@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Houtamelo.Spire.Core;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -13,7 +14,7 @@ using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 using Xunit.Sdk;
 
-namespace Spire.Analyzers.Tests;
+namespace Houtamelo.Spire.Analyzers.Tests;
 
 /// <summary>
 /// Abstract base class for analyzer tests. Concrete test classes only need to specify the RuleId.
@@ -27,7 +28,7 @@ public abstract class AnalyzerTestBase<TAnalyzer> where TAnalyzer : DiagnosticAn
         MetadataReference.CreateFromFile(typeof(TAnalyzer).Assembly.Location);
 
     private static readonly MetadataReference CoreAssemblyReference =
-        MetadataReference.CreateFromFile(typeof(Spire.EnforceInitializationAttribute).Assembly.Location);
+        MetadataReference.CreateFromFile(typeof(EnforceInitializationAttribute).Assembly.Location);
 
     private static readonly Lazy<Task<ImmutableArray<MetadataReference>>> CachedReferences =
         new(() => ResolveReferencesAsync());

@@ -1,6 +1,6 @@
 //@ should_pass
 // Field access inside nested if where OUTER if has kind guard
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

@@ -1,6 +1,6 @@
 //@ should_pass
 // Expression-bodied switch with correct field access in each arm
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

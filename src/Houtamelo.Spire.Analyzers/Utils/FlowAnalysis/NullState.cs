@@ -1,4 +1,4 @@
-namespace Spire.Analyzers.Utils.FlowAnalysis;
+namespace Houtamelo.Spire.Analyzers.Utils.FlowAnalysis;
 
 public enum NullState : byte
 {

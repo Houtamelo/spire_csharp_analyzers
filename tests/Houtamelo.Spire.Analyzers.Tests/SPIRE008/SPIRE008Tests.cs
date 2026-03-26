@@ -1,6 +1,6 @@
 using Houtamelo.Spire.Analyzers.Rules;
 
-namespace Spire.Analyzers.Tests.SPIRE008;
+namespace Houtamelo.Spire.Analyzers.Tests.SPIRE008;
 
 public class SPIRE008Tests : AnalyzerTestBase<SPIRE008GetUninitializedObjectOfEnforceInitializationStructAnalyzer>
 {

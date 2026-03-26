@@ -1,6 +1,6 @@
 //@ should_fail
 // SPIRE013: switch statement — accessing Square's field inside Circle case body
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

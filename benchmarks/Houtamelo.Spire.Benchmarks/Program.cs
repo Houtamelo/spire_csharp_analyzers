@@ -1,5 +1,5 @@
 using BenchmarkDotNet.Running;
-using Spire.Benchmarks.Helpers;
+using Houtamelo.Spire.Benchmarks.Helpers;
 
 // Run all:           dotnet run -c Release -- --filter '*' --job Dry
 // Single class:      dotnet run -c Release -- --filter *Construct*

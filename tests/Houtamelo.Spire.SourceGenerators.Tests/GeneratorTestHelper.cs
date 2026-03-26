@@ -2,16 +2,18 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
+using Houtamelo.Spire.Analyzers.SourceGenerators;
+using Houtamelo.Spire.Core;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
-namespace Spire.SourceGenerators.Tests;
+namespace Houtamelo.Spire.SourceGenerators.Tests;
 
 internal static class GeneratorTestHelper
 {
     private static readonly MetadataReference CoreAssemblyReference =
-        MetadataReference.CreateFromFile(typeof(Spire.EnforceInitializationAttribute).Assembly.Location);
+        MetadataReference.CreateFromFile(typeof(EnforceInitializationAttribute).Assembly.Location);
 
     private static readonly MetadataReference[] BaseReferences =
         GetBaseReferences();

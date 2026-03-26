@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 
-namespace Spire.CodeFixes;
+namespace Houtamelo.Spire.CodeFixes;
 
 [ExportCodeRefactoringProvider(LanguageNames.CSharp)]
 [Shared]

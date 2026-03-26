@@ -1,7 +1,7 @@
 //@ should_pass
 // Accessing .kind in a lambda — kind is always safe, not a variant field
 using System;
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

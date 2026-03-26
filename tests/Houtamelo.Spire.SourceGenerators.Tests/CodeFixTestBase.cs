@@ -14,7 +14,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using Xunit;
 using Xunit.Sdk;
 
-namespace Spire.SourceGenerators.Tests;
+namespace Houtamelo.Spire.SourceGenerators.Tests;
 
 /// Base class for code fix tests. Each test case is a folder with before.cs / after.cs.
 /// Pipeline: strip comments → run generator → create workspace → run analyzers →

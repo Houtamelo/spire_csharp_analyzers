@@ -1,6 +1,6 @@
 //@ should_fail
 // All-fieldless union missing Green variant — SPIRE009
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

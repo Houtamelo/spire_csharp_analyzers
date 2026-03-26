@@ -1,7 +1,7 @@
 //@ should_pass
 #nullable enable
 // Option<int>? with all variants + null arm — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

@@ -1,6 +1,6 @@
 //@ should_fail
 // SPIRE013: accessing Square's field inside Circle is-pattern guard
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

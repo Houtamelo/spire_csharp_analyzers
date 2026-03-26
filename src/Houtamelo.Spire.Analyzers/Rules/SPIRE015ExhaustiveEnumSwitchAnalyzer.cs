@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using Houtamelo.Spire.Analyzers.Utils;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
-using Spire.Analyzers.Utils;
 
-namespace Spire.Analyzers.Rules;
+namespace Houtamelo.Spire.Analyzers.Rules;
 
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class SPIRE015ExhaustiveEnumSwitchAnalyzer : DiagnosticAnalyzer

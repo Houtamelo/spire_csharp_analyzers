@@ -1,6 +1,6 @@
-using Spire.SourceGenerators.Model;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 
-namespace Spire.SourceGenerators.Emit;
+namespace Houtamelo.Spire.Analyzers.SourceGenerators.Emit;
 
 /// Classifies fields into three overlap regions:
 /// Unmanaged (primitives with known sizeof), Reference (pointer-sized), Boxed (everything else).

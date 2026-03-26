@@ -1,6 +1,6 @@
 //@ should_pass
 // No diagnostics: readonly partial struct with default auto layout and variants
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

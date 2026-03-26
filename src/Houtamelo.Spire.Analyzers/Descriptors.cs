@@ -1,7 +1,7 @@
 using Microsoft.CodeAnalysis;
 // ReSharper disable InconsistentNaming
 
-namespace Spire.Analyzers;
+namespace Houtamelo.Spire.Analyzers;
 
 internal static class Descriptors
 {

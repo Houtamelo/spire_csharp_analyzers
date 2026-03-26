@@ -1,4 +1,4 @@
-namespace Spire.Benchmarks.Types;
+namespace Houtamelo.Spire.Benchmarks.Types;
 
 // JSON-enabled variants for serialization benchmarks
 

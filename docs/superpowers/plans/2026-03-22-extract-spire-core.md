@@ -45,7 +45,7 @@ Spire.CodeFixes        →  Microsoft.CodeAnalysis.CSharp.Workspaces (standalone
 | Phantom refs | `Spire.SourceGenerators → Spire.Analyzers` removed |
 | Phantom refs | `Spire.CodeFixes → Spire.SourceGenerators` removed |
 | Test infra | `AnalyzerTestBase`, `GeneratorTestHelper`, `BehavioralTestBase` updated |
-| Test cases | 9 `_shared.cs` files: `global using Spire.Analyzers` → `global using Spire` |
+| Test cases | 9 `_shared.cs` files: `global using Houtamelo.Spire.Analyzers` → `global using Houtamelo.Spire` |
 | Snapshots | 27 `output.cs` files: `Spire.Analyzers.EnforceInitialization` → `Spire.EnforceInitialization` |
 | Consumer projects | `BehavioralTests`, `Benchmarks`: ref `Spire.Core` instead of `Spire.Analyzers` |
 | NuGet packaging | All 5 projects get proper pack metadata |
@@ -209,22 +209,22 @@ All analyzers resolve attributes via `GetTypeByMetadataName`. Namespace changed 
 
 In each of the 8 files listed above (SPIRE001–008), replace:
 ```csharp
-.GetTypeByMetadataName("Spire.Analyzers.EnforceInitializationAttribute");
+.GetTypeByMetadataName("Houtamelo.Spire.Analyzers.EnforceInitializationAttribute");
 ```
 with:
 ```csharp
-.GetTypeByMetadataName("Spire.EnforceInitializationAttribute");
+.GetTypeByMetadataName("Houtamelo.Spire.EnforceInitializationAttribute");
 ```
 
 - [ ] **Step 2: Replace EnforceExhaustivenessAttribute metadata name**
 
 In `SPIRE015ExhaustiveEnumSwitchAnalyzer.cs`, replace:
 ```csharp
-"Spire.Analyzers.EnforceExhaustivenessAttribute");
+"Houtamelo.Spire.Analyzers.EnforceExhaustivenessAttribute");
 ```
 with:
 ```csharp
-"Spire.EnforceExhaustivenessAttribute");
+"Houtamelo.Spire.EnforceExhaustivenessAttribute");
 ```
 
 - [ ] **Step 3: Verify Spire.Analyzers builds**
@@ -402,11 +402,11 @@ git commit -m "refactor: update test infrastructure and project references for S
 
 In all 9 files, replace:
 ```csharp
-global using Spire.Analyzers;
+global using Houtamelo.Spire.Analyzers;
 ```
 with:
 ```csharp
-global using Spire;
+global using Houtamelo.Spire;
 ```
 
 Files:
@@ -439,7 +439,7 @@ find tests/Spire.SourceGenerators.Tests/cases -name "output.cs" \
 
 - [ ] **Step 3: Verify no stale references remain**
 
-Run: `grep -r "Spire\.Analyzers\.EnforceInitialization\|Spire\.Analyzers\.EnforceExhaustiveness" tests/`
+Run: `grep -r "Houtamelo.Spire\.Analyzers\.EnforceInitialization\|Spire\.Analyzers\.EnforceExhaustiveness" tests/`
 Expected: No matches
 
 - [ ] **Step 4: Commit**
@@ -481,7 +481,7 @@ Expected: All tests pass
 
 - [ ] **Step 4: Verify no stale references remain anywhere**
 
-Run: `grep -r "Spire\.Analyzers\.EnforceInitialization\|Spire\.Analyzers\.EnforceExhaustiveness" src/ tests/ benchmarks/`
+Run: `grep -r "Houtamelo.Spire\.Analyzers\.EnforceInitialization\|Spire\.Analyzers\.EnforceExhaustiveness" src/ tests/ benchmarks/`
 Expected: No matches (only in git history)
 
 - [ ] **Step 5: Commit**
@@ -724,7 +724,7 @@ Expected: All tests pass
 
 - [ ] **Step 3: Verify no stale namespace references**
 
-Run: `grep -rn "Spire\.Analyzers\.EnforceInitialization\|Spire\.Analyzers\.EnforceExhaustiveness" src/ tests/ benchmarks/`
+Run: `grep -rn "Houtamelo.Spire\.Analyzers\.EnforceInitialization\|Spire\.Analyzers\.EnforceExhaustiveness" src/ tests/ benchmarks/`
 Expected: No matches
 
 - [ ] **Step 4: Verify pack succeeds for each project**
@@ -751,7 +751,7 @@ Then check nuspec for Spire.Core dependency:
 ```
 unzip -p ./tmp/nupkg/Spire.1.0.0.nupkg Spire.nuspec
 ```
-Expected: `<dependency id="Spire.Core" .../>` present. No dependencies on `Spire.Analyzers`, `Spire.SourceGenerators`, or `Spire.CodeFixes` (those are vendored, not declared as deps).
+Expected: `<dependency id="Houtamelo.Spire.Core" .../>` present. No dependencies on `Spire.Analyzers`, `Spire.SourceGenerators`, or `Spire.CodeFixes` (those are vendored, not declared as deps).
 
 - [ ] **Step 6: Clean up tmp**
 

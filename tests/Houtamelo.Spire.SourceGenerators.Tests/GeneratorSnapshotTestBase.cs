@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 using Xunit.Sdk;
 
-namespace Spire.SourceGenerators.Tests;
+namespace Houtamelo.Spire.SourceGenerators.Tests;
 
 /// <summary>
 /// Base class for snapshot tests. Discovers leaf directories under cases/ at runtime.

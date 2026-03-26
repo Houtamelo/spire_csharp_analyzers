@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 using Xunit.Sdk;
 
-namespace Spire.SourceGenerators.Tests;
+namespace Houtamelo.Spire.SourceGenerators.Tests;
 
 /// Snapshot tests for Newtonsoft.Json converter generation.
 /// Discovers test cases under cases/discriminated_union/json_nsj/.

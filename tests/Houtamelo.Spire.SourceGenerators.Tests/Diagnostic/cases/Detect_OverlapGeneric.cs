@@ -1,6 +1,6 @@
 //@ should_fail
 // SPIRE_DU005: generic struct cannot use Overlap
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion(Layout.Overlap)]

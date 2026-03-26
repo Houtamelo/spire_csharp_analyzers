@@ -1,6 +1,6 @@
 //@ should_pass
 // Access inside matching switch arm — OK
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

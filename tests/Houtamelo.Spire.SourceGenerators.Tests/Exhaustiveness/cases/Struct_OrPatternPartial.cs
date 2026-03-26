@@ -1,6 +1,6 @@
 //@ should_fail
 // Or pattern covers two variants but third is missing — SPIRE009
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

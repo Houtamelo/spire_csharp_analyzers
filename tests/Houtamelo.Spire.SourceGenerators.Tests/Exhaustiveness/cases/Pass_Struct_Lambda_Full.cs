@@ -1,6 +1,6 @@
 //@ should_pass
 // Switch in lambda, all variants covered — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 using System;
 namespace TestNs
 {

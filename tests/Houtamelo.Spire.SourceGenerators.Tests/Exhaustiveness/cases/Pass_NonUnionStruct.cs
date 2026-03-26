@@ -1,6 +1,6 @@
 //@ should_pass
 // Switch on a non-union struct — analyzer should ignore it
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     struct Point

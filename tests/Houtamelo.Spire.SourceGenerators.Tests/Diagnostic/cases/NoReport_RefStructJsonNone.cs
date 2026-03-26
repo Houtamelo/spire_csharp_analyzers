@@ -1,6 +1,6 @@
 //@ should_pass
 // ref struct with Json = None should not report SPIRE_DU008
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion(Json = JsonLibrary.None)]

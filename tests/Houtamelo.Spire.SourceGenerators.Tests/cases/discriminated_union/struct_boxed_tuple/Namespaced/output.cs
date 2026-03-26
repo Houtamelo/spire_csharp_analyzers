@@ -4,8 +4,8 @@ using System.ComponentModel;
 
 namespace My.Deep.Namespace
 {
-    [global::Spire.EnforceInitialization]
-    partial struct Result : global::Spire.IDiscriminatedUnion<Result.Kind>
+    [global::Houtamelo.Spire.Core.EnforceInitializationAttribute]
+    partial struct Result : global::Houtamelo.Spire.Core.IDiscriminatedUnion<Result.Kind>
     {
         public enum Kind : byte
         {

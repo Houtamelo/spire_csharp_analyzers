@@ -190,7 +190,7 @@ public class Detect_1DConstantSize_LocalVariable
 
 **Test runner** (`SPIRE001Tests.cs`):
 ```csharp
-using Spire.Analyzers.Rules;
+using Houtamelo.Spire.Analyzers.Rules;
 
 public class SPIRE001Tests : AnalyzerTestBase<SPIRE001ArrayOfEnforceInitializationStructAnalyzer>
 {

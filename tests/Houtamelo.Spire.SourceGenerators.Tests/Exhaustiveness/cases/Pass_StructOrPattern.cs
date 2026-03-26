@@ -1,6 +1,6 @@
 //@ should_pass
 // Or pattern covers multiple variants — all covered
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

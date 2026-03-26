@@ -1,6 +1,6 @@
 //@ should_pass
 // All pattern types match Deconstruct params
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

@@ -1,6 +1,6 @@
 //@ should_pass
 // Correct field access in switch statement
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

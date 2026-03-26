@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Attributes;
-using Spire.Benchmarks.Helpers;
+using Houtamelo.Spire.Benchmarks.Helpers;
 
-namespace Spire.Benchmarks;
+namespace Houtamelo.Spire.Benchmarks.Benchmarks;
 
 /// Batch match + accumulate across all strategies with distribution parameter.
 [Config(typeof(SpireConfig))]

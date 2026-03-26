@@ -1,4 +1,4 @@
-namespace Spire.Benchmarks.Types;
+namespace Houtamelo.Spire.Benchmarks.Types;
 
 [BenchmarkUnion(Name = "Phys")]
 public partial struct PhysBench

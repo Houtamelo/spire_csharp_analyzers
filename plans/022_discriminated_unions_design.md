@@ -512,7 +512,7 @@ The analyzer determines variant context using:
 ## Infrastructure
 
 - **Source generator**: `IIncrementalGenerator` using
-  `ForAttributeWithMetadataName("Spire.DiscriminatedUnionAttribute", ...)`
+  `ForAttributeWithMetadataName("Houtamelo.Spire.DiscriminatedUnionAttribute", ...)`
 - **Analyzer**: `DiagnosticAnalyzer` for exhaustiveness + type safety
 - **Suppressor**: `DiagnosticSuppressor` for CS8509
 - **Code fixes**: `CodeFixProvider` for all three fix types

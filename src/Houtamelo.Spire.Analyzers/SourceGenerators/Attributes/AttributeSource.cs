@@ -1,4 +1,4 @@
-namespace Spire.SourceGenerators.Attributes;
+namespace Houtamelo.Spire.Analyzers.SourceGenerators.Attributes;
 
 internal static class AttributeSource
 {

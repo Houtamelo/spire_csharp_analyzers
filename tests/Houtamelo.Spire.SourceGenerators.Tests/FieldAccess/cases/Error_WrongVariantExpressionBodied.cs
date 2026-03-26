@@ -1,6 +1,6 @@
 //@ should_fail
 // SPIRE013: expression-bodied method with switch — wrong field in one arm
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

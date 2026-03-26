@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using BenchmarkDotNet.Attributes;
 
-namespace Spire.Benchmarks;
+namespace Houtamelo.Spire.Benchmarks.Benchmarks;
 
 /// Reports sizeof() for every union type. The "benchmark" is a dummy; the value is in GlobalSetup output.
 [Config(typeof(SpireConfig))]

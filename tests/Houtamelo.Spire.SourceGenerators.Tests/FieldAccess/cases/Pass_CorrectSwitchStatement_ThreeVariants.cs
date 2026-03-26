@@ -1,6 +1,6 @@
 //@ should_pass
 // 3-variant switch statement — each case accesses its own field
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

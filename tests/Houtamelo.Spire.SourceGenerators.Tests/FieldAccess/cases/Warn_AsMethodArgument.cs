@@ -1,7 +1,7 @@
 //@ should_fail
 // SPIRE014: variant field passed as method argument with no kind guard
 using System;
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

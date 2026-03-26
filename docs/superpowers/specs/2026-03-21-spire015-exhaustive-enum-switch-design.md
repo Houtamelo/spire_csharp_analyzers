@@ -152,7 +152,7 @@ Members with identical underlying values form a single coverage unit. If `A = 0`
 context.RegisterCompilationStartAction(compilationCtx =>
 {
     var enforceType = compilationCtx.Compilation.GetTypeByMetadataName(
-        "Spire.Analyzers.EnforceExhaustivenessAttribute");
+        "Houtamelo.Spire.Analyzers.EnforceExhaustivenessAttribute");
     if (enforceType is null) return;
 
     compilationCtx.RegisterOperationAction(ctx => AnalyzeSwitch(ctx, enforceType),

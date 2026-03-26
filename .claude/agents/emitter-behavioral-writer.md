@@ -48,7 +48,7 @@ Your goal is to write union types and tests that **try to break the emitter at r
 
 Struct unions:
 ```csharp
-using Spire;
+using Houtamelo.Spire;
 
 [DiscriminatedUnion(Layout.{Strategy})]
 partial struct Shape{Suffix}

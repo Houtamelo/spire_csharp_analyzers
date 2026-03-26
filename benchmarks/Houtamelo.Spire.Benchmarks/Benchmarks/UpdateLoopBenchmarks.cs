@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Attributes;
-using Spire.Benchmarks.Helpers;
+using Houtamelo.Spire.Benchmarks.Helpers;
 
-namespace Spire.Benchmarks;
+namespace Houtamelo.Spire.Benchmarks.Benchmarks;
 
 /// Simulates an ECS-style update loop: iterate array, match variant, compute per-element, accumulate.
 [Config(typeof(SpireConfig))]

@@ -1,5 +1,5 @@
 //@ should_pass
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion(Layout.BoxedTuple)]

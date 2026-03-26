@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using Xunit;
 using Xunit.Sdk;
 
-namespace Spire.SourceGenerators.Tests;
+namespace Houtamelo.Spire.SourceGenerators.Tests;
 
 /// <summary>
 /// Abstract base class for tests that run analyzers on generator output.

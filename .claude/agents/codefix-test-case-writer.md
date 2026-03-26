@@ -49,7 +49,7 @@ Pipeline: generator runs on before.cs → analyzers run → code fix applies →
 
 **before.cs** — complete C# file with a pattern that triggers the diagnostic:
 ```csharp
-using Spire;
+using Houtamelo.Spire;
 [DiscriminatedUnion]
 public abstract partial record Shape
 {
@@ -69,7 +69,7 @@ public class Usage
 
 **after.cs** — same file with the fix applied:
 ```csharp
-using Spire;
+using Houtamelo.Spire;
 [DiscriminatedUnion]
 public abstract partial record Shape
 {

@@ -144,7 +144,7 @@ public sealed class SAS001ArrayOfNonDefaultableStructAnalyzer : DiagnosticAnalyz
         {
             // Resolve attribute type once per compilation
             var attributeType = compilationContext.Compilation
-                .GetTypeByMetadataName("Spire.Analyzers.RequireInitializationAttribute");
+                .GetTypeByMetadataName("Houtamelo.Spire.Analyzers.RequireInitializationAttribute");
 
             if (attributeType is null)
                 return; // Attribute not referenced — nothing to analyze
@@ -249,7 +249,7 @@ Tests use file-based cases (per plan 009). Each case is a `.cs` file in `SAS001/
 
 ```csharp
 using System;
-using Spire.Analyzers;
+using Houtamelo.Spire.Analyzers;
 
 [RequireInitialization]
 public struct MarkedStruct

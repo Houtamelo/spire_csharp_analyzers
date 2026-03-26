@@ -1,4 +1,4 @@
-namespace Spire.Benchmarks.Types;
+namespace Houtamelo.Spire.Benchmarks.Types;
 
 // 8 variants with 0-5 fields, mix of managed and unmanaged:
 //   Point()                                          — 0 fields
@@ -7,7 +7,7 @@ namespace Spire.Benchmarks.Types;
 //   Rectangle(float width, float height)             — 2 fields, unmanaged
 //   ColoredLine(int x1, int y1, string color)        — 3 fields, mixed
 //   Transform(float x, float y, float z, float w)    — 4 fields, unmanaged
-//   RichText(string text, int size, bool bold, string font, double spacing) — 5 fields, mixed
+//   RichText(string text, int size, bool bold, string font, double-spacing) — 5 fields, mixed
 //   Error(string message)                            — 1 field, managed
 
 [DiscriminatedUnion(Layout.Additive)]

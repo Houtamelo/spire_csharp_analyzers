@@ -1,6 +1,6 @@
 //@ should_fail
 // Mix of fielded and fieldless variants, missing fieldless None — SPIRE009
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

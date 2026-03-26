@@ -57,7 +57,7 @@ Tests go under `tests/Spire.Analyzers.Tests/FlowAnalysis/`:
 
 ```csharp
 // tests/Spire.Analyzers.Tests/FlowAnalysis/InitStateLatticeTests.cs
-using Spire.Analyzers.Utils.FlowAnalysis;
+using Houtamelo.Spire.Analyzers.Utils.FlowAnalysis;
 using Xunit;
 
 namespace Spire.Analyzers.Tests.FlowAnalysis;
@@ -100,7 +100,7 @@ public class InitStateLatticeTests
 
 ```csharp
 // tests/Spire.Analyzers.Tests/FlowAnalysis/NullStateLatticeTests.cs
-using Spire.Analyzers.Utils.FlowAnalysis;
+using Houtamelo.Spire.Analyzers.Utils.FlowAnalysis;
 using Xunit;
 
 namespace Spire.Analyzers.Tests.FlowAnalysis;
@@ -137,7 +137,7 @@ public class NullStateLatticeTests
 ```csharp
 // tests/Spire.Analyzers.Tests/FlowAnalysis/KindStateLatticeTests.cs
 using System.Collections.Immutable;
-using Spire.Analyzers.Utils.FlowAnalysis;
+using Houtamelo.Spire.Analyzers.Utils.FlowAnalysis;
 using Xunit;
 
 namespace Spire.Analyzers.Tests.FlowAnalysis;
@@ -321,7 +321,7 @@ git commit -m "feat(flow): add InitState, NullState, KindState lattice types wit
 ```csharp
 // tests/Spire.Analyzers.Tests/FlowAnalysis/VariableStateMergeTests.cs
 using System.Collections.Immutable;
-using Spire.Analyzers.Utils.FlowAnalysis;
+using Houtamelo.Spire.Analyzers.Utils.FlowAnalysis;
 using Xunit;
 
 namespace Spire.Analyzers.Tests.FlowAnalysis;
@@ -749,7 +749,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Testing;
-using Spire.Analyzers.Utils.FlowAnalysis;
+using Houtamelo.Spire.Analyzers.Utils.FlowAnalysis;
 using Xunit;
 
 namespace Spire.Analyzers.Tests.FlowAnalysis;
@@ -935,7 +935,7 @@ Tests compile C# snippets, build CFGs, walk blocks manually, and verify that `Tr
 ```csharp
 // tests/Spire.Analyzers.Tests/FlowAnalysis/TransferFunctionTests.cs
 using System.Collections.Immutable;
-using Spire.Analyzers.Utils.FlowAnalysis;
+using Houtamelo.Spire.Analyzers.Utils.FlowAnalysis;
 using Xunit;
 
 namespace Spire.Analyzers.Tests.FlowAnalysis;
@@ -1208,7 +1208,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Testing;
-using Spire.Analyzers.Utils.FlowAnalysis;
+using Houtamelo.Spire.Analyzers.Utils.FlowAnalysis;
 using Xunit;
 
 namespace Spire.Analyzers.Tests.FlowAnalysis;
@@ -1285,7 +1285,7 @@ public class FlowStateWalkerTests
 
         var cfg = ControlFlowGraph.Create(methodDecl, model);
 
-        var enforceInitializationType = compilation.GetTypeByMetadataName("Spire.EnforceInitializationAttribute");
+        var enforceInitializationType = compilation.GetTypeByMetadataName("Houtamelo.Spire.EnforceInitializationAttribute");
         if (enforceInitializationType is null)
             return null;
 
@@ -1699,7 +1699,7 @@ Key changes to `SPIRE003DefaultOfEnforceInitializationStructAnalyzer.Initialize`
 context.RegisterCompilationStartAction(compilationContext =>
 {
     var enforceInitializationType = compilationContext.Compilation
-        .GetTypeByMetadataName("Spire.EnforceInitializationAttribute");
+        .GetTypeByMetadataName("Houtamelo.Spire.EnforceInitializationAttribute");
     if (enforceInitializationType is null) return;
 
     // Build tracked symbol set — discover [EnforceInitialization] types lazily as they're encountered

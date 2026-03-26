@@ -1,6 +1,6 @@
 //@ should_pass
 // BoxedFields layout — no EditorBrowsable variant fields, analyzer doesn't fire
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion(Layout.BoxedFields)]

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Immutable;
 
-namespace Spire.Analyzers.Utils.FlowAnalysis;
+namespace Houtamelo.Spire.Analyzers.Utils.FlowAnalysis;
 
 public readonly struct VariableState : IEquatable<VariableState>
 {

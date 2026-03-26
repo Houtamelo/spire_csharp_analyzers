@@ -47,7 +47,7 @@ Your goal is to write input declarations that **try to break the emitter**. Don'
 
 Each case is a leaf directory containing exactly two files:
 
-- **input.cs** — a complete C# file with `using Spire;` and a `[DiscriminatedUnion]` type declaration. Must be a valid compilation unit.
+- **input.cs** — a complete C# file with `using Houtamelo.Spire;` and a `[DiscriminatedUnion]` type declaration. Must be a valid compilation unit.
 - **output.cs** — the expected generated source for the union type. Must match what the emitter would produce (same structure as existing output.cs files).
 
 Discovered by `SnapshotCaseDiscoveryAttribute` — any leaf directory under `cases/` with both files is automatically a test case.

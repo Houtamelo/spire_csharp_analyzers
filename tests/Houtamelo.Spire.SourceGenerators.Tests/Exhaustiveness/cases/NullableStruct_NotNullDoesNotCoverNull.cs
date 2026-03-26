@@ -1,6 +1,6 @@
 //@ should_fail
 // Shape? with not-null arm covering all variants but null is NOT covered
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

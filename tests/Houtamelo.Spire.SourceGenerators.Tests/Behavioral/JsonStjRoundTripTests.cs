@@ -2,7 +2,7 @@ using System;
 using System.Text.Json;
 using Xunit;
 
-namespace Spire.SourceGenerators.Tests.Behavioral;
+namespace Houtamelo.Spire.SourceGenerators.Tests.Behavioral;
 
 public class JsonStjRoundTripTests : BehavioralTestBase
 {

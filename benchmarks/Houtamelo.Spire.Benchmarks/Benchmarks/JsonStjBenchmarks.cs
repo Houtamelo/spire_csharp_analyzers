@@ -1,8 +1,8 @@
 using System.Text.Json;
 using BenchmarkDotNet.Attributes;
-using Spire.Benchmarks.Helpers;
+using Houtamelo.Spire.Benchmarks.Helpers;
 
-namespace Spire.Benchmarks;
+namespace Houtamelo.Spire.Benchmarks.Benchmarks;
 
 /// System.Text.Json serialization round-trip for discriminated unions.
 [Config(typeof(SpireConfig))]

@@ -1,4 +1,4 @@
-using Spire;
+using Houtamelo.Spire;
 
 [DiscriminatedUnion(Layout.BoxedFields)]
 partial struct ShapeBf

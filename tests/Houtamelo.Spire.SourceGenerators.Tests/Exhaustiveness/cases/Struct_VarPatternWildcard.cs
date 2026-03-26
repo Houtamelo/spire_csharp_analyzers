@@ -1,6 +1,6 @@
 //@ should_pass
 // var pattern is a wildcard catch-all — no diagnostic (refactoring only)
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

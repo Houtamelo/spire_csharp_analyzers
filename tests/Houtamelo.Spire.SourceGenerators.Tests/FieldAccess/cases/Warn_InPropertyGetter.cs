@@ -1,6 +1,6 @@
 //@ should_fail
 // SPIRE014: property getter accesses variant field with no kind guard
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

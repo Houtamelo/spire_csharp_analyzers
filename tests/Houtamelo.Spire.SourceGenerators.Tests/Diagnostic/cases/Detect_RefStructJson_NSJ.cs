@@ -1,6 +1,6 @@
 //@ should_fail
 // SPIRE_DU008: ref struct with NewtonsoftJson cannot use JSON generation
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion(Json = JsonLibrary.NewtonsoftJson)]

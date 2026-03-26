@@ -174,7 +174,7 @@ Each rule's `cases/_shared.cs` contains the types and usings needed by that rule
 ```csharp
 // cases/_shared.cs for SAS001
 using System;
-using Spire.Analyzers;
+using Houtamelo.Spire.Analyzers;
 
 [RequireInitialization]
 public struct MarkedStruct

@@ -1,6 +1,6 @@
 //@ should_fail
 // Property pattern matching on kind — missing Rectangle — SPIRE009
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

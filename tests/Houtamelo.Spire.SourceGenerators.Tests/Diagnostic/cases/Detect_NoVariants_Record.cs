@@ -1,6 +1,6 @@
 //@ should_fail
 // SPIRE_DU003: no variants found on record with no nested inheriting records
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

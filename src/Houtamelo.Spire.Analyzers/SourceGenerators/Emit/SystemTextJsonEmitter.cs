@@ -1,7 +1,7 @@
 using System.Linq;
-using Spire.SourceGenerators.Model;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 
-namespace Spire.SourceGenerators.Emit;
+namespace Houtamelo.Spire.Analyzers.SourceGenerators.Emit;
 
 /// Generates System.Text.Json JsonConverter for discriminated unions.
 /// Produces a non-nested converter (and factory for generic types) as a sibling type.

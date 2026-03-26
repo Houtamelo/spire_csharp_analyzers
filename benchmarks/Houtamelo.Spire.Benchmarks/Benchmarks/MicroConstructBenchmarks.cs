@@ -1,6 +1,6 @@
 using BenchmarkDotNet.Attributes;
 
-namespace Spire.Benchmarks;
+namespace Houtamelo.Spire.Benchmarks.Benchmarks;
 
 /// Single factory call per strategy. DisassemblyDiagnoser reveals JIT inlining.
 [Config(typeof(SpireDisasmConfig))]

@@ -1,6 +1,6 @@
 //@ should_pass
 // Switch statement fully covered — no diagnostic
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

@@ -1,6 +1,6 @@
 //@ should_pass
 // Accessing .kind is always OK — it's not a variant field
-using Spire;
+using Houtamelo.Spire;
 namespace TestNs
 {
     [DiscriminatedUnion]

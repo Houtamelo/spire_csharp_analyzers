@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using Spire.SourceGenerators.Model;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 
-namespace Spire.SourceGenerators.Emit;
+namespace Houtamelo.Spire.Analyzers.SourceGenerators.Emit;
 
 internal static class OverlapEmitter
 {
@@ -33,9 +33,9 @@ internal static class OverlapEmitter
         var readonlyMod = union.IsReadonly ? "readonly " : "";
         var refMod = union.IsRefStruct ? "ref " : "";
 
-        sb.AppendLine("[global::Houtamelo.Spire.EnforceInitialization]");
+        sb.AppendLine("[global::Houtamelo.Spire.Core.EnforceInitialization]");
         sb.AppendLine($"[StructLayout(LayoutKind.Explicit)]");
-        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {union.TypeName} : global::Houtamelo.Spire.IDiscriminatedUnion<{union.TypeName}.Kind>");
+        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {union.TypeName} : global::Houtamelo.Spire.Core.IDiscriminatedUnion<{union.TypeName}.Kind>");
         sb.OpenBrace();
 
         EmitKindEnum(sb, union);

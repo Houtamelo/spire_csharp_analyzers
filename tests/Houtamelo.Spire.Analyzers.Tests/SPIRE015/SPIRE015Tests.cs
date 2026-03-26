@@ -1,6 +1,6 @@
 using Houtamelo.Spire.Analyzers.Rules;
 
-namespace Spire.Analyzers.Tests.SPIRE015;
+namespace Houtamelo.Spire.Analyzers.Tests.SPIRE015;
 
 public class SPIRE015Tests : AnalyzerTestBase<SPIRE015ExhaustiveEnumSwitchAnalyzer>
 {
