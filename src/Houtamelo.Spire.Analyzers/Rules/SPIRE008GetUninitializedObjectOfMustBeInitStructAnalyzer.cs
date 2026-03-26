@@ -23,7 +23,7 @@ public sealed class SPIRE008GetUninitializedObjectOfEnforceInitializationStructA
                 .GetTypeByMetadataName("System.Runtime.CompilerServices.RuntimeHelpers");
 
             var enforceInitializationType = compilationContext.Compilation
-                .GetTypeByMetadataName("Houtamelo.Spire.EnforceInitializationAttribute");
+                .GetTypeByMetadataName("Houtamelo.Spire.Core.EnforceInitializationAttribute");
 
             if (runtimeHelpersType is null || enforceInitializationType is null)
                 return;

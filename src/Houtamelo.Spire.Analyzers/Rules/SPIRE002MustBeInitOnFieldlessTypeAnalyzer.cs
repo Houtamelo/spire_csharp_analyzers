@@ -19,7 +19,7 @@ public sealed class SPIRE002EnforceInitializationOnFieldlessTypeAnalyzer : Diagn
         context.RegisterCompilationStartAction(compilationContext =>
         {
             var enforceInitializationType = compilationContext.Compilation
-                .GetTypeByMetadataName("Houtamelo.Spire.EnforceInitializationAttribute");
+                .GetTypeByMetadataName("Houtamelo.Spire.Core.EnforceInitializationAttribute");
 
             if (enforceInitializationType is null)
                 return;

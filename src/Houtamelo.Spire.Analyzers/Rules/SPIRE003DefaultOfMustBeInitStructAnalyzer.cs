@@ -24,7 +24,7 @@ public sealed class SPIRE003DefaultOfEnforceInitializationStructAnalyzer : Diagn
         context.RegisterCompilationStartAction(compilationContext =>
         {
             var enforceInitializationType = compilationContext.Compilation
-                .GetTypeByMetadataName("Houtamelo.Spire.EnforceInitializationAttribute");
+                .GetTypeByMetadataName("Houtamelo.Spire.Core.EnforceInitializationAttribute");
 
             if (enforceInitializationType is null)
                 return;
