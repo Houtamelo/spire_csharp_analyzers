@@ -7,6 +7,12 @@ internal abstract class SlotIdentifier
 {
     private SlotIdentifier() { }
 
+    /// The top-level switch subject (column 0 in a non-structural switch).
+    internal sealed class RootSlot(ITypeSymbol type) : SlotIdentifier
+    {
+        public ITypeSymbol Type { get; } = type;
+    }
+
     internal sealed class PropertySlot(IPropertySymbol property) : SlotIdentifier
     {
         public IPropertySymbol Property { get; } = property;
