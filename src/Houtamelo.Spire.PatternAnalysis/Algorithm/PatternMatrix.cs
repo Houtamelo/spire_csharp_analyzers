@@ -200,64 +200,163 @@ internal sealed class PatternMatrix
         ImmutableArray<IPatternOperation> patterns,
         DomainResolver resolver)
     {
-        var elements = tupleType.TupleElements;
-        var columns = ImmutableArray.CreateBuilder<Column>(elements.Length);
+        // Flatten nested tuple types into a single column list.
+        // e.g., ((bool, bool), bool) → [bool, bool, bool]
+        var columns = ImmutableArray.CreateBuilder<Column>();
+        FlattenTupleColumns(tupleType, columns, resolver);
 
-        for (int i = 0; i < elements.Length; i++)
-        {
-            var elemType = elements[i].Type;
-            var domain = resolver.Resolve(elemType);
-            var slot = new SlotIdentifier.TupleSlot(i, elemType);
-            columns.Add(new Column(slot, domain));
-        }
-
-        var cols = columns.MoveToImmutable();
+        var cols = columns.ToImmutable();
         var rowBuilder = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>();
 
         foreach (var pattern in patterns)
         {
-            var row = ConvertTupleRow(pattern, cols, resolver);
-            rowBuilder.Add(row);
+            var cellBuilder = ImmutableArray.CreateBuilder<Cell>(cols.Length);
+            FlattenTupleRow(pattern, cellBuilder, cols, 0);
+
+            // Pad remaining columns with wildcards (handles discard/var/fallback patterns)
+            while (cellBuilder.Count < cols.Length)
+                cellBuilder.Add(Cell.Wildcard.Instance);
+
+            rowBuilder.Add(cellBuilder.ToImmutable());
         }
 
         return new PatternMatrix(rowBuilder.ToImmutable(), cols);
     }
 
-    /// Convert a single arm's pattern into a row of cells for a tuple matrix.
-    static ImmutableArray<Cell> ConvertTupleRow(
-        IPatternOperation pattern,
-        ImmutableArray<Column> columns,
+    /// Recursively flatten a tuple type's elements into columns.
+    /// Nested tuples are expanded inline.
+    static void FlattenTupleColumns(
+        INamedTypeSymbol tupleType,
+        ImmutableArray<Column>.Builder columns,
         DomainResolver resolver)
     {
-        // Discard/var patterns → all wildcards
+        var elements = tupleType.TupleElements;
+        for (int i = 0; i < elements.Length; i++)
+        {
+            var elemType = elements[i].Type;
+            if (elemType is INamedTypeSymbol { IsTupleType: true } nestedTuple)
+            {
+                FlattenTupleColumns(nestedTuple, columns, resolver);
+            }
+            else
+            {
+                var domain = resolver.Resolve(elemType);
+                var slot = new SlotIdentifier.TupleSlot(columns.Count, elemType);
+                columns.Add(new Column(slot, domain));
+            }
+        }
+    }
+
+    /// Recursively flatten a single arm's pattern into cells for a flattened tuple matrix.
+    /// Returns the number of flat columns consumed.
+    static int FlattenTupleRow(
+        IPatternOperation pattern,
+        ImmutableArray<Cell>.Builder cells,
+        ImmutableArray<Column> columns,
+        int startCol)
+    {
+        // Discard/var patterns → wildcards for all columns this pattern covers
         if (pattern is IDiscardPatternOperation)
-            return WildcardRow(columns.Length);
+        {
+            // Must determine how many flat columns this sub-tuple would expand to.
+            // The caller knows the answer via the column structure.
+            // We can't determine count from the pattern alone, so the caller handles this.
+            return 0; // Sentinel — handled by the caller.
+        }
 
         if (pattern is IDeclarationPatternOperation declPat && declPat.Syntax is VarPatternSyntax)
-            return WildcardRow(columns.Length);
+            return 0; // Same as discard.
 
-        // Recursive pattern with deconstruction subpatterns → map each subpattern to a column
+        // Recursive pattern with deconstruction subpatterns
         if (pattern is IRecursivePatternOperation recursive
             && !recursive.DeconstructionSubpatterns.IsEmpty)
         {
-            var cellBuilder = ImmutableArray.CreateBuilder<Cell>(columns.Length);
-            for (int i = 0; i < columns.Length; i++)
+            int col = startCol;
+            for (int i = 0; i < recursive.DeconstructionSubpatterns.Length; i++)
             {
-                if (i < recursive.DeconstructionSubpatterns.Length)
+                var subPattern = recursive.DeconstructionSubpatterns[i];
+
+                // Check if this subpattern itself is a nested tuple deconstruction
+                if (subPattern is IRecursivePatternOperation nestedRecursive
+                    && !nestedRecursive.DeconstructionSubpatterns.IsEmpty
+                    && nestedRecursive.InputType is INamedTypeSymbol { IsTupleType: true })
                 {
-                    var subPattern = recursive.DeconstructionSubpatterns[i];
-                    cellBuilder.Add(ConvertPattern(subPattern, columns[i].Domain));
+                    int consumed = FlattenTupleRow(subPattern, cells, columns, col);
+                    col += consumed;
+                }
+                else if (subPattern is IDiscardPatternOperation
+                         || (subPattern is IDeclarationPatternOperation dp && dp.Syntax is VarPatternSyntax))
+                {
+                    // Wildcard sub-element — need to figure out how many flat columns it covers.
+                    // Look at the original tuple structure to determine span.
+                    // For simplicity: a wildcard at leaf level covers 1 column.
+                    // For nested tuple wildcards, we need the original type info.
+                    if (col < columns.Length)
+                    {
+                        // Check if the subpattern's input type is a nested tuple
+                        var subInputType = GetSubPatternInputType(recursive, i);
+                        if (subInputType is INamedTypeSymbol { IsTupleType: true } nestedTupleType)
+                        {
+                            int span = CountFlatColumns(nestedTupleType);
+                            for (int j = 0; j < span && col < columns.Length; j++)
+                            {
+                                cells.Add(Cell.Wildcard.Instance);
+                                col++;
+                            }
+                        }
+                        else
+                        {
+                            cells.Add(Cell.Wildcard.Instance);
+                            col++;
+                        }
+                    }
                 }
                 else
                 {
-                    cellBuilder.Add(Cell.Wildcard.Instance);
+                    // Leaf-level pattern → convert to cell
+                    if (col < columns.Length)
+                    {
+                        cells.Add(ConvertPattern(subPattern, columns[col].Domain));
+                        col++;
+                    }
                 }
             }
-            return cellBuilder.MoveToImmutable();
+
+            return col - startCol;
         }
 
-        // Fallback: wildcard for all columns
-        return WildcardRow(columns.Length);
+        // Fallback: single wildcard (not a tuple decomposition)
+        return 0;
+    }
+
+    /// Count how many flat (leaf) columns a tuple type expands to.
+    static int CountFlatColumns(INamedTypeSymbol tupleType)
+    {
+        int count = 0;
+        foreach (var elem in tupleType.TupleElements)
+        {
+            if (elem.Type is INamedTypeSymbol { IsTupleType: true } nested)
+                count += CountFlatColumns(nested);
+            else
+                count++;
+        }
+        return count;
+    }
+
+    /// Get the input type for a subpattern at a given index within a recursive pattern.
+    /// Uses the deconstructed type's tuple elements.
+    static ITypeSymbol? GetSubPatternInputType(IRecursivePatternOperation recursive, int index)
+    {
+        // The input type is the type being deconstructed.
+        // For a tuple pattern, this is the tuple type.
+        var inputType = recursive.InputType ?? recursive.NarrowedType;
+        if (inputType is INamedTypeSymbol { IsTupleType: true } tupleType)
+        {
+            var elements = tupleType.TupleElements;
+            if (index < elements.Length)
+                return elements[index].Type;
+        }
+        return null;
     }
 
     static ImmutableArray<Cell> WildcardRow(int count)
@@ -415,7 +514,8 @@ internal sealed class PatternMatrix
                 return ConvertTypePattern(typePattern.MatchedType, domain);
 
             case IRecursivePatternOperation:
-                // Structural decomposition — conservative wildcard for now
+                // Structural decomposition — conservative wildcard for now.
+                // Nested tuples are handled by BuildTupleMatrix flattening.
                 return Cell.Wildcard.Instance;
 
             default:
