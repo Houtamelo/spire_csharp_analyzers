@@ -121,25 +121,18 @@ internal sealed class PatternMatrix
     {
         var subjectType = switchExpr.Value.Type;
         if (subjectType == null)
-            return Empty(resolver);
+            return Empty();
 
-        var domain = resolver.Resolve(subjectType);
-        var slot = new SlotIdentifier.RootSlot(subjectType);
-        var column = new Column(slot, domain);
-
-        var rowBuilder = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>();
-
+        // Collect patterns (excluding guarded arms)
+        var patterns = ImmutableArray.CreateBuilder<IPatternOperation>();
         foreach (var arm in switchExpr.Arms)
         {
-            // Skip arms with when guards
             if (arm.Guard != null)
                 continue;
-
-            var cell = ConvertPattern(arm.Pattern, domain);
-            rowBuilder.Add(ImmutableArray.Create(cell));
+            patterns.Add(arm.Pattern);
         }
 
-        return new PatternMatrix(rowBuilder.ToImmutable(), ImmutableArray.Create(column));
+        return BuildCore(subjectType, patterns.ToImmutable(), resolver);
     }
 
     /// Build a PatternMatrix from a switch statement's cases.
@@ -148,35 +141,250 @@ internal sealed class PatternMatrix
     {
         var subjectType = switchStmt.Value.Type;
         if (subjectType == null)
-            return Empty(resolver);
+            return Empty();
 
-        var domain = resolver.Resolve(subjectType);
-        var slot = new SlotIdentifier.RootSlot(subjectType);
-        var column = new Column(slot, domain);
-
-        var rowBuilder = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>();
-
+        // Collect patterns (excluding guarded clauses)
+        var patterns = ImmutableArray.CreateBuilder<IPatternOperation>();
         foreach (var switchCase in switchStmt.Cases)
         {
             foreach (var clause in switchCase.Clauses)
             {
                 if (clause is not IPatternCaseClauseOperation patternClause)
                     continue;
-
-                // Skip clauses with when guards
                 if (patternClause.Guard != null)
                     continue;
-
-                var cell = ConvertPattern(patternClause.Pattern, domain);
-                rowBuilder.Add(ImmutableArray.Create(cell));
+                patterns.Add(patternClause.Pattern);
             }
+        }
+
+        return BuildCore(subjectType, patterns.ToImmutable(), resolver);
+    }
+
+    static PatternMatrix Empty() =>
+        new(ImmutableArray<ImmutableArray<Cell>>.Empty, ImmutableArray<Column>.Empty);
+
+    /// Core build logic. Detects tuple subjects and property patterns,
+    /// expanding them into multi-column matrices.
+    static PatternMatrix BuildCore(
+        ITypeSymbol subjectType,
+        ImmutableArray<IPatternOperation> patterns,
+        DomainResolver resolver)
+    {
+        // Tuple subject → multi-column matrix with one column per element
+        if (subjectType is INamedTypeSymbol { IsTupleType: true } tupleType)
+            return BuildTupleMatrix(tupleType, patterns, resolver);
+
+        // Check if any arm uses property subpatterns → multi-column property matrix
+        if (HasPropertyPatterns(patterns))
+            return BuildPropertyMatrix(subjectType, patterns, resolver);
+
+        // Default: single-column matrix
+        var domain = resolver.Resolve(subjectType);
+        var slot = new SlotIdentifier.RootSlot(subjectType);
+        var column = new Column(slot, domain);
+
+        var rowBuilder = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>();
+        foreach (var pattern in patterns)
+        {
+            var cell = ConvertPattern(pattern, domain);
+            rowBuilder.Add(ImmutableArray.Create(cell));
         }
 
         return new PatternMatrix(rowBuilder.ToImmutable(), ImmutableArray.Create(column));
     }
 
-    static PatternMatrix Empty(DomainResolver resolver) =>
-        new(ImmutableArray<ImmutableArray<Cell>>.Empty, ImmutableArray<Column>.Empty);
+    // ─── Tuple matrix ────────────────────────────────────────────────────
+
+    static PatternMatrix BuildTupleMatrix(
+        INamedTypeSymbol tupleType,
+        ImmutableArray<IPatternOperation> patterns,
+        DomainResolver resolver)
+    {
+        var elements = tupleType.TupleElements;
+        var columns = ImmutableArray.CreateBuilder<Column>(elements.Length);
+
+        for (int i = 0; i < elements.Length; i++)
+        {
+            var elemType = elements[i].Type;
+            var domain = resolver.Resolve(elemType);
+            var slot = new SlotIdentifier.TupleSlot(i, elemType);
+            columns.Add(new Column(slot, domain));
+        }
+
+        var cols = columns.MoveToImmutable();
+        var rowBuilder = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>();
+
+        foreach (var pattern in patterns)
+        {
+            var row = ConvertTupleRow(pattern, cols, resolver);
+            rowBuilder.Add(row);
+        }
+
+        return new PatternMatrix(rowBuilder.ToImmutable(), cols);
+    }
+
+    /// Convert a single arm's pattern into a row of cells for a tuple matrix.
+    static ImmutableArray<Cell> ConvertTupleRow(
+        IPatternOperation pattern,
+        ImmutableArray<Column> columns,
+        DomainResolver resolver)
+    {
+        // Discard/var patterns → all wildcards
+        if (pattern is IDiscardPatternOperation)
+            return WildcardRow(columns.Length);
+
+        if (pattern is IDeclarationPatternOperation declPat && declPat.Syntax is VarPatternSyntax)
+            return WildcardRow(columns.Length);
+
+        // Recursive pattern with deconstruction subpatterns → map each subpattern to a column
+        if (pattern is IRecursivePatternOperation recursive
+            && !recursive.DeconstructionSubpatterns.IsEmpty)
+        {
+            var cellBuilder = ImmutableArray.CreateBuilder<Cell>(columns.Length);
+            for (int i = 0; i < columns.Length; i++)
+            {
+                if (i < recursive.DeconstructionSubpatterns.Length)
+                {
+                    var subPattern = recursive.DeconstructionSubpatterns[i];
+                    cellBuilder.Add(ConvertPattern(subPattern, columns[i].Domain));
+                }
+                else
+                {
+                    cellBuilder.Add(Cell.Wildcard.Instance);
+                }
+            }
+            return cellBuilder.MoveToImmutable();
+        }
+
+        // Fallback: wildcard for all columns
+        return WildcardRow(columns.Length);
+    }
+
+    static ImmutableArray<Cell> WildcardRow(int count)
+    {
+        var builder = ImmutableArray.CreateBuilder<Cell>(count);
+        for (int i = 0; i < count; i++)
+            builder.Add(Cell.Wildcard.Instance);
+        return builder.MoveToImmutable();
+    }
+
+    // ─── Property-pattern matrix ──────────────────────────────────────────
+
+    /// Check if any pattern in the set uses property subpatterns.
+    static bool HasPropertyPatterns(ImmutableArray<IPatternOperation> patterns)
+    {
+        foreach (var pattern in patterns)
+        {
+            if (pattern is IRecursivePatternOperation recursive
+                && !recursive.PropertySubpatterns.IsEmpty)
+                return true;
+        }
+        return false;
+    }
+
+    /// Build a multi-column matrix from property patterns.
+    /// Collects all distinct properties mentioned across all arms,
+    /// creates a column for each, and maps each arm's subpatterns.
+    static PatternMatrix BuildPropertyMatrix(
+        ITypeSymbol subjectType,
+        ImmutableArray<IPatternOperation> patterns,
+        DomainResolver resolver)
+    {
+        // Collect all distinct property symbols mentioned across arms
+        var propertySet = new System.Collections.Generic.Dictionary<IPropertySymbol, int>(
+            SymbolEqualityComparer.Default);
+
+        foreach (var pattern in patterns)
+        {
+            if (pattern is not IRecursivePatternOperation recursive)
+                continue;
+
+            foreach (var propSub in recursive.PropertySubpatterns)
+            {
+                var prop = GetPropertyFromSubpattern(propSub);
+                if (prop != null && !propertySet.ContainsKey(prop))
+                    propertySet[prop] = propertySet.Count;
+            }
+        }
+
+        if (propertySet.Count == 0)
+        {
+            // No properties found — fall back to single-column
+            var domain = resolver.Resolve(subjectType);
+            var slot = new SlotIdentifier.RootSlot(subjectType);
+            var column = new Column(slot, domain);
+            var rowBuilder2 = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>();
+            foreach (var pattern in patterns)
+            {
+                var cell = ConvertPattern(pattern, domain);
+                rowBuilder2.Add(ImmutableArray.Create(cell));
+            }
+            return new PatternMatrix(rowBuilder2.ToImmutable(), ImmutableArray.Create(column));
+        }
+
+        // Build columns from collected properties
+        var columns = ImmutableArray.CreateBuilder<Column>(propertySet.Count);
+        var propList = new IPropertySymbol[propertySet.Count];
+        foreach (var kvp in propertySet)
+            propList[kvp.Value] = kvp.Key;
+
+        for (int i = 0; i < propList.Length; i++)
+        {
+            var prop = propList[i];
+            var propDomain = resolver.Resolve(prop.Type);
+            var slot = new SlotIdentifier.PropertySlot(prop);
+            columns.Add(new Column(slot, propDomain));
+        }
+
+        var cols = columns.MoveToImmutable();
+        var rowBuilder = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>();
+
+        foreach (var pattern in patterns)
+        {
+            var row = ConvertPropertyRow(pattern, cols, propList, propertySet, resolver);
+            rowBuilder.Add(row);
+        }
+
+        return new PatternMatrix(rowBuilder.ToImmutable(), cols);
+    }
+
+    /// Convert a single arm's pattern into a row of cells for a property matrix.
+    static ImmutableArray<Cell> ConvertPropertyRow(
+        IPatternOperation pattern,
+        ImmutableArray<Column> columns,
+        IPropertySymbol[] propList,
+        System.Collections.Generic.Dictionary<IPropertySymbol, int> propertySet,
+        DomainResolver resolver)
+    {
+        // Discard/var/wildcard → all wildcards
+        if (pattern is IDiscardPatternOperation)
+            return WildcardRow(columns.Length);
+
+        if (pattern is IDeclarationPatternOperation declPat && declPat.Syntax is VarPatternSyntax)
+            return WildcardRow(columns.Length);
+
+        if (pattern is IRecursivePatternOperation recursive)
+        {
+            // Start with all wildcards
+            var cellBuilder = ImmutableArray.CreateBuilder<Cell>(columns.Length);
+            for (int i = 0; i < columns.Length; i++)
+                cellBuilder.Add(Cell.Wildcard.Instance);
+
+            // Fill in property subpatterns
+            foreach (var propSub in recursive.PropertySubpatterns)
+            {
+                var prop = GetPropertyFromSubpattern(propSub);
+                if (prop != null && propertySet.TryGetValue(prop, out int idx))
+                {
+                    cellBuilder[idx] = ConvertPattern(propSub.Pattern, columns[idx].Domain);
+                }
+            }
+
+            return cellBuilder.MoveToImmutable();
+        }
+
+        return WildcardRow(columns.Length);
+    }
 
     // ─── Pattern-to-Cell conversion ──────────────────────────────────────
 
@@ -243,7 +451,7 @@ internal sealed class PatternMatrix
             if (domain is NullableDomain nullableDomain)
             {
                 // Create a NullableDomain that covers only null (empty inner)
-                var emptyInner = nullableDomain.Inner.Subtract(nullableDomain.Inner);
+                var emptyInner = new EmptyDomain(nullableDomain.Inner.Type);
                 return new Cell.Constraint(new NullableDomain(domain.Type, emptyInner, hasNull: true));
             }
 
@@ -385,6 +593,17 @@ internal sealed class PatternMatrix
 
     static Cell ConvertNegatedPattern(INegatedPatternOperation negPattern, IValueDomain domain)
     {
+        // Special case: `not null` against a NullableDomain.
+        // Directly construct the not-null partition instead of relying on Complement,
+        // which would fail for structural inner domains.
+        if (negPattern.Pattern is IConstantPatternOperation constInner
+            && constInner.Value?.ConstantValue is { HasValue: true, Value: null }
+            && domain is NullableDomain nullableDomain)
+        {
+            return new Cell.Constraint(
+                new NullableDomain(domain.Type, nullableDomain.Inner, hasNull: false));
+        }
+
         var inner = ConvertPattern(negPattern.Pattern, domain);
 
         if (inner is Cell.Wildcard)
@@ -439,5 +658,16 @@ internal sealed class PatternMatrix
         }
 
         return Cell.Wildcard.Instance;
+    }
+
+    /// Extract the IPropertySymbol from a property subpattern's Member operation.
+    /// Member is an IOperation (IPropertyReferenceOperation or IFieldReferenceOperation),
+    /// not a symbol directly.
+    static IPropertySymbol? GetPropertyFromSubpattern(IPropertySubpatternOperation propSub)
+    {
+        if (propSub.Member is IPropertyReferenceOperation propRef)
+            return propRef.Property;
+
+        return null;
     }
 }

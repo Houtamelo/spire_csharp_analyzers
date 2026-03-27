@@ -32,13 +32,25 @@ internal sealed class NullableDomain : IValueDomain
     {
         if (other is NullableDomain otherNullable)
         {
+            // If this inner is empty, result inner stays empty.
+            // If other inner is empty, nothing to subtract from the inner.
+            IValueDomain subtractedInner;
+            if (_inner is EmptyDomain)
+                subtractedInner = _inner;
+            else if (otherNullable._inner is EmptyDomain)
+                subtractedInner = _inner;
+            else
+                subtractedInner = _inner.Subtract(otherNullable._inner);
+
             return new NullableDomain(
                 Type,
-                _inner.Subtract(otherNullable._inner),
+                subtractedInner,
                 hasNull: _hasNull && !otherNullable._hasNull);
         }
 
         // Bare inner domain — subtract from inner only, null is unaffected
+        if (_inner is EmptyDomain)
+            return this;
         return new NullableDomain(Type, _inner.Subtract(other), hasNull: _hasNull);
     }
 
@@ -46,9 +58,18 @@ internal sealed class NullableDomain : IValueDomain
     {
         if (other is NullableDomain otherNullable)
         {
+            // If either inner is empty, the intersection inner is empty.
+            // This avoids calling Intersect between incompatible domain types
+            // (e.g., EmptyDomain vs BoolDomain).
+            IValueDomain intersectedInner;
+            if (_inner is EmptyDomain || otherNullable._inner is EmptyDomain)
+                intersectedInner = new EmptyDomain(_inner.Type);
+            else
+                intersectedInner = _inner.Intersect(otherNullable._inner);
+
             return new NullableDomain(
                 Type,
-                _inner.Intersect(otherNullable._inner),
+                intersectedInner,
                 hasNull: _hasNull && otherNullable._hasNull);
         }
 
@@ -71,7 +92,7 @@ internal sealed class NullableDomain : IValueDomain
         // Null partition comes first (if present)
         if (_hasNull)
         {
-            var emptyInner = _inner.Subtract(_inner); // guaranteed empty inner
+            var emptyInner = new EmptyDomain(_inner.Type);
             builder.Add(new NullableDomain(Type, emptyInner, hasNull: true));
         }
 
