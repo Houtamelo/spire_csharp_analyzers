@@ -7,5 +7,6 @@ public class BoolBoolMissing
         (true, true) => 1,
         (true, false) => 2,
         (false, true) => 3,
+        //~ (false, false)
     };
 }

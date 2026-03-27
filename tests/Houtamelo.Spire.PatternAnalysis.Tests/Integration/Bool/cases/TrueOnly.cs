@@ -5,5 +5,6 @@ public class TrueOnly
     public int Test(bool b) => b switch
     {
         true => 1,
+        //~ false
     };
 }

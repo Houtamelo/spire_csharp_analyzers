@@ -7,5 +7,6 @@ public class EnumBoolNullableMissing
         (Direction.North, true) => 1,
         (Direction.North, false) => 2,
         (Direction.South, _) => 4,
+        //~ (Direction.North, null)
     };
 }

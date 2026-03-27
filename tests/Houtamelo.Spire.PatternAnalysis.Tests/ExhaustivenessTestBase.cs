@@ -34,22 +34,19 @@ public abstract class ExhaustivenessTestBase
     [ExhaustivenessTestDiscovery("exhaustive")]
     public async Task Exhaustive(string caseName)
     {
-        var (caseSource, sharedSource) = LoadAndParse(caseName);
+        var (rawContent, sharedContent) = LoadRaw(caseName);
+        var markers = ParseMarkers(rawContent);
+
+        if (markers.Count > 0)
+            throw new InvalidOperationException(
+                $"File {caseName}.cs is marked exhaustive but contains {markers.Count} //~ marker(s). " +
+                "Exhaustive cases must not have //~ markers.");
+
+        var caseSource = StripComments(rawContent);
+        var sharedSource = sharedContent != null ? StripComments(sharedContent) : null;
         var (compilation, switchOp) = await BuildAndExtractSwitch(caseSource, sharedSource, caseName);
 
-        ExhaustivenessResult result;
-        switch (switchOp)
-        {
-            case ISwitchExpressionOperation expr:
-                result = ExhaustivenessChecker.Check(compilation, expr);
-                break;
-            case ISwitchOperation stmt:
-                result = ExhaustivenessChecker.Check(compilation, stmt);
-                break;
-            default:
-                throw new InvalidOperationException(
-                    $"Unexpected operation type: {switchOp.GetType().Name}");
-        }
+        var result = RunCheck(compilation, switchOp);
 
         if (!result.MissingCases.IsEmpty)
         {
@@ -70,31 +67,146 @@ public abstract class ExhaustivenessTestBase
     [ExhaustivenessTestDiscovery("not_exhaustive")]
     public async Task NotExhaustive(string caseName)
     {
-        var (caseSource, sharedSource) = LoadAndParse(caseName);
-        var (compilation, switchOp) = await BuildAndExtractSwitch(caseSource, sharedSource, caseName);
+        var (rawContent, sharedContent) = LoadRaw(caseName);
+        var markers = ParseMarkers(rawContent);
+        var sharedSource = sharedContent != null ? StripComments(sharedContent) : null;
+        var isStatement = DetectSwitchStatement(rawContent);
 
-        ExhaustivenessResult result;
-        switch (switchOp)
-        {
-            case ISwitchExpressionOperation expr:
-                result = ExhaustivenessChecker.Check(compilation, expr);
-                break;
-            case ISwitchOperation stmt:
-                result = ExhaustivenessChecker.Check(compilation, stmt);
-                break;
-            default:
-                throw new InvalidOperationException(
-                    $"Unexpected operation type: {switchOp.GetType().Name}");
-        }
+        // Step 0: compile original (all markers as comments, stripped) and verify non-exhaustive
+        var caseSource0 = StripComments(rawContent);
+        var (compilation0, switchOp0) = await BuildAndExtractSwitch(caseSource0, sharedSource, caseName);
+        var result0 = RunCheck(compilation0, switchOp0);
 
-        if (result.MissingCases.IsEmpty)
+        if (result0.MissingCases.IsEmpty)
         {
             throw new XunitException(
                 $"File {caseName}.cs is marked not_exhaustive but the switch was found to be exhaustive.");
         }
+
+        // If no markers, fall back to current behavior (just assert not exhaustive)
+        if (markers.Count == 0)
+            return;
+
+        // Incremental validation: each marker should reduce missing cases
+        var previousCount = result0.MissingCases.Length;
+
+        for (int i = 0; i < markers.Count; i++)
+        {
+            var augmented = CreateAugmentedSource(rawContent, markers, i, isStatement);
+            var strippedAugmented = StripComments(augmented);
+            var (compilationI, switchOpI) = await BuildAndExtractSwitch(
+                strippedAugmented, sharedSource, $"{caseName} (marker {i})");
+            var resultI = RunCheck(compilationI, switchOpI);
+
+            var currentCount = resultI.MissingCases.Length;
+
+            if (currentCount >= previousCount)
+            {
+                throw new XunitException(
+                    $"File {caseName}.cs: after converting marker {i} ('{markers[i].pattern}'), " +
+                    $"missing cases did not decrease. Previous: {previousCount}, Current: {currentCount}.");
+            }
+
+            if (i < markers.Count - 1)
+            {
+                // Not the last marker — must still be non-exhaustive
+                if (currentCount == 0)
+                {
+                    throw new XunitException(
+                        $"File {caseName}.cs: switch became exhaustive after marker {i} ('{markers[i].pattern}'), " +
+                        $"but {markers.Count - i - 1} marker(s) remain. Markers may be redundant.");
+                }
+            }
+            else
+            {
+                // Last marker — must be exactly exhaustive
+                if (currentCount != 0)
+                {
+                    var descriptions = resultI.MissingCases.Select((mc, j) =>
+                    {
+                        var constraints = string.Join(", ",
+                            mc.Constraints.Select(c => $"{c.Slot}: {c.Remaining}"));
+                        return $"  [{j}] {constraints}";
+                    });
+
+                    throw new XunitException(
+                        $"File {caseName}.cs: after converting all {markers.Count} marker(s), " +
+                        $"switch is still not exhaustive. {currentCount} missing case(s) remain:" +
+                        $"{Environment.NewLine}{string.Join(Environment.NewLine, descriptions)}");
+                }
+            }
+
+            previousCount = currentCount;
+        }
     }
 
-    private (string caseSource, string? sharedSource) LoadAndParse(string caseName)
+    /// Extracts //~ markers from raw file content. Returns (lineIndex, pattern) pairs.
+    private static List<(int lineIndex, string pattern)> ParseMarkers(string rawContent)
+    {
+        var result = new List<(int, string)>();
+        var lines = rawContent.Split('\n');
+        for (int i = 0; i < lines.Length; i++)
+        {
+            var trimmed = lines[i].TrimEnd('\r').Trim();
+            if (trimmed.StartsWith("//~"))
+            {
+                var pattern = trimmed.Substring(3).Trim();
+                if (pattern.Length > 0)
+                    result.Add((i, pattern));
+            }
+        }
+        return result;
+    }
+
+    /// Creates augmented source by converting markers [0..convertUpToIndex] to switch arms
+    /// and leaving the rest as-is (they'll be stripped as comments).
+    private static string CreateAugmentedSource(
+        string rawContent,
+        List<(int lineIndex, string pattern)> markers,
+        int convertUpToIndex,
+        bool isStatement)
+    {
+        var lines = rawContent.Split('\n');
+        for (int i = 0; i <= convertUpToIndex; i++)
+        {
+            var (lineIndex, pattern) = markers[i];
+            var originalLine = lines[lineIndex];
+            // Preserve leading whitespace
+            var leadingWhitespace = originalLine.Length - originalLine.TrimStart().Length;
+            var indent = originalLine.Substring(0, leadingWhitespace);
+
+            if (isStatement)
+                lines[lineIndex] = $"{indent}case {pattern}: break;";
+            else
+                lines[lineIndex] = $"{indent}{pattern} => default,";
+        }
+        return string.Join("\n", lines);
+    }
+
+    /// Detects whether the raw source uses a switch statement (vs expression).
+    private static bool DetectSwitchStatement(string rawContent)
+    {
+        // Parse and look for switch statement syntax
+        var tree = CSharpSyntaxTree.ParseText(StripComments(rawContent));
+        var root = tree.GetRoot();
+        return root.DescendantNodes().OfType<SwitchStatementSyntax>().Any();
+    }
+
+    private static ExhaustivenessResult RunCheck(CSharpCompilation compilation, IOperation switchOp)
+    {
+        switch (switchOp)
+        {
+            case ISwitchExpressionOperation expr:
+                return ExhaustivenessChecker.Check(compilation, expr);
+            case ISwitchOperation stmt:
+                return ExhaustivenessChecker.Check(compilation, stmt);
+            default:
+                throw new InvalidOperationException(
+                    $"Unexpected operation type: {switchOp.GetType().Name}");
+        }
+    }
+
+    private (string rawContent, string? sharedContent) LoadRaw(string caseName)
     {
         var casesDir = Path.Combine(AppContext.BaseDirectory, "Integration", Category, "cases");
         var sharedPath = Path.Combine(casesDir, "_shared.cs");
@@ -111,10 +223,7 @@ public abstract class ExhaustivenessTestBase
                 $"File {caseName}.cs is missing //@ exhaustive or //@ not_exhaustive header on line 1. " +
                 $"Found: \"{firstLine}\"");
 
-        var strippedCase = StripComments(caseContent);
-        var strippedShared = sharedContent != null ? StripComments(sharedContent) : null;
-
-        return (strippedCase, strippedShared);
+        return (caseContent, sharedContent);
     }
 
     private async Task<(CSharpCompilation compilation, IOperation switchOp)> BuildAndExtractSwitch(

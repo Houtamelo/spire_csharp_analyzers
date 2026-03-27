@@ -7,5 +7,6 @@ public class ThreeColumnMixedMissing
         (Axis.X, _, _) => 1,
         (Axis.Y, Toggle.On, _) => 2,
         (Axis.Y, Toggle.Off, true) => 3,
+        //~ (Axis.Y, Toggle.Off, false)
     };
 }

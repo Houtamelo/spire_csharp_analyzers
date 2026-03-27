@@ -7,5 +7,6 @@ public class NullableTupleElementMissing
         (true, true) => 1,
         (true, false) => 2,
         (false, _) => 3,
+        //~ (null, _)
     };
 }

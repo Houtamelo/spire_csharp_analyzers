@@ -11,5 +11,6 @@ public class ThreeColumnBoolMissing
         (false, true, true) => 5,
         (false, true, false) => 6,
         (false, false, true) => 7,
+        //~ (false, false, false)
     };
 }

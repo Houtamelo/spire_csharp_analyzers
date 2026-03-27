@@ -7,5 +7,6 @@ public class TypeHierarchyInTupleMissing
     {
         (Car, true) => 1,
         (Car, false) => 2,
+        //~ (Bike, _)
     };
 }

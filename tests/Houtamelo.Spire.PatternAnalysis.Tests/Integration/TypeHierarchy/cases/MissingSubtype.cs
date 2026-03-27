@@ -7,5 +7,6 @@ public class MissingSubtype
     {
         Dog => 1,
         Cat => 2,
+        //~ Bird
     };
 }

@@ -7,6 +7,7 @@ public class SwitchStatement_BoolMissing
         switch (b)
         {
             case true: return 1;
+            //~ false
         }
         return -1;
     }

@@ -7,5 +7,6 @@ public class TwoProperties_MissingCombo
         { A: true, B: true } => 1,
         { A: true, B: false } => 2,
         { A: false, B: true } => 3,
+        //~ { A: false, B: false }
     };
 }

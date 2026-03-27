@@ -7,5 +7,7 @@ public class LargeEnum_MissingTwo
         Color.Red => 1,
         Color.Green => 2,
         Color.Blue => 3,
+        //~ Color.Yellow
+        //~ Color.Purple
     };
 }

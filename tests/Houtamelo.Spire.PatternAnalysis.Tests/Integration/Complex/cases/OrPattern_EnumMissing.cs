@@ -6,5 +6,6 @@ public class OrPattern_EnumMissing
     {
         Color.Red or Color.Green => 1,
         Color.Blue or Color.Yellow => 2,
+        //~ Color.Purple
     };
 }

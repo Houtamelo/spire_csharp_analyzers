@@ -7,5 +7,6 @@ public class AndPattern_NumericGap
         > 0 and < 100 => 1,
         >= 100 => 2,
         < 0 => 3,
+        //~ 0
     };
 }

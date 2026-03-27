@@ -6,5 +6,6 @@ public class NullableRefMissing
     public int Test(string? s) => s switch
     {
         not null => 1,
+        //~ null
     };
 }

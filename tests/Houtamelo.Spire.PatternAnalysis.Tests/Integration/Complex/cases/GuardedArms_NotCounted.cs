@@ -6,5 +6,6 @@ public class GuardedArms_NotCounted
     {
         true when DateTime.Now.Ticks > 0 => 1,
         false => 2,
+        //~ true
     };
 }

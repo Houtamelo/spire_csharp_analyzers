@@ -5,5 +5,6 @@ public class NotPattern_EnumMissing
     public int Test(Color c) => c switch
     {
         not Color.Red => 1,
+        //~ Color.Red
     };
 }

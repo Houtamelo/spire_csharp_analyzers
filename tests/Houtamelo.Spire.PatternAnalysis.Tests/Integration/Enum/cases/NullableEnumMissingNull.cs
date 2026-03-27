@@ -7,5 +7,6 @@ public class NullableEnumMissingNull
         Color.Red => 1,
         Color.Green => 2,
         Color.Blue => 3,
+        //~ null
     };
 }

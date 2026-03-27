@@ -6,5 +6,6 @@ public class MissingOne
     {
         Color.Red => 1,
         Color.Green => 2,
+        //~ Color.Blue
     };
 }

@@ -6,5 +6,6 @@ public class EnumBoolMissing
     {
         (Shape.Circle, true) => 1,
         (Shape.Rectangle, _) => 3,
+        //~ (Shape.Circle, false)
     };
 }
