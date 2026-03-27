@@ -60,7 +60,7 @@ internal abstract class StructuralDomain : IValueDomain
         }
     }
 
-    public ImmutableArray<IValueDomain> Split()
+    public virtual ImmutableArray<IValueDomain> Split()
     {
         if (IsEmpty)
             return ImmutableArray<IValueDomain>.Empty;

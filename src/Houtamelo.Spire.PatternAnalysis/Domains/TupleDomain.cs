@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis;
 namespace Houtamelo.Spire.PatternAnalysis.Domains;
 
 /// Structural domain for tuple patterns. Slots are positional (TupleSlot).
-internal sealed class TupleDomain : StructuralDomain
+internal class TupleDomain : StructuralDomain
 {
     public TupleDomain(
         ITypeSymbol type,

@@ -6,7 +6,7 @@ namespace Houtamelo.Spire.PatternAnalysis.Domains;
 /// Structural domain for property patterns. Slots are named (PropertySlot).
 /// Only tracks properties mentioned in switch arms — unmentioned properties
 /// are implicitly wildcarded.
-internal sealed class PropertyPatternDomain : StructuralDomain
+internal class PropertyPatternDomain : StructuralDomain
 {
     public PropertyPatternDomain(
         ITypeSymbol type,
