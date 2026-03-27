@@ -25,6 +25,11 @@ internal readonly struct IntervalSet
     public static IntervalSet Single(Interval interval) =>
         interval.IsEmpty ? Empty : new IntervalSet(ImmutableArray.Create(interval));
 
+    /// Creates a set from pre-sorted, non-overlapping intervals (skips normalization).
+    /// Empty intervals are filtered out.
+    public static IntervalSet FromIntervals(ImmutableArray<Interval> intervals) =>
+        FromNormalized(intervals);
+
     /// True when no intervals remain.
     public bool IsEmpty => Intervals.IsDefaultOrEmpty;
 

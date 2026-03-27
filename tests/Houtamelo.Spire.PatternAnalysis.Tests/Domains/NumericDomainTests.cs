@@ -90,12 +90,12 @@ public class NumericDomainTests
         Assert.False(result.IsEmpty);
         Assert.False(result.IsUniverse);
 
-        // Result should be (30, int.MaxValue]
+        // Result should be [31, int.MaxValue] (normalized for integral type)
         var intervals = result.Intervals;
         Assert.Single(intervals.Intervals);
-        Assert.Equal(30.0, intervals.Intervals[0].Lo);
+        Assert.Equal(31.0, intervals.Intervals[0].Lo);
         Assert.Equal((double)int.MaxValue, intervals.Intervals[0].Hi);
-        Assert.False(intervals.Intervals[0].LoInclusive);
+        Assert.True(intervals.Intervals[0].LoInclusive);
         Assert.True(intervals.Intervals[0].HiInclusive);
     }
 
@@ -140,12 +140,12 @@ public class NumericDomainTests
         // Subtract left from universe should give (30, int.MaxValue]
         var right = (NumericDomain)universe.Subtract(left);
 
-        // The right should be the complement
+        // The right should be the complement: [31, int.MaxValue] (normalized for integral type)
         Assert.False(right.IsEmpty);
         var rightIntervals = right.Intervals;
         Assert.Single(rightIntervals.Intervals);
-        Assert.Equal(30.0, rightIntervals.Intervals[0].Lo);
-        Assert.False(rightIntervals.Intervals[0].LoInclusive);
+        Assert.Equal(31.0, rightIntervals.Intervals[0].Lo);
+        Assert.True(rightIntervals.Intervals[0].LoInclusive);
         Assert.Equal((double)int.MaxValue, rightIntervals.Intervals[0].Hi);
         Assert.True(rightIntervals.Intervals[0].HiInclusive);
     }
@@ -167,14 +167,17 @@ public class NumericDomainTests
 
         var domain = (NumericDomain)universe.Subtract(point30);
 
-        // The domain now has two intervals with boundaries at 30
+        // After integral normalization: [MinValue, 29] ∪ [31, MaxValue]
+        // Boundaries at 29 and 31 → 3 partitions
         var splits = domain.Split();
 
-        Assert.Equal(2, splits.Length);
-        // First partition: [int.MinValue, 30)
+        Assert.Equal(3, splits.Length);
+        // First partition: [int.MinValue, 29]
         Assert.False(splits[0].IsEmpty);
-        // Second partition: (30, int.MaxValue]
+        // Second partition: [31, 31] (single point between boundaries)
         Assert.False(splits[1].IsEmpty);
+        // Third partition: [32, int.MaxValue]
+        Assert.False(splits[2].IsEmpty);
     }
 
     // ─── IsEmpty ─────────────────────────────────────────────────────

@@ -20,7 +20,7 @@ internal sealed class NumericDomain : IValueDomain
     public NumericDomain(ITypeSymbol type, IntervalSet intervals, double universeMin, double universeMax)
     {
         Type = type;
-        _intervals = intervals;
+        _intervals = IsIntegralType(type) ? NormalizeIntegral(intervals) : intervals;
         _universeMin = universeMin;
         _universeMax = universeMax;
     }
@@ -116,5 +116,75 @@ internal sealed class NumericDomain : IValueDomain
             SpecialType.System_Decimal => ((double)decimal.MinValue, (double)decimal.MaxValue),
             _ => throw new ArgumentException($"Unsupported numeric type: {type.ToDisplayString()}")
         };
+    }
+
+    /// Returns true for integer types where intervals should be normalized to whole numbers.
+    static bool IsIntegralType(ITypeSymbol type) => type.SpecialType switch
+    {
+        SpecialType.System_Byte   => true,
+        SpecialType.System_SByte  => true,
+        SpecialType.System_Int16  => true,
+        SpecialType.System_UInt16 => true,
+        SpecialType.System_Int32  => true,
+        SpecialType.System_UInt32 => true,
+        SpecialType.System_Int64  => true,
+        SpecialType.System_UInt64 => true,
+        _                         => false,
+    };
+
+    /// Normalize intervals for integer types.
+    /// For integers, open bounds are tightened to the next integer:
+    ///   (a, b) → [ceil(a+eps), floor(b-eps)] = [floor(a)+1, ceil(b)-1] for non-integer bounds
+    ///   (3, 7) → [4, 6],  (-1, 1) → [0, 0],  (-1, 0) → empty
+    static IntervalSet NormalizeIntegral(IntervalSet intervals)
+    {
+        if (intervals.IsEmpty)
+            return intervals;
+
+        var builder = ImmutableArray.CreateBuilder<Interval>();
+
+        foreach (var iv in intervals.Intervals)
+        {
+            if (iv.IsEmpty)
+                continue;
+
+            // Tighten lo bound: if exclusive, round up to next integer
+            double lo = iv.Lo;
+            bool loInc = iv.LoInclusive;
+            if (!loInc)
+            {
+                lo = Math.Floor(lo) + 1;
+                loInc = true;
+            }
+            else
+            {
+                // If lo is inclusive but not a whole number, round up
+                lo = Math.Ceiling(lo);
+            }
+
+            // Tighten hi bound: if exclusive, round down to previous integer
+            double hi = iv.Hi;
+            bool hiInc = iv.HiInclusive;
+            if (!hiInc)
+            {
+                hi = Math.Ceiling(hi) - 1;
+                hiInc = true;
+            }
+            else
+            {
+                // If hi is inclusive but not a whole number, round down
+                hi = Math.Floor(hi);
+            }
+
+            var normalized = new Interval(lo, hi, loInc, hiInc);
+            if (!normalized.IsEmpty)
+                builder.Add(normalized);
+        }
+
+        if (builder.Count == 0)
+            return IntervalSet.Empty;
+
+        // Re-wrap without re-normalizing (intervals are already sorted/disjoint from the source)
+        return IntervalSet.FromIntervals(builder.ToImmutable());
     }
 }

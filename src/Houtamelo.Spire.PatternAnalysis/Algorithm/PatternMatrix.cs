@@ -136,6 +136,8 @@ internal sealed class PatternMatrix
     }
 
     /// Build a PatternMatrix from a switch statement's cases.
+    /// Handles pattern case clauses (C# 7+ pattern syntax), single-value case clauses
+    /// (traditional `case value:` syntax), and default case clauses (`default:`).
     /// Clauses with when guards are excluded.
     public static PatternMatrix Build(ISwitchOperation switchStmt, DomainResolver resolver)
     {
@@ -143,21 +145,166 @@ internal sealed class PatternMatrix
         if (subjectType == null)
             return Empty();
 
-        // Collect patterns (excluding guarded clauses)
+        // Collect patterns from pattern case clauses (excluding guarded ones)
         var patterns = ImmutableArray.CreateBuilder<IPatternOperation>();
+
+        // Track whether we have non-pattern clauses that need direct cell conversion
+        var directCells = ImmutableArray.CreateBuilder<Cell>();
+        bool hasNonPatternClauses = false;
+
         foreach (var switchCase in switchStmt.Cases)
         {
             foreach (var clause in switchCase.Clauses)
             {
-                if (clause is not IPatternCaseClauseOperation patternClause)
-                    continue;
-                if (patternClause.Guard != null)
-                    continue;
-                patterns.Add(patternClause.Pattern);
+                switch (clause)
+                {
+                    case IPatternCaseClauseOperation patternClause:
+                        if (patternClause.Guard != null)
+                            continue;
+                        patterns.Add(patternClause.Pattern);
+                        break;
+
+                    case IDefaultCaseClauseOperation:
+                        hasNonPatternClauses = true;
+                        directCells.Add(Cell.Wildcard.Instance);
+                        break;
+
+                    case ISingleValueCaseClauseOperation singleValue:
+                        hasNonPatternClauses = true;
+                        directCells.Add(ConvertSingleValueClause(singleValue, subjectType, resolver));
+                        break;
+                }
             }
         }
 
-        return BuildCore(subjectType, patterns.ToImmutable(), resolver);
+        if (!hasNonPatternClauses)
+            return BuildCore(subjectType, patterns.ToImmutable(), resolver);
+
+        // Mix pattern-derived rows with directly-converted rows.
+        // Build the base matrix from pattern clauses (handles tuple/property expansion).
+        var baseMatrix = BuildCore(subjectType, patterns.ToImmutable(), resolver);
+
+        // For direct cells (single-value and default), we only support single-column matrices.
+        // Traditional case labels don't use tuple/property decomposition.
+        if (baseMatrix.ColumnCount <= 1)
+        {
+            // Resolve domain for the single column
+            var domain = resolver.Resolve(subjectType);
+            var slot = new SlotIdentifier.RootSlot(subjectType);
+            var column = new Column(slot, domain);
+            var columns = ImmutableArray.Create(column);
+
+            // Re-resolve direct cells against the proper domain
+            // (ConvertSingleValueClause used the type, but we need domain-aware conversion)
+            var rowBuilder = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>();
+
+            // Add pattern-derived rows
+            foreach (var row in baseMatrix.Rows)
+                rowBuilder.Add(row);
+
+            // Add directly-converted rows
+            foreach (var cell in directCells)
+                rowBuilder.Add(ImmutableArray.Create(cell));
+
+            return new PatternMatrix(rowBuilder.ToImmutable(), columns);
+        }
+
+        // Multi-column case: direct cells become wildcard rows (they can't decompose)
+        var multiRowBuilder = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>();
+        foreach (var row in baseMatrix.Rows)
+            multiRowBuilder.Add(row);
+        foreach (var _ in directCells)
+            multiRowBuilder.Add(WildcardRow(baseMatrix.ColumnCount));
+
+        return new PatternMatrix(multiRowBuilder.ToImmutable(), baseMatrix.Columns);
+    }
+
+    /// Convert a traditional `case value:` clause to a Cell.
+    static Cell ConvertSingleValueClause(
+        ISingleValueCaseClauseOperation clause,
+        ITypeSymbol subjectType,
+        DomainResolver resolver)
+    {
+        var value = clause.Value;
+        if (value == null)
+            return Cell.Wildcard.Instance;
+
+        var constantValue = value.ConstantValue;
+        if (!constantValue.HasValue)
+            return Cell.Wildcard.Instance;
+
+        // Reuse the same logic as ConvertConstantPattern by resolving the domain
+        var domain = resolver.Resolve(subjectType);
+
+        // Null constant
+        if (constantValue.Value == null)
+        {
+            if (domain is NullableDomain nullableDomain)
+            {
+                var emptyInner = new EmptyDomain(nullableDomain.Inner.Type);
+                return new Cell.Constraint(new NullableDomain(domain.Type, emptyInner, hasNull: true));
+            }
+            return Cell.Wildcard.Instance;
+        }
+
+        // Unwrap nullable for non-null values
+        var effectiveDomain = domain;
+        var isNullable = domain is NullableDomain;
+        if (isNullable)
+            effectiveDomain = ((NullableDomain)domain).Inner;
+
+        Cell? innerCell = null;
+
+        // Bool literals
+        if (constantValue.Value is bool boolVal && effectiveDomain is BoolDomain)
+        {
+            var constraint = new BoolDomain(effectiveDomain.Type, hasTrue: boolVal, hasFalse: !boolVal);
+            innerCell = new Cell.Constraint(constraint);
+        }
+
+        // Enum constants
+        if (innerCell == null && effectiveDomain is EnumDomain && value.Type?.TypeKind == TypeKind.Enum)
+        {
+            var matchedField = FindEnumField(value);
+            if (matchedField != null)
+            {
+                var singleton = ImmutableHashSet.Create<IFieldSymbol>(SymbolEqualityComparer.Default, matchedField);
+                var allMembers = ((INamedTypeSymbol)effectiveDomain.Type).GetMembers()
+                    .OfType<IFieldSymbol>()
+                    .Where(f => f.HasConstantValue)
+                    .ToImmutableHashSet<IFieldSymbol>(SymbolEqualityComparer.Default);
+                var constraint = new EnumDomain(effectiveDomain.Type, singleton, allMembers);
+                innerCell = new Cell.Constraint(constraint);
+            }
+        }
+
+        // Numeric constants
+        if (innerCell == null && effectiveDomain is NumericDomain && constantValue.Value is IConvertible convertible)
+        {
+            try
+            {
+                var doubleVal = convertible.ToDouble(CultureInfo.InvariantCulture);
+                var point = new NumericDomain(effectiveDomain.Type,
+                    IntervalSet.Single(new Interval(doubleVal, doubleVal, true, true)),
+                    double.MinValue, double.MaxValue);
+                innerCell = new Cell.Constraint(point);
+            }
+            catch
+            {
+                // Conversion failed
+            }
+        }
+
+        if (innerCell == null)
+            return Cell.Wildcard.Instance;
+
+        if (isNullable && innerCell is Cell.Constraint innerConstraint)
+        {
+            var wrapped = new NullableDomain(domain.Type, innerConstraint.MatchedValues, hasNull: false);
+            return new Cell.Constraint(wrapped);
+        }
+
+        return innerCell;
     }
 
     static PatternMatrix Empty() =>
@@ -677,7 +824,11 @@ internal sealed class PatternMatrix
 
     static Cell ConvertRelationalPattern(IRelationalPatternOperation relPattern, IValueDomain domain)
     {
-        if (domain is not NumericDomain)
+        // Unwrap NullableDomain — relational patterns match non-null values
+        var isNullable = domain is NullableDomain;
+        var effectiveDomain = isNullable ? ((NullableDomain)domain).Inner : domain;
+
+        if (effectiveDomain is not NumericDomain)
             return Cell.Wildcard.Instance;
 
         var constValue = relPattern.Value.ConstantValue;
@@ -713,8 +864,15 @@ internal sealed class PatternMatrix
                 return Cell.Wildcard.Instance;
         }
 
-        var constraint = new NumericDomain(domain.Type, IntervalSet.Single(interval), double.MinValue, double.MaxValue);
-        return new Cell.Constraint(constraint);
+        var innerConstraint = new NumericDomain(effectiveDomain.Type, IntervalSet.Single(interval), double.MinValue, double.MaxValue);
+
+        if (isNullable)
+        {
+            // Wrap in NullableDomain covering only the non-null portion
+            return new Cell.Constraint(new NullableDomain(domain.Type, innerConstraint, hasNull: false));
+        }
+
+        return new Cell.Constraint(innerConstraint);
     }
 
     static Cell ConvertBinaryPattern(IBinaryPatternOperation binaryPattern, IValueDomain domain)
