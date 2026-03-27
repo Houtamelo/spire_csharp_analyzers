@@ -411,9 +411,8 @@ internal sealed class PatternMatrix
             case INegatedPatternOperation negPattern:
                 return ConvertNegatedPattern(negPattern, domain);
 
-            case ITypePatternOperation:
-                // Type patterns narrow by type — conservative wildcard for now
-                return Cell.Wildcard.Instance;
+            case ITypePatternOperation typePattern:
+                return ConvertTypePattern(typePattern.MatchedType, domain);
 
             case IRecursivePatternOperation:
                 // Structural decomposition — conservative wildcard for now
@@ -431,7 +430,50 @@ internal sealed class PatternMatrix
         if (declPattern.Syntax is VarPatternSyntax)
             return Cell.Wildcard.Instance;
 
-        // Type-narrowing declaration — conservative wildcard for now
+        // Type-narrowing declaration (e.g., `Dog d`) — treat like a type pattern
+        if (declPattern.MatchedType != null)
+            return ConvertTypePattern(declPattern.MatchedType, domain);
+
+        return Cell.Wildcard.Instance;
+    }
+
+    /// Converts a type pattern (matched type) into a Cell.
+    /// For EnforceExhaustiveDomain, creates a singleton constraint for the matched type.
+    /// For other domains, falls back to wildcard (conservative).
+    static Cell ConvertTypePattern(ITypeSymbol matchedType, IValueDomain domain)
+    {
+        // Unwrap NullableDomain to check the inner domain
+        var isNullable = domain is NullableDomain;
+        var effectiveDomain = isNullable ? ((NullableDomain)domain).Inner : domain;
+
+        if (effectiveDomain is EnforceExhaustiveDomain exhaustiveDomain
+            && matchedType is INamedTypeSymbol namedMatchedType)
+        {
+            // Find the matched type in the domain's known types
+            INamedTypeSymbol? found = null;
+            foreach (var candidate in exhaustiveDomain.AllTypes)
+            {
+                if (SymbolEqualityComparer.Default.Equals(candidate, namedMatchedType) ||
+                    SymbolEqualityComparer.Default.Equals(candidate.OriginalDefinition, namedMatchedType.OriginalDefinition))
+                {
+                    found = candidate;
+                    break;
+                }
+            }
+
+            if (found != null)
+            {
+                var singleton = ImmutableHashSet.Create<INamedTypeSymbol>(SymbolEqualityComparer.Default, found);
+                var constraint = new EnforceExhaustiveDomain(effectiveDomain.Type, singleton, exhaustiveDomain.AllTypes);
+
+                if (isNullable)
+                    return new Cell.Constraint(new NullableDomain(domain.Type, constraint, hasNull: false));
+
+                return new Cell.Constraint(constraint);
+            }
+        }
+
+        // Fallback — conservative wildcard
         return Cell.Wildcard.Instance;
     }
 
