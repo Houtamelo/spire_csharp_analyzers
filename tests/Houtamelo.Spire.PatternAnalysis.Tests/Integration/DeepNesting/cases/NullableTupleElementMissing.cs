@@ -1,5 +1,5 @@
 //@ not_exhaustive
-// (bool?, bool) — missing null case
+// (bool?, bool) — missing both null cases
 public class NullableTupleElementMissing
 {
     public int Test(bool? a, bool b) => (a, b) switch
@@ -7,6 +7,7 @@ public class NullableTupleElementMissing
         (true, true) => 1,
         (true, false) => 2,
         (false, _) => 3,
-        //~ (null, _)
+        //~ (null, true)
+        //~ (null, false)
     };
 }

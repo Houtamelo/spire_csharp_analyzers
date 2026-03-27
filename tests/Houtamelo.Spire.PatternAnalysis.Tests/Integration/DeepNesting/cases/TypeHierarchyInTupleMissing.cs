@@ -1,5 +1,5 @@
 //@ not_exhaustive
-// (Vehicle, bool) — missing Bike cases
+// (Vehicle, bool) — missing all Bike cases (checker reports as one composite partition)
 #nullable enable
 public class TypeHierarchyInTupleMissing
 {
