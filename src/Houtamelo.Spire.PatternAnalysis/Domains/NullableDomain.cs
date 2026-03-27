@@ -12,6 +12,7 @@ internal sealed class NullableDomain : IValueDomain
     readonly bool _hasNull;
 
     public ITypeSymbol Type { get; }
+    public IValueDomain Inner => _inner;
 
     public NullableDomain(ITypeSymbol type, IValueDomain inner, bool hasNull)
     {

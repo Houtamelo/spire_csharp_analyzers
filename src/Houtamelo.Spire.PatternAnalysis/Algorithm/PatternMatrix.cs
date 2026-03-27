@@ -237,39 +237,61 @@ internal sealed class PatternMatrix
         if (!constantValue.HasValue)
             return Cell.Wildcard.Instance;
 
-        // Bool literals
-        if (constantValue.Value is bool boolVal && domain is BoolDomain)
+        // Null constant — matches only the null partition of a NullableDomain
+        if (constantValue.Value == null)
         {
-            var constraint = new BoolDomain(domain.Type, hasTrue: boolVal, hasFalse: !boolVal);
-            return new Cell.Constraint(constraint);
+            if (domain is NullableDomain nullableDomain)
+            {
+                // Create a NullableDomain that covers only null (empty inner)
+                var emptyInner = nullableDomain.Inner.Subtract(nullableDomain.Inner);
+                return new Cell.Constraint(new NullableDomain(domain.Type, emptyInner, hasNull: true));
+            }
+
+            // Null against a non-nullable domain — no-op wildcard
+            return Cell.Wildcard.Instance;
+        }
+
+        // Unwrap NullableDomain for non-null constant patterns
+        var effectiveDomain = domain;
+        var isNullable = domain is NullableDomain;
+        if (isNullable)
+            effectiveDomain = ((NullableDomain)domain).Inner;
+
+        Cell? innerCell = null;
+
+        // Bool literals
+        if (constantValue.Value is bool boolVal && effectiveDomain is BoolDomain)
+        {
+            var constraint = new BoolDomain(effectiveDomain.Type, hasTrue: boolVal, hasFalse: !boolVal);
+            innerCell = new Cell.Constraint(constraint);
         }
 
         // Enum constants
-        if (domain is EnumDomain enumDomain && value.Type?.TypeKind == TypeKind.Enum)
+        if (innerCell == null && effectiveDomain is EnumDomain && value.Type?.TypeKind == TypeKind.Enum)
         {
             var matchedField = FindEnumField(value);
             if (matchedField != null)
             {
                 var singleton = ImmutableHashSet.Create<IFieldSymbol>(SymbolEqualityComparer.Default, matchedField);
-                var allMembers = ((INamedTypeSymbol)domain.Type).GetMembers()
+                var allMembers = ((INamedTypeSymbol)effectiveDomain.Type).GetMembers()
                     .OfType<IFieldSymbol>()
                     .Where(f => f.HasConstantValue)
                     .ToImmutableHashSet<IFieldSymbol>(SymbolEqualityComparer.Default);
-                var constraint = new EnumDomain(domain.Type, singleton, allMembers);
-                return new Cell.Constraint(constraint);
+                var constraint = new EnumDomain(effectiveDomain.Type, singleton, allMembers);
+                innerCell = new Cell.Constraint(constraint);
             }
         }
 
         // Numeric constants
-        if (domain is NumericDomain && constantValue.Value is IConvertible convertible)
+        if (innerCell == null && effectiveDomain is NumericDomain && constantValue.Value is IConvertible convertible)
         {
             try
             {
                 var doubleVal = convertible.ToDouble(CultureInfo.InvariantCulture);
-                var point = new NumericDomain(domain.Type,
+                var point = new NumericDomain(effectiveDomain.Type,
                     IntervalSet.Single(new Interval(doubleVal, doubleVal, true, true)),
                     double.MinValue, double.MaxValue);
-                return new Cell.Constraint(point);
+                innerCell = new Cell.Constraint(point);
             }
             catch
             {
@@ -277,8 +299,17 @@ internal sealed class PatternMatrix
             }
         }
 
-        // Null constant — conservative wildcard for now
-        return Cell.Wildcard.Instance;
+        if (innerCell == null)
+            return Cell.Wildcard.Instance;
+
+        // Wrap back in NullableDomain if the column domain is nullable
+        if (isNullable && innerCell is Cell.Constraint innerConstraint)
+        {
+            var wrapped = new NullableDomain(domain.Type, innerConstraint.MatchedValues, hasNull: false);
+            return new Cell.Constraint(wrapped);
+        }
+
+        return innerCell;
     }
 
     static IFieldSymbol? FindEnumField(IOperation value)
