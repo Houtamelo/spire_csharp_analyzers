@@ -40,7 +40,7 @@ Your goal is to write tests that **try to break the implementation**. Don't writ
    a. Write the `.cs` file in `tests/Spire.Analyzers.Tests/{RuleId}/cases/`.
    b. Move to the next case.
 6. If you need additional types for a test scenario, add them to `_shared.cs`.
-7. Use `dotnet_build` MCP tool — the test project must compile cleanly.
+7. Use `dotnet_project` MCP tool (action: Build) — the test project must compile cleanly.
 
 ## Test case file format
 
@@ -62,5 +62,5 @@ Read `docs/test-case-format.md` for the full format reference (headers, error ma
 - **Do NOT use `/tmp` or any absolute temp path** — use the project-local `tmp/` folder (gitignored) for any temporary files.
 - **Use sherlock via MCP tools** (`mcp__sherlock__*`), never invoke sherlock through CLI/Bash.
 - Use the `Write` tool (not `cat` or heredocs in Bash) to create temporary files — then run commands on them separately.
-- **Use `dotnet_build` MCP tool after writing all cases** — the test project must compile cleanly.
+- **Use `dotnet_project` MCP tool (action: Build) after writing all cases** — the test project must compile cleanly.
 - Note: tests will FAIL at this stage because no analyzer exists yet. That is expected and correct (TDD).

@@ -19,7 +19,7 @@ The lead has already written before.cs/after.cs test pairs. Your only job is to 
 3. Read the test runner in `tests/Spire.SourceGenerators.Tests/CodeFix/CodeFixTests.cs` to understand how the fix is invoked.
 4. Study existing code fixes in `src/Spire.CodeFixes/` for patterns (e.g., `AddMissingArmsCodeFix.cs`, `FixFieldTypeCodeFix.cs`).
 5. Implement the code fix in `src/Spire.CodeFixes/{FixName}CodeFix.cs`.
-6. Use `dotnet_test` MCP tool — all tests must pass, including existing tests.
+6. Use `dotnet_project` MCP tool (action: Test) — all tests must pass, including existing tests.
    Note: the `/new-codefix` skill already registered the code fix in `CodeFixTests.cs`.
 
 ## Code fix provider pattern

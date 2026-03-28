@@ -23,10 +23,10 @@ You maintain `.claude/HISTORY.md` — the audit trail for agent infrastructure f
 ## Workflow
 
 1. Find the date of the most recent entry in `.claude/HISTORY.md`
-2. Find commits since that date that touched tracked files using `git_query` MCP tool:
-   - command: `log`, arguments: `--oneline --since="<last_entry_date>" -- .claude/ CLAUDE.md docs/contributing.md docs/architecture.md`
-3. For each commit, get the diff using `git_query` MCP tool:
-   - command: `diff`, arguments: `<commit>~1 <commit> -- <tracked paths>`
+2. Find commits since that date that touched tracked files using `mcp__git__git_log` MCP tool:
+   - arguments: `--oneline --since="<last_entry_date>" -- .claude/ CLAUDE.md docs/contributing.md docs/architecture.md`
+3. For each commit, get the diff using `mcp__git__git_diff` MCP tool:
+   - arguments: `<commit>~1 <commit> -- <tracked paths>`
 4. Find associated session summaries:
    - Check the commit message for `feedback/summaries/` references
    - If none, find summaries with timestamps within ±1 hour of the commit

@@ -47,7 +47,7 @@ Your goal is to write tests that **try to break the analyzer**. Don't write triv
    b. Include `//@ should_fail` or `//@ should_pass` on line 1.
    c. Include `//~ ERROR` markers on lines that should produce diagnostics (should_fail cases only).
    d. Include a `[DiscriminatedUnion]` declaration + usage code that exercises the analyzer.
-6. Use `dotnet_build` MCP tool on `tests/Spire.SourceGenerators.Tests/` — must compile cleanly.
+6. Use `dotnet_project` MCP tool (action: Build) on `tests/Spire.SourceGenerators.Tests/` — must compile cleanly.
 
 ## Test case file format
 
@@ -88,5 +88,5 @@ namespace TestNs
 - **Do NOT use `/tmp` or any absolute temp path** — use the project-local `tmp/` folder (gitignored).
 - **Use sherlock via MCP tools** (`mcp__sherlock__*`), never invoke sherlock through CLI/Bash.
 - Use the `Write` tool (not `cat` or heredocs in Bash) to create temporary files.
-- **Use `dotnet_build` MCP tool after writing all cases** — the test project must compile cleanly.
+- **Use `dotnet_project` MCP tool (action: Build) after writing all cases** — the test project must compile cleanly.
 - Note: tests will FAIL at this stage because no analyzer exists yet. That is expected and correct (TDD).

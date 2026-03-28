@@ -56,7 +56,7 @@ benchmarks/Spire.Benchmarks/      # BenchmarkDotNet performance tests
   Benchmarks/                     # Hand-written benchmark classes (UpdateLoop, Match, Micro, JSON, etc.)
   Helpers/                        # ArrayFiller, Distribution, BenchN constant
 docs/benchmark-results/           # Auto-generated RESULTS_{job}.md from benchmark runs
-tools/DevTools/                   # MCP server (parse_syntax_tree, dotnet_build, dotnet_test, git_query)
+tools/DevTools/                   # MCP server (parse_syntax_tree, filesystem tools)
 docs/rules/                      # Per-rule docs (SPIRE001.md, ...)
 plans/                            # Design plans (read before implementing)
 ```
@@ -140,4 +140,5 @@ When a spawned agent stops because it ran out of turns/budget before finishing i
 
 - `plans/` — design plans and research. **Do NOT read unless the user explicitly asks you to.** Plans may be outdated or abandoned; reading them unprompted can lead to following stale instructions.
 - `docs/roslyn-api/` — Roslyn XML docs and curated reference guides (when available)
-- `tools/DevTools` — MCP server with `parse_syntax_tree`, `dotnet_build`, `dotnet_test`, `git_query` tools
+- `tools/DevTools` — MCP server with `parse_syntax_tree` and filesystem tools (list_files, create_directory, remove, copy, move)
+- `.mcp.json` — MCP servers: `git` (cyanheads, 28 tools), `dotnet` (Community.Mcp.DotNet), `sherlock`, `dev-tools`

@@ -23,7 +23,7 @@ The lead has already written snapshot tests (input.cs/output.cs pairs) and behav
 7. Register the emitter in `src/Spire.Analyzers/SourceGenerators/DiscriminatedUnionGenerator.cs` if adding a new strategy.
 8. Update `src/Spire.Analyzers/SourceGenerators/Parsing/` if new strategy enum values or attribute parsing is needed.
 9. Update `src/Spire.Analyzers/SourceGenerators/Model/` if model types need changes.
-10. Use `dotnet_test` MCP tool — all tests must pass, including existing tests.
+10. Use `dotnet_project` MCP tool (action: Test) — all tests must pass, including existing tests.
 
 ## Roslyn API resources
 

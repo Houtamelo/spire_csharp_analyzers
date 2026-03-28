@@ -41,7 +41,7 @@ Your goal is to write input declarations that **try to break the emitter**. Don'
    a. Create the directory `tests/Spire.SourceGenerators.Tests/cases/{emitter_category}/{CaseName}/`
    b. Write `input.cs` — the user's `[DiscriminatedUnion]` type declaration.
    c. Write `output.cs` — the expected generated source code.
-5. Use `dotnet_build` MCP tool on `tests/Spire.SourceGenerators.Tests/` — must compile cleanly.
+5. Use `dotnet_project` MCP tool (action: Build) on `tests/Spire.SourceGenerators.Tests/` — must compile cleanly.
 
 ## Snapshot test format
 
@@ -65,5 +65,5 @@ Discovered by `SnapshotCaseDiscoveryAttribute` — any leaf directory under `cas
 - **Do NOT use `/tmp` or any absolute temp path** — use the project-local `tmp/` folder (gitignored) for any temporary files.
 - **Use sherlock via MCP tools** (`mcp__sherlock__*`), never invoke sherlock through CLI/Bash.
 - Use the `Write` tool (not `cat` or heredocs in Bash) to create temporary files — then run commands on them separately.
-- **Use `dotnet_build` MCP tool after writing all cases** — the test project must compile cleanly.
+- **Use `dotnet_project` MCP tool (action: Build) after writing all cases** — the test project must compile cleanly.
 - Note: snapshot tests will FAIL at this stage if the emitter is not yet implemented. That is expected and correct (TDD).

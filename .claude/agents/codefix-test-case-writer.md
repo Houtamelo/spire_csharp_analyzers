@@ -41,7 +41,7 @@ Your goal is to write before/after pairs that **try to break the code fix**. Don
    a. Create the directory `tests/Spire.SourceGenerators.Tests/CodeFix/cases/{CaseName}/`
    b. Write `before.cs` — code with a `[DiscriminatedUnion]` declaration + usage that triggers the diagnostic.
    c. Write `after.cs` — the expected code after the fix is applied (same structure, fix applied).
-5. Use `dotnet_build` MCP tool on `tests/Spire.SourceGenerators.Tests/` — must compile cleanly.
+5. Use `dotnet_project` MCP tool (action: Build) on `tests/Spire.SourceGenerators.Tests/` — must compile cleanly.
 
 ## Code fix test format
 
@@ -104,5 +104,5 @@ Discovered by `CodeFixCaseDiscoveryAttribute` — any directory under `CodeFix/c
 - **Do NOT use `/tmp` or any absolute temp path** — use the project-local `tmp/` folder (gitignored).
 - **Use sherlock via MCP tools** (`mcp__sherlock__*`), never invoke sherlock through CLI/Bash.
 - Use the `Write` tool (not `cat` or heredocs in Bash) to create temporary files.
-- **Use `dotnet_build` MCP tool after writing all cases** — the test project must compile cleanly.
+- **Use `dotnet_project` MCP tool (action: Build) after writing all cases** — the test project must compile cleanly.
 - Note: code fix tests will FAIL at this stage if the code fix is not yet implemented. That is expected and correct (TDD).

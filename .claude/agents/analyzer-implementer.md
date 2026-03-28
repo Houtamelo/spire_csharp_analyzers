@@ -20,7 +20,7 @@ The lead has already written tests and added the descriptor to `Descriptors.cs`.
 4. Read the descriptor in `src/Spire.Analyzers/Descriptors.cs` to get the diagnostic ID and message
 5. Read the rule description provided by the lead (if included in the prompt)
 6. Implement the analyzer in `src/Spire.Analyzers/Rules/{RuleId}{ShortName}Analyzer.cs`
-7. Use `dotnet_test` MCP tool — all tests must pass, including existing rules' tests
+7. Use `dotnet_project` MCP tool (action: Test) — all tests must pass, including existing rules' tests
 
 ## Roslyn API resources
 

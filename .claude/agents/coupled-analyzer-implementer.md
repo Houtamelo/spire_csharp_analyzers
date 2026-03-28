@@ -24,7 +24,7 @@ Generator-coupled analyzers live in `src/Spire.Analyzers/SourceGenerators/Analyz
 4. Read the rule description provided by the lead (if included in the prompt).
 5. Study existing coupled analyzers in `src/Spire.Analyzers/SourceGenerators/Analyzers/` for patterns (e.g., `ExhaustivenessAnalyzer.cs`, `FieldAccessSafetyAnalyzer.cs`).
 6. Implement the analyzer in `src/Spire.Analyzers/SourceGenerators/Analyzers/{AnalyzerName}.cs`.
-7. Use `dotnet_test` MCP tool — all tests must pass, including existing tests.
+7. Use `dotnet_project` MCP tool (action: Test) — all tests must pass, including existing tests.
 
 ## Roslyn API resources
 
