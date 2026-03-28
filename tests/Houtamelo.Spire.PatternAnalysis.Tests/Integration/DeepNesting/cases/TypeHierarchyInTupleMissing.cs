@@ -1,5 +1,5 @@
 //@ not_exhaustive
-// (Vehicle, bool) — missing all Bike cases (checker reports as one composite partition)
+// (Vehicle, bool) — missing both Bike cases
 #nullable enable
 public class TypeHierarchyInTupleMissing
 {
@@ -7,6 +7,7 @@ public class TypeHierarchyInTupleMissing
     {
         (Car, true) => 1,
         (Car, false) => 2,
-        //~ (Bike, _)
+        //~ (Bike, true)
+        //~ (Bike, false)
     };
 }

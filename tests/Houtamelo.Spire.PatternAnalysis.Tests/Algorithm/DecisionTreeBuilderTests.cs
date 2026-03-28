@@ -63,17 +63,19 @@ public class DecisionTreeBuilderTests
     [Fact]
     public void EmptyMatrix_one_bool_column_reports_missing_case()
     {
-        var column = new Column(Slot(0, BoolType), BoolUniverse);
         var matrix = new PatternMatrix(
             ImmutableArray<ImmutableArray<Cell>>.Empty,
-            ImmutableArray.Create(column));
+            [new Column(Slot(0, BoolType), BoolUniverse)]);
 
         var result = DecisionTreeBuilder.Check(matrix);
 
-        Assert.Single(result.MissingCases);
-        var missing = result.MissingCases[0];
-        Assert.Single(missing.Constraints);
-        Assert.True(missing.Constraints[0].Remaining.IsUniverse);
+        // Expansion splits bool universe into 2 leaf-level missing cases
+        Assert.Equal(2, result.MissingCases.Length);
+        foreach (var missing in result.MissingCases)
+        {
+            Assert.Single(missing.Constraints);
+            Assert.False(missing.Constraints[0].Remaining.IsEmpty);
+        }
     }
 
     // ─── 2. Single wildcard row → exhaustive ────────────────────────────

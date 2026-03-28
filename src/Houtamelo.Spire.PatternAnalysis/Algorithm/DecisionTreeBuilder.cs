@@ -8,6 +8,8 @@ namespace Houtamelo.Spire.PatternAnalysis.Algorithm;
 /// Recursively specializes a pattern matrix until it proves exhaustive or finds missing cases.
 internal static class DecisionTreeBuilder
 {
+    const int MaxExpansionDepth = 5;
+
     public static ExhaustivenessResult Check(PatternMatrix matrix)
     {
         var missingCases = new List<MissingCase>();
@@ -20,15 +22,12 @@ internal static class DecisionTreeBuilder
         ImmutableArray<SlotConstraint> accumulated,
         List<MissingCase> missingCases)
     {
-        // 1. Zero rows → no patterns cover this region. Report a missing case.
-        //    Must be checked before zero columns: when both are zero, the
-        //    accumulated constraints describe an uncovered partition.
+        // 1. Zero rows → no patterns cover this region.
+        //    Expand remaining columns into leaf-level missing cases
+        //    so each MissingCase has singleton domains (up to depth cap).
         if (matrix.RowCount == 0)
         {
-            var builder = accumulated.ToBuilder();
-            foreach (var col in matrix.Columns)
-                builder.Add(new SlotConstraint(col.Slot, col.Domain));
-            missingCases.Add(new MissingCase(builder.ToImmutable()));
+            ExpandMissingCases(matrix.Columns, 0, accumulated, missingCases, 0);
             return;
         }
 
@@ -123,6 +122,51 @@ internal static class DecisionTreeBuilder
         }
 
         return builder.ToImmutable();
+    }
+
+    /// Recursively expand remaining columns into leaf-level missing cases.
+    /// Each column's domain is split into partitions and cross-producted.
+    /// Beyond MaxExpansionDepth, remaining columns are appended as-is (composite).
+    static void ExpandMissingCases(
+        ImmutableArray<Column> columns,
+        int colIdx,
+        ImmutableArray<SlotConstraint> accumulated,
+        List<MissingCase> missingCases,
+        int depth)
+    {
+        if (colIdx >= columns.Length)
+        {
+            missingCases.Add(new MissingCase(accumulated));
+            return;
+        }
+
+        var column = columns[colIdx];
+
+        if (depth >= MaxExpansionDepth)
+        {
+            // Beyond depth cap — append remaining columns as composite domains
+            var builder = accumulated.ToBuilder();
+            for (int i = colIdx; i < columns.Length; i++)
+                builder.Add(new SlotConstraint(columns[i].Slot, columns[i].Domain));
+            missingCases.Add(new MissingCase(builder.ToImmutable()));
+            return;
+        }
+
+        var partitions = column.Domain.Split();
+
+        if (partitions.Length <= 1)
+        {
+            // Single partition (e.g., structural domain, numeric universe) — no further splitting
+            var next = accumulated.Add(new SlotConstraint(column.Slot, column.Domain));
+            ExpandMissingCases(columns, colIdx + 1, next, missingCases, depth + 1);
+            return;
+        }
+
+        foreach (var partition in partitions)
+        {
+            var next = accumulated.Add(new SlotConstraint(column.Slot, partition));
+            ExpandMissingCases(columns, colIdx + 1, next, missingCases, depth + 1);
+        }
     }
 
     static int SelectColumn(PatternMatrix matrix)
