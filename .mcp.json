@@ -14,8 +14,11 @@
     },
     "git": {
       "type": "stdio",
-      "command": "uvx",
-      "args": ["mcp-server-git", "--repository", "."]
+      "command": "npx",
+      "args": ["@cyanheads/git-mcp-server@latest"],
+      "env": {
+        "MCP_TRANSPORT_TYPE": "stdio"
+      }
     },
     "dotnet": {
       "type": "stdio",
