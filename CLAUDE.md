@@ -142,3 +142,7 @@ When a spawned agent stops because it ran out of turns/budget before finishing i
 - `docs/roslyn-api/` — Roslyn XML docs and curated reference guides (when available)
 - `tools/DevTools` — MCP server with `parse_syntax_tree` and filesystem tools (list_files, create_directory, remove, copy, move)
 - `.mcp.json` — MCP servers: `git` (cyanheads, 28 tools), `dotnet` (Community.Mcp.DotNet), `sherlock`, `dev-tools`
+
+## MCP Setup — IMPORTANT
+
+**Before using any `mcp__git__` tool**, call `mcp__git__git_set_working_dir` with path `/home/houtamelo/Documents/projects/libraries/csharp_analyzer`. This must be done once per session — the git MCP server has no default working directory.
