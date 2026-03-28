@@ -1,23 +1,55 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dotnet build *)",
-      "Bash(dotnet test *)",
-      "Bash(dotnet format *)",
-      "Bash(dotnet pack *)",
-      "Bash(dotnet restore *)",
-      "Bash(dotnet run *)",
-      "Bash(mkdir *)",
-      "Bash(ls *)",
-      "Bash(git status*)",
-      "Bash(git diff*)",
-      "Bash(git log*)",
-      "Bash(git add *)",
-      "Bash(git commit *)",
-      "Bash(cat *)",
-      "Bash(echo *)",
-      "Bash(cat > *)",
-      "Bash(find *)"
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "Skill",
+      "WebSearch",
+      "WebFetch",
+      "mcp__dev-tools__list_files",
+      "mcp__dev-tools__create_directory",
+      "mcp__dev-tools__remove",
+      "mcp__dev-tools__remove_recursive",
+      "mcp__dev-tools__copy",
+      "mcp__dev-tools__move",
+      "mcp__dev-tools__parse_syntax_tree",
+      "mcp__git__git_status",
+      "mcp__git__git_diff",
+      "mcp__git__git_diff_unstaged",
+      "mcp__git__git_diff_staged",
+      "mcp__git__git_log",
+      "mcp__git__git_show",
+      "mcp__git__git_branch",
+      "mcp__git__git_add",
+      "mcp__git__git_commit",
+      "mcp__git__git_create_branch",
+      "mcp__git__git_checkout",
+      "mcp__git__git_reset",
+      "mcp__dotnet__dotnet_project",
+      "mcp__dotnet__dotnet_package",
+      "mcp__dotnet__dotnet_solution",
+      "mcp__dotnet__dotnet_sdk",
+      "mcp__sherlock__get_type_fields",
+      "mcp__sherlock__get_type_methods",
+      "mcp__sherlock__get_type_properties",
+      "mcp__sherlock__get_type_info",
+      "mcp__sherlock__get_all_type_members",
+      "mcp__sherlock__get_type_hierarchy",
+      "mcp__sherlock__get_xml_docs_for_type",
+      "mcp__sherlock__find_assembly_by_class_name",
+      "mcp__sherlock__find_assembly_by_file_name",
+      "mcp__sherlock__analyze_type",
+      "mcp__sherlock__get_types_from_assembly",
+      "mcp__microsoft-learn__microsoft_docs_fetch",
+      "mcp__microsoft-learn__microsoft_docs_search",
+      "mcp__jetbrains__list_directory_tree",
+      "mcp__jetbrains__get_file_text_by_path"
+    ],
+    "deny": [
+      "Bash"
     ],
     "defaultMode": "acceptEdits"
   },
@@ -49,7 +81,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CMD=$(cat | jq -r '.tool_input.command // empty'); if echo \"$CMD\" | grep -qE 'rm\\s+-rf|git\\s+push\\s+--force|git\\s+reset\\s+--hard'; then echo 'Blocked destructive command' >&2; exit 2; fi"
+            "command": "echo 'Bash was manually disabled by Houtamelo. You should have all the MCP tools you need to perform your job. If you believe your tools are lacking, tell Houtamelo and he will add to and/or improve your tooling.' >&2; exit 2"
           }
         ]
       }
@@ -87,6 +119,13 @@
     ]
   },
   "enabledPlugins": {
-    "csharp-lsp@claude-plugins-official": true
-  }
+    "csharp-lsp@claude-plugins-official": true,
+    "microsoft-docs@claude-plugins-official": true
+  },
+  "enabledMcpjsonServers": [
+    "sherlock",
+    "dev-tools",
+    "git",
+    "dotnet"
+  ]
 }

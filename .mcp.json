@@ -1,9 +1,5 @@
 {
   "mcpServers": {
-    "microsoft-learn": {
-      "type": "http",
-      "url": "https://learn.microsoft.com/api/mcp"
-    },
     "sherlock": {
       "type": "stdio",
       "command": "sherlock-mcp",
@@ -15,6 +11,16 @@
       "type": "stdio",
       "command": "dotnet",
       "args": ["run", "--project", "tools/DevTools"]
+    },
+    "git": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-git", "--repository", "."]
+    },
+    "dotnet": {
+      "type": "stdio",
+      "command": "dnx",
+      "args": ["Community.Mcp.DotNet@1.*", "--yes"]
     }
   }
 }
