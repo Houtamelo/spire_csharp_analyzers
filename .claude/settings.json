@@ -59,9 +59,6 @@
       "mcp__jetbrains__list_directory_tree",
       "mcp__jetbrains__get_file_text_by_path"
     ],
-    "deny": [
-      "Bash"
-    ],
     "defaultMode": "acceptEdits"
   },
   "hooks": {
@@ -88,11 +85,11 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": "Bash|mcp__jetbrains__execute_terminal_command",
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'Bash was manually disabled by Houtamelo. You should have all the MCP tools you need to perform your job. If you believe your tools are lacking, tell Houtamelo and he will add to and/or improve your tooling.' >&2; exit 2"
+            "command": "echo 'Bash|Terminal were manually disabled by Houtamelo. You should have all the MCP tools you need to perform your job. If you believe your tools are lacking, tell Houtamelo and he will add to and/or improve your tooling.' >&2; exit 2"
           }
         ]
       }
