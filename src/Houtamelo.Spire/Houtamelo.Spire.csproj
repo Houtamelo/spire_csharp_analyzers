@@ -30,12 +30,15 @@
   -->
   <ItemGroup>
     <ProjectReference Include="..\Houtamelo.Spire.Analyzers\Houtamelo.Spire.Analyzers.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\Houtamelo.Spire.PatternAnalysis\Houtamelo.Spire.PatternAnalysis.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Houtamelo.Spire.CodeFixes\Houtamelo.Spire.CodeFixes.csproj" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- Vendor analyzer and codefix DLLs into the package -->
   <ItemGroup>
     <None Include="$(OutputPath)\Houtamelo.Spire.Analyzers.dll"
+          PackagePath="analyzers/dotnet/cs" Pack="true" Visible="false" />
+    <None Include="$(OutputPath)\Houtamelo.Spire.PatternAnalysis.dll"
           PackagePath="analyzers/dotnet/cs" Pack="true" Visible="false" />
     <None Include="$(OutputPath)\Houtamelo.Spire.CodeFixes.dll"
           PackagePath="analyzers/dotnet/cs" Pack="true" Visible="false" />

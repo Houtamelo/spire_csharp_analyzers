@@ -23,7 +23,10 @@
     "dotnet": {
       "type": "stdio",
       "command": "dnx",
-      "args": ["Community.Mcp.DotNet@1.*", "--yes"]
+      "args": ["Community.Mcp.DotNet@1.0.0", "--yes"],
+      "env": {
+        "DOTNET_ROOT": "/usr/share/dotnet"
+      }
     }
   }
 }
