@@ -100,7 +100,18 @@ internal sealed class DomainResolver
 
         // [EnforceExhaustiveness] attribute
         if (_enforceExhaustivenessAttr != null && type is INamedTypeSymbol namedType && HasAttribute(type, _enforceExhaustivenessAttr))
-            return EnforceExhaustiveDomain.Create(namedType, _hierarchyResolver, _compilation);
+        {
+            // Sealed types have no subtypes — fall back to structural (any total pattern covers it)
+            if (namedType.IsSealed)
+                return new PropertyPatternDomain(type, ImmutableArray<(SlotIdentifier, IValueDomain)>.Empty, hasWildcard: false);
+
+            var domain = EnforceExhaustiveDomain.Create(namedType, _hierarchyResolver, _compilation);
+            // If resolver found no concrete subtypes, fall back to structural
+            if (domain.IsEmpty)
+                return new PropertyPatternDomain(type, ImmutableArray<(SlotIdentifier, IValueDomain)>.Empty, hasWildcard: false);
+
+            return domain;
+        }
 
         // Fallback — structural domain with no slots
         return new PropertyPatternDomain(type, ImmutableArray<(SlotIdentifier, IValueDomain)>.Empty, hasWildcard: false);
