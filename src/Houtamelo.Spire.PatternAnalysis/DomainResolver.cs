@@ -73,9 +73,30 @@ internal sealed class DomainResolver
         if (IsNumericType(type.SpecialType))
             return NumericDomain.Universe(type);
 
-        // [DiscriminatedUnion] attribute — basic fallback for now
+        // [DiscriminatedUnion] attribute
         if (_discriminatedUnionAttr != null && HasAttribute(type, _discriminatedUnionAttr))
+        {
+            if (type.IsValueType)
+            {
+                // Struct DU — handled by PatternMatrix.BuildStructDUMatrix()
+                return new PropertyPatternDomain(type, ImmutableArray<(SlotIdentifier, IValueDomain)>.Empty, hasWildcard: false);
+            }
+
+            if (type is INamedTypeSymbol recordDUType)
+            {
+                // Record DU — find sealed nested variant types that inherit from the base
+                var variants = recordDUType.GetTypeMembers()
+                    .Where(nested => nested.IsSealed &&
+                                     !nested.IsAbstract &&
+                                     InheritsFrom(nested, recordDUType))
+                    .ToImmutableArray();
+
+                if (variants.Length > 0)
+                    return EnforceExhaustiveDomain.CreateFromKnownTypes(recordDUType, variants);
+            }
+
             return new PropertyPatternDomain(type, ImmutableArray<(SlotIdentifier, IValueDomain)>.Empty, hasWildcard: false);
+        }
 
         // [EnforceExhaustiveness] attribute
         if (_enforceExhaustivenessAttr != null && type is INamedTypeSymbol namedType && HasAttribute(type, _enforceExhaustivenessAttr))
@@ -115,6 +136,24 @@ internal sealed class DomainResolver
             {
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    /// Walks the BaseType chain to check if `derived` inherits from `baseType`.
+    private static bool InheritsFrom(INamedTypeSymbol derived, INamedTypeSymbol baseType)
+    {
+        var current = derived.BaseType;
+        while (current != null)
+        {
+            if (SymbolEqualityComparer.Default.Equals(current, baseType) ||
+                SymbolEqualityComparer.Default.Equals(current.OriginalDefinition, baseType.OriginalDefinition))
+            {
+                return true;
+            }
+
+            current = current.BaseType;
         }
 
         return false;

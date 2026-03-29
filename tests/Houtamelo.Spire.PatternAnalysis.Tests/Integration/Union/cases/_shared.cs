@@ -19,3 +19,15 @@ public partial struct Shape
         v1 = 0;
     }
 }
+
+[Houtamelo.Spire.DiscriminatedUnion]
+public abstract class Option
+{
+    private Option() { }
+    public sealed class Some : Option
+    {
+        public int Value { get; }
+        public Some(int value) => Value = value;
+    }
+    public sealed class None : Option { }
+}

@@ -39,6 +39,15 @@ internal sealed class EnforceExhaustiveDomain : IValueDomain
         return new EnforceExhaustiveDomain(baseType, allTypes, allTypes);
     }
 
+    /// Creates a domain from a pre-known set of variant types (no hierarchy walk needed).
+    public static EnforceExhaustiveDomain CreateFromKnownTypes(
+        INamedTypeSymbol baseType,
+        ImmutableArray<INamedTypeSymbol> variants)
+    {
+        var allTypes = variants.ToImmutableHashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+        return new EnforceExhaustiveDomain(baseType, allTypes, allTypes);
+    }
+
     public bool IsEmpty => _remainingTypes.Count == 0;
 
     public bool IsUniverse => _remainingTypes.Count == _allTypes.Count;
