@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Linq;
+using Houtamelo.Spire.PatternAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -47,16 +48,11 @@ public sealed class CS8509Suppressor : DiagnosticSuppressor
             if (duAttr is null) continue;
 
             var unionInfo = UnionTypeInfo.TryCreateWithNullableUnwrap(
-                subjectType, duAttr, out var isNullable);
+                subjectType, duAttr, out _);
             if (unionInfo is null) continue;
 
-            var coverage = PatternAnalyzer.AnalyzeExpression(switchOp, unionInfo);
-            var missing = coverage.GetMissingVariants(unionInfo.VariantNames);
-
-            bool allVariantsCovered = missing.IsEmpty || coverage.HasWildcard;
-            bool nullSatisfied = !isNullable || coverage.CoversNull || coverage.HasWildcard;
-
-            if (allVariantsCovered && nullSatisfied)
+            var result = ExhaustivenessChecker.Check(context.Compilation, switchOp);
+            if (result.MissingCases.IsEmpty)
             {
                 context.ReportSuppression(
                     Suppression.Create(Descriptor, diagnostic));
