@@ -35,13 +35,13 @@ Your goal is to write before/after pairs that **try to break the code fix**. Don
 1. Read `docs/style-guide.md` for documentation style.
 2. Read the **code fix design provided by the lead** to understand what transformations the fix should handle — use it to find edge cases.
 3. Study existing code fix test cases for the format:
-   - `tests/Spire.SourceGenerators.Tests/CodeFix/cases/` — examine 2-3 existing before.cs/after.cs pairs.
+   - `tests/Houtamelo.Spire.SourceGenerators.Tests/CodeFix/cases/` — examine 2-3 existing before.cs/after.cs pairs.
 3. Read the coverage matrix section assigned to you.
 4. For each case:
-   a. Create the directory `tests/Spire.SourceGenerators.Tests/CodeFix/cases/{CaseName}/`
+   a. Create the directory `tests/Houtamelo.Spire.SourceGenerators.Tests/CodeFix/cases/{CaseName}/`
    b. Write `before.cs` — code with a `[DiscriminatedUnion]` declaration + usage that triggers the diagnostic.
    c. Write `after.cs` — the expected code after the fix is applied (same structure, fix applied).
-5. Use `dotnet_project` MCP tool (action: Build) on `tests/Spire.SourceGenerators.Tests/` — must compile cleanly.
+5. Use `dotnet_project` MCP tool (action: Build) on `tests/Houtamelo.Spire.SourceGenerators.Tests/` — must compile cleanly.
 
 ## Code fix test format
 
@@ -95,10 +95,10 @@ Discovered by `CodeFixCaseDiscoveryAttribute` — any directory under `CodeFix/c
 - **Write exactly the cases in your assigned list** — no more, no less.
 - **Each case is one directory with before.cs and after.cs** — no other files.
 - **Don't invent fix behavior** — if unsure how the fix should transform the code, message the lead.
-- **Do NOT read code fix implementation source code** (`src/Spire.CodeFixes/`) — tests must be written from the design spec, not the implementation.
+- **Do NOT read code fix implementation source code** (`src/Houtamelo.Spire.CodeFixes/`) — tests must be written from the design spec, not the implementation.
 - **Do NOT edit existing test cases**.
 - **Do NOT edit source code or the test runner**.
-- **Do NOT edit files outside `tests/Spire.SourceGenerators.Tests/CodeFix/cases/`**.
+- **Do NOT edit files outside `tests/Houtamelo.Spire.SourceGenerators.Tests/CodeFix/cases/`**.
 - **Do NOT install external tools, run Python scripts, or decompile DLLs**.
 - **Do NOT search or grep the NuGet cache (`~/.nuget/packages/`)**.
 - **Do NOT use `/tmp` or any absolute temp path** — use the project-local `tmp/` folder (gitignored).

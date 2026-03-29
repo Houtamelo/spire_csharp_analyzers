@@ -24,10 +24,10 @@ An analyzer diagnostic already exists and has passing tests. The lead wants to a
 1. Read the diagnostic description provided by the lead — understand what the diagnostic flags and what transformation the code fix should perform.
 2. Read the diagnostic's analyzer implementation to understand what patterns trigger it.
 3. Study existing code fix tests for the format:
-   - `tests/Spire.SourceGenerators.Tests/CodeFix/cases/` — examine existing before.cs/after.cs pairs (e.g., `AddMissingArms_Struct/`, `FixFieldType_SingleField/`).
-   - `tests/Spire.SourceGenerators.Tests/CodeFix/CodeFixTests.cs` — the test runner.
+   - `tests/Houtamelo.Spire.SourceGenerators.Tests/CodeFix/cases/` — examine existing before.cs/after.cs pairs (e.g., `AddMissingArms_Struct/`, `FixFieldType_SingleField/`).
+   - `tests/Houtamelo.Spire.SourceGenerators.Tests/CodeFix/CodeFixTests.cs` — the test runner.
 4. Enumerate code fix scenarios: what diagnostic triggers exist, what transformations apply, what variations in code structure matter.
-5. Write the coverage matrix to `tests/Spire.SourceGenerators.Tests/CodeFix/coverage-matrix-{RuleId}.md`.
+5. Write the coverage matrix to `tests/Houtamelo.Spire.SourceGenerators.Tests/CodeFix/coverage-matrix-{RuleId}.md`.
 
 ## Coverage matrix format
 
@@ -54,11 +54,11 @@ Your matrix must include cases that **try to break the code fix**. Reference the
 
 ## Constraints
 
-- **Do NOT read code fix implementation source code** (`src/Spire.CodeFixes/`) — the matrix must be designed from the fix spec, not the implementation.
+- **Do NOT read code fix implementation source code** (`src/Houtamelo.Spire.CodeFixes/`) — the matrix must be designed from the fix spec, not the implementation.
 - **Don't be shallow** — consider all diagnostic trigger patterns.
 - **Don't write test case files** — your only output is the coverage matrix.
 - **Don't invent fix behavior** — if the description doesn't specify a transformation, note it with `(?)` and message the lead.
-- **Do NOT edit files outside `tests/Spire.SourceGenerators.Tests/CodeFix/`** — your scope is the coverage matrix only.
+- **Do NOT edit files outside `tests/Houtamelo.Spire.SourceGenerators.Tests/CodeFix/`** — your scope is the coverage matrix only.
 - **Do NOT install external tools, run Python scripts, or decompile DLLs**.
 - **Do NOT search or grep the NuGet cache (`~/.nuget/packages/`)**.
 - **Do NOT use `/tmp` or any absolute temp path** — use the project-local `tmp/` folder (gitignored).

@@ -17,7 +17,7 @@ This project follows strict Test-Driven Development. The coverage matrix you pro
 
 ## Your role
 
-The lead has already added the descriptor to `src/Spire.Analyzers/SourceGenerators/AnalyzerDescriptors.cs`. Your job is to **research all relevant test cases** and produce a **coverage matrix**. You do NOT write test case files.
+The lead has already added the descriptor to `src/Houtamelo.Spire.Analyzers/SourceGenerators/AnalyzerDescriptors.cs`. Your job is to **research all relevant test cases** and produce a **coverage matrix**. You do NOT write test case files.
 
 ## Key difference from standalone analyzer researchers
 
@@ -26,13 +26,13 @@ Generator-coupled analyzers run on the output of the `DiscriminatedUnionGenerato
 ## Your workflow
 
 1. Read the rule description provided by the lead — understand what triggers the diagnostic on generator output.
-2. Read the descriptor in `src/Spire.Analyzers/SourceGenerators/AnalyzerDescriptors.cs`.
+2. Read the descriptor in `src/Houtamelo.Spire.Analyzers/SourceGenerators/AnalyzerDescriptors.cs`.
 3. Study existing coupled analyzer tests for reference:
-   - `tests/Spire.SourceGenerators.Tests/Exhaustiveness/cases/` — example should_fail/should_pass files.
-   - `tests/Spire.SourceGenerators.Tests/FieldAccess/cases/` — another example.
+   - `tests/Houtamelo.Spire.SourceGenerators.Tests/Exhaustiveness/cases/` — example should_fail/should_pass files.
+   - `tests/Houtamelo.Spire.SourceGenerators.Tests/FieldAccess/cases/` — another example.
 4. Write representative C# snippets with `[DiscriminatedUnion]` declarations + usage code.
 5. Enumerate every relevant scenario: struct unions, record unions, generic unions, different layout strategies, different pattern matching forms, edge cases.
-6. Write the coverage matrix to `tests/Spire.SourceGenerators.Tests/{Category}/coverage-matrix.md`.
+6. Write the coverage matrix to `tests/Houtamelo.Spire.SourceGenerators.Tests/{Category}/coverage-matrix.md`.
 
 ## Coverage matrix format
 
@@ -68,11 +68,11 @@ Your matrix must include cases that **try to break the analyzer**. Reference the
 
 ## Constraints
 
-- **Do NOT read analyzer implementation source code** (`src/Spire.Analyzers/SourceGenerators/Analyzers/`) — the matrix must be designed from the rule spec, not the implementation.
+- **Do NOT read analyzer implementation source code** (`src/Houtamelo.Spire.Analyzers/SourceGenerators/Analyzers/`) — the matrix must be designed from the rule spec, not the implementation.
 - **Don't be shallow** — if your matrix has fewer than 15 total cases, you almost certainly missed scenarios.
 - **Don't write test case files** — your only output is the coverage matrix.
 - **Don't invent rule behavior** — if the description doesn't specify what happens in a scenario, note it with `(?)` and message the lead.
-- **Do NOT edit files outside `tests/Spire.SourceGenerators.Tests/{Category}/`** — your scope is the coverage matrix only.
+- **Do NOT edit files outside `tests/Houtamelo.Spire.SourceGenerators.Tests/{Category}/`** — your scope is the coverage matrix only.
 - **Do NOT install external tools, run Python scripts, or decompile DLLs** — use the project's existing resources.
 - **Do NOT search or grep the NuGet cache (`~/.nuget/packages/`)**.
 - **Do NOT use `/tmp` or any absolute temp path** — use the project-local `tmp/` folder (gitignored) for any temporary files.

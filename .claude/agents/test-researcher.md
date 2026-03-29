@@ -22,8 +22,8 @@ The lead has already added the descriptor and shared preamble. Your job is to **
 ## Your workflow
 
 1. Read the rule description provided by the lead — understand what triggers the diagnostic and what doesn't. Ask the lead if anything is unclear.
-2. Read the descriptor in `src/Spire.Analyzers/Descriptors.cs` for the diagnostic ID and message.
-3. Read the shared preamble in `tests/Spire.Analyzers.Tests/{RuleId}/cases/_shared.cs` for available types.
+2. Read the descriptor in `src/Houtamelo.Spire.Analyzers/Descriptors.cs` for the diagnostic ID and message.
+3. Read the shared preamble in `tests/Houtamelo.Spire.Analyzers.Tests/{RuleId}/cases/_shared.cs` for available types.
 4. Write representative C# snippets that exercise the rule (both triggering and non-triggering).
 5. Use the `parse_syntax_tree` MCP tool to identify the relevant `IOperation`/syntax node types.
 6. For each relevant node type, enumerate **every** syntactic context where it can appear. You must consider at minimum:
@@ -43,7 +43,7 @@ The lead has already added the descriptor and shared preamble. Your job is to **
    - Generic types and methods
    - Nested types
    Not all will apply to every node type — skip contexts that are syntactically impossible, but you must explicitly consider each one.
-7. Write the coverage matrix to `tests/Spire.Analyzers.Tests/{RuleId}/coverage-matrix.md`.
+7. Write the coverage matrix to `tests/Houtamelo.Spire.Analyzers.Tests/{RuleId}/coverage-matrix.md`.
 
 ## Coverage matrix format
 
@@ -96,11 +96,11 @@ Your matrix must include cases that **try to break the implementation**. Referen
 
 ## Constraints
 
-- **Do NOT read analyzer implementation source code** (`src/Spire.Analyzers/Rules/`) — the matrix must be designed from the rule spec, not the implementation.
+- **Do NOT read analyzer implementation source code** (`src/Houtamelo.Spire.Analyzers/Rules/`) — the matrix must be designed from the rule spec, not the implementation.
 - **Don't be shallow** — one context per node type is NOT acceptable. If your matrix has fewer than 15 total cases, you almost certainly missed contexts.
 - **Don't write test case files** — your only output is the coverage matrix.
 - **Don't invent rule behavior** — if the plan doesn't specify what happens in a particular context, note it in the matrix with a `(?)` marker and message the lead.
-- **Do NOT edit files outside `tests/Spire.Analyzers.Tests/{RuleId}/`** — your scope is the coverage matrix only.
+- **Do NOT edit files outside `tests/Houtamelo.Spire.Analyzers.Tests/{RuleId}/`** — your scope is the coverage matrix only.
 - **Do NOT install external tools, run Python scripts, or decompile DLLs** — use the project's existing resources.
 - **Do NOT search or grep the NuGet cache (`~/.nuget/packages/`)**.
 - **Do NOT use `/tmp` or any absolute temp path** — use the project-local `tmp/` folder (gitignored) for any temporary files.

@@ -54,9 +54,9 @@
 
 | File | Purpose | Created by |
 |------|---------|------------|
-| `src/Spire.Analyzers/Rules/{{RULE_ID}}{{ShortName}}Analyzer.cs` | The analyzer | Implementer |
-| `tests/Spire.Analyzers.Tests/{{RULE_ID}}/{{RULE_ID}}Tests.cs` | Test runner | Lead |
-| `tests/Spire.Analyzers.Tests/{{RULE_ID}}/cases/_shared.cs` | Shared preamble | Lead |
-| `tests/Spire.Analyzers.Tests/{{RULE_ID}}/cases/*.cs` | Test case files | test-case-writer |
+| `src/Houtamelo.Spire.Analyzers/Rules/{{RULE_ID}}{{ShortName}}Analyzer.cs` | The analyzer | Implementer |
+| `tests/Houtamelo.Spire.Analyzers.Tests/{{RULE_ID}}/{{RULE_ID}}Tests.cs` | Test runner | Lead |
+| `tests/Houtamelo.Spire.Analyzers.Tests/{{RULE_ID}}/cases/_shared.cs` | Shared preamble | Lead |
+| `tests/Houtamelo.Spire.Analyzers.Tests/{{RULE_ID}}/cases/*.cs` | Test case files | test-case-writer |
 | `docs/rules/{{RULE_ID}}.md` | Rule documentation | Lead |
 

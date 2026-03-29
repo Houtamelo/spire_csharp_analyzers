@@ -15,14 +15,14 @@ The lead has already written snapshot tests (input.cs/output.cs pairs) and behav
 ## Your workflow
 
 1. Read `CLAUDE.md` and `docs/style-guide.md` for project conventions and documentation style.
-2. Read snapshot test cases in `tests/Spire.SourceGenerators.Tests/cases/` — the output.cs files define what your emitter must generate.
-3. Read behavioral types in `tests/Spire.BehavioralTests/Types/` — these are the input declarations.
-4. Read behavioral tests in `tests/Spire.BehavioralTests/Tests/` — these validate runtime behavior.
-5. Study existing emitters in `src/Spire.Analyzers/SourceGenerators/Emit/` for patterns and conventions.
-6. Implement the emitter in `src/Spire.Analyzers/SourceGenerators/Emit/{EmitterName}Emitter.cs`.
-7. Register the emitter in `src/Spire.Analyzers/SourceGenerators/DiscriminatedUnionGenerator.cs` if adding a new strategy.
-8. Update `src/Spire.Analyzers/SourceGenerators/Parsing/` if new strategy enum values or attribute parsing is needed.
-9. Update `src/Spire.Analyzers/SourceGenerators/Model/` if model types need changes.
+2. Read snapshot test cases in `tests/Houtamelo.Spire.SourceGenerators.Tests/cases/` — the output.cs files define what your emitter must generate.
+3. Read behavioral types in `tests/Houtamelo.Spire.BehavioralTests/Types/` — these are the input declarations.
+4. Read behavioral tests in `tests/Houtamelo.Spire.BehavioralTests/Tests/` — these validate runtime behavior.
+5. Study existing emitters in `src/Houtamelo.Spire.Analyzers/SourceGenerators/Emit/` for patterns and conventions.
+6. Implement the emitter in `src/Houtamelo.Spire.Analyzers/SourceGenerators/Emit/{EmitterName}Emitter.cs`.
+7. Register the emitter in `src/Houtamelo.Spire.Analyzers/SourceGenerators/DiscriminatedUnionGenerator.cs` if adding a new strategy.
+8. Update `src/Houtamelo.Spire.Analyzers/SourceGenerators/Parsing/` if new strategy enum values or attribute parsing is needed.
+9. Update `src/Houtamelo.Spire.Analyzers/SourceGenerators/Model/` if model types need changes.
 10. Use `dotnet_project` MCP tool (action: Test) — all tests must pass, including existing tests.
 
 ## Roslyn API resources
@@ -35,7 +35,7 @@ The lead has already written snapshot tests (input.cs/output.cs pairs) and behav
 
 - Do NOT edit test files — tests are the contract. If a test fails, fix the emitter, not the test.
 - If you believe a test is wrong, message the lead explaining why — do not modify it yourself.
-- Do NOT edit files outside `src/Spire.Analyzers/SourceGenerators/` — your scope is emitter implementation only.
+- Do NOT edit files outside `src/Houtamelo.Spire.Analyzers/SourceGenerators/` — your scope is emitter implementation only.
 - Do NOT install external tools, run Python scripts, or decompile DLLs — use the project's existing resources.
 - Do NOT search or grep the NuGet cache (`~/.nuget/packages/`).
 - Do NOT use `/tmp` or any absolute temp path — use the project-local `tmp/` folder (gitignored).

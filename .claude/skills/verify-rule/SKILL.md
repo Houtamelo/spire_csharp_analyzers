@@ -16,19 +16,19 @@ Rule ID: `$ARGUMENTS`
 Run each check below and report pass/fail for each.
 
 ## 1. Analyzer file exists
-- Glob for `src/Spire.Analyzers/Rules/$ARGUMENTS*Analyzer.cs`
+- Glob for `src/Houtamelo.Spire.Analyzers/Rules/$ARGUMENTS*Analyzer.cs`
 - Verify it has `[DiagnosticAnalyzer(LanguageNames.CSharp)]`
 - Verify it references a descriptor from `Descriptors.cs`
 
 ## 2. Descriptor registered
-- Grep `src/Spire.Analyzers/Descriptors.cs` for `id: "$ARGUMENTS"`
+- Grep `src/Houtamelo.Spire.Analyzers/Descriptors.cs` for `id: "$ARGUMENTS"`
 
 ## 3. Test structure exists
-- Verify test folder exists: `tests/Spire.Analyzers.Tests/$ARGUMENTS/`
-- Verify test runner exists: `tests/Spire.Analyzers.Tests/$ARGUMENTS/${ARGUMENTS}Tests.cs`
+- Verify test folder exists: `tests/Houtamelo.Spire.Analyzers.Tests/$ARGUMENTS/`
+- Verify test runner exists: `tests/Houtamelo.Spire.Analyzers.Tests/$ARGUMENTS/${ARGUMENTS}Tests.cs`
 - Verify test runner inherits `AnalyzerTestBase<...>` and overrides `RuleId`
-- Verify case folder exists: `tests/Spire.Analyzers.Tests/$ARGUMENTS/cases/`
-- Verify shared preamble exists: `tests/Spire.Analyzers.Tests/$ARGUMENTS/cases/_shared.cs`
+- Verify case folder exists: `tests/Houtamelo.Spire.Analyzers.Tests/$ARGUMENTS/cases/`
+- Verify shared preamble exists: `tests/Houtamelo.Spire.Analyzers.Tests/$ARGUMENTS/cases/_shared.cs`
 - Count `should_fail` case files (need >= 3): files starting with `//@ should_fail`
 - Count `should_pass` case files (need >= 3): files starting with `//@ should_pass`
 - Verify all case files have proper headers (`//@ should_fail` or `//@ should_pass` on line 1)

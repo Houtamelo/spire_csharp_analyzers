@@ -39,15 +39,15 @@ Your goal is to write tests that **try to break the analyzer**. Don't write triv
 1. Read `docs/style-guide.md` for documentation style.
 2. Read the **rule description provided by the lead** to understand the design intent — use it to find edge cases that could break the analyzer.
 3. Study existing coupled analyzer test cases for the format:
-   - `tests/Spire.SourceGenerators.Tests/Exhaustiveness/cases/` — examine 2-3 existing files.
-3. Read the descriptor in `src/Spire.Analyzers/SourceGenerators/AnalyzerDescriptors.cs`.
+   - `tests/Houtamelo.Spire.SourceGenerators.Tests/Exhaustiveness/cases/` — examine 2-3 existing files.
+3. Read the descriptor in `src/Houtamelo.Spire.Analyzers/SourceGenerators/AnalyzerDescriptors.cs`.
 4. Read the coverage matrix section assigned to you.
 5. For each case:
-   a. Write the `.cs` file in `tests/Spire.SourceGenerators.Tests/{Category}/cases/`.
+   a. Write the `.cs` file in `tests/Houtamelo.Spire.SourceGenerators.Tests/{Category}/cases/`.
    b. Include `//@ should_fail` or `//@ should_pass` on line 1.
    c. Include `//~ ERROR` markers on lines that should produce diagnostics (should_fail cases only).
    d. Include a `[DiscriminatedUnion]` declaration + usage code that exercises the analyzer.
-6. Use `dotnet_project` MCP tool (action: Build) on `tests/Spire.SourceGenerators.Tests/` — must compile cleanly.
+6. Use `dotnet_project` MCP tool (action: Build) on `tests/Houtamelo.Spire.SourceGenerators.Tests/` — must compile cleanly.
 
 ## Test case file format
 
@@ -80,9 +80,9 @@ namespace TestNs
 - **Write exactly the cases in your assigned list** — no more, no less.
 - **Don't merge cases** — each case file tests exactly one scenario.
 - **Don't invent rule behavior** — if unsure, message the lead.
-- **Do NOT read analyzer implementation source code** (`src/Spire.Analyzers/SourceGenerators/Analyzers/`) — tests must be written from the design spec, not the implementation.
+- **Do NOT read analyzer implementation source code** (`src/Houtamelo.Spire.Analyzers/SourceGenerators/Analyzers/`) — tests must be written from the design spec, not the implementation.
 - **Do NOT edit the test runner** — cases are discovered automatically from files.
-- **Do NOT edit files outside `tests/Spire.SourceGenerators.Tests/{Category}/cases/`** — your scope is test cases only.
+- **Do NOT edit files outside `tests/Houtamelo.Spire.SourceGenerators.Tests/{Category}/cases/`** — your scope is test cases only.
 - **Do NOT install external tools, run Python scripts, or decompile DLLs**.
 - **Do NOT search or grep the NuGet cache (`~/.nuget/packages/`)**.
 - **Do NOT use `/tmp` or any absolute temp path** — use the project-local `tmp/` folder (gitignored).

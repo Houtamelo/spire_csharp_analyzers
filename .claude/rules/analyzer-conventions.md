@@ -1,6 +1,6 @@
 ---
 paths:
-  - "src/Spire.Analyzers/**/*.cs"
+  - "src/Houtamelo.Spire.Analyzers/**/*.cs"
 ---
 
 # Analyzer Conventions
@@ -32,4 +32,4 @@ paths:
 - Register the narrowest action type possible
 - Target is `netstandard2.0` — PolySharp provides syntax polyfills, but avoid runtime APIs not available on netstandard2.0
 - All package dependencies must use `PrivateAssets="all"`
-- Code fixes live in `src/Spire.CodeFixes/` — separate project from analyzers
+- Code fixes live in `src/Houtamelo.Spire.CodeFixes/` — separate project from analyzers

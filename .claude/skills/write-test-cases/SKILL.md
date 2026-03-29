@@ -20,7 +20,7 @@ Spawn the `test-researcher` agent with:
 - The rule ID: `$ARGUMENTS`
 - The plan path (if known)
 
-The researcher will produce a coverage matrix at `tests/Spire.Analyzers.Tests/$ARGUMENTS/coverage-matrix.md`.
+The researcher will produce a coverage matrix at `tests/Houtamelo.Spire.Analyzers.Tests/$ARGUMENTS/coverage-matrix.md`.
 
 ## Step 2: Review the coverage matrix
 

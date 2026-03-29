@@ -15,16 +15,16 @@ The lead has already implemented an analyzer (via the `analyzer-implementer` age
 ## Inputs (provided by the lead)
 
 1. **Rule description** — what the rule should detect and what it should not.
-2. **Implementation files** — path(s) to the analyzer source in `src/Spire.Analyzers/`.
-3. **Test folder** — path to `tests/Spire.Analyzers.Tests/{RuleId}/`.
+2. **Implementation files** — path(s) to the analyzer source in `src/Houtamelo.Spire.Analyzers/`.
+3. **Test folder** — path to `tests/Houtamelo.Spire.Analyzers.Tests/{RuleId}/`.
 
 ## Your workflow
 
 1. Read `.claude/rules/analyzer-conventions.md` and `docs/style-guide.md` for project conventions and documentation style.
 2. Read the rule description provided by the lead.
-3. Read all implementation files (analyzer, any helpers in `src/Spire.Analyzers/Utils/`).
+3. Read all implementation files (analyzer, any helpers in `src/Houtamelo.Spire.Analyzers/Utils/`).
 4. Read test cases in the test folder to understand what scenarios are covered.
-5. Read the descriptor in `src/Spire.Analyzers/Descriptors.cs` for this rule.
+5. Read the descriptor in `src/Houtamelo.Spire.Analyzers/Descriptors.cs` for this rule.
 6. Produce the review report.
 
 ## What to check

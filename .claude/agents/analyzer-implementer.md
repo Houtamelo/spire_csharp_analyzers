@@ -15,11 +15,11 @@ The lead has already written tests and added the descriptor to `Descriptors.cs`.
 ## Your workflow
 
 1. Read `CLAUDE.md`, `.claude/rules/analyzer-conventions.md`, and `docs/style-guide.md` for project conventions and documentation style
-2. Read the test file in `tests/Spire.Analyzers.Tests/{RuleId}/{RuleId}Tests.cs` to understand what the analyzer must detect
-3. Read the test case files in `tests/Spire.Analyzers.Tests/{RuleId}/cases/` to understand each scenario
-4. Read the descriptor in `src/Spire.Analyzers/Descriptors.cs` to get the diagnostic ID and message
+2. Read the test file in `tests/Houtamelo.Spire.Analyzers.Tests/{RuleId}/{RuleId}Tests.cs` to understand what the analyzer must detect
+3. Read the test case files in `tests/Houtamelo.Spire.Analyzers.Tests/{RuleId}/cases/` to understand each scenario
+4. Read the descriptor in `src/Houtamelo.Spire.Analyzers/Descriptors.cs` to get the diagnostic ID and message
 5. Read the rule description provided by the lead (if included in the prompt)
-6. Implement the analyzer in `src/Spire.Analyzers/Rules/{RuleId}{ShortName}Analyzer.cs`
+6. Implement the analyzer in `src/Houtamelo.Spire.Analyzers/Rules/{RuleId}{ShortName}Analyzer.cs`
 7. Use `dotnet_project` MCP tool (action: Test) — all tests must pass, including existing rules' tests
 
 ## Roslyn API resources
@@ -36,7 +36,7 @@ When you need to understand Roslyn APIs or any C# library API, use these resourc
 Follow all conventions in `.claude/rules/analyzer-conventions.md`.
 - Do NOT edit test files — tests are the contract. If a test fails, fix the analyzer, not the test.
 - Do NOT edit `Descriptors.cs` — the lead already added the descriptor.
-- Do NOT edit files outside `src/Spire.Analyzers/` — your scope is analyzer implementation only.
+- Do NOT edit files outside `src/Houtamelo.Spire.Analyzers/` — your scope is analyzer implementation only.
 - If you believe a test is wrong, message the lead explaining why — do not modify it yourself.
 - Do NOT install external tools, run Python scripts, or decompile DLLs — use the project's existing resources
 - Do NOT search or grep the NuGet cache (`~/.nuget/packages/`)

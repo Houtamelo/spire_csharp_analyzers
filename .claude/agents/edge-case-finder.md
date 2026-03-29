@@ -20,8 +20,8 @@ A rule is already implemented and its initial tests pass. Your job is to **find 
 ## Your workflow
 
 1. Read the rule description provided by the lead
-2. Read the analyzer source in `src/Spire.Analyzers/Rules/` to understand the implementation
-3. Read existing test cases in `tests/Spire.Analyzers.Tests/{RuleId}/cases/`
+2. Read the analyzer source in `src/Houtamelo.Spire.Analyzers/Rules/` to understand the implementation
+3. Read existing test cases in `tests/Houtamelo.Spire.Analyzers.Tests/{RuleId}/cases/`
 4. Identify missing edge cases, such as:
    - Generics with struct constraints.
    - Nested structs.

@@ -19,7 +19,7 @@ This project follows strict Test-Driven Development. Tests are written BEFORE th
 
 ## Your role
 
-The lead gives you **type definitions and test cases** from the coverage matrix. Your job is to write union type declarations in `tests/Spire.BehavioralTests/Types/` and corresponding `[Fact]` test methods in `tests/Spire.BehavioralTests/Tests/`.
+The lead gives you **type definitions and test cases** from the coverage matrix. Your job is to write union type declarations in `tests/Houtamelo.Spire.BehavioralTests/Types/` and corresponding `[Fact]` test methods in `tests/Houtamelo.Spire.BehavioralTests/Tests/`.
 
 ## Inputs (provided by the lead)
 
@@ -36,13 +36,13 @@ Your goal is to write union types and tests that **try to break the emitter at r
 1. Read `docs/style-guide.md` for documentation style.
 2. Read the **emitter design provided by the lead** to understand what the emitter should handle — use it to find edge cases.
 3. Study existing behavioral tests for the format:
-   - Types: `tests/Spire.BehavioralTests/Types/AdditiveUnions.cs` (struct union pattern)
-   - Types: `tests/Spire.BehavioralTests/Types/RecordUnions.cs` (record union pattern)
-   - Tests: `tests/Spire.BehavioralTests/Tests/AdditiveTests.cs` (test method style)
+   - Types: `tests/Houtamelo.Spire.BehavioralTests/Types/AdditiveUnions.cs` (struct union pattern)
+   - Types: `tests/Houtamelo.Spire.BehavioralTests/Types/RecordUnions.cs` (record union pattern)
+   - Tests: `tests/Houtamelo.Spire.BehavioralTests/Tests/AdditiveTests.cs` (test method style)
 3. Read the coverage matrix sections for type definitions and test cases.
-4. Write or edit `tests/Spire.BehavioralTests/Types/{Strategy}Unions.cs` with all union type declarations.
-5. Write or edit `tests/Spire.BehavioralTests/Tests/{Strategy}Tests.cs` with all `[Fact]` test methods.
-6. Use `dotnet_project` MCP tool (action: Build) on `tests/Spire.BehavioralTests/` — must compile cleanly.
+4. Write or edit `tests/Houtamelo.Spire.BehavioralTests/Types/{Strategy}Unions.cs` with all union type declarations.
+5. Write or edit `tests/Houtamelo.Spire.BehavioralTests/Tests/{Strategy}Tests.cs` with all `[Fact]` test methods.
+6. Use `dotnet_project` MCP tool (action: Build) on `tests/Houtamelo.Spire.BehavioralTests/` — must compile cleanly.
 
 ## Type definition format
 
@@ -88,7 +88,7 @@ Group tests by feature with `── Feature ───` section comments. One `[F
 - **Write exactly the types and tests in your assigned list** — no more, no less.
 - **Types and tests are tightly coupled** — a test method references types declared in the same session.
 - **If modifying existing files**, use Edit to append new types/tests. Do not overwrite existing content.
-- **Do NOT read emitter implementation source code** (`src/Spire.Analyzers/SourceGenerators/Emit/`) — tests must be written from the design spec, not the implementation.
+- **Do NOT read emitter implementation source code** (`src/Houtamelo.Spire.Analyzers/SourceGenerators/Emit/`) — tests must be written from the design spec, not the implementation.
 - **Do NOT edit source code files** — your scope is behavioral tests only.
 - **Do NOT edit snapshot test files** — those are handled by the snapshot writer.
 - **Do NOT install external tools, run Python scripts, or decompile DLLs** — use the project's existing resources.
