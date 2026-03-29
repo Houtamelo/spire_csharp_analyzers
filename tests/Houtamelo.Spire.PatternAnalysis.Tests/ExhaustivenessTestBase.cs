@@ -242,7 +242,7 @@ public abstract class ExhaustivenessTestBase
             "TestAssembly",
             trees,
             references,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         // Fail fast if the test code doesn't compile
         var compilerErrors = compilation.GetDiagnostics()
