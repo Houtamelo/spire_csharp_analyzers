@@ -14,6 +14,9 @@ internal sealed class NullableDomain : IValueDomain
     public ITypeSymbol Type { get; }
     public IValueDomain Inner => _inner;
 
+    /// Whether null is still an uncovered value in this domain.
+    internal bool HasNull => _hasNull;
+
     public NullableDomain(ITypeSymbol type, IValueDomain inner, bool hasNull)
     {
         Type = type;

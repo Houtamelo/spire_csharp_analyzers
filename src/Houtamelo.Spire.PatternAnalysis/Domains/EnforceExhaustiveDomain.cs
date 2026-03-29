@@ -19,6 +19,9 @@ internal sealed class EnforceExhaustiveDomain : IValueDomain
     /// Exposed for tests that need to construct partial domains with the same allTypes set.
     internal ImmutableHashSet<INamedTypeSymbol> AllTypes => _allTypes;
 
+    /// The remaining variant types in this domain (after subtractions).
+    internal ImmutableHashSet<INamedTypeSymbol> RemainingTypes => _remainingTypes;
+
     public EnforceExhaustiveDomain(
         ITypeSymbol baseType,
         ImmutableHashSet<INamedTypeSymbol> remainingTypes,

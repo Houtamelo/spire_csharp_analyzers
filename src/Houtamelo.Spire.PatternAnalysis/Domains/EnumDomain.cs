@@ -13,6 +13,9 @@ internal sealed class EnumDomain : IValueDomain
 
     public ITypeSymbol Type { get; }
 
+    /// The remaining enum members in this domain (after subtractions).
+    internal ImmutableHashSet<IFieldSymbol> Members => _members;
+
     public EnumDomain(ITypeSymbol type, ImmutableHashSet<IFieldSymbol> members, ImmutableHashSet<IFieldSymbol> allMembers)
     {
         Type = type;

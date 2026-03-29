@@ -16,6 +16,9 @@ internal abstract class StructuralDomain : IValueDomain
     protected bool HasWildcard { get; }
     public ITypeSymbol Type { get; }
 
+    /// Exposes slots for cross-assembly consumers with InternalsVisibleTo.
+    internal ImmutableArray<(SlotIdentifier Slot, IValueDomain Domain)> InternalSlots => Slots;
+
     protected StructuralDomain(
         ITypeSymbol type,
         ImmutableArray<(SlotIdentifier Slot, IValueDomain Domain)> slots,
