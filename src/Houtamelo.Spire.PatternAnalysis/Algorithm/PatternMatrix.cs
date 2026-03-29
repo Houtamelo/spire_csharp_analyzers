@@ -113,13 +113,39 @@ internal sealed class PatternMatrix
         return new PatternMatrix(rowBuilder.ToImmutable(), colBuilder.MoveToImmutable());
     }
 
+    // ─── Subject type resolution ────────────────────────────────────────
+
+    /// Resolves the switch subject type with correct NullableAnnotation.
+    /// Roslyn's IOperation.Type on switch values always returns Annotated for reference types
+    /// (because pattern matching considers null possible). We need the DECLARED type's annotation
+    /// from the underlying symbol (parameter, local, field, property) to determine if null is
+    /// actually in the domain.
+    static ITypeSymbol? ResolveSubjectType(IOperation value)
+    {
+        var type = value.Type;
+        if (type == null || type.IsValueType)
+            return type;
+
+        // Try to get the declared type from the underlying symbol
+        var declaredType = value switch
+        {
+            IParameterReferenceOperation paramRef => paramRef.Parameter.Type,
+            ILocalReferenceOperation localRef => localRef.Local.Type,
+            IFieldReferenceOperation fieldRef => fieldRef.Field.Type,
+            IPropertyReferenceOperation propRef => propRef.Property.Type,
+            _ => null,
+        };
+
+        return declaredType ?? type;
+    }
+
     // ─── Build from switch expression ────────────────────────────────────
 
     /// Build a PatternMatrix from a switch expression's arms.
     /// Arms with when guards are excluded (conservative — treated as not covering anything).
     public static PatternMatrix Build(ISwitchExpressionOperation switchExpr, DomainResolver resolver)
     {
-        var subjectType = switchExpr.Value.Type;
+        var subjectType = ResolveSubjectType(switchExpr.Value);
         if (subjectType == null)
             return Empty();
 
@@ -141,7 +167,7 @@ internal sealed class PatternMatrix
     /// Clauses with when guards are excluded.
     public static PatternMatrix Build(ISwitchOperation switchStmt, DomainResolver resolver)
     {
-        var subjectType = switchStmt.Value.Type;
+        var subjectType = ResolveSubjectType(switchStmt.Value);
         if (subjectType == null)
             return Empty();
 
