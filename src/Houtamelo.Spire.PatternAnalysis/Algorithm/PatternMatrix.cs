@@ -730,7 +730,7 @@ internal sealed class PatternMatrix
         if (pattern is IConstantPatternOperation constPat)
         {
             var cv = constPat.Value?.ConstantValue;
-            if (cv.HasValue && cv.Value == null)
+            if (cv is { HasValue: true, Value: null })
             {
                 var emptyInner = new EmptyDomain(kindDomain.Type);
                 return new Cell.Constraint(new NullableDomain(nullableKindDomain.Type, emptyInner, hasNull: true));
@@ -742,7 +742,7 @@ internal sealed class PatternMatrix
             && negated.Pattern is IConstantPatternOperation negConst)
         {
             var nv = negConst.Value?.ConstantValue;
-            if (nv.HasValue && nv.Value == null)
+            if (nv is { HasValue: true, Value: null })
             {
                 // `not null` → covers all Kind variants but not null
                 return new Cell.Constraint(new NullableDomain(nullableKindDomain.Type, kindDomain, hasNull: false));

@@ -49,7 +49,7 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
         if (unionInfo is null) return;
 
         var result = ExhaustivenessChecker.Check(ctx.Compilation, switchOp);
-        ReportDiagnostics(ctx, subjectType, result, switchOp.Syntax.GetLocation());
+        ReportDiagnostics(ctx, subjectType, unionInfo, result, switchOp.Syntax.GetLocation());
     }
 
     private static void AnalyzeSwitchStatement(
@@ -63,12 +63,13 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
         if (unionInfo is null) return;
 
         var result = ExhaustivenessChecker.Check(ctx.Compilation, switchOp);
-        ReportDiagnostics(ctx, subjectType, result, switchOp.Syntax.GetLocation());
+        ReportDiagnostics(ctx, subjectType, unionInfo, result, switchOp.Syntax.GetLocation());
     }
 
     private static void ReportDiagnostics(
         OperationAnalysisContext ctx,
         ITypeSymbol subjectType,
+        UnionTypeInfo unionInfo,
         ExhaustivenessResult result,
         Location location)
     {
@@ -78,6 +79,9 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
         var missingNames = ExtractMissingVariantNames(result);
         if (missingNames.Count == 0)
             return;
+
+        // Sort by variant declaration order so code fixes insert arms in the expected order
+        SortByVariantOrder(missingNames, unionInfo.VariantNames);
 
         var missingStr = string.Join(", ", missingNames.Select(n => $"'{n}'"));
 
@@ -143,5 +147,19 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
                 }
                 break;
         }
+    }
+
+    /// Sorts names to match declaration order in the union's VariantNames.
+    /// Names not in VariantNames (e.g., "null") are placed at the end.
+    private static void SortByVariantOrder(List<string> names, ImmutableArray<string> variantNames)
+    {
+        names.Sort((a, b) =>
+        {
+            int ia = variantNames.IndexOf(a);
+            int ib = variantNames.IndexOf(b);
+            if (ia < 0) ia = int.MaxValue;
+            if (ib < 0) ib = int.MaxValue;
+            return ia.CompareTo(ib);
+        });
     }
 }
