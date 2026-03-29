@@ -310,13 +310,18 @@ internal sealed class PatternMatrix
     static PatternMatrix Empty() =>
         new(ImmutableArray<ImmutableArray<Cell>>.Empty, ImmutableArray<Column>.Empty);
 
-    /// Core build logic. Detects tuple subjects and property patterns,
+    /// Core build logic. Detects struct DU, tuple subjects, and property patterns,
     /// expanding them into multi-column matrices.
     static PatternMatrix BuildCore(
         ITypeSymbol subjectType,
         ImmutableArray<IPatternOperation> patterns,
         DomainResolver resolver)
     {
+        // Struct discriminated union → single-column Kind enum matrix
+        var kindEnum = resolver.TryGetStructDUKindEnum(subjectType);
+        if (kindEnum != null)
+            return BuildStructDUMatrix(subjectType, kindEnum, patterns, resolver);
+
         // Tuple subject → multi-column matrix with one column per element
         if (subjectType is INamedTypeSymbol { IsTupleType: true } tupleType)
             return BuildTupleMatrix(tupleType, patterns, resolver);
@@ -630,6 +635,156 @@ internal sealed class PatternMatrix
         }
 
         return WildcardRow(columns.Length);
+    }
+
+    // ─── Struct DU matrix ─────────────────────────────────────────────────
+
+    /// Build a single-column Kind enum matrix for a struct discriminated union.
+    /// Exhaustiveness is determined solely by coverage of all Kind enum members.
+    static PatternMatrix BuildStructDUMatrix(
+        ITypeSymbol subjectType,
+        INamedTypeSymbol kindEnum,
+        ImmutableArray<IPatternOperation> patterns,
+        DomainResolver resolver)
+    {
+        var kindDomain = EnumDomain.Universe(kindEnum);
+        var slot = new SlotIdentifier.RootSlot(kindEnum);
+        var column = new Column(slot, kindDomain);
+
+        // Detect majority pattern style to guide Kind extraction
+        var style = DetectStructDUStyle(patterns);
+
+        var rowBuilder = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>();
+        foreach (var pattern in patterns)
+        {
+            var cell = ExtractStructDUKindCell(pattern, kindDomain, kindEnum, style);
+            rowBuilder.Add(ImmutableArray.Create(cell));
+        }
+
+        return new PatternMatrix(rowBuilder.ToImmutable(), ImmutableArray.Create(column));
+    }
+
+    enum StructDUStyle { Deconstruct, Property }
+
+    /// Scan patterns to detect whether deconstruct or property style dominates.
+    static StructDUStyle DetectStructDUStyle(ImmutableArray<IPatternOperation> patterns)
+    {
+        foreach (var pattern in patterns)
+        {
+            if (pattern is IRecursivePatternOperation recursive)
+            {
+                if (!recursive.DeconstructionSubpatterns.IsEmpty)
+                    return StructDUStyle.Deconstruct;
+
+                if (!recursive.PropertySubpatterns.IsEmpty && HasKindSubpattern(recursive))
+                    return StructDUStyle.Property;
+            }
+        }
+
+        // Default to property mode
+        return StructDUStyle.Property;
+    }
+
+    /// Check if a recursive pattern has a property subpattern for the 'kind' member.
+    static bool HasKindSubpattern(IRecursivePatternOperation recursive)
+    {
+        foreach (var propSub in recursive.PropertySubpatterns)
+        {
+            var memberName = GetMemberName(propSub.Member);
+            if (memberName == "kind")
+                return true;
+        }
+        return false;
+    }
+
+    /// Extract the member name from a property subpattern's Member operation.
+    static string? GetMemberName(IOperation? memberOp)
+    {
+        if (memberOp is IPropertyReferenceOperation propRef)
+            return propRef.Property.Name;
+        if (memberOp is IFieldReferenceOperation fieldRef)
+            return fieldRef.Field.Name;
+        return null;
+    }
+
+    /// Convert a single arm pattern to a Kind enum cell for a struct DU.
+    static Cell ExtractStructDUKindCell(
+        IPatternOperation pattern,
+        EnumDomain kindDomain,
+        INamedTypeSymbol kindEnum,
+        StructDUStyle style)
+    {
+        switch (pattern)
+        {
+            case IDiscardPatternOperation:
+                return Cell.Wildcard.Instance;
+
+            case IDeclarationPatternOperation declPat when declPat.Syntax is VarPatternSyntax:
+                return Cell.Wildcard.Instance;
+
+            case IBinaryPatternOperation binaryPat:
+                return ConvertBinaryStructDUPattern(binaryPat, kindDomain, kindEnum, style);
+
+            case IRecursivePatternOperation recursive:
+                return ExtractKindFromRecursive(recursive, kindDomain, kindEnum, style);
+
+            case IConstantPatternOperation constPat:
+                // Direct Kind constant (unlikely at top level, but handle it)
+                return ConvertConstantPattern(constPat, kindDomain);
+
+            default:
+                return Cell.Wildcard.Instance;
+        }
+    }
+
+    /// Extract Kind from a recursive pattern (deconstruct or property).
+    static Cell ExtractKindFromRecursive(
+        IRecursivePatternOperation recursive,
+        EnumDomain kindDomain,
+        INamedTypeSymbol kindEnum,
+        StructDUStyle style)
+    {
+        // Deconstruct: (Kind.Circle, ...) — element[0] is the Kind
+        if (!recursive.DeconstructionSubpatterns.IsEmpty)
+        {
+            var firstSub = recursive.DeconstructionSubpatterns[0];
+            return ConvertPattern(firstSub, kindDomain);
+        }
+
+        // Property: { kind: Kind.Circle, ... } — find the 'kind' subpattern
+        if (!recursive.PropertySubpatterns.IsEmpty)
+        {
+            foreach (var propSub in recursive.PropertySubpatterns)
+            {
+                var memberName = GetMemberName(propSub.Member);
+                if (memberName == "kind")
+                    return ConvertPattern(propSub.Pattern, kindDomain);
+            }
+        }
+
+        // Empty recursive pattern like `{ }` or a type-check pattern — wildcard
+        return Cell.Wildcard.Instance;
+    }
+
+    /// Handle binary (or/and) patterns for struct DU Kind extraction.
+    static Cell ConvertBinaryStructDUPattern(
+        IBinaryPatternOperation binaryPat,
+        EnumDomain kindDomain,
+        INamedTypeSymbol kindEnum,
+        StructDUStyle style)
+    {
+        var left = ExtractStructDUKindCell(binaryPat.LeftPattern, kindDomain, kindEnum, style);
+        var right = ExtractStructDUKindCell(binaryPat.RightPattern, kindDomain, kindEnum, style);
+
+        switch (binaryPat.OperatorKind)
+        {
+            case BinaryOperatorKind.Or:
+                return UnionCells(left, right, kindDomain);
+            case BinaryOperatorKind.And:
+                return IntersectCells(left, right, kindDomain);
+            default:
+                return Cell.Wildcard.Instance;
+        }
     }
 
     // ─── Pattern-to-Cell conversion ──────────────────────────────────────

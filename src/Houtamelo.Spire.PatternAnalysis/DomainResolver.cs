@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Linq;
 using Houtamelo.Spire.PatternAnalysis.Domains;
 using Houtamelo.Spire.PatternAnalysis.Resolution;
 using Microsoft.CodeAnalysis;
@@ -19,6 +20,17 @@ internal sealed class DomainResolver
         _hierarchyResolver = hierarchyResolver;
         _enforceExhaustivenessAttr = compilation.GetTypeByMetadataName("Houtamelo.Spire.Core.EnforceExhaustivenessAttribute");
         _discriminatedUnionAttr = compilation.GetTypeByMetadataName("Houtamelo.Spire.DiscriminatedUnionAttribute");
+    }
+
+    /// Returns the Kind enum type if the type is a struct DU, null otherwise.
+    public INamedTypeSymbol? TryGetStructDUKindEnum(ITypeSymbol type)
+    {
+        if (!type.IsValueType || _discriminatedUnionAttr is null)
+            return null;
+        if (!HasAttribute(type, _discriminatedUnionAttr))
+            return null;
+        var kindMembers = ((INamedTypeSymbol)type).GetTypeMembers("Kind");
+        return kindMembers.FirstOrDefault(t => t.TypeKind == TypeKind.Enum);
     }
 
     public IValueDomain Resolve(ITypeSymbol type)
