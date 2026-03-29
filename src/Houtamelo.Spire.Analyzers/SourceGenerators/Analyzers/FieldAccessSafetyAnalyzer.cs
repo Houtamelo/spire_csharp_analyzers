@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Houtamelo.Spire.PatternAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -200,7 +201,9 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
                 case ISwitchExpressionArmOperation arm:
                 {
                     var variants = new List<string>();
-                    PatternAnalyzer.CollectVariants(arm.Pattern, info, variants);
+                    ExhaustivenessChecker.CollectVariants(
+                        arm.Pattern, info.KindEnumType, info.VariantNames,
+                        info.VariantTypes, info.IsStructUnion, variants);
                     return GuardResult.WithVariants(variants);
                 }
 
@@ -210,7 +213,9 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
                     foreach (var clause in switchCase.Clauses)
                     {
                         if (clause is IPatternCaseClauseOperation patternClause)
-                            PatternAnalyzer.CollectVariants(patternClause.Pattern, info, variants);
+                            ExhaustivenessChecker.CollectVariants(
+                                patternClause.Pattern, info.KindEnumType, info.VariantNames,
+                                info.VariantTypes, info.IsStructUnion, variants);
                     }
                     return GuardResult.WithVariants(variants);
                 }
@@ -244,7 +249,9 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
         switch (condition)
         {
             case IIsPatternOperation isPattern:
-                PatternAnalyzer.CollectVariants(isPattern.Pattern, info, variants);
+                ExhaustivenessChecker.CollectVariants(
+                    isPattern.Pattern, info.KindEnumType, info.VariantNames,
+                    info.VariantTypes, info.IsStructUnion, variants);
                 break;
 
             case IBinaryOperation binary when
