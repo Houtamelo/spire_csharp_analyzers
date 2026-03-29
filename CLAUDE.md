@@ -4,10 +4,10 @@
 
 Roslyn-based C# analyzer
 
-- **Packages**: `Spire` (meta-package), `Spire.Core` (attributes/utilities), `Spire.Analyzers` (analyzers + source generator), `Spire.CodeFixes`
+- **Packages**: `Houtamelo.Spire` (meta-package), `Houtamelo.Spire.Core` (attributes/utilities), `Houtamelo.Spire.Analyzers` (analyzers + source generator), `Houtamelo.Spire.CodeFixes`, `Houtamelo.Spire.PatternAnalysis`
 - **Rule prefix**: `SPIRE` (SPIRE001, SPIRE002, ...)
-- **User-facing API** in `Spire.Core` (namespace `Spire`) — `EnforceInitializationAttribute`, `EnforceExhaustivenessAttribute`, `IDiscriminatedUnion<TEnum>`, `SpireLINQ.OfKind`
-- **Code fixes** in separate `Spire.CodeFixes` project (standalone, no inter-project dependencies)
+- **User-facing API** in `Houtamelo.Spire.Core` (namespace `Houtamelo.Spire.Core`) — `EnforceInitializationAttribute`, `EnforceExhaustivenessAttribute`, `IDiscriminatedUnion<TEnum>`, `SpireLINQ.OfKind`
+- **Code fixes** in separate `Houtamelo.Spire.CodeFixes` project (standalone, no inter-project dependencies)
 
 ## Build Commands
 
@@ -16,54 +16,54 @@ dotnet restore
 dotnet build
 dotnet test
 dotnet test --filter "FullyQualifiedName~SPIRE001"   # single rule
-dotnet run -c Release --project benchmarks/Spire.Benchmarks/ -- --filter '*' --job Dry   # benchmarks (25s)
-dotnet run -c Release --project benchmarks/Spire.Benchmarks/ -- --filter '*'              # benchmarks (full, ~2h)
+dotnet run -c Release --project benchmarks/Houtamelo.Spire.Benchmarks/ -- --filter '*' --job Dry   # benchmarks (25s)
+dotnet run -c Release --project benchmarks/Houtamelo.Spire.Benchmarks/ -- --filter '*'              # benchmarks (full, ~2h)
 # MCP tool `parse_syntax_tree` also available — preferred for agents
 ```
 
 ## Project Structure
 
 ```
-src/Spire/                        # Meta-package (no code, depends on all below)
-src/Spire.Core/                   # User-facing API: attributes, utilities (netstandard2.0)
-src/Spire.Analyzers/              # Analyzers + source generator (netstandard2.0)
-  Rules/                          # One file per rule
-  Descriptors.cs                  # Central DiagnosticDescriptor registry
-  Utils/                          # Shared utilities (EnforceInitializationChecks, OperationUtilities, etc.)
-    FlowAnalysis/                 # CFG-based flow analysis (InitState, KindState, NullState tracking)
-  SourceGenerators/               # Discriminated union source generator
-    Emit/                         # Per-strategy emitters (Additive, Overlap, BoxedFields, etc.)
-    Analyzers/                    # Generator-coupled analyzers (exhaustiveness, field access, type safety) — delegates to Spire.PatternAnalysis
-    Model/                        # Union declaration model types
-    Parsing/                      # Attribute parsing
-src/Spire.CodeFixes/              # Code fixes (standalone, no inter-project deps)
-src/Spire.PatternAnalysis/        # Recursive pattern exhaustiveness analysis (netstandard2.0)
-  Domains/                        # Value domains (Bool, Enum, Numeric, Nullable, Structural, etc.)
-  Algorithm/                      # Maranget decision-tree builder + pattern matrix
-  Resolution/                     # Type hierarchy resolver for [EnforceExhaustiveness]
-tests/Spire.Analyzers.Tests/      # Analyzer xUnit tests (net10.0, C# 14)
-  AnalyzerTestBase.cs             # Base class for all analyzer tests (discovery, parsing, verification)
-  FlowAnalysis/                   # Flow analysis infrastructure unit + integration tests
-  {RuleId}/                       # One folder per rule
-    {RuleId}Tests.cs              # Test runner (inherits AnalyzerTestBase)
+src/Houtamelo.Spire/                        # Meta-package (no code, depends on all below)
+src/Houtamelo.Spire.Core/                   # User-facing API: attributes, utilities (netstandard2.0)
+src/Houtamelo.Spire.Analyzers/              # Analyzers + source generator (netstandard2.0)
+  Rules/                                    # One file per rule
+  Descriptors.cs                            # Central DiagnosticDescriptor registry
+  Utils/                                    # Shared utilities (EnforceInitializationChecks, OperationUtilities, etc.)
+    FlowAnalysis/                           # CFG-based flow analysis (InitState, KindState, NullState tracking)
+  SourceGenerators/                         # Discriminated union source generator
+    Emit/                                   # Per-strategy emitters (Additive, Overlap, BoxedFields, etc.)
+    Analyzers/                              # Generator-coupled analyzers — delegates to PatternAnalysis
+    Model/                                  # Union declaration model types
+    Parsing/                                # Attribute parsing
+src/Houtamelo.Spire.CodeFixes/              # Code fixes (standalone, no inter-project deps)
+src/Houtamelo.Spire.PatternAnalysis/        # Recursive pattern exhaustiveness analysis (netstandard2.0)
+  Domains/                                  # Value domains (Bool, Enum, Numeric, Nullable, Structural, etc.)
+  Algorithm/                                # Maranget decision-tree builder + pattern matrix
+  Resolution/                               # Type hierarchy resolver for [EnforceExhaustiveness]
+tests/Houtamelo.Spire.Analyzers.Tests/      # Analyzer xUnit tests (net10.0, C# 14)
+  AnalyzerTestBase.cs                       # Base class for all analyzer tests (discovery, parsing, verification)
+  FlowAnalysis/                             # Flow analysis infrastructure unit + integration tests
+  {RuleId}/                                 # One folder per rule
+    {RuleId}Tests.cs                        # Test runner (inherits AnalyzerTestBase)
     cases/
-      _shared.cs                  # Shared preamble (types, usings)
-      {CaseName}.cs               # One file per test case (excluded from compilation)
-tests/Spire.SourceGenerators.Tests/ # Generator snapshot + analyzer tests (net10.0)
-  Behavioral/                     # Reflection-based behavioral tests (compile-emit-load pipeline)
-  cases/                          # Snapshot test cases (input.cs/output.cs pairs)
-tests/Spire.PatternAnalysis.Tests/ # Pattern exhaustiveness tests (unit + file-based integration)
-tests/Spire.BehavioralTests/      # Compile-time behavioral tests (generator runs at build time)
-  Types/                          # Union definitions per strategy
-  Tests/                          # Type-safe tests with real switch/pattern matching
-benchmarks/Spire.Benchmarks/      # BenchmarkDotNet performance tests
-  Types/                          # Union type declarations ([BenchmarkUnion] + hand-written)
-  Benchmarks/                     # Hand-written benchmark classes (UpdateLoop, Match, Micro, JSON, etc.)
-  Helpers/                        # ArrayFiller, Distribution, BenchN constant
-docs/benchmark-results/           # Auto-generated RESULTS_{job}.md from benchmark runs
-tools/DevTools/                   # MCP server (parse_syntax_tree, filesystem tools)
-docs/rules/                      # Per-rule docs (SPIRE001.md, ...)
-plans/                            # Design plans (read before implementing)
+      _shared.cs                            # Shared preamble (types, usings)
+      {CaseName}.cs                         # One file per test case (excluded from compilation)
+tests/Houtamelo.Spire.SourceGenerators.Tests/ # Generator snapshot + analyzer tests (net10.0)
+  Behavioral/                               # Reflection-based behavioral tests (compile-emit-load pipeline)
+  cases/                                    # Snapshot test cases (input.cs/output.cs pairs)
+tests/Houtamelo.Spire.PatternAnalysis.Tests/  # Pattern exhaustiveness tests (unit + file-based integration)
+tests/Houtamelo.Spire.BehavioralTests/      # Compile-time behavioral tests (generator runs at build time)
+  Types/                                    # Union definitions per strategy
+  Tests/                                    # Type-safe tests with real switch/pattern matching
+benchmarks/Houtamelo.Spire.Benchmarks/      # BenchmarkDotNet performance tests
+  Types/                                    # Union type declarations ([BenchmarkUnion] + hand-written)
+  Benchmarks/                               # Hand-written benchmark classes (UpdateLoop, Match, Micro, JSON, etc.)
+  Helpers/                                  # ArrayFiller, Distribution, BenchN constant
+docs/benchmark-results/                     # Auto-generated RESULTS_{job}.md from benchmark runs
+tools/DevTools/                             # MCP server (parse_syntax_tree, filesystem tools)
+docs/rules/                                 # Per-rule docs (SPIRE001.md, ...)
+plans/                                      # Design plans (read before implementing)
 ```
 
 ## Documentation Style
@@ -82,7 +82,7 @@ Key points:
 - **Analyzer targets `netstandard2.0`** — Roslyn requirement
 - **Tests target `net10.0` with LangVersion 14** (C# 14)
 - **Use `IOperation` API** as primary detection mechanism
-- **Code fixes** live in `src/Spire.CodeFixes/` (separate project)
+- **Code fixes** live in `src/Houtamelo.Spire.CodeFixes/` (separate project)
 
 ### File naming
 
@@ -107,12 +107,12 @@ Test case file format is documented in `docs/test-case-format.md`.
 1. **Design the rule** — Before writing anything, understand what the rule should do. Research the C# semantics involved. Build the Flagged/NOT flagged spec tables mentally. Identify edge cases, ambiguous scenarios, and out-of-scope items. **Ask the user questions** to clarify concerns: severity level, boundary cases, whether specific patterns should be flagged or not. Make suggestions if you spot cases the user may not have considered. Do not proceed until the design is clear.
 2. **Write the rule plan** in `plans/` using the template at `.claude/skills/new-rule/templates/PlanTemplate.md`. Include: Flagged/NOT flagged spec tables, detection strategy, severity, message format, out-of-scope items.
 3. Add descriptor to `Descriptors.cs`
-4. Create attribute/marker type if needed in `src/Spire.Core/` (namespace `Spire`)
+4. Create attribute/marker type if needed in `src/Houtamelo.Spire.Core/` (namespace `Houtamelo.Spire.Core`)
 5. Scaffold test folder, shared preamble, and test runner (inheriting `AnalyzerTestBase<TAnalyzer>`).
 6. **Spawn `test-researcher` agent** to produce a coverage matrix at `tests/.../{RuleId}/coverage-matrix.md`. Review the matrix — add/remove cases as needed.
 7. **Spawn `test-case-writer` agents** — one per category in the matrix, in parallel. Each writer receives its category's case list.
 8. Run `dotnet test` — confirm detection tests fail, false-positive tests pass
-9. **Spawn `analyzer-implementer` agent** to create the analyzer in `src/Spire.Analyzers/Rules/`
+9. **Spawn `analyzer-implementer` agent** to create the analyzer in `src/Houtamelo.Spire.Analyzers/Rules/`
 10. When the implementer reports completion, **ask verification questions** derived from the plan (see plan 009 § Questioning Protocol)
 11. Run `dotnet test` — confirm **ALL** tests pass
 12. **Spawn `code-reviewer` agent** — provide the rule description, implementation file paths, and test folder path. The reviewer produces a one-shot audit report (it does NOT edit files).

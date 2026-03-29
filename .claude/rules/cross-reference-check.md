@@ -18,7 +18,7 @@ How test case files are structured, discovered, and validated.
 - `.claude/agents/test-researcher.md` — coverage matrix references case format
 - `.claude/skills/write-test-cases/SKILL.md` — orchestrates researcher + writers
 - `.claude/skills/new-rule/templates/TestTemplate.cs` — test runner template
-- `tests/Spire.Analyzers.Tests/AnalyzerTestBase.cs` — runtime implementation of format
+- `tests/Houtamelo.Spire.Analyzers.Tests/AnalyzerTestBase.cs` — runtime implementation of format
 - `CLAUDE.md` — "Test Conventions" section
 
 ## Analyzer conventions
@@ -28,7 +28,7 @@ How analyzers are structured, named, and implemented.
 - `.claude/agents/code-reviewer.md` — checks conventions
 - `.claude/skills/new-rule/templates/AnalyzerTemplate.cs` — analyzer template
 - `.claude/skills/verify-rule/SKILL.md` — validates conventions
-- `src/Spire.Analyzers/Descriptors.cs` — descriptor registry
+- `src/Houtamelo.Spire.Analyzers/Descriptors.cs` — descriptor registry
 - `CLAUDE.md` — "Analyzer Conventions" section
 
 ## Rule creation workflow
@@ -89,21 +89,21 @@ How emitters are developed, tested (snapshot + behavioral), and implemented.
 - `.claude/agents/emitter-snapshot-writer.md` — snapshot test pairs
 - `.claude/agents/emitter-behavioral-writer.md` — behavioral types + tests
 - `.claude/agents/emitter-implementer.md` — emitter implementation
-- `tests/Spire.SourceGenerators.Tests/GeneratorSnapshotTestBase.cs` — snapshot test framework
-- `tests/Spire.BehavioralTests/` — behavioral test project
+- `tests/Houtamelo.Spire.SourceGenerators.Tests/GeneratorSnapshotTestBase.cs` — snapshot test framework
+- `tests/Houtamelo.Spire.BehavioralTests/` — behavioral test project
 
 ## Pattern exhaustiveness analysis
 Recursive pattern exhaustiveness checking via Maranget algorithm.
-- `src/Spire.PatternAnalysis/` — standalone library (domains, algorithm, resolution)
-- `src/Spire.PatternAnalysis/ExhaustivenessChecker.cs` — entry point
-- `src/Spire.PatternAnalysis/Algorithm/PatternMatrix.cs` — matrix construction + pattern conversion
-- `src/Spire.PatternAnalysis/Algorithm/DecisionTreeBuilder.cs` — Maranget core loop
-- `src/Spire.PatternAnalysis/DomainResolver.cs` — type-to-domain mapping
-- `src/Spire.PatternAnalysis/Resolution/TypeHierarchyResolver.cs` — assembly walk for [EnforceExhaustiveness]
-- `src/Spire.Analyzers/SourceGenerators/Analyzers/ExhaustivenessAnalyzer.cs` — SPIRE009, delegates to ExhaustivenessChecker
-- `src/Spire.Analyzers/SourceGenerators/Analyzers/CS8509Suppressor.cs` — delegates to ExhaustivenessChecker
-- `src/Spire.Analyzers/SourceGenerators/Analyzers/FieldAccessSafetyAnalyzer.cs` — uses ExhaustivenessChecker.CollectVariants
-- `tests/Spire.PatternAnalysis.Tests/ExhaustivenessTestBase.cs` — file-based test discovery with //~ markers
+- `src/Houtamelo.Spire.PatternAnalysis/` — standalone library (domains, algorithm, resolution)
+- `src/Houtamelo.Spire.PatternAnalysis/ExhaustivenessChecker.cs` — entry point
+- `src/Houtamelo.Spire.PatternAnalysis/Algorithm/PatternMatrix.cs` — matrix construction + pattern conversion
+- `src/Houtamelo.Spire.PatternAnalysis/Algorithm/DecisionTreeBuilder.cs` — Maranget core loop
+- `src/Houtamelo.Spire.PatternAnalysis/DomainResolver.cs` — type-to-domain mapping
+- `src/Houtamelo.Spire.PatternAnalysis/Resolution/TypeHierarchyResolver.cs` — assembly walk for [EnforceExhaustiveness]
+- `src/Houtamelo.Spire.Analyzers/SourceGenerators/Analyzers/ExhaustivenessAnalyzer.cs` — SPIRE009, delegates to ExhaustivenessChecker
+- `src/Houtamelo.Spire.Analyzers/SourceGenerators/Analyzers/CS8509Suppressor.cs` — delegates to ExhaustivenessChecker
+- `src/Houtamelo.Spire.Analyzers/SourceGenerators/Analyzers/FieldAccessSafetyAnalyzer.cs` — uses ExhaustivenessChecker.CollectVariants
+- `tests/Houtamelo.Spire.PatternAnalysis.Tests/ExhaustivenessTestBase.cs` — file-based test discovery with //~ markers
 - `docs/superpowers/specs/2026-03-25-recursive-pattern-exhaustiveness-design.md` — design spec
 
 ## Generator-coupled analyzer workflow
@@ -112,8 +112,8 @@ How analyzers that run on generator output are developed and tested.
 - `.claude/agents/coupled-analyzer-test-researcher.md` — coverage matrix
 - `.claude/agents/coupled-analyzer-test-case-writer.md` — test cases
 - `.claude/agents/coupled-analyzer-implementer.md` — analyzer implementation
-- `tests/Spire.SourceGenerators.Tests/GeneratorAnalyzerTestBase.cs` — test framework
-- `src/Spire.Analyzers/SourceGenerators/AnalyzerDescriptors.cs` — descriptor registry
+- `tests/Houtamelo.Spire.SourceGenerators.Tests/GeneratorAnalyzerTestBase.cs` — test framework
+- `src/Houtamelo.Spire.Analyzers/SourceGenerators/AnalyzerDescriptors.cs` — descriptor registry
 
 ## Code fix workflow
 How code fix providers are developed and tested.
@@ -121,17 +121,17 @@ How code fix providers are developed and tested.
 - `.claude/agents/codefix-test-researcher.md` — coverage matrix
 - `.claude/agents/codefix-test-case-writer.md` — before/after pairs
 - `.claude/agents/codefix-implementer.md` — code fix implementation
-- `tests/Spire.SourceGenerators.Tests/CodeFixTestBase.cs` — test framework
-- `src/Spire.CodeFixes/` — code fix providers
+- `tests/Houtamelo.Spire.SourceGenerators.Tests/CodeFixTestBase.cs` — test framework
+- `src/Houtamelo.Spire.CodeFixes/` — code fix providers
 
 ## Benchmark infrastructure
 How benchmarks are structured, run, and results generated.
-- `benchmarks/Spire.Benchmarks/Program.cs` — entry point, RESULTS.md generation
-- `benchmarks/Spire.Benchmarks/Helpers/BenchmarkConstants.cs` — shared N constant
-- `benchmarks/Spire.Benchmarks/Types/` — union type declarations ([BenchmarkUnion] + hand-written)
-- `benchmarks/Spire.Benchmarks/Benchmarks/` — hand-written benchmark classes
-- `src/Spire.Analyzers/SourceGenerators/BenchmarkUnionGenerator.cs` — [BenchmarkUnion] generator
-- `src/Spire.Analyzers/SourceGenerators/Attributes/BenchmarkAttributeSource.cs` — attribute source
+- `benchmarks/Houtamelo.Spire.Benchmarks/Program.cs` — entry point, RESULTS.md generation
+- `benchmarks/Houtamelo.Spire.Benchmarks/Helpers/BenchmarkConstants.cs` — shared N constant
+- `benchmarks/Houtamelo.Spire.Benchmarks/Types/` — union type declarations ([BenchmarkUnion] + hand-written)
+- `benchmarks/Houtamelo.Spire.Benchmarks/Benchmarks/` — hand-written benchmark classes
+- `src/Houtamelo.Spire.Analyzers/SourceGenerators/BenchmarkUnionGenerator.cs` — [BenchmarkUnion] generator
+- `src/Houtamelo.Spire.Analyzers/SourceGenerators/Attributes/BenchmarkAttributeSource.cs` — attribute source
 - `docs/benchmark-results/` — auto-generated RESULTS_{job}.md files
 - `README.md` — layout strategy comparison table
 - `CLAUDE.md` — benchmark build commands
@@ -141,13 +141,13 @@ Project layout, build configuration, conventions.
 - `CLAUDE.md` — "Project Structure", "Analyzer Conventions", "Build Commands" sections
 - `.claude/rules/analyzer-conventions.md` — target framework, dependencies
 - `.claude/rules/test-conventions.md` — test framework, target
-- `src/Spire/Spire.csproj`
-- `src/Spire.Core/Spire.Core.csproj`
-- `src/Spire.Analyzers/Spire.Analyzers.csproj`
-- `src/Spire.CodeFixes/Spire.CodeFixes.csproj`
-- `src/Spire.PatternAnalysis/Spire.PatternAnalysis.csproj`
-- `tests/Spire.Analyzers.Tests/Spire.Analyzers.Tests.csproj`
-- `tests/Spire.PatternAnalysis.Tests/Spire.PatternAnalysis.Tests.csproj`
-- `tests/Spire.SourceGenerators.Tests/Spire.SourceGenerators.Tests.csproj`
-- `tests/Spire.BehavioralTests/Spire.BehavioralTests.csproj`
-- `benchmarks/Spire.Benchmarks/Spire.Benchmarks.csproj`
+- `src/Houtamelo.Spire/Houtamelo.Spire.csproj`
+- `src/Houtamelo.Spire.Core/Houtamelo.Spire.Core.csproj`
+- `src/Houtamelo.Spire.Analyzers/Houtamelo.Spire.Analyzers.csproj`
+- `src/Houtamelo.Spire.CodeFixes/Houtamelo.Spire.CodeFixes.csproj`
+- `src/Houtamelo.Spire.PatternAnalysis/Houtamelo.Spire.PatternAnalysis.csproj`
+- `tests/Houtamelo.Spire.Analyzers.Tests/Houtamelo.Spire.Analyzers.Tests.csproj`
+- `tests/Houtamelo.Spire.PatternAnalysis.Tests/Houtamelo.Spire.PatternAnalysis.Tests.csproj`
+- `tests/Houtamelo.Spire.SourceGenerators.Tests/Houtamelo.Spire.SourceGenerators.Tests.csproj`
+- `tests/Houtamelo.Spire.BehavioralTests/Spire.BehavioralTests.csproj`
+- `benchmarks/Houtamelo.Spire.Benchmarks/Houtamelo.Spire.Benchmarks.csproj`
