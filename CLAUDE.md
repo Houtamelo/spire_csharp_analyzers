@@ -33,10 +33,14 @@ src/Spire.Analyzers/              # Analyzers + source generator (netstandard2.0
     FlowAnalysis/                 # CFG-based flow analysis (InitState, KindState, NullState tracking)
   SourceGenerators/               # Discriminated union source generator
     Emit/                         # Per-strategy emitters (Additive, Overlap, BoxedFields, etc.)
-    Analyzers/                    # Generator-coupled analyzers (exhaustiveness, field access, type safety)
+    Analyzers/                    # Generator-coupled analyzers (exhaustiveness, field access, type safety) — delegates to Spire.PatternAnalysis
     Model/                        # Union declaration model types
     Parsing/                      # Attribute parsing
 src/Spire.CodeFixes/              # Code fixes (standalone, no inter-project deps)
+src/Spire.PatternAnalysis/        # Recursive pattern exhaustiveness analysis (netstandard2.0)
+  Domains/                        # Value domains (Bool, Enum, Numeric, Nullable, Structural, etc.)
+  Algorithm/                      # Maranget decision-tree builder + pattern matrix
+  Resolution/                     # Type hierarchy resolver for [EnforceExhaustiveness]
 tests/Spire.Analyzers.Tests/      # Analyzer xUnit tests (net10.0, C# 14)
   AnalyzerTestBase.cs             # Base class for all analyzer tests (discovery, parsing, verification)
   FlowAnalysis/                   # Flow analysis infrastructure unit + integration tests
@@ -48,6 +52,7 @@ tests/Spire.Analyzers.Tests/      # Analyzer xUnit tests (net10.0, C# 14)
 tests/Spire.SourceGenerators.Tests/ # Generator snapshot + analyzer tests (net10.0)
   Behavioral/                     # Reflection-based behavioral tests (compile-emit-load pipeline)
   cases/                          # Snapshot test cases (input.cs/output.cs pairs)
+tests/Spire.PatternAnalysis.Tests/ # Pattern exhaustiveness tests (unit + file-based integration)
 tests/Spire.BehavioralTests/      # Compile-time behavioral tests (generator runs at build time)
   Types/                          # Union definitions per strategy
   Tests/                          # Type-safe tests with real switch/pattern matching

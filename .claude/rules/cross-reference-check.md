@@ -92,6 +92,20 @@ How emitters are developed, tested (snapshot + behavioral), and implemented.
 - `tests/Spire.SourceGenerators.Tests/GeneratorSnapshotTestBase.cs` — snapshot test framework
 - `tests/Spire.BehavioralTests/` — behavioral test project
 
+## Pattern exhaustiveness analysis
+Recursive pattern exhaustiveness checking via Maranget algorithm.
+- `src/Spire.PatternAnalysis/` — standalone library (domains, algorithm, resolution)
+- `src/Spire.PatternAnalysis/ExhaustivenessChecker.cs` — entry point
+- `src/Spire.PatternAnalysis/Algorithm/PatternMatrix.cs` — matrix construction + pattern conversion
+- `src/Spire.PatternAnalysis/Algorithm/DecisionTreeBuilder.cs` — Maranget core loop
+- `src/Spire.PatternAnalysis/DomainResolver.cs` — type-to-domain mapping
+- `src/Spire.PatternAnalysis/Resolution/TypeHierarchyResolver.cs` — assembly walk for [EnforceExhaustiveness]
+- `src/Spire.Analyzers/SourceGenerators/Analyzers/ExhaustivenessAnalyzer.cs` — SPIRE009, delegates to ExhaustivenessChecker
+- `src/Spire.Analyzers/SourceGenerators/Analyzers/CS8509Suppressor.cs` — delegates to ExhaustivenessChecker
+- `src/Spire.Analyzers/SourceGenerators/Analyzers/FieldAccessSafetyAnalyzer.cs` — uses ExhaustivenessChecker.CollectVariants
+- `tests/Spire.PatternAnalysis.Tests/ExhaustivenessTestBase.cs` — file-based test discovery with //~ markers
+- `docs/superpowers/specs/2026-03-25-recursive-pattern-exhaustiveness-design.md` — design spec
+
 ## Generator-coupled analyzer workflow
 How analyzers that run on generator output are developed and tested.
 - `.claude/skills/new-coupled-analyzer/SKILL.md` — scaffolding skill
@@ -131,7 +145,9 @@ Project layout, build configuration, conventions.
 - `src/Spire.Core/Spire.Core.csproj`
 - `src/Spire.Analyzers/Spire.Analyzers.csproj`
 - `src/Spire.CodeFixes/Spire.CodeFixes.csproj`
+- `src/Spire.PatternAnalysis/Spire.PatternAnalysis.csproj`
 - `tests/Spire.Analyzers.Tests/Spire.Analyzers.Tests.csproj`
+- `tests/Spire.PatternAnalysis.Tests/Spire.PatternAnalysis.Tests.csproj`
 - `tests/Spire.SourceGenerators.Tests/Spire.SourceGenerators.Tests.csproj`
 - `tests/Spire.BehavioralTests/Spire.BehavioralTests.csproj`
 - `benchmarks/Spire.Benchmarks/Spire.Benchmarks.csproj`
