@@ -317,21 +317,42 @@ internal sealed class PatternMatrix
         ImmutableArray<IPatternOperation> patterns,
         DomainResolver resolver)
     {
+        // Unwrap Nullable<T> so struct DU detection works on the inner type
+        var unwrapped = subjectType;
+        bool isNullableValueType = false;
+        if (subjectType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullableNamed)
+        {
+            unwrapped = nullableNamed.TypeArguments[0];
+            isNullableValueType = true;
+        }
+
         // Struct discriminated union → single-column Kind enum matrix
-        var kindEnum = resolver.TryGetStructDUKindEnum(subjectType);
+        var kindEnum = resolver.TryGetStructDUKindEnum(unwrapped);
         if (kindEnum != null)
-            return BuildStructDUMatrix(subjectType, kindEnum, patterns, resolver);
+        {
+            if (isNullableValueType)
+                return BuildNullableStructDUMatrix(subjectType, kindEnum, patterns, resolver);
+            return BuildStructDUMatrix(unwrapped, kindEnum, patterns, resolver);
+        }
 
         // Tuple subject → multi-column matrix with one column per element
         if (subjectType is INamedTypeSymbol { IsTupleType: true } tupleType)
             return BuildTupleMatrix(tupleType, patterns, resolver);
+
+        // Record DU / EnforceExhaustive → single-column type domain matrix.
+        // Must check before HasPropertyPatterns, otherwise property subpatterns
+        // cause the matrix to ignore root-type discrimination.
+        var resolved = resolver.Resolve(subjectType);
+        var effectiveDomain = resolved is NullableDomain nd ? nd.Inner : resolved;
+        if (effectiveDomain is EnforceExhaustiveDomain)
+            return BuildTypeDomainMatrix(subjectType, patterns, resolved);
 
         // Check if any arm uses property subpatterns → multi-column property matrix
         if (HasPropertyPatterns(patterns))
             return BuildPropertyMatrix(subjectType, patterns, resolver);
 
         // Default: single-column matrix
-        var domain = resolver.Resolve(subjectType);
+        var domain = resolved;
         var slot = new SlotIdentifier.RootSlot(subjectType);
         var column = new Column(slot, domain);
 
@@ -662,6 +683,193 @@ internal sealed class PatternMatrix
         }
 
         return new PatternMatrix(rowBuilder.ToImmutable(), ImmutableArray.Create(column));
+    }
+
+    /// Build a single-column matrix for a nullable struct DU (e.g., Shape?).
+    /// The domain is NullableDomain(EnumDomain(Kind)), so null patterns and
+    /// Kind-matching patterns are both handled in one column.
+    static PatternMatrix BuildNullableStructDUMatrix(
+        ITypeSymbol nullableType,
+        INamedTypeSymbol kindEnum,
+        ImmutableArray<IPatternOperation> patterns,
+        DomainResolver resolver)
+    {
+        var kindDomain = EnumDomain.Universe(kindEnum);
+        var nullableKindDomain = NullableDomain.Universe(nullableType, kindDomain);
+        var slot = new SlotIdentifier.RootSlot(nullableType);
+        var column = new Column(slot, nullableKindDomain);
+
+        var style = DetectStructDUStyle(patterns);
+
+        var rowBuilder = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>();
+        foreach (var pattern in patterns)
+        {
+            var cell = ConvertNullableStructDUPattern(pattern, nullableKindDomain, kindDomain, kindEnum, style);
+            rowBuilder.Add(ImmutableArray.Create(cell));
+        }
+
+        return new PatternMatrix(rowBuilder.ToImmutable(), ImmutableArray.Create(column));
+    }
+
+    /// Convert a pattern in a nullable struct DU switch.
+    /// Handles null constants, DU kind patterns, and wildcards.
+    static Cell ConvertNullableStructDUPattern(
+        IPatternOperation pattern,
+        NullableDomain nullableKindDomain,
+        EnumDomain kindDomain,
+        INamedTypeSymbol kindEnum,
+        StructDUStyle style)
+    {
+        // Wildcard / var → covers everything (null + all variants)
+        if (pattern is IDiscardPatternOperation)
+            return Cell.Wildcard.Instance;
+        if (pattern is IDeclarationPatternOperation declPat && declPat.Syntax is VarPatternSyntax)
+            return Cell.Wildcard.Instance;
+
+        // Null constant → covers only null partition
+        if (pattern is IConstantPatternOperation constPat)
+        {
+            var cv = constPat.Value?.ConstantValue;
+            if (cv.HasValue && cv.Value == null)
+            {
+                var emptyInner = new EmptyDomain(kindDomain.Type);
+                return new Cell.Constraint(new NullableDomain(nullableKindDomain.Type, emptyInner, hasNull: true));
+            }
+        }
+
+        // Negated pattern: `not null` covers all non-null values
+        if (pattern is INegatedPatternOperation negated
+            && negated.Pattern is IConstantPatternOperation negConst)
+        {
+            var nv = negConst.Value?.ConstantValue;
+            if (nv.HasValue && nv.Value == null)
+            {
+                // `not null` → covers all Kind variants but not null
+                return new Cell.Constraint(new NullableDomain(nullableKindDomain.Type, kindDomain, hasNull: false));
+            }
+        }
+
+        // Binary `and` pattern: `not null and (Kind.X, ...)` — intersect both sides
+        if (pattern is IBinaryPatternOperation binaryAnd && binaryAnd.OperatorKind == BinaryOperatorKind.And)
+        {
+            var leftCell = ConvertNullableStructDUPattern(binaryAnd.LeftPattern, nullableKindDomain, kindDomain, kindEnum, style);
+            var rightCell = ConvertNullableStructDUPattern(binaryAnd.RightPattern, nullableKindDomain, kindDomain, kindEnum, style);
+
+            // Wildcards don't narrow: if one side is wildcard, return the other
+            if (leftCell is Cell.Wildcard)
+                return rightCell;
+            if (rightCell is Cell.Wildcard)
+                return leftCell;
+
+            // Both are constraints — intersect them
+            if (leftCell is Cell.Constraint lc && rightCell is Cell.Constraint rc)
+            {
+                var intersection = lc.MatchedValues.Intersect(rc.MatchedValues);
+                return intersection.IsEmpty ? new Cell.Constraint(intersection) : new Cell.Constraint(intersection);
+            }
+
+            return leftCell;
+        }
+
+        // Binary `or` pattern — extract inner Kind cell and wrap in NullableDomain
+        if (pattern is IBinaryPatternOperation binaryOr && binaryOr.OperatorKind == BinaryOperatorKind.Or)
+        {
+            var innerOrCell = ConvertBinaryStructDUPattern(binaryOr, kindDomain, kindEnum, style);
+            if (innerOrCell is Cell.Constraint innerOrConstraint)
+                return new Cell.Constraint(new NullableDomain(nullableKindDomain.Type, innerOrConstraint.MatchedValues, hasNull: false));
+            return Cell.Wildcard.Instance;
+        }
+
+        // DU kind-matching patterns (deconstruct/property/constant) → wrap in non-null NullableDomain
+        var innerCell = ExtractStructDUKindCell(pattern, kindDomain, kindEnum, style);
+        if (innerCell is Cell.Constraint innerConstraint)
+            return new Cell.Constraint(new NullableDomain(nullableKindDomain.Type, innerConstraint.MatchedValues, hasNull: false));
+
+        // Wildcard from ExtractStructDUKindCell → treat as covering everything
+        return Cell.Wildcard.Instance;
+    }
+
+    // ─── Record / EnforceExhaustive type domain matrix ────────────────────
+
+    /// Build a single-column matrix for a type discriminated by EnforceExhaustiveDomain.
+    /// Handles record DUs and [EnforceExhaustiveness] hierarchies.
+    /// The domain may be wrapped in NullableDomain for nullable reference types.
+    static PatternMatrix BuildTypeDomainMatrix(
+        ITypeSymbol subjectType,
+        ImmutableArray<IPatternOperation> patterns,
+        IValueDomain domain)
+    {
+        var slot = new SlotIdentifier.RootSlot(subjectType);
+        var column = new Column(slot, domain);
+
+        var rowBuilder = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>();
+        foreach (var pattern in patterns)
+        {
+            var cell = ConvertTypeDomainPattern(pattern, domain);
+            rowBuilder.Add(ImmutableArray.Create(cell));
+        }
+
+        return new PatternMatrix(rowBuilder.ToImmutable(), ImmutableArray.Create(column));
+    }
+
+    /// Convert a pattern for a type-discriminated domain (record DU / enforce-exhaustive).
+    /// Handles recursive patterns with MatchedType, type patterns, declaration patterns,
+    /// constants (null), and wildcards.
+    static Cell ConvertTypeDomainPattern(IPatternOperation pattern, IValueDomain domain)
+    {
+        switch (pattern)
+        {
+            case IDiscardPatternOperation:
+                return Cell.Wildcard.Instance;
+
+            case IDeclarationPatternOperation declPat:
+                if (declPat.Syntax is VarPatternSyntax)
+                    return Cell.Wildcard.Instance;
+                if (declPat.MatchedType != null)
+                    return ConvertTypePattern(declPat.MatchedType, domain);
+                return Cell.Wildcard.Instance;
+
+            case IRecursivePatternOperation recursive:
+                // Record DU variant: `Option<int>.Some { Value: var v }` has MatchedType = Some
+                if (recursive.MatchedType != null)
+                    return ConvertTypePattern(recursive.MatchedType, domain);
+                // Positional pattern without type narrowing — wildcard
+                return Cell.Wildcard.Instance;
+
+            case ITypePatternOperation typePattern:
+                return ConvertTypePattern(typePattern.MatchedType, domain);
+
+            case IConstantPatternOperation constPattern:
+                return ConvertConstantPattern(constPattern, domain);
+
+            case IBinaryPatternOperation binaryPattern:
+                return ConvertTypeDomainBinaryPattern(binaryPattern, domain);
+
+            case INegatedPatternOperation negPattern:
+                return ConvertNegatedPattern(negPattern, domain);
+
+            default:
+                return Cell.Wildcard.Instance;
+        }
+    }
+
+    /// Binary pattern for type-discriminated domains.
+    /// Uses ConvertTypeDomainPattern recursively (not ConvertPattern) so that
+    /// IRecursivePatternOperation with MatchedType is handled correctly.
+    static Cell ConvertTypeDomainBinaryPattern(IBinaryPatternOperation binaryPattern, IValueDomain domain)
+    {
+        var left = ConvertTypeDomainPattern(binaryPattern.LeftPattern, domain);
+        var right = ConvertTypeDomainPattern(binaryPattern.RightPattern, domain);
+
+        switch (binaryPattern.OperatorKind)
+        {
+            case BinaryOperatorKind.Or:
+                return UnionCells(left, right, domain);
+            case BinaryOperatorKind.And:
+                return IntersectCells(left, right, domain);
+            default:
+                return Cell.Wildcard.Instance;
+        }
     }
 
     enum StructDUStyle { Deconstruct, Property }
