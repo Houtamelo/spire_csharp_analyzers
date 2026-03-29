@@ -1,5 +1,5 @@
 //@ exhaustive
-// Sealed class covered by not null pattern
+// Sealed [EnforceExhaustiveness] type matched by type pattern
 #nullable enable
 
 [EnforceExhaustiveness]
@@ -9,6 +9,6 @@ public class Sealed_NotNull
 {
     public int Test(Stamp s) => s switch
     {
-        not null => 1,
+        Stamp => 1,
     };
 }
