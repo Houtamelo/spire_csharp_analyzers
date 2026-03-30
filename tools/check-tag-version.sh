@@ -26,16 +26,7 @@ fi
 FAILED=0
 
 for CSPROJ in "${PROJECTS[@]}"; do
-    CSPROJ_VERSION=""
-
-    # Extract version — prefer MSBuild if available, fall back to sed
-    if command -v dotnet &>/dev/null; then
-        CSPROJ_VERSION=$(dotnet msbuild "$CSPROJ" -getProperty:Version 2>/dev/null || true)
-    fi
-
-    if [ -z "${CSPROJ_VERSION:-}" ]; then
-        CSPROJ_VERSION=$(sed -n 's/.*<Version>\([^<]*\)<\/Version>.*/\1/p' "$CSPROJ")
-    fi
+    CSPROJ_VERSION=$(sed -n 's/.*<Version>\([^<]*\)<\/Version>.*/\1/p' "$CSPROJ")
 
     if [ -z "${CSPROJ_VERSION:-}" ]; then
         echo "ERROR: Could not extract <Version> from $CSPROJ"
