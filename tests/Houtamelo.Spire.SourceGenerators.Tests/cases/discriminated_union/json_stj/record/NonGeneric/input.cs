@@ -2,7 +2,7 @@ using Houtamelo.Spire;
 
 namespace TestNs;
 
-[DiscriminatedUnion(Json = JsonLibrary.SystemTextJson)]
+[DiscriminatedUnion(json: JsonLibrary.SystemTextJson)]
 public partial record Shape
 {
     public partial record Circle(double Radius) : Shape;

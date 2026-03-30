@@ -6,7 +6,8 @@ Roslyn-based C# analyzer
 
 - **Packages**: `Houtamelo.Spire` (attributes + utilities + vendored analyzers), `Houtamelo.Spire.Analyzers` (analyzers + source generator), `Houtamelo.Spire.CodeFixes`, `Houtamelo.Spire.PatternAnalysis`
 - **Rule prefix**: `SPIRE` (SPIRE001, SPIRE002, ...)
-- **User-facing API** in `Houtamelo.Spire` (namespace `Houtamelo.Spire`) — `EnforceInitializationAttribute`, `EnforceExhaustivenessAttribute`, `DiscriminatedUnionAttribute`, `VariantAttribute`, `Layout`, `JsonLibrary`, `JsonNameAttribute`, `IDiscriminatedUnion<TEnum>`, `SpireLINQ.OfKind`
+- **User-facing API** in `Houtamelo.Spire` (namespace `Houtamelo.Spire`) — `EnforceInitializationAttribute`, `EnforceExhaustivenessAttribute`, `DiscriminatedUnionAttribute`, `VariantAttribute`, `Layout`, `GenerateDeconstruct`, `JsonLibrary`, `JsonNameAttribute`, `IDiscriminatedUnion<TEnum>`, `SpireLINQ.OfKind`
+- **Global config** via MSBuild properties (`CompilerVisibleProperty` in `build/Houtamelo.Spire.props`) — DU defaults (`Spire_DU_Default{Layout,GenerateDeconstruct,Json,JsonDiscriminator}`) and analyzer enforcement (`Spire_EnforceExhaustivenessOnAllEnumTypes`)
 - **Code fixes** in separate `Houtamelo.Spire.CodeFixes` project (standalone, no inter-project dependencies)
 
 ## Build Commands
@@ -25,6 +26,7 @@ dotnet run -c Release --project benchmarks/Houtamelo.Spire.Benchmarks/ -- --filt
 
 ```
 src/Houtamelo.Spire/                        # User-facing API: attributes, utilities, vendors analyzer DLLs (netstandard2.0)
+  build/Houtamelo.Spire.props               # CompilerVisibleProperty declarations (packed into NuGet)
 src/Houtamelo.Spire.Analyzers/              # Analyzers + source generator (netstandard2.0)
   Rules/                                    # One file per rule
   Descriptors.cs                            # Central DiagnosticDescriptor registry

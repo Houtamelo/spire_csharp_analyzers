@@ -31,6 +31,12 @@
     <ProjectReference Include="..\Houtamelo.Spire.CodeFixes\Houtamelo.Spire.CodeFixes.csproj" PrivateAssets="all" />
   </ItemGroup>
 
+  <!-- Auto-import .props for CompilerVisibleProperty declarations -->
+  <ItemGroup>
+    <None Include="build\Houtamelo.Spire.props"
+          PackagePath="build" Pack="true" />
+  </ItemGroup>
+
   <!-- Vendor analyzer and codefix DLLs into the package -->
   <ItemGroup>
     <None Include="$(OutputPath)\Houtamelo.Spire.Analyzers.dll"

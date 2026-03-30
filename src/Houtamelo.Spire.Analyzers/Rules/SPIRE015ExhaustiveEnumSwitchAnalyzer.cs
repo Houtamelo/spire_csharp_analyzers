@@ -27,13 +27,15 @@ public sealed class SPIRE015ExhaustiveEnumSwitchAnalyzer : DiagnosticAnalyzer
             if (enforceType is null)
                 return;
 
+            var enforceOnAllEnums = GlobalConfigHelper.ReadEnforceExhaustivenessOnAllEnumTypes(compilationCtx.Options);
+
             compilationCtx.RegisterOperationAction(
-                ctx => AnalyzeSwitch(ctx, enforceType),
+                ctx => AnalyzeSwitch(ctx, enforceType, enforceOnAllEnums),
                 OperationKind.Switch, OperationKind.SwitchExpression);
         });
     }
 
-    private static void AnalyzeSwitch(OperationAnalysisContext context, INamedTypeSymbol enforceType)
+    private static void AnalyzeSwitch(OperationAnalysisContext context, INamedTypeSymbol enforceType, bool enforceOnAllEnums)
     {
         INamedTypeSymbol? enumType;
         bool isNullable;
@@ -59,7 +61,7 @@ public sealed class SPIRE015ExhaustiveEnumSwitchAnalyzer : DiagnosticAnalyzer
         if (enumType is null || enumType.TypeKind != TypeKind.Enum)
             return;
 
-        if (!AttributeHelper.HasOrInheritsAttribute(enumType, enforceType))
+        if (!enforceOnAllEnums && !AttributeHelper.HasOrInheritsAttribute(enumType, enforceType))
             return;
 
         var allMembers = GetEnumMembers(enumType);

@@ -1,6 +1,6 @@
 using Houtamelo.Spire;
 
-[DiscriminatedUnion(Json = JsonLibrary.SystemTextJson, JsonDiscriminator = "type")]
+[DiscriminatedUnion(json: JsonLibrary.SystemTextJson, jsonDiscriminator: "type")]
 partial struct Token
 {
     [Variant] public static partial Token Number(double value);

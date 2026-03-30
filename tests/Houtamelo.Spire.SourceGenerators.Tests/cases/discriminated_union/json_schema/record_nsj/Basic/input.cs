@@ -2,7 +2,7 @@ using Houtamelo.Spire;
 
 namespace Shapes
 {
-    [DiscriminatedUnion(Json = JsonLibrary.NewtonsoftJson)]
+    [DiscriminatedUnion(json: JsonLibrary.NewtonsoftJson)]
     public partial record Shape
     {
         public partial record Circle(double Radius) : Shape;

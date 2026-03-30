@@ -27,6 +27,8 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
             if (enforceInitializationType is null)
                 return;
 
+            var enforceOnAllEnums = GlobalConfigHelper.ReadEnforceExhaustivenessOnAllEnumTypes(compilationContext.Options);
+
             var systemArrayType = compilationContext.Compilation
                 .GetTypeByMetadataName("System.Array");
 
@@ -40,28 +42,29 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
                 .GetTypeByMetadataName("System.Collections.Immutable.ImmutableArray`1+Builder");
 
             compilationContext.RegisterOperationAction(
-                operationContext => AnalyzeArrayCreation(operationContext, enforceInitializationType),
+                operationContext => AnalyzeArrayCreation(operationContext, enforceInitializationType, enforceOnAllEnums),
                 OperationKind.ArrayCreation);
 
             compilationContext.RegisterOperationAction(
                 operationContext => AnalyzeInvocation(
-                    operationContext, enforceInitializationType, systemArrayType, gcType, arrayPoolType),
+                    operationContext, enforceInitializationType, enforceOnAllEnums, systemArrayType, gcType, arrayPoolType),
                 OperationKind.Invocation);
 
             compilationContext.RegisterOperationAction(
                 operationContext => AnalyzeSimpleAssignment(
-                    operationContext, enforceInitializationType, immutableBuilderType),
+                    operationContext, enforceInitializationType, enforceOnAllEnums, immutableBuilderType),
                 OperationKind.SimpleAssignment);
 
             compilationContext.RegisterSyntaxNodeAction(
-                syntaxContext => AnalyzeStackAlloc(syntaxContext, enforceInitializationType),
+                syntaxContext => AnalyzeStackAlloc(syntaxContext, enforceInitializationType, enforceOnAllEnums),
                 SyntaxKind.StackAllocArrayCreationExpression);
         });
     }
 
     private static void AnalyzeArrayCreation(
         OperationAnalysisContext context,
-        INamedTypeSymbol enforceInitializationType)
+        INamedTypeSymbol enforceInitializationType,
+        bool enforceOnAllEnums)
     {
         var operation = (IArrayCreationOperation)context.Operation;
 
@@ -83,7 +86,7 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
         var elementType = arrayType.ElementType;
 
         // Check if element type has [EnforceInitialization]
-        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType, enforceOnAllEnums))
             return;
 
         // For reference types, skip if element is nullable-annotated (T?[])
@@ -100,6 +103,7 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
     private static void AnalyzeInvocation(
         OperationAnalysisContext context,
         INamedTypeSymbol enforceInitializationType,
+        bool enforceOnAllEnums,
         INamedTypeSymbol? systemArrayType,
         INamedTypeSymbol? gcType,
         INamedTypeSymbol? arrayPoolType)
@@ -112,7 +116,7 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
             && method.Name == "CreateInstance"
             && SymbolEqualityComparer.Default.Equals(method.ContainingType, systemArrayType))
         {
-            AnalyzeArrayCreateInstance(context, operation, enforceInitializationType);
+            AnalyzeArrayCreateInstance(context, operation, enforceInitializationType, enforceOnAllEnums);
             return;
         }
 
@@ -121,7 +125,7 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
             && method.Name == "Resize"
             && SymbolEqualityComparer.Default.Equals(method.ContainingType, systemArrayType))
         {
-            AnalyzeArrayResize(context, operation, method, enforceInitializationType);
+            AnalyzeArrayResize(context, operation, method, enforceInitializationType, enforceOnAllEnums);
             return;
         }
 
@@ -130,7 +134,7 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
             && (method.Name == "AllocateArray" || method.Name == "AllocateUninitializedArray")
             && SymbolEqualityComparer.Default.Equals(method.ContainingType, gcType))
         {
-            AnalyzeGCAllocate(context, operation, method, enforceInitializationType);
+            AnalyzeGCAllocate(context, operation, method, enforceInitializationType, enforceOnAllEnums);
             return;
         }
 
@@ -140,7 +144,7 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
             && SymbolEqualityComparer.Default.Equals(
                 method.ContainingType?.OriginalDefinition, arrayPoolType))
         {
-            AnalyzeArrayPoolRent(context, operation, method, enforceInitializationType);
+            AnalyzeArrayPoolRent(context, operation, method, enforceInitializationType, enforceOnAllEnums);
             return;
         }
     }
@@ -148,7 +152,8 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
     private static void AnalyzeArrayCreateInstance(
         OperationAnalysisContext context,
         IInvocationOperation operation,
-        INamedTypeSymbol enforceInitializationType)
+        INamedTypeSymbol enforceInitializationType,
+        bool enforceOnAllEnums)
     {
         // First argument must be typeof(T) — if not, we can't determine the element type
         if (operation.Arguments.Length == 0)
@@ -169,7 +174,7 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
                 return;
         }
 
-        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType, enforceOnAllEnums))
             return;
 
         // typeof() never carries nullable annotations — always flag
@@ -184,7 +189,8 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
         OperationAnalysisContext context,
         IInvocationOperation operation,
         IMethodSymbol method,
-        INamedTypeSymbol enforceInitializationType)
+        INamedTypeSymbol enforceInitializationType,
+        bool enforceOnAllEnums)
     {
         // Array.Resize<T>(ref T[] array, int newSize)
         if (method.TypeArguments.Length == 0)
@@ -199,7 +205,7 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
         if (OperationUtilities.IsKnownToBeZero(operation.Arguments[1].Value))
             return;
 
-        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType, enforceOnAllEnums))
             return;
 
         if (EnforceInitializationChecks.IsNullableAnnotatedReference(elementType))
@@ -216,7 +222,8 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
         OperationAnalysisContext context,
         IInvocationOperation operation,
         IMethodSymbol method,
-        INamedTypeSymbol enforceInitializationType)
+        INamedTypeSymbol enforceInitializationType,
+        bool enforceOnAllEnums)
     {
         // GC.AllocateArray<T>(int length, ...) / GC.AllocateUninitializedArray<T>(int length, ...)
         if (method.TypeArguments.Length == 0)
@@ -230,7 +237,7 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
         if (OperationUtilities.IsKnownToBeZero(operation.Arguments[0].Value))
             return;
 
-        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType, enforceOnAllEnums))
             return;
 
         if (EnforceInitializationChecks.IsNullableAnnotatedReference(elementType))
@@ -247,7 +254,8 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
         OperationAnalysisContext context,
         IInvocationOperation operation,
         IMethodSymbol method,
-        INamedTypeSymbol enforceInitializationType)
+        INamedTypeSymbol enforceInitializationType,
+        bool enforceOnAllEnums)
     {
         // ArrayPool<T>.Rent(int minimumLength)
         var containingType = method.ContainingType;
@@ -262,7 +270,7 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
         if (OperationUtilities.IsKnownToBeZero(operation.Arguments[0].Value))
             return;
 
-        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType, enforceOnAllEnums))
             return;
 
         if (EnforceInitializationChecks.IsNullableAnnotatedReference(elementType))
@@ -278,6 +286,7 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
     private static void AnalyzeSimpleAssignment(
         OperationAnalysisContext context,
         INamedTypeSymbol enforceInitializationType,
+        bool enforceOnAllEnums,
         INamedTypeSymbol? immutableBuilderType)
     {
         if (immutableBuilderType is null)
@@ -309,7 +318,7 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
         if (OperationUtilities.IsKnownToBeZero(operation.Value))
             return;
 
-        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType, enforceOnAllEnums))
             return;
 
         if (EnforceInitializationChecks.IsNullableAnnotatedReference(elementType))
@@ -324,7 +333,8 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
 
     private static void AnalyzeStackAlloc(
         SyntaxNodeAnalysisContext context,
-        INamedTypeSymbol enforceInitializationType)
+        INamedTypeSymbol enforceInitializationType,
+        bool enforceOnAllEnums)
     {
         var node = (StackAllocArrayCreationExpressionSyntax)context.Node;
 
@@ -348,7 +358,7 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
             return;
 
         // Check if element type has [EnforceInitialization]
-        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(elementType, enforceInitializationType, enforceOnAllEnums))
             return;
 
         context.ReportDiagnostic(

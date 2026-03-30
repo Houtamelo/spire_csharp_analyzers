@@ -1,6 +1,6 @@
 using Houtamelo.Spire;
 
-[DiscriminatedUnion(Json = JsonLibrary.SystemTextJson)]
+[DiscriminatedUnion(json: JsonLibrary.SystemTextJson)]
 partial struct Shape
 {
     [Variant, JsonName("circle")]

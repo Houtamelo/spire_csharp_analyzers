@@ -2,7 +2,7 @@ using Houtamelo.Spire;
 
 namespace TestNs;
 
-[DiscriminatedUnion(Json = JsonLibrary.SystemTextJson)]
+[DiscriminatedUnion(json: JsonLibrary.SystemTextJson)]
 public partial record Option<T>
 {
     public partial record Some(T Value) : Option<T>;

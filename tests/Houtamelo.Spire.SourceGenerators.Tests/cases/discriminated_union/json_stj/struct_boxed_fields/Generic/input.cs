@@ -2,7 +2,7 @@ using Houtamelo.Spire;
 
 namespace TestNs;
 
-[DiscriminatedUnion(Layout.BoxedFields, Json = JsonLibrary.SystemTextJson)]
+[DiscriminatedUnion(Layout.BoxedFields, json: JsonLibrary.SystemTextJson)]
 partial struct Option<T>
 {
     [Variant] public static partial Option<T> Some(T value);

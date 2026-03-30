@@ -31,8 +31,10 @@ public sealed class SPIRE006ClearOfEnforceInitializationElementsAnalyzer : Diagn
             if (enforceInitializationType is null)
                 return;
 
+            var enforceOnAllEnums = GlobalConfigHelper.ReadEnforceExhaustivenessOnAllEnumTypes(compilationContext.Options);
+
             compilationContext.RegisterOperationAction(
-                operationContext => AnalyzeInvocation(operationContext, arrayType, spanType, enforceInitializationType),
+                operationContext => AnalyzeInvocation(operationContext, arrayType, spanType, enforceInitializationType, enforceOnAllEnums),
                 OperationKind.Invocation);
         });
     }
@@ -41,7 +43,8 @@ public sealed class SPIRE006ClearOfEnforceInitializationElementsAnalyzer : Diagn
         OperationAnalysisContext context,
         INamedTypeSymbol? arrayType,
         INamedTypeSymbol? spanType,
-        INamedTypeSymbol enforceInitializationType)
+        INamedTypeSymbol enforceInitializationType,
+        bool enforceOnAllEnums)
     {
         var operation = (IInvocationOperation)context.Operation;
         var method = operation.TargetMethod;
@@ -71,7 +74,7 @@ public sealed class SPIRE006ClearOfEnforceInitializationElementsAnalyzer : Diagn
         if (namedElement.TypeKind != TypeKind.Struct && namedElement.TypeKind != TypeKind.Class && namedElement.TypeKind != TypeKind.Enum)
             return;
 
-        if (!EnforceInitializationChecks.IsDefaultValueInvalid(namedElement, enforceInitializationType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(namedElement, enforceInitializationType, enforceOnAllEnums))
             return;
 
         // For reference types, skip if nullable-annotated

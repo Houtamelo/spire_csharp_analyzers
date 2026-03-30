@@ -3,7 +3,7 @@
 using Houtamelo.Spire;
 namespace TestNs
 {
-    [DiscriminatedUnion(Json = JsonLibrary.NewtonsoftJson)]
+    [DiscriminatedUnion(json: JsonLibrary.NewtonsoftJson)]
     ref partial struct SpanUnion //~ ERROR
     {
         [Variant] public static partial SpanUnion Alpha(int x);

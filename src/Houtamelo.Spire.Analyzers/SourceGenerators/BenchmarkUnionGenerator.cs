@@ -282,7 +282,9 @@ public sealed class BenchmarkUnionGenerator : IIncrementalGenerator
             Diagnostic: null,
             Json: json,
             JsonDiscriminator: "kind",
-            HasInitProperties: hasInit);
+            HasInitProperties: hasInit,
+            RawConfig: new RawAttributeConfig((int)strategy + 1, 1, (int)json, "kind"),
+            IsGeneric: b.IsGeneric);
     }
 
     static string StrategyName(EmitStrategy s) => s switch

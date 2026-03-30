@@ -27,11 +27,13 @@ public sealed class SPIRE016InvalidEnforceInitializationEnumValueAnalyzer : Diag
             if (enforceInitializationType is null)
                 return;
 
+            var enforceOnAllEnums = GlobalConfigHelper.ReadEnforceExhaustivenessOnAllEnumTypes(compilationContext.Options);
+
             var flagsAttributeType = compilationContext.Compilation
                 .GetTypeByMetadataName("System.FlagsAttribute");
 
             compilationContext.RegisterOperationAction(
-                operationContext => AnalyzeConversion(operationContext, enforceInitializationType, flagsAttributeType),
+                operationContext => AnalyzeConversion(operationContext, enforceInitializationType, enforceOnAllEnums, flagsAttributeType),
                 OperationKind.Conversion);
         });
     }
@@ -39,6 +41,7 @@ public sealed class SPIRE016InvalidEnforceInitializationEnumValueAnalyzer : Diag
     private static void AnalyzeConversion(
         OperationAnalysisContext context,
         INamedTypeSymbol enforceInitializationType,
+        bool enforceOnAllEnums,
         INamedTypeSymbol? flagsAttributeType)
     {
         var operation = (IConversionOperation)context.Operation;
@@ -53,7 +56,7 @@ public sealed class SPIRE016InvalidEnforceInitializationEnumValueAnalyzer : Diag
         if (targetType.TypeKind != TypeKind.Enum)
             return;
 
-        if (!EnforceInitializationChecks.HasEnforceInitializationAttribute(targetType, enforceInitializationType))
+        if (!EnforceInitializationChecks.ShouldEnforceInitialization(targetType, enforceInitializationType, enforceOnAllEnums))
             return;
 
         var sourceType = operation.Operand.Type;

@@ -285,7 +285,7 @@ public abstract class BehavioralTestBase
 
     protected static string JsonStjSource(string strategy) => $$"""
         using Houtamelo.Spire;
-        [DiscriminatedUnion({{strategy}}, Json = JsonLibrary.SystemTextJson)]
+        [DiscriminatedUnion({{strategy}}, json: JsonLibrary.SystemTextJson)]
         public partial struct Shape
         {
             [Variant] public static partial Shape Circle(double radius);
@@ -296,7 +296,7 @@ public abstract class BehavioralTestBase
 
     protected static string JsonNsjSource(string strategy) => $$"""
         using Houtamelo.Spire;
-        [DiscriminatedUnion({{strategy}}, Json = JsonLibrary.NewtonsoftJson)]
+        [DiscriminatedUnion({{strategy}}, json: JsonLibrary.NewtonsoftJson)]
         public partial struct Shape
         {
             [Variant] public static partial Shape Circle(double radius);
@@ -307,7 +307,7 @@ public abstract class BehavioralTestBase
 
     protected static string JsonStjCustomDiscriminatorSource(string strategy) => $$"""
         using Houtamelo.Spire;
-        [DiscriminatedUnion({{strategy}}, Json = JsonLibrary.SystemTextJson, JsonDiscriminator = "type")]
+        [DiscriminatedUnion({{strategy}}, json: JsonLibrary.SystemTextJson, jsonDiscriminator: "type")]
         public partial struct Shape
         {
             [Variant] public static partial Shape Circle(double radius);
@@ -317,7 +317,7 @@ public abstract class BehavioralTestBase
 
     protected static string JsonStjJsonNameSource(string strategy) => $$"""
         using Houtamelo.Spire;
-        [DiscriminatedUnion({{strategy}}, Json = JsonLibrary.SystemTextJson)]
+        [DiscriminatedUnion({{strategy}}, json: JsonLibrary.SystemTextJson)]
         public partial struct Shape
         {
             [Variant, JsonName("circle")]
@@ -329,7 +329,7 @@ public abstract class BehavioralTestBase
 
     protected static string JsonStjGenericSource(string strategy) => $$"""
         using Houtamelo.Spire;
-        [DiscriminatedUnion({{strategy}}, Json = JsonLibrary.SystemTextJson)]
+        [DiscriminatedUnion({{strategy}}, json: JsonLibrary.SystemTextJson)]
         public partial struct Option<T>
         {
             [Variant] public static partial Option<T> Some(T value);
@@ -341,7 +341,7 @@ public abstract class BehavioralTestBase
         using Houtamelo.Spire;
         namespace TestNs
         {
-            [DiscriminatedUnion(Json = JsonLibrary.SystemTextJson)]
+            [DiscriminatedUnion(json: JsonLibrary.SystemTextJson)]
             public abstract partial record Shape
             {
                 public sealed partial record Circle(double Radius) : Shape;
@@ -355,7 +355,7 @@ public abstract class BehavioralTestBase
         using Houtamelo.Spire;
         namespace TestNs
         {
-            [DiscriminatedUnion(Json = JsonLibrary.NewtonsoftJson)]
+            [DiscriminatedUnion(json: JsonLibrary.NewtonsoftJson)]
             public abstract partial record Shape
             {
                 public sealed partial record Circle(double Radius) : Shape;

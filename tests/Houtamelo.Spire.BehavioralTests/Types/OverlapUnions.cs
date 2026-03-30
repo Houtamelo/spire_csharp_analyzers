@@ -24,7 +24,7 @@ partial struct MsgOvl
     [Variant] public static partial MsgOvl Empty();
 }
 
-[DiscriminatedUnion(Layout.Overlap, Json = JsonLibrary.SystemTextJson)]
+[DiscriminatedUnion(Layout.Overlap, json: JsonLibrary.SystemTextJson)]
 partial struct JsonShapeOvlStj
 {
     [Variant] public static partial JsonShapeOvlStj Circle(double radius);
@@ -32,7 +32,7 @@ partial struct JsonShapeOvlStj
     [Variant] public static partial JsonShapeOvlStj Point();
 }
 
-[DiscriminatedUnion(Layout.Overlap, Json = JsonLibrary.NewtonsoftJson)]
+[DiscriminatedUnion(Layout.Overlap, json: JsonLibrary.NewtonsoftJson)]
 partial struct JsonShapeOvlNsj
 {
     [Variant] public static partial JsonShapeOvlNsj Circle(double radius);

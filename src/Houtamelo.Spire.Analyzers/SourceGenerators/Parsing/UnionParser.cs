@@ -20,6 +20,10 @@ internal static class UnionParser
 
         var syntax = (TypeDeclarationSyntax)ctx.TargetNode;
         var declKind = GetDeclarationKind(syntax);
+
+        var rawConfig = ReadAttributeArgs(ctx.Attributes);
+        var isGeneric = typeSymbol.TypeParameters.Length > 0;
+
         if (declKind is null)
         {
             return new UnionDeclaration(
@@ -43,17 +47,21 @@ internal static class UnionParser
                     isError: true),
                 Json: JsonLibrary.None,
                 JsonDiscriminator: "kind",
-                HasInitProperties: false);
+                HasInitProperties: false,
+                RawConfig: rawConfig,
+                IsGeneric: isGeneric);
         }
 
         var isRefStruct = typeSymbol.IsRefLikeType;
 
-        var layout = GetLayout(ctx.Attributes);
-        var isGeneric = typeSymbol.TypeParameters.Length > 0;
-        var strategy = ResolveStrategy(declKind, layout, isGeneric);
+        // Initial strategy resolution using built-in defaults for sentinels.
+        // Will be re-resolved in ResolveGlobalConfig when global config is available.
+        var effectiveLayout = rawConfig.Layout == 0 ? 1 : rawConfig.Layout; // ReadGlobalCfg → Auto
+        var strategy = ResolveStrategy(declKind, effectiveLayout, isGeneric);
 
-        // Reject Overlap on generic struct (CLR restriction)
-        if (strategy == EmitStrategy.Overlap && isGeneric)
+        // Reject Overlap on generic struct (CLR restriction) — for explicit Layout.Overlap only.
+        // Global-config-induced Overlap on generics is caught post-resolution in the generator.
+        if (strategy == EmitStrategy.Overlap && isGeneric && rawConfig.Layout != 0)
         {
             return new UnionDeclaration(
                 Namespace: typeSymbol.ContainingNamespace.IsGlobalNamespace
@@ -77,12 +85,14 @@ internal static class UnionParser
                     isError: true),
                 Json: JsonLibrary.None,
                 JsonDiscriminator: "kind",
-                HasInitProperties: false);
+                HasInitProperties: false,
+                RawConfig: rawConfig,
+                IsGeneric: isGeneric);
         }
 
         // Warn when Layout is explicitly set on a record (it's ignored)
         UnionDiagnostic? layoutWarning = null;
-        if (declKind == "record" && layout != 0)
+        if (declKind == "record" && rawConfig.Layout != 0)
         {
             layoutWarning = CreateDiagnostic(
                 syntax,
@@ -91,8 +101,6 @@ internal static class UnionParser
                 isError: false);
         }
 
-        // Record path discovers variants as nested types inheriting from the parent.
-        // Struct paths discover variants as [Variant] static methods.
         var variants = declKind == "record"
             ? DiscoverNestedTypeVariants(typeSymbol)
             : DiscoverMethodVariants(typeSymbol);
@@ -124,12 +132,15 @@ internal static class UnionParser
                     isError: false),
                 Json: JsonLibrary.None,
                 JsonDiscriminator: "kind",
-                HasInitProperties: false);
+                HasInitProperties: false,
+                RawConfig: rawConfig,
+                IsGeneric: isGeneric);
         }
 
-        var json = GetJsonLibrary(ctx.Attributes);
+        // Resolve with built-in defaults (will be re-resolved with global config later)
+        var json = ResolveJson(rawConfig.Json);
+
         // ref struct + JSON: report error but don't block union generation
-        // (isError: false so the generator still emits the union source)
         if (isRefStruct && json != JsonLibrary.None)
         {
             layoutWarning = CreateDiagnostic(
@@ -154,15 +165,93 @@ internal static class UnionParser
             IsReadonly: syntax.Modifiers.Any(m => m.IsKind(SyntaxKind.ReadOnlyKeyword)),
             IsRefStruct: isRefStruct,
             Strategy: strategy,
-            GenerateDeconstruct: GetGenerateDeconstruct(ctx.Attributes),
+            GenerateDeconstruct: ResolveGenerateDeconstruct(rawConfig.GenerateDeconstruct),
             TypeParameters: new EquatableArray<string>(typeParams),
             Variants: new EquatableArray<VariantInfo>(variants),
             ContainingTypes: new EquatableArray<ContainingTypeInfo>(GetContainingTypes(typeSymbol)),
             Diagnostic: layoutWarning,
             Json: json,
-            JsonDiscriminator: GetJsonDiscriminator(ctx.Attributes),
-            HasInitProperties: false);
+            JsonDiscriminator: rawConfig.JsonDiscriminator ?? "kind",
+            HasInitProperties: false,
+            RawConfig: rawConfig,
+            IsGeneric: isGeneric);
     }
+
+    /// Re-resolves sentinel values using global config.
+    /// Called after Combine in the generator pipeline.
+    public static UnionDeclaration ResolveGlobalConfig(UnionDeclaration union, SpireGlobalConfig config)
+    {
+        // Error diagnostics won't emit source — skip resolution
+        if (union.Diagnostic is { IsError: true })
+            return union;
+
+        var raw = union.RawConfig;
+
+        var effectiveLayout = raw.Layout == 0 // ReadGlobalCfg
+            ? config.DefaultLayout
+            : raw.Layout;
+        var strategy = ResolveStrategy(union.DeclarationKeyword, effectiveLayout, union.IsGeneric);
+
+        var generateDeconstruct = raw.GenerateDeconstruct == 0 // ReadGlobalCfg
+            ? config.DefaultGenerateDeconstruct
+            : ResolveGenerateDeconstruct(raw.GenerateDeconstruct);
+
+        var json = raw.Json == -1 // ReadGlobalCfg
+            ? config.DefaultJson
+            : ResolveJson(raw.Json);
+
+        // ref struct override: force None regardless of global config
+        if (union.IsRefStruct && json != JsonLibrary.None)
+            json = JsonLibrary.None;
+
+        var jsonDiscriminator = raw.JsonDiscriminator ?? config.DefaultJsonDiscriminator;
+
+        return union with
+        {
+            Strategy = strategy,
+            GenerateDeconstruct = generateDeconstruct,
+            Json = json,
+            JsonDiscriminator = jsonDiscriminator,
+        };
+    }
+
+    /// Reads all 4 ctor arguments from the [DiscriminatedUnion] attribute.
+    private static RawAttributeConfig ReadAttributeArgs(ImmutableArray<AttributeData> attributes)
+    {
+        foreach (var attr in attributes)
+        {
+            if (attr.AttributeClass?.Name != "DiscriminatedUnionAttribute")
+                continue;
+
+            var args = attr.ConstructorArguments;
+            if (args.Length < 4)
+                break;
+
+            return new RawAttributeConfig(
+                Layout: args[0].Value is int l ? l : 0,
+                GenerateDeconstruct: args[1].Value is int gd ? gd : 0,
+                Json: args[2].Value is int j ? j : -1,
+                JsonDiscriminator: args[3].Value as string);
+        }
+
+        return RawAttributeConfig.AllSentinels;
+    }
+
+    private static bool ResolveGenerateDeconstruct(int raw) => raw switch
+    {
+        1 => true,  // Yes
+        2 => false, // No
+        _ => true,  // ReadGlobalCfg(0) or unknown → default true
+    };
+
+    private static JsonLibrary ResolveJson(int raw) => raw switch
+    {
+        0 => JsonLibrary.None,
+        1 => JsonLibrary.SystemTextJson,
+        2 => JsonLibrary.NewtonsoftJson,
+        3 => JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson,
+        _ => JsonLibrary.None, // ReadGlobalCfg(-1) or unknown → default None
+    };
 
     /// Walks up the ContainingType chain and returns the nesting wrappers
     /// from outermost to innermost.
@@ -208,76 +297,22 @@ internal static class UnionParser
         };
     }
 
-    /// Reads Layout enum value from the [DiscriminatedUnion] attribute constructor arg.
-    private static int GetLayout(ImmutableArray<AttributeData> attributes)
+    /// Maps (declarationKind, layout, isGeneric) to EmitStrategy.
+    /// Layout values use the public Layout enum ints (1=Auto, 2=Overlap, ...).
+    internal static EmitStrategy ResolveStrategy(string declKind, int layout, bool isGeneric)
     {
-        foreach (var attr in attributes)
+        if (declKind == "record") return EmitStrategy.Record;
+
+        return layout switch
         {
-            if (attr.AttributeClass?.Name != "DiscriminatedUnionAttribute")
-                continue;
-
-            if (attr.ConstructorArguments.Length > 0 &&
-                attr.ConstructorArguments[0].Value is int layoutValue)
-            {
-                return layoutValue;
-            }
-        }
-
-        return 0; // Layout.Auto
-    }
-
-    /// Reads the GenerateDeconstruct named property (defaults to true).
-    private static bool GetGenerateDeconstruct(ImmutableArray<AttributeData> attributes)
-    {
-        foreach (var attr in attributes)
-        {
-            if (attr.AttributeClass?.Name != "DiscriminatedUnionAttribute")
-                continue;
-
-            foreach (var named in attr.NamedArguments)
-            {
-                if (named.Key == "GenerateDeconstruct" && named.Value.Value is bool val)
-                    return val;
-            }
-        }
-
-        return true;
-    }
-
-    /// Reads the Json flags enum named property (defaults to None).
-    private static JsonLibrary GetJsonLibrary(ImmutableArray<AttributeData> attributes)
-    {
-        foreach (var attr in attributes)
-        {
-            if (attr.AttributeClass?.Name != "DiscriminatedUnionAttribute")
-                continue;
-
-            foreach (var named in attr.NamedArguments)
-            {
-                if (named.Key == "Json" && named.Value.Value is int val)
-                    return (JsonLibrary)val;
-            }
-        }
-
-        return JsonLibrary.None;
-    }
-
-    /// Reads the JsonDiscriminator named property (defaults to "kind").
-    private static string GetJsonDiscriminator(ImmutableArray<AttributeData> attributes)
-    {
-        foreach (var attr in attributes)
-        {
-            if (attr.AttributeClass?.Name != "DiscriminatedUnionAttribute")
-                continue;
-
-            foreach (var named in attr.NamedArguments)
-            {
-                if (named.Key == "JsonDiscriminator" && named.Value.Value is string val)
-                    return val;
-            }
-        }
-
-        return "kind";
+            1 => isGeneric ? EmitStrategy.BoxedFields : EmitStrategy.Overlap, // Auto
+            2 => EmitStrategy.Overlap,
+            3 => EmitStrategy.BoxedFields,
+            4 => EmitStrategy.BoxedTuple,
+            5 => EmitStrategy.Additive,
+            6 => EmitStrategy.UnsafeOverlap,
+            _ => isGeneric ? EmitStrategy.BoxedFields : EmitStrategy.Overlap, // fallback = Auto
+        };
     }
 
     /// Reads [JsonName] attribute from a symbol and returns the Name value, or null.
@@ -296,24 +331,6 @@ internal static class UnionParser
         }
 
         return null;
-    }
-
-    /// Maps (declarationKind, layout, isGeneric) to EmitStrategy.
-    private static EmitStrategy ResolveStrategy(string declKind, int layout, bool isGeneric)
-    {
-        if (declKind == "record") return EmitStrategy.Record;
-
-        // struct paths (class declarations not supported — GetDeclarationKind returns null for unsupported types)
-        return layout switch
-        {
-            0 => isGeneric ? EmitStrategy.BoxedFields : EmitStrategy.Overlap, // Auto
-            1 => EmitStrategy.Overlap,     // Overlap
-            2 => EmitStrategy.BoxedFields, // BoxedFields
-            3 => EmitStrategy.BoxedTuple,  // BoxedTuple
-            4 => EmitStrategy.Additive,    // Additive
-            5 => EmitStrategy.UnsafeOverlap, // UnsafeOverlap
-            _ => EmitStrategy.Overlap,
-        };
     }
 
     /// Discovers variants from [Variant] static methods (struct path).
@@ -373,10 +390,6 @@ internal static class UnionParser
     /// Extracts variant info from a nested type's primary constructor parameters.
     private static VariantInfo ParseNestedTypeVariant(INamedTypeSymbol nestedType)
     {
-        // Find the primary constructor (the one with parameters, or the parameterless one).
-        // For positional records `record Some(T Value)`, the compiler generates a ctor
-        // with matching parameters.
-        // Exclude the record copy constructor (implicitly declared, single param of own type).
         var primaryCtor = nestedType.Constructors
             .Where(c => !IsCopyConstructor(c, nestedType))
             .Where(c => !c.IsImplicitlyDeclared || c.Parameters.Length > 0)

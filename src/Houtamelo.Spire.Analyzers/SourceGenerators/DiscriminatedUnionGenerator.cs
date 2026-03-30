@@ -19,6 +19,9 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
             transform: static (ctx, ct) => UnionParser.Parse(ctx, ct)
         ).Where(static u => u is not null);
 
+        var globalConfig = context.AnalyzerConfigOptionsProvider.Select(
+            static (provider, _) => SpireGlobalConfig.Parse(provider.GlobalOptions));
+
         var compilationInfo = context.CompilationProvider.Select(static (comp, _) =>
             new CompilationInfo(
                 HasSystemTextJson: comp.GetTypeByMetadataName(
@@ -31,12 +34,17 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
                 HasInitProperties: comp.GetTypeByMetadataName(
                     "System.Runtime.CompilerServices.IsExternalInit") is not null));
 
-        var combined = unions.Combine(compilationInfo);
+        var combined = unions
+            .Combine(globalConfig)
+            .Combine(compilationInfo);
 
         context.RegisterSourceOutput(combined, static (ctx, pair) =>
         {
-            var (union, compInfo) = pair;
+            var ((union, config), compInfo) = pair;
             if (union is null) return;
+
+            // Resolve global config sentinels
+            union = UnionParser.ResolveGlobalConfig(union, config);
             union = union with { HasInitProperties = compInfo.HasInitProperties };
 
             // Report diagnostic if present
@@ -56,6 +64,15 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
                 if (diag.IsError) return;
             }
 
+            // Post-resolution validation: Overlap on generic struct (e.g., via global config)
+            if (union.Strategy == EmitStrategy.Overlap && union.IsGeneric)
+            {
+                ReportDiagnostic(ctx,
+                    "SPIRE_DU005",
+                    "Generic structs cannot use Overlap layout (CLR restriction); use BoxedFields or BoxedTuple");
+                return;
+            }
+
             // Check for field name+type conflicts across variants (always an error)
             if (HasFieldNameConflicts(ctx, union))
                 return;
@@ -63,7 +80,7 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
             // UnsafeOverlap requires AllowUnsafe
             if (union.Strategy == EmitStrategy.UnsafeOverlap && !compInfo.AllowsUnsafe)
             {
-                ReportJsonDiagnostic(ctx, union,
+                ReportDiagnostic(ctx,
                     "SPIRE_DU009",
                     "UnsafeOverlap layout requires <AllowUnsafeBlocks>true</AllowUnsafeBlocks> in the project");
                 return;
@@ -91,7 +108,7 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
             {
                 if (!compInfo.HasSystemTextJson)
                 {
-                    ReportJsonDiagnostic(ctx, union,
+                    ReportDiagnostic(ctx,
                         "SPIRE_DU006",
                         "System.Text.Json not referenced but Json includes SystemTextJson");
                 }
@@ -107,7 +124,7 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
             {
                 if (!compInfo.HasNewtonsoftJson)
                 {
-                    ReportJsonDiagnostic(ctx, union,
+                    ReportDiagnostic(ctx,
                         "SPIRE_DU007",
                         "Newtonsoft.Json not referenced but Json includes NewtonsoftJson");
                 }
@@ -128,9 +145,8 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
         });
     }
 
-    private static void ReportJsonDiagnostic(
-        SourceProductionContext ctx, UnionDeclaration union,
-        string id, string message)
+    private static void ReportDiagnostic(
+        SourceProductionContext ctx, string id, string message)
     {
         var diag = new UnionDiagnostic(
             Id: id, Message: message, IsError: true,

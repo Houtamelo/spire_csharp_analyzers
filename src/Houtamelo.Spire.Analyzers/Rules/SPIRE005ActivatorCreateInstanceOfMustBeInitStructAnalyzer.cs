@@ -31,8 +31,10 @@ public sealed class SPIRE005ActivatorCreateInstanceOfEnforceInitializationStruct
             if (activatorType is null || enforceInitializationType is null)
                 return;
 
+            var enforceOnAllEnums = GlobalConfigHelper.ReadEnforceExhaustivenessOnAllEnumTypes(compilationContext.Options);
+
             compilationContext.RegisterOperationAction(
-                operationContext => AnalyzeInvocation(operationContext, activatorType, enforceInitializationType, arrayType),
+                operationContext => AnalyzeInvocation(operationContext, activatorType, enforceInitializationType, enforceOnAllEnums, arrayType),
                 OperationKind.Invocation);
         });
     }
@@ -41,6 +43,7 @@ public sealed class SPIRE005ActivatorCreateInstanceOfEnforceInitializationStruct
         OperationAnalysisContext context,
         INamedTypeSymbol activatorType,
         INamedTypeSymbol enforceInitializationType,
+        bool enforceOnAllEnums,
         INamedTypeSymbol? arrayType)
     {
         var operation = (IInvocationOperation)context.Operation;
@@ -93,7 +96,7 @@ public sealed class SPIRE005ActivatorCreateInstanceOfEnforceInitializationStruct
         if (namedTarget.TypeKind != TypeKind.Struct && namedTarget.TypeKind != TypeKind.Enum)
             return;
 
-        if (!EnforceInitializationChecks.IsDefaultValueInvalid(namedTarget, enforceInitializationType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(namedTarget, enforceInitializationType, enforceOnAllEnums))
             return;
         if (argsParamIndex.HasValue)
         {

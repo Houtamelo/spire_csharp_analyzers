@@ -15,6 +15,16 @@ public static class EnforceInitializationChecks
         return false;
     }
 
+    /// Returns true if this type should be treated as having [EnforceInitialization].
+    /// When enforceOnAllEnums is true, all enum types are treated as enforced.
+    public static bool ShouldEnforceInitialization(
+        ITypeSymbol type, INamedTypeSymbol enforceInitializationType, bool enforceOnAllEnums)
+    {
+        if (enforceOnAllEnums && type.TypeKind == TypeKind.Enum)
+            return true;
+        return HasEnforceInitializationAttribute(type, enforceInitializationType);
+    }
+
     public static bool HasInstanceFields(ITypeSymbol type)
     {
         foreach (var member in type.GetMembers())
@@ -32,12 +42,33 @@ public static class EnforceInitializationChecks
         return HasEnforceInitializationAttribute(type, enforceInitializationType) && HasInstanceFields(type);
     }
 
+    /// Overload that respects EnforceExhaustivenessOnAllEnumTypes.
+    public static bool IsEnforceInitializationWithFields(
+        ITypeSymbol type, INamedTypeSymbol enforceInitializationType, bool enforceOnAllEnums)
+    {
+        return ShouldEnforceInitialization(type, enforceInitializationType, enforceOnAllEnums)
+            && HasInstanceFields(type);
+    }
+
     /// Returns true if default(T) is invalid for this [EnforceInitialization] type.
     /// For structs/classes: requires instance fields (same as IsEnforceInitializationWithFields).
     /// For enums: requires no zero-valued named member (default = 0 is unnamed).
     public static bool IsDefaultValueInvalid(ITypeSymbol type, INamedTypeSymbol enforceInitializationType)
     {
         if (!HasEnforceInitializationAttribute(type, enforceInitializationType))
+            return false;
+
+        if (type.TypeKind == TypeKind.Enum)
+            return type is INamedTypeSymbol named && !HasZeroValuedMember(named);
+
+        return HasInstanceFields(type);
+    }
+
+    /// Overload that respects EnforceExhaustivenessOnAllEnumTypes.
+    public static bool IsDefaultValueInvalid(
+        ITypeSymbol type, INamedTypeSymbol enforceInitializationType, bool enforceOnAllEnums)
+    {
+        if (!ShouldEnforceInitialization(type, enforceInitializationType, enforceOnAllEnums))
             return false;
 
         if (type.TypeKind == TypeKind.Enum)

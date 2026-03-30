@@ -1,6 +1,6 @@
 using Houtamelo.Spire;
 
-[DiscriminatedUnion(Json = JsonLibrary.SystemTextJson)]
+[DiscriminatedUnion(json: JsonLibrary.SystemTextJson)]
 public abstract partial record JsonShapeRecStj
 {
     public sealed partial record Circle(double Radius) : JsonShapeRecStj;
@@ -8,7 +8,7 @@ public abstract partial record JsonShapeRecStj
     public sealed partial record Point() : JsonShapeRecStj;
 }
 
-[DiscriminatedUnion(Json = JsonLibrary.NewtonsoftJson)]
+[DiscriminatedUnion(json: JsonLibrary.NewtonsoftJson)]
 public abstract partial record JsonShapeRecNsj
 {
     public sealed partial record Circle(double Radius) : JsonShapeRecNsj;

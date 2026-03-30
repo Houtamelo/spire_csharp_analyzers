@@ -26,15 +26,18 @@ public sealed class SPIRE004NewOfEnforceInitializationStructWithoutCtorAnalyzer 
             if (enforceInitializationType is null)
                 return;
 
+            var enforceOnAllEnums = GlobalConfigHelper.ReadEnforceExhaustivenessOnAllEnumTypes(compilationContext.Options);
+
             compilationContext.RegisterOperationAction(
-                operationContext => AnalyzeObjectCreation(operationContext, enforceInitializationType),
+                operationContext => AnalyzeObjectCreation(operationContext, enforceInitializationType, enforceOnAllEnums),
                 OperationKind.ObjectCreation);
         });
     }
 
     private static void AnalyzeObjectCreation(
         OperationAnalysisContext context,
-        INamedTypeSymbol enforceInitializationType)
+        INamedTypeSymbol enforceInitializationType,
+        bool enforceOnAllEnums)
     {
         var operation = (IObjectCreationOperation)context.Operation;
 
@@ -51,7 +54,7 @@ public sealed class SPIRE004NewOfEnforceInitializationStructWithoutCtorAnalyzer 
         if (type.TypeKind != TypeKind.Struct && type.TypeKind != TypeKind.Enum)
             return;
 
-        if (!EnforceInitializationChecks.IsDefaultValueInvalid(type, enforceInitializationType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(type, enforceInitializationType, enforceOnAllEnums))
             return;
 
         // Struct-specific: skip if user defined a parameterless ctor or all fields have initializers

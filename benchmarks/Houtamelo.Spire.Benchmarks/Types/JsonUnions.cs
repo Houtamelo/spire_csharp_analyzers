@@ -2,7 +2,7 @@ namespace Houtamelo.Spire.Benchmarks.Types;
 
 // JSON-enabled variants for serialization benchmarks
 
-[DiscriminatedUnion(Layout.Additive, Json = JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson)]
+[DiscriminatedUnion(Layout.Additive, json: JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson)]
 public partial struct EventAdditiveJson
 {
     [Variant] public static partial EventAdditiveJson Point();
@@ -15,7 +15,7 @@ public partial struct EventAdditiveJson
     [Variant] public static partial EventAdditiveJson Error(string message);
 }
 
-[DiscriminatedUnion(Layout.BoxedFields, Json = JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson)]
+[DiscriminatedUnion(Layout.BoxedFields, json: JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson)]
 public partial struct EventBoxedFieldsJson
 {
     [Variant] public static partial EventBoxedFieldsJson Point();
@@ -28,7 +28,7 @@ public partial struct EventBoxedFieldsJson
     [Variant] public static partial EventBoxedFieldsJson Error(string message);
 }
 
-[DiscriminatedUnion(Layout.BoxedTuple, Json = JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson)]
+[DiscriminatedUnion(Layout.BoxedTuple, json: JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson)]
 public partial struct EventBoxedTupleJson
 {
     [Variant] public static partial EventBoxedTupleJson Point();
@@ -41,7 +41,7 @@ public partial struct EventBoxedTupleJson
     [Variant] public static partial EventBoxedTupleJson Error(string message);
 }
 
-[DiscriminatedUnion(Layout.Overlap, Json = JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson)]
+[DiscriminatedUnion(Layout.Overlap, json: JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson)]
 public partial struct EventOverlapJson
 {
     [Variant] public static partial EventOverlapJson Point();
@@ -54,7 +54,7 @@ public partial struct EventOverlapJson
     [Variant] public static partial EventOverlapJson Error(string message);
 }
 
-[DiscriminatedUnion(Layout.UnsafeOverlap, Json = JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson)]
+[DiscriminatedUnion(Layout.UnsafeOverlap, json: JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson)]
 public partial struct EventUnsafeOverlapJson
 {
     [Variant] public static partial EventUnsafeOverlapJson Point();
@@ -67,7 +67,7 @@ public partial struct EventUnsafeOverlapJson
     [Variant] public static partial EventUnsafeOverlapJson Error(string message);
 }
 
-[DiscriminatedUnion(Json = JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson)]
+[DiscriminatedUnion(json: JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson)]
 public abstract partial record EventRecordJson
 {
     public sealed partial record Point() : EventRecordJson;

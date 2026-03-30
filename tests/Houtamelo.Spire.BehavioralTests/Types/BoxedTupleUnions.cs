@@ -31,7 +31,7 @@ partial struct MsgBt
     [Variant] public static partial MsgBt Empty();
 }
 
-[DiscriminatedUnion(Layout.BoxedTuple, Json = JsonLibrary.SystemTextJson)]
+[DiscriminatedUnion(Layout.BoxedTuple, json: JsonLibrary.SystemTextJson)]
 partial struct JsonShapeBtStj
 {
     [Variant] public static partial JsonShapeBtStj Circle(double radius);
@@ -39,7 +39,7 @@ partial struct JsonShapeBtStj
     [Variant] public static partial JsonShapeBtStj Point();
 }
 
-[DiscriminatedUnion(Layout.BoxedTuple, Json = JsonLibrary.NewtonsoftJson)]
+[DiscriminatedUnion(Layout.BoxedTuple, json: JsonLibrary.NewtonsoftJson)]
 partial struct JsonShapeBtNsj
 {
     [Variant] public static partial JsonShapeBtNsj Circle(double radius);

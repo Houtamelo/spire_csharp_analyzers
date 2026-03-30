@@ -1,6 +1,6 @@
 using Houtamelo.Spire;
 
-[DiscriminatedUnion(Layout.BoxedTuple, Json = JsonLibrary.NewtonsoftJson)]
+[DiscriminatedUnion(Layout.BoxedTuple, json: JsonLibrary.NewtonsoftJson)]
 partial struct Shape
 {
     [Variant] public static partial Shape Circle(double radius);

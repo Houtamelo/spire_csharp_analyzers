@@ -28,8 +28,10 @@ public sealed class SPIRE007UnsafeSkipInitOfEnforceInitializationStructAnalyzer 
             if (unsafeType is null || enforceInitializationType is null)
                 return;
 
+            var enforceOnAllEnums = GlobalConfigHelper.ReadEnforceExhaustivenessOnAllEnumTypes(compilationContext.Options);
+
             compilationContext.RegisterOperationAction(
-                operationContext => AnalyzeInvocation(operationContext, unsafeType, enforceInitializationType),
+                operationContext => AnalyzeInvocation(operationContext, unsafeType, enforceInitializationType, enforceOnAllEnums),
                 OperationKind.Invocation);
         });
     }
@@ -37,7 +39,8 @@ public sealed class SPIRE007UnsafeSkipInitOfEnforceInitializationStructAnalyzer 
     private static void AnalyzeInvocation(
         OperationAnalysisContext context,
         INamedTypeSymbol unsafeType,
-        INamedTypeSymbol enforceInitializationType)
+        INamedTypeSymbol enforceInitializationType,
+        bool enforceOnAllEnums)
     {
         var operation = (IInvocationOperation)context.Operation;
         var method = operation.TargetMethod;
@@ -59,7 +62,7 @@ public sealed class SPIRE007UnsafeSkipInitOfEnforceInitializationStructAnalyzer 
         if (namedTarget.TypeKind != TypeKind.Struct && namedTarget.TypeKind != TypeKind.Enum)
             return;
 
-        if (!EnforceInitializationChecks.HasEnforceInitializationAttribute(namedTarget, enforceInitializationType))
+        if (!EnforceInitializationChecks.ShouldEnforceInitialization(namedTarget, enforceInitializationType, enforceOnAllEnums))
             return;
 
         // For structs: require instance fields. For enums: always flag (garbage data).

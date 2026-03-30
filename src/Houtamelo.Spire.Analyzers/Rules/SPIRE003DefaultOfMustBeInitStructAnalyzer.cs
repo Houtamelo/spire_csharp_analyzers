@@ -29,15 +29,18 @@ public sealed class SPIRE003DefaultOfEnforceInitializationStructAnalyzer : Diagn
             if (enforceInitializationType is null)
                 return;
 
+            var enforceOnAllEnums = GlobalConfigHelper.ReadEnforceExhaustivenessOnAllEnumTypes(compilationContext.Options);
+
             compilationContext.RegisterOperationAction(
-                operationContext => AnalyzeDefaultValue(operationContext, enforceInitializationType),
+                operationContext => AnalyzeDefaultValue(operationContext, enforceInitializationType, enforceOnAllEnums),
                 OperationKind.DefaultValue);
         });
     }
 
     private static void AnalyzeDefaultValue(
         OperationAnalysisContext context,
-        INamedTypeSymbol enforceInitializationType)
+        INamedTypeSymbol enforceInitializationType,
+        bool enforceOnAllEnums)
     {
         var operation = (IDefaultValueOperation)context.Operation;
 
@@ -51,7 +54,7 @@ public sealed class SPIRE003DefaultOfEnforceInitializationStructAnalyzer : Diagn
         if (type.IsReferenceType && IsNullableDefault(operation))
             return;
 
-        if (!EnforceInitializationChecks.IsDefaultValueInvalid(type, enforceInitializationType))
+        if (!EnforceInitializationChecks.IsDefaultValueInvalid(type, enforceInitializationType, enforceOnAllEnums))
             return;
 
         if (IsInsideEqualityComparison(operation))

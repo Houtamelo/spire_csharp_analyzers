@@ -35,6 +35,19 @@ internal sealed record ContainingTypeInfo(
     string Name
 ) : IEquatable<ContainingTypeInfo>;
 
+/// Raw [DiscriminatedUnion] ctor arg values before global config resolution.
+/// Sentinel values: Layout 0=ReadGlobalCfg, GenerateDeconstruct 0=ReadGlobalCfg,
+/// Json -1=ReadGlobalCfg, JsonDiscriminator null=read global config.
+internal sealed record RawAttributeConfig(
+    int Layout,
+    int GenerateDeconstruct,
+    int Json,
+    string? JsonDiscriminator
+) : IEquatable<RawAttributeConfig>
+{
+    public static readonly RawAttributeConfig AllSentinels = new(0, 0, -1, null);
+}
+
 internal sealed record UnionDeclaration(
     string Namespace,
     string TypeName,
@@ -56,5 +69,9 @@ internal sealed record UnionDeclaration(
     /// Discriminator property name in JSON (default "kind").
     string JsonDiscriminator,
     /// Whether System.Runtime.CompilerServices.IsExternalInit is available (C# 9+ init support).
-    bool HasInitProperties
+    bool HasInitProperties,
+    /// Raw attribute values for global config resolution.
+    RawAttributeConfig RawConfig,
+    /// Whether the union type has type parameters (needed for Layout auto-resolution).
+    bool IsGeneric
 ) : IEquatable<UnionDeclaration>;

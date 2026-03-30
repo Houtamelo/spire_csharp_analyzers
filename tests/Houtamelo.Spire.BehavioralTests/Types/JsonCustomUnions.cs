@@ -1,14 +1,14 @@
 using Houtamelo.Spire;
 
 // Custom discriminator name
-[DiscriminatedUnion(Layout.Additive, Json = JsonLibrary.SystemTextJson, JsonDiscriminator = "type")]
+[DiscriminatedUnion(Layout.Additive, json: JsonLibrary.SystemTextJson, jsonDiscriminator: "type")]
 partial struct JsonCustomDiscStj
 {
     [Variant] public static partial JsonCustomDiscStj Circle(double radius);
     [Variant] public static partial JsonCustomDiscStj Point();
 }
 
-[DiscriminatedUnion(Layout.Additive, Json = JsonLibrary.NewtonsoftJson, JsonDiscriminator = "type")]
+[DiscriminatedUnion(Layout.Additive, json: JsonLibrary.NewtonsoftJson, jsonDiscriminator: "type")]
 partial struct JsonCustomDiscNsj
 {
     [Variant] public static partial JsonCustomDiscNsj Circle(double radius);
@@ -16,7 +16,7 @@ partial struct JsonCustomDiscNsj
 }
 
 // JsonName attribute on variants and fields
-[DiscriminatedUnion(Layout.Additive, Json = JsonLibrary.SystemTextJson)]
+[DiscriminatedUnion(Layout.Additive, json: JsonLibrary.SystemTextJson)]
 partial struct JsonNamedStj
 {
     [Variant, JsonName("circle")]
@@ -27,7 +27,7 @@ partial struct JsonNamedStj
     public static partial JsonNamedStj Point();
 }
 
-[DiscriminatedUnion(Layout.Additive, Json = JsonLibrary.NewtonsoftJson)]
+[DiscriminatedUnion(Layout.Additive, json: JsonLibrary.NewtonsoftJson)]
 partial struct JsonNamedNsj
 {
     [Variant, JsonName("circle")]

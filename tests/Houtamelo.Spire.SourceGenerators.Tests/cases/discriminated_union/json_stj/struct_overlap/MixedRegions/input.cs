@@ -2,7 +2,7 @@ using Houtamelo.Spire;
 
 namespace TestNs;
 
-[DiscriminatedUnion(Json = JsonLibrary.SystemTextJson)]
+[DiscriminatedUnion(json: JsonLibrary.SystemTextJson)]
 partial struct Event
 {
     [Variant] public static partial Event Click(int x, int y, string target);
