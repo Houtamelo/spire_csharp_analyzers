@@ -29,10 +29,13 @@ jobs:
         run: dotnet restore
 
       - name: Build
-        run: dotnet build -c Release --no-restore
+        run: |
+          dotnet build src/ -c Release --no-restore
+          dotnet build tests/ -c Release --no-restore
+          dotnet build tools/ -c Release --no-restore
 
       - name: Test
-        run: dotnet test -c Release --no-build
+        run: dotnet test tests/ -c Release --no-build
 
       - name: Pack all projects
         run: |
