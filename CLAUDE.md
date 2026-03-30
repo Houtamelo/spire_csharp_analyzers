@@ -41,7 +41,7 @@ src/Houtamelo.Spire.PatternAnalysis/        # Recursive pattern exhaustiveness a
   Domains/                                  # Value domains (Bool, Enum, Numeric, Nullable, Structural, etc.)
   Algorithm/                                # Maranget decision-tree builder + pattern matrix
   Resolution/                               # Type hierarchy resolver for [EnforceExhaustiveness]
-tests/Houtamelo.Spire.Analyzers.Tests/      # Analyzer xUnit tests (net10.0, C# 14)
+tests/Houtamelo.Spire.Analyzers.Tests/      # Analyzer xUnit tests (net11.0, C# preview)
   AnalyzerTestBase.cs                       # Base class for all analyzer tests (discovery, parsing, verification)
   FlowAnalysis/                             # Flow analysis infrastructure unit + integration tests
   {RuleId}/                                 # One folder per rule
@@ -49,7 +49,7 @@ tests/Houtamelo.Spire.Analyzers.Tests/      # Analyzer xUnit tests (net10.0, C# 
     cases/
       _shared.cs                            # Shared preamble (types, usings)
       {CaseName}.cs                         # One file per test case (excluded from compilation)
-tests/Houtamelo.Spire.SourceGenerators.Tests/ # Generator snapshot + analyzer tests (net10.0)
+tests/Houtamelo.Spire.SourceGenerators.Tests/ # Generator snapshot + analyzer tests (net11.0)
   Behavioral/                               # Reflection-based behavioral tests (compile-emit-load pipeline)
   cases/                                    # Snapshot test cases (input.cs/output.cs pairs)
 tests/Houtamelo.Spire.PatternAnalysis.Tests/  # Pattern exhaustiveness tests (unit + file-based integration)
@@ -80,7 +80,7 @@ See `.claude/rules/analyzer-conventions.md` for the full list of conventions, co
 
 Key points:
 - **Analyzer targets `netstandard2.0`** — Roslyn requirement
-- **Tests target `net10.0` with LangVersion 14** (C# 14)
+- **Tests target `net11.0` with LangVersion preview** (C# 15)
 - **Use `IOperation` API** as primary detection mechanism
 - **Code fixes** live in `src/Houtamelo.Spire.CodeFixes/` (separate project)
 
