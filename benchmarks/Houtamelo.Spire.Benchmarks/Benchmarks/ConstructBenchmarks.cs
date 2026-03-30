@@ -64,10 +64,10 @@ public class ConstructBenchmarks
         return arr;
     }
 
-    [BenchmarkCategory("Event Construct"), Benchmark(Description = "class")]
-    public Types.EventClass[] EventClass_()
+    [BenchmarkCategory("Event Construct"), Benchmark(Description = "native")]
+    public Types.EventNative[] EventNative_()
     {
-        var arr = new Types.EventClass[N];
+        var arr = new Types.EventNative[N];
         ArrayFiller.Fill(arr, new Random(42), Distribution.Uniform);
         return arr;
     }
@@ -122,10 +122,10 @@ public class ConstructBenchmarks
         return arr;
     }
 
-    [BenchmarkCategory("Physics Construct"), Benchmark(Description = "class")]
-    public Types.PhysicsClass[] PhysicsClass_()
+    [BenchmarkCategory("Physics Construct"), Benchmark(Description = "native")]
+    public Types.PhysicsNative[] PhysicsNative_()
     {
-        var arr = new Types.PhysicsClass[N];
+        var arr = new Types.PhysicsNative[N];
         ArrayFiller.Fill(arr, new Random(42), Distribution.Uniform);
         return arr;
     }

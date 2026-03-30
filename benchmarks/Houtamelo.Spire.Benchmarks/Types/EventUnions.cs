@@ -87,16 +87,3 @@ public abstract partial record EventRecord
     public sealed partial record RichText(string Text, int Size, bool Bold, string Font, double Spacing) : EventRecord;
     public sealed partial record Error(string Message) : EventRecord;
 }
-
-[DiscriminatedUnion]
-public abstract partial class EventClass
-{
-    public sealed partial class Point : EventClass;
-    public sealed partial class Circle(double radius) : EventClass { public double Radius => radius; }
-    public sealed partial class Label(string text) : EventClass { public string Text => text; }
-    public sealed partial class Rectangle(float width, float height) : EventClass { public float Width => width; public float Height => height; }
-    public sealed partial class ColoredLine(int x1, int y1, string color) : EventClass { public int X1 => x1; public int Y1 => y1; public string Color => color; }
-    public sealed partial class Transform(float x, float y, float z, float w) : EventClass { public float X => x; public float Y => y; public float Z => z; public float W => w; }
-    public sealed partial class RichText(string text, int size, bool bold, string font, double spacing) : EventClass { public string Text => text; public int Size => size; public bool Bold => bold; public string Font => font; public double Spacing => spacing; }
-    public sealed partial class Error(string message) : EventClass { public string Message => message; }
-}

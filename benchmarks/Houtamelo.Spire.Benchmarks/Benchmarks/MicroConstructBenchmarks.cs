@@ -26,8 +26,8 @@ public class MicroConstructBenchmarks
     [BenchmarkCategory("Micro Construct Fieldless"), Benchmark(Description = "record")]
     public Types.EventRecord FieldlessRecord() => new Types.EventRecord.Point();
 
-    [BenchmarkCategory("Micro Construct Fieldless"), Benchmark(Description = "class")]
-    public Types.EventClass FieldlessClass() => new Types.EventClass.Point();
+    [BenchmarkCategory("Micro Construct Fieldless"), Benchmark(Description = "native")]
+    public Types.EventNative FieldlessNative() => new Types.EvtPoint();
 
     // ── 4 unmanaged fields (Transform) ──
 
@@ -49,8 +49,8 @@ public class MicroConstructBenchmarks
     [BenchmarkCategory("Micro Construct 4-field"), Benchmark(Description = "record")]
     public Types.EventRecord Transform4Record() => new Types.EventRecord.Transform(1f, 2f, 3f, 4f);
 
-    [BenchmarkCategory("Micro Construct 4-field"), Benchmark(Description = "class")]
-    public Types.EventClass Transform4Class() => new Types.EventClass.Transform(1f, 2f, 3f, 4f);
+    [BenchmarkCategory("Micro Construct 4-field"), Benchmark(Description = "native")]
+    public Types.EventNative Transform4Native() => new Types.EvtTransform(1f, 2f, 3f, 4f);
 
     // ── 5 mixed fields (RichText) ──
 
@@ -72,6 +72,6 @@ public class MicroConstructBenchmarks
     [BenchmarkCategory("Micro Construct 5-mixed"), Benchmark(Description = "record")]
     public Types.EventRecord RichText5Record() => new Types.EventRecord.RichText("hello", 12, true, "Arial", 1.5);
 
-    [BenchmarkCategory("Micro Construct 5-mixed"), Benchmark(Description = "class")]
-    public Types.EventClass RichText5Class() => new Types.EventClass.RichText("hello", 12, true, "Arial", 1.5);
+    [BenchmarkCategory("Micro Construct 5-mixed"), Benchmark(Description = "native")]
+    public Types.EventNative RichText5Native() => new Types.EvtRichText("hello", 12, true, "Arial", 1.5);
 }

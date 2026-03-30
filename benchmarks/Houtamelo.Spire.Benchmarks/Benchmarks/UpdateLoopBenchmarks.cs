@@ -19,7 +19,7 @@ public class UpdateLoopBenchmarks
     Types.EventOverlap[] _overlap = null!;
     Types.EventUnsafeOverlap[] _unsafeOverlap = null!;
     Types.EventRecord[] _record = null!;
-    Types.EventClass[] _class = null!;
+    Types.EventNative[] _native = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -30,7 +30,7 @@ public class UpdateLoopBenchmarks
         _overlap = new Types.EventOverlap[N];
         _unsafeOverlap = new Types.EventUnsafeOverlap[N];
         _record = new Types.EventRecord[N];
-        _class = new Types.EventClass[N];
+        _native = new Types.EventNative[N];
 
         ArrayFiller.Fill(_additive, new Random(42), Dist);
         ArrayFiller.Fill(_boxedFields, new Random(42), Dist);
@@ -38,7 +38,7 @@ public class UpdateLoopBenchmarks
         ArrayFiller.Fill(_overlap, new Random(42), Dist);
         ArrayFiller.Fill(_unsafeOverlap, new Random(42), Dist);
         ArrayFiller.Fill(_record, new Random(42), Dist);
-        ArrayFiller.Fill(_class, new Random(42), Dist);
+        ArrayFiller.Fill(_native, new Random(42), Dist);
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -252,21 +252,20 @@ public class UpdateLoopBenchmarks
         return sum;
     }
 
-    [BenchmarkCategory("Deconstruct"), Benchmark(Description = "class")]
-    public double DeconstructClass()
+    [BenchmarkCategory("Deconstruct"), Benchmark(Description = "native")]
+    public double DeconstructNative()
     {
         double sum = 0;
-        var arr = _class;
+        var arr = _native;
         for (int i = 0; i < arr.Length; i++)
         {
-            // Class variants don't have positional Deconstruct — use type pattern + properties
             sum += arr[i] switch
             {
-                Types.EventClass.Circle c => c.Radius * c.Radius * 3.14159,
-                Types.EventClass.Rectangle r => r.Width * r.Height,
-                Types.EventClass.Transform t => t.X * t.Y + t.Z * t.W,
-                Types.EventClass.RichText rt => rt.Spacing * rt.Size,
-                Types.EventClass.ColoredLine cl => cl.X1 + cl.Y1,
+                Types.EvtCircle(var radius) => radius * radius * 3.14159,
+                Types.EvtRectangle(var w, var h) => w * h,
+                Types.EvtTransform(var x, var y, var z, var w) => x * y + z * w,
+                Types.EvtRichText(_, var sz, _, _, var sp) => sp * sz,
+                Types.EvtColoredLine(var x1, var y1, _) => x1 + y1,
                 _ => 0,
             };
         }
@@ -454,28 +453,28 @@ public class UpdateLoopBenchmarks
         return sum;
     }
 
-    [BenchmarkCategory("Property"), Benchmark(Description = "class")]
-    public double PropertyClass()
+    [BenchmarkCategory("Property"), Benchmark(Description = "native")]
+    public double PropertyNative()
     {
         double sum = 0;
-        var arr = _class;
+        var arr = _native;
         for (int i = 0; i < arr.Length; i++)
         {
             switch (arr[i])
             {
-                case Types.EventClass.Circle { Radius: var r }:
+                case Types.EvtCircle { Radius: var r }:
                     sum += r * r * 3.14159;
                     break;
-                case Types.EventClass.Rectangle { Width: var w, Height: var h }:
+                case Types.EvtRectangle { Width: var w, Height: var h }:
                     sum += w * h;
                     break;
-                case Types.EventClass.Transform { X: var x, Y: var y, Z: var z, W: var w }:
+                case Types.EvtTransform { X: var x, Y: var y, Z: var z, W: var w }:
                     sum += x * y + z * w;
                     break;
-                case Types.EventClass.RichText { Spacing: var sp, Size: var sz }:
+                case Types.EvtRichText { Spacing: var sp, Size: var sz }:
                     sum += sp * sz;
                     break;
-                case Types.EventClass.ColoredLine { X1: var x1, Y1: var y1 }:
+                case Types.EvtColoredLine { X1: var x1, Y1: var y1 }:
                     sum += x1 + y1;
                     break;
             }

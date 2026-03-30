@@ -15,7 +15,7 @@ public class CopyBenchmarks
     Types.EventOverlap[] _srcOv = null!; Types.EventOverlap[] _dstOv = null!;
     Types.EventUnsafeOverlap[] _srcUO = null!; Types.EventUnsafeOverlap[] _dstUO = null!;
     Types.EventRecord[] _srcRec = null!; Types.EventRecord[] _dstRec = null!;
-    Types.EventClass[] _srcCls = null!; Types.EventClass[] _dstCls = null!;
+    Types.EventNative[] _srcNat = null!; Types.EventNative[] _dstNat = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -26,7 +26,7 @@ public class CopyBenchmarks
         _srcOv = new Types.EventOverlap[N]; _dstOv = new Types.EventOverlap[N];
         _srcUO = new Types.EventUnsafeOverlap[N]; _dstUO = new Types.EventUnsafeOverlap[N];
         _srcRec = new Types.EventRecord[N]; _dstRec = new Types.EventRecord[N];
-        _srcCls = new Types.EventClass[N]; _dstCls = new Types.EventClass[N];
+        _srcNat = new Types.EventNative[N]; _dstNat = new Types.EventNative[N];
 
         ArrayFiller.Fill(_srcAdd, new Random(42), Distribution.Uniform);
         ArrayFiller.Fill(_srcBF, new Random(42), Distribution.Uniform);
@@ -34,7 +34,7 @@ public class CopyBenchmarks
         ArrayFiller.Fill(_srcOv, new Random(42), Distribution.Uniform);
         ArrayFiller.Fill(_srcUO, new Random(42), Distribution.Uniform);
         ArrayFiller.Fill(_srcRec, new Random(42), Distribution.Uniform);
-        ArrayFiller.Fill(_srcCls, new Random(42), Distribution.Uniform);
+        ArrayFiller.Fill(_srcNat, new Random(42), Distribution.Uniform);
     }
 
     [BenchmarkCategory("Copy"), Benchmark(Baseline = true, Description = "additive")]
@@ -55,6 +55,6 @@ public class CopyBenchmarks
     [BenchmarkCategory("Copy"), Benchmark(Description = "record")]
     public void Record() => Array.Copy(_srcRec, _dstRec, N);
 
-    [BenchmarkCategory("Copy"), Benchmark(Description = "class")]
-    public void Class() => Array.Copy(_srcCls, _dstCls, N);
+    [BenchmarkCategory("Copy"), Benchmark(Description = "native")]
+    public void Native() => Array.Copy(_srcNat, _dstNat, N);
 }

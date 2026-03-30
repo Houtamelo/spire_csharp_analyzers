@@ -25,7 +25,7 @@
       "command": "dnx",
       "args": ["Community.Mcp.DotNet@1.0.0", "--yes"],
       "env": {
-        "DOTNET_ROOT": "/usr/share/dotnet"
+        "DOTNET_ROOT": "/usr/lib/dotnet"
       }
     }
   }

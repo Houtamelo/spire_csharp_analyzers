@@ -71,7 +71,8 @@ if (Directory.Exists(resultsDir))
 
                 foreach (var line in tableLines)
                 {
-                    writer.WriteLine(dropIndices.Count > 0 ? StripColumns(line, dropIndices) : line);
+                    var cleaned = line.Replace("**", "");
+                    writer.WriteLine(dropIndices.Count > 0 ? StripColumns(cleaned, dropIndices) : cleaned);
                 }
             }
 

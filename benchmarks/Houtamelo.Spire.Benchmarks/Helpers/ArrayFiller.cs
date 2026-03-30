@@ -81,25 +81,6 @@ static class ArrayFiller
         }
     }
 
-    public static void Fill(Types.EventClass[] arr, Random rng, Distribution dist)
-    {
-        for (int i = 0; i < arr.Length; i++)
-        {
-            int v = PickVariant(rng, dist, i);
-            arr[i] = v switch
-            {
-                0 => new Types.EventClass.Point(),
-                1 => new Types.EventClass.Circle(rng.NextDouble() * 200 - 100),
-                2 => new Types.EventClass.Label(StringPool[rng.Next(StringPool.Length)]),
-                3 => new Types.EventClass.Rectangle(rng.NextSingle() * 200 - 100, rng.NextSingle() * 200 - 100),
-                4 => new Types.EventClass.ColoredLine(rng.Next(-1000, 1000), rng.Next(-1000, 1000), StringPool[rng.Next(StringPool.Length)]),
-                5 => new Types.EventClass.Transform(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
-                6 => new Types.EventClass.RichText(StringPool[rng.Next(StringPool.Length)], rng.Next(8, 72), rng.Next(2) == 1, StringPool[rng.Next(StringPool.Length)], rng.NextDouble()),
-                _ => new Types.EventClass.Error(StringPool[rng.Next(StringPool.Length)]),
-            };
-        }
-    }
-
     static T MakeEvent<T>(int v, Random rng,
         Func<T> point,
         Func<double, T> circle,
@@ -121,6 +102,27 @@ static class ArrayFiller
             6 => richText(StringPool[rng.Next(StringPool.Length)], rng.Next(8, 72), rng.Next(2) == 1, StringPool[rng.Next(StringPool.Length)], rng.NextDouble()),
             _ => error(StringPool[rng.Next(StringPool.Length)]),
         };
+    }
+
+    // ── Event (C# 15 native union) ──
+
+    public static void Fill(Types.EventNative[] arr, Random rng, Distribution dist)
+    {
+        for (int i = 0; i < arr.Length; i++)
+        {
+            int v = PickVariant(rng, dist, i);
+            arr[i] = v switch
+            {
+                0 => new Types.EvtPoint(),
+                1 => new Types.EvtCircle(rng.NextDouble() * 200 - 100),
+                2 => new Types.EvtLabel(StringPool[rng.Next(StringPool.Length)]),
+                3 => new Types.EvtRectangle(rng.NextSingle() * 200 - 100, rng.NextSingle() * 200 - 100),
+                4 => new Types.EvtColoredLine(rng.Next(-1000, 1000), rng.Next(-1000, 1000), StringPool[rng.Next(StringPool.Length)]),
+                5 => new Types.EvtTransform(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
+                6 => new Types.EvtRichText(StringPool[rng.Next(StringPool.Length)], rng.Next(8, 72), rng.Next(2) == 1, StringPool[rng.Next(StringPool.Length)], rng.NextDouble()),
+                _ => new Types.EvtError(StringPool[rng.Next(StringPool.Length)]),
+            };
+        }
     }
 
     // ── Physics (all unmanaged) ──
@@ -189,21 +191,23 @@ static class ArrayFiller
         }
     }
 
-    public static void Fill(Types.PhysicsClass[] arr, Random rng, Distribution dist)
+    // ── Physics (C# 15 native union) ──
+
+    public static void Fill(Types.PhysicsNative[] arr, Random rng, Distribution dist)
     {
         for (int i = 0; i < arr.Length; i++)
         {
             int v = PickVariant(rng, dist, i);
             arr[i] = v switch
             {
-                0 => new Types.PhysicsClass.Idle(),
-                1 => new Types.PhysicsClass.Impulse(rng.NextSingle()),
-                2 => new Types.PhysicsClass.Position(rng.NextSingle(), rng.NextSingle()),
-                3 => new Types.PhysicsClass.Force(rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
-                4 => new Types.PhysicsClass.Rotation(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
-                5 => new Types.PhysicsClass.Spring(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
-                6 => new Types.PhysicsClass.Gravity(rng.NextDouble()),
-                _ => new Types.PhysicsClass.Collision(rng.Next(), rng.Next()),
+                0 => new Types.PhysIdle(),
+                1 => new Types.PhysImpulse(rng.NextSingle()),
+                2 => new Types.PhysPosition(rng.NextSingle(), rng.NextSingle()),
+                3 => new Types.PhysForce(rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
+                4 => new Types.PhysRotation(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
+                5 => new Types.PhysSpring(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), rng.NextSingle()),
+                6 => new Types.PhysGravity(rng.NextDouble()),
+                _ => new Types.PhysCollision(rng.Next(), rng.Next()),
             };
         }
     }

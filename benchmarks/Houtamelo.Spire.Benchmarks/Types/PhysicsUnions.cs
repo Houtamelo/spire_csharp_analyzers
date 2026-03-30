@@ -87,16 +87,3 @@ public abstract partial record PhysicsRecord
     public sealed partial record Gravity(double G) : PhysicsRecord;
     public sealed partial record Collision(int EntityA, int EntityB) : PhysicsRecord;
 }
-
-[DiscriminatedUnion]
-public abstract partial class PhysicsClass
-{
-    public sealed partial class Idle : PhysicsClass;
-    public sealed partial class Impulse(float magnitude) : PhysicsClass { public float Magnitude => magnitude; }
-    public sealed partial class Position(float x, float y) : PhysicsClass { public float X => x; public float Y => y; }
-    public sealed partial class Force(float fx, float fy, float fz) : PhysicsClass { public float FX => fx; public float FY => fy; public float FZ => fz; }
-    public sealed partial class Rotation(float x, float y, float z, float w) : PhysicsClass { public float X => x; public float Y => y; public float Z => z; public float W => w; }
-    public sealed partial class Spring(float k, float damping, float rest, float min, float max) : PhysicsClass { public float K => k; public float Damping => damping; public float Rest => rest; public float Min => min; public float Max => max; }
-    public sealed partial class Gravity(double g) : PhysicsClass { public double G => g; }
-    public sealed partial class Collision(int entityA, int entityB) : PhysicsClass { public int EntityA => entityA; public int EntityB => entityB; }
-}

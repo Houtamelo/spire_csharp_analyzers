@@ -20,7 +20,31 @@ internal static class UnionParser
 
         var syntax = (TypeDeclarationSyntax)ctx.TargetNode;
         var declKind = GetDeclarationKind(syntax);
-        if (declKind is null) return null;
+        if (declKind is null)
+        {
+            return new UnionDeclaration(
+                Namespace: typeSymbol.ContainingNamespace.IsGlobalNamespace
+                    ? ""
+                    : typeSymbol.ContainingNamespace.ToDisplayString(),
+                TypeName: typeSymbol.Name,
+                AccessibilityKeyword: ExplicitAccessibility(syntax, typeSymbol.DeclaredAccessibility),
+                DeclarationKeyword: "class",
+                IsReadonly: false,
+                IsRefStruct: false,
+                Strategy: EmitStrategy.Additive,
+                GenerateDeconstruct: false,
+                TypeParameters: new EquatableArray<string>(ImmutableArray<string>.Empty),
+                Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
+                ContainingTypes: new EquatableArray<ContainingTypeInfo>(ImmutableArray<ContainingTypeInfo>.Empty),
+                Diagnostic: CreateDiagnostic(
+                    syntax,
+                    "SPIRE_DU011",
+                    "[DiscriminatedUnion] is not supported on class types. Consider using a record type (fully supported by the generator), C# 15 'union' types for a language-native alternative, or the [EnforceExhaustiveness] attribute for exhaustive switch checking on existing class hierarchies",
+                    isError: true),
+                Json: JsonLibrary.None,
+                JsonDiscriminator: "kind",
+                HasInitProperties: false);
+        }
 
         var isRefStruct = typeSymbol.IsRefLikeType;
 

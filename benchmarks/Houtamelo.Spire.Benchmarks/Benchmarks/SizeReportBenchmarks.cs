@@ -17,7 +17,7 @@ public class SizeReportBenchmarks
         Console.WriteLine($"  EventOverlap         = {Unsafe.SizeOf<Types.EventOverlap>()} bytes");
         Console.WriteLine($"  EventUnsafeOverlap   = {Unsafe.SizeOf<Types.EventUnsafeOverlap>()} bytes");
         Console.WriteLine($"  EventRecord (ref)    = {IntPtr.Size} bytes");
-        Console.WriteLine($"  EventClass (ref)     = {IntPtr.Size} bytes");
+        Console.WriteLine($"  EventNative          = {Unsafe.SizeOf<Types.EventNative>()} bytes");
         Console.WriteLine();
         Console.WriteLine("── Physics (all unmanaged) ──");
         Console.WriteLine($"  PhysicsAdditive      = {Unsafe.SizeOf<Types.PhysicsAdditive>()} bytes");
@@ -26,7 +26,7 @@ public class SizeReportBenchmarks
         Console.WriteLine($"  PhysicsOverlap       = {Unsafe.SizeOf<Types.PhysicsOverlap>()} bytes");
         Console.WriteLine($"  PhysicsUnsafeOverlap = {Unsafe.SizeOf<Types.PhysicsUnsafeOverlap>()} bytes");
         Console.WriteLine($"  PhysicsRecord (ref)  = {IntPtr.Size} bytes");
-        Console.WriteLine($"  PhysicsClass (ref)   = {IntPtr.Size} bytes");
+        Console.WriteLine($"  PhysicsNative        = {Unsafe.SizeOf<Types.PhysicsNative>()} bytes");
     }
 
     [Benchmark]

@@ -19,7 +19,7 @@ public class MatchBenchmarks
     Types.PhysicsOverlap[] _overlap = null!;
     Types.PhysicsUnsafeOverlap[] _unsafeOverlap = null!;
     Types.PhysicsRecord[] _record = null!;
-    Types.PhysicsClass[] _class = null!;
+    Types.PhysicsNative[] _native = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -30,7 +30,7 @@ public class MatchBenchmarks
         _overlap = new Types.PhysicsOverlap[N];
         _unsafeOverlap = new Types.PhysicsUnsafeOverlap[N];
         _record = new Types.PhysicsRecord[N];
-        _class = new Types.PhysicsClass[N];
+        _native = new Types.PhysicsNative[N];
 
         ArrayFiller.Fill(_additive, new Random(42), Dist);
         ArrayFiller.Fill(_boxedFields, new Random(42), Dist);
@@ -38,7 +38,7 @@ public class MatchBenchmarks
         ArrayFiller.Fill(_overlap, new Random(42), Dist);
         ArrayFiller.Fill(_unsafeOverlap, new Random(42), Dist);
         ArrayFiller.Fill(_record, new Random(42), Dist);
-        ArrayFiller.Fill(_class, new Random(42), Dist);
+        ArrayFiller.Fill(_native, new Random(42), Dist);
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -289,22 +289,22 @@ public class MatchBenchmarks
         return sum;
     }
 
-    [BenchmarkCategory("Deconstruct"), Benchmark(Description = "class")]
-    public double DeconstructClass()
+    [BenchmarkCategory("Deconstruct"), Benchmark(Description = "native")]
+    public double DeconstructNative()
     {
         double sum = 0;
-        var arr = _class;
+        var arr = _native;
         for (int i = 0; i < arr.Length; i++)
         {
             sum += arr[i] switch
             {
-                Types.PhysicsClass.Impulse p => (double)p.Magnitude,
-                Types.PhysicsClass.Position p => p.X + p.Y,
-                Types.PhysicsClass.Force p => p.FX * p.FY + p.FZ,
-                Types.PhysicsClass.Rotation p => p.X * p.Y + p.Z * p.W,
-                Types.PhysicsClass.Spring p => p.K * p.Damping + p.Rest * p.Min + p.Max,
-                Types.PhysicsClass.Gravity p => p.G,
-                Types.PhysicsClass.Collision p => p.EntityA + p.EntityB,
+                Types.PhysImpulse(var m) => (double)m,
+                Types.PhysPosition(var x, var y) => x + y,
+                Types.PhysForce(var fx, var fy, var fz) => fx * fy + fz,
+                Types.PhysRotation(var x, var y, var z, var w) => x * y + z * w,
+                Types.PhysSpring(var k, var d, var r, var mn, var mx) => k * d + r * mn + mx,
+                Types.PhysGravity(var g) => g,
+                Types.PhysCollision(var a, var b) => a + b,
                 _ => 0,
             };
         }
@@ -441,22 +441,22 @@ public class MatchBenchmarks
         return sum;
     }
 
-    [BenchmarkCategory("Property"), Benchmark(Description = "class")]
-    public double PropertyClass()
+    [BenchmarkCategory("Property"), Benchmark(Description = "native")]
+    public double PropertyNative()
     {
         double sum = 0;
-        var arr = _class;
+        var arr = _native;
         for (int i = 0; i < arr.Length; i++)
         {
             switch (arr[i])
             {
-                case Types.PhysicsClass.Impulse { Magnitude: var m }: sum += m; break;
-                case Types.PhysicsClass.Position { X: var x, Y: var y }: sum += x + y; break;
-                case Types.PhysicsClass.Force { FX: var fx, FY: var fy, FZ: var fz }: sum += fx * fy + fz; break;
-                case Types.PhysicsClass.Rotation { X: var x, Y: var y, Z: var z, W: var w }: sum += x * y + z * w; break;
-                case Types.PhysicsClass.Spring { K: var k, Damping: var d, Rest: var r, Min: var mn, Max: var mx }: sum += k * d + r * mn + mx; break;
-                case Types.PhysicsClass.Gravity { G: var g }: sum += g; break;
-                case Types.PhysicsClass.Collision { EntityA: var a, EntityB: var b }: sum += a + b; break;
+                case Types.PhysImpulse { Magnitude: var m }: sum += m; break;
+                case Types.PhysPosition { X: var x, Y: var y }: sum += x + y; break;
+                case Types.PhysForce { FX: var fx, FY: var fy, FZ: var fz }: sum += fx * fy + fz; break;
+                case Types.PhysRotation { X: var x, Y: var y, Z: var z, W: var w }: sum += x * y + z * w; break;
+                case Types.PhysSpring { K: var k, Damping: var d, Rest: var r, Min: var mn, Max: var mx }: sum += k * d + r * mn + mx; break;
+                case Types.PhysGravity { G: var g }: sum += g; break;
+                case Types.PhysCollision { EntityA: var a, EntityB: var b }: sum += a + b; break;
             }
         }
         return sum;

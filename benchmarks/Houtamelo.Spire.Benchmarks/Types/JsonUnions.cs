@@ -15,6 +15,58 @@ public partial struct EventAdditiveJson
     [Variant] public static partial EventAdditiveJson Error(string message);
 }
 
+[DiscriminatedUnion(Layout.BoxedFields, Json = JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson)]
+public partial struct EventBoxedFieldsJson
+{
+    [Variant] public static partial EventBoxedFieldsJson Point();
+    [Variant] public static partial EventBoxedFieldsJson Circle(double radius);
+    [Variant] public static partial EventBoxedFieldsJson Label(string text);
+    [Variant] public static partial EventBoxedFieldsJson Rectangle(float width, float height);
+    [Variant] public static partial EventBoxedFieldsJson ColoredLine(int x1, int y1, string color);
+    [Variant] public static partial EventBoxedFieldsJson Transform(float x, float y, float z, float w);
+    [Variant] public static partial EventBoxedFieldsJson RichText(string text, int size, bool bold, string font, double spacing);
+    [Variant] public static partial EventBoxedFieldsJson Error(string message);
+}
+
+[DiscriminatedUnion(Layout.BoxedTuple, Json = JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson)]
+public partial struct EventBoxedTupleJson
+{
+    [Variant] public static partial EventBoxedTupleJson Point();
+    [Variant] public static partial EventBoxedTupleJson Circle(double radius);
+    [Variant] public static partial EventBoxedTupleJson Label(string text);
+    [Variant] public static partial EventBoxedTupleJson Rectangle(float width, float height);
+    [Variant] public static partial EventBoxedTupleJson ColoredLine(int x1, int y1, string color);
+    [Variant] public static partial EventBoxedTupleJson Transform(float x, float y, float z, float w);
+    [Variant] public static partial EventBoxedTupleJson RichText(string text, int size, bool bold, string font, double spacing);
+    [Variant] public static partial EventBoxedTupleJson Error(string message);
+}
+
+[DiscriminatedUnion(Layout.Overlap, Json = JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson)]
+public partial struct EventOverlapJson
+{
+    [Variant] public static partial EventOverlapJson Point();
+    [Variant] public static partial EventOverlapJson Circle(double radius);
+    [Variant] public static partial EventOverlapJson Label(string text);
+    [Variant] public static partial EventOverlapJson Rectangle(float width, float height);
+    [Variant] public static partial EventOverlapJson ColoredLine(int x1, int y1, string color);
+    [Variant] public static partial EventOverlapJson Transform(float x, float y, float z, float w);
+    [Variant] public static partial EventOverlapJson RichText(string text, int size, bool bold, string font, double spacing);
+    [Variant] public static partial EventOverlapJson Error(string message);
+}
+
+[DiscriminatedUnion(Layout.UnsafeOverlap, Json = JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson)]
+public partial struct EventUnsafeOverlapJson
+{
+    [Variant] public static partial EventUnsafeOverlapJson Point();
+    [Variant] public static partial EventUnsafeOverlapJson Circle(double radius);
+    [Variant] public static partial EventUnsafeOverlapJson Label(string text);
+    [Variant] public static partial EventUnsafeOverlapJson Rectangle(float width, float height);
+    [Variant] public static partial EventUnsafeOverlapJson ColoredLine(int x1, int y1, string color);
+    [Variant] public static partial EventUnsafeOverlapJson Transform(float x, float y, float z, float w);
+    [Variant] public static partial EventUnsafeOverlapJson RichText(string text, int size, bool bold, string font, double spacing);
+    [Variant] public static partial EventUnsafeOverlapJson Error(string message);
+}
+
 [DiscriminatedUnion(Json = JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson)]
 public abstract partial record EventRecordJson
 {

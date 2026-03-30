@@ -78,6 +78,14 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    private static readonly DiagnosticDescriptor ClassNotSupported = new(
+        id: "SPIRE_DU011",
+        title: "Class types are not supported for [DiscriminatedUnion]",
+        messageFormat: "[DiscriminatedUnion] is not supported on class types. Consider using a record type (fully supported by the generator), C# 15 'union' types for a language-native alternative, or the [EnforceExhaustiveness] attribute for exhaustive switch checking on existing class hierarchies.",
+        category: "SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     private static readonly Dictionary<string, DiagnosticDescriptor> DescriptorMap = new()
     {
         ["SPIRE_DU002"] = RefStructNotSupported,
@@ -89,6 +97,7 @@ internal static class Diagnostics
         ["SPIRE_DU008"] = RefStructJsonNotSupported,
         ["SPIRE_DU009"] = UnsafeOverlapRequiresUnsafe,
         ["SPIRE_DU010"] = FieldNameTypeConflict,
+        ["SPIRE_DU011"] = ClassNotSupported,
     };
 
     public static DiagnosticDescriptor GetDescriptor(UnionDiagnostic diag)

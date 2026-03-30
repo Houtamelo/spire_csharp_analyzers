@@ -12,7 +12,7 @@ public class MicroMatchBenchmarks
     Types.EventOverlap _ovTransform;
     Types.EventUnsafeOverlap _uoTransform;
     Types.EventRecord _recTransform = null!;
-    Types.EventClass _clsTransform = null!;
+    Types.EventNative _natTransform;
 
     [GlobalSetup]
     public void Setup()
@@ -23,7 +23,7 @@ public class MicroMatchBenchmarks
         _ovTransform = Types.EventOverlap.Transform(1f, 2f, 3f, 4f);
         _uoTransform = Types.EventUnsafeOverlap.Transform(1f, 2f, 3f, 4f);
         _recTransform = new Types.EventRecord.Transform(1f, 2f, 3f, 4f);
-        _clsTransform = new Types.EventClass.Transform(1f, 2f, 3f, 4f);
+        _natTransform = new Types.EvtTransform(1f, 2f, 3f, 4f);
     }
 
     // ── Match Transform (4 float fields) ──
@@ -70,10 +70,10 @@ public class MicroMatchBenchmarks
         return t.X * t.Y + t.Z * t.W;
     }
 
-    [BenchmarkCategory("Micro Match"), Benchmark(Description = "class")]
-    public double MatchClass()
+    [BenchmarkCategory("Micro Match"), Benchmark(Description = "native")]
+    public double MatchNative()
     {
-        var t = (Types.EventClass.Transform)_clsTransform;
+        var t = (Types.EvtTransform)_natTransform.Value!;
         return t.X * t.Y + t.Z * t.W;
     }
 }
