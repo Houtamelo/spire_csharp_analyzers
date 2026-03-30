@@ -23,7 +23,7 @@ public sealed class SPIRE007UnsafeSkipInitOfEnforceInitializationStructAnalyzer 
                 .GetTypeByMetadataName("System.Runtime.CompilerServices.Unsafe");
 
             var enforceInitializationType = compilationContext.Compilation
-                .GetTypeByMetadataName("Houtamelo.Spire.Core.EnforceInitializationAttribute");
+                .GetTypeByMetadataName("Houtamelo.Spire.EnforceInitializationAttribute");
 
             if (unsafeType is null || enforceInitializationType is null)
                 return;

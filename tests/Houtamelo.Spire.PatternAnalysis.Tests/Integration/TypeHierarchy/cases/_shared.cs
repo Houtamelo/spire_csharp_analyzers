@@ -1,5 +1,5 @@
 global using System;
-global using Houtamelo.Spire.Core;
+global using Houtamelo.Spire;
 
 [EnforceExhaustiveness]
 public abstract class Animal { }

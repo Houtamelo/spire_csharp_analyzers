@@ -1,5 +1,5 @@
 global using System;
-global using Houtamelo.Spire.Core;
+global using Houtamelo.Spire;
 
 public enum Color { Red, Green, Blue, Yellow, Purple }
 

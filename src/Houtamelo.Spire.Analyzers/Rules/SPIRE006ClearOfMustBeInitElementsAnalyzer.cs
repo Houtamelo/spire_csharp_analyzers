@@ -26,7 +26,7 @@ public sealed class SPIRE006ClearOfEnforceInitializationElementsAnalyzer : Diagn
                 .GetTypeByMetadataName("System.Span`1");
 
             var enforceInitializationType = compilationContext.Compilation
-                .GetTypeByMetadataName("Houtamelo.Spire.Core.EnforceInitializationAttribute");
+                .GetTypeByMetadataName("Houtamelo.Spire.EnforceInitializationAttribute");
 
             if (enforceInitializationType is null)
                 return;

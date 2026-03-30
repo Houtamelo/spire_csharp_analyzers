@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECTS=(
-    "src/Houtamelo.Spire.Core/Houtamelo.Spire.Core.csproj"
+    "src/Houtamelo.Spire/Houtamelo.Spire.csproj"
     "src/Houtamelo.Spire.Analyzers/Houtamelo.Spire.Analyzers.csproj"
     "src/Houtamelo.Spire.CodeFixes/Houtamelo.Spire.CodeFixes.csproj"
     "src/Houtamelo.Spire/Houtamelo.Spire.csproj"

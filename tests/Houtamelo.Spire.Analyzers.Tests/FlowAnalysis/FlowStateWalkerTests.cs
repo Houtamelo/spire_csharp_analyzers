@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Testing;
 using Houtamelo.Spire.Analyzers.Utils;
 using Houtamelo.Spire.Analyzers.Utils.FlowAnalysis;
-using Houtamelo.Spire.Core;
+using Houtamelo.Spire;
 using Xunit;
 
 namespace Houtamelo.Spire.Analyzers.Tests.FlowAnalysis;
@@ -24,7 +24,7 @@ public class FlowStateWalkerTests
     public async Task DefaultThenAllFieldsAssigned_InitStateIsInitialized()
     {
         var ctx = await Analyze(@"
-            [Houtamelo.Spire.Core.EnforceInitialization]
+            [Houtamelo.Spire.EnforceInitialization]
             struct S { public int X; public int Y; public S(int x, int y) { X = x; Y = y; } }
             class C
             {
@@ -48,7 +48,7 @@ public class FlowStateWalkerTests
     public async Task DefaultThenPartialFieldAssigned_InitStateIsMaybeDefault()
     {
         var ctx = await Analyze(@"
-            [Houtamelo.Spire.Core.EnforceInitialization]
+            [Houtamelo.Spire.EnforceInitialization]
             struct S { public int X; public int Y; public S(int x, int y) { X = x; Y = y; } }
             class C
             {
@@ -71,7 +71,7 @@ public class FlowStateWalkerTests
     public async Task DefaultThenCtorReassign_InitStateIsInitialized()
     {
         var ctx = await Analyze(@"
-            [Houtamelo.Spire.Core.EnforceInitialization]
+            [Houtamelo.Spire.EnforceInitialization]
             struct S { public int X; public S(int x) { X = x; } }
             class C
             {
@@ -94,7 +94,7 @@ public class FlowStateWalkerTests
     public async Task DefaultNoReassign_InitStateIsDefault()
     {
         var ctx = await Analyze(@"
-            [Houtamelo.Spire.Core.EnforceInitialization]
+            [Houtamelo.Spire.EnforceInitialization]
             struct S { public int X; public S(int x) { X = x; } }
             class C
             {
@@ -116,7 +116,7 @@ public class FlowStateWalkerTests
     public async Task BranchedInit_OnePathDefault_InitStateIsMaybeDefault()
     {
         var ctx = await Analyze(@"
-            [Houtamelo.Spire.Core.EnforceInitialization]
+            [Houtamelo.Spire.EnforceInitialization]
             struct S { public int X; public S(int x) { X = x; } }
             class C
             {
@@ -142,7 +142,7 @@ public class FlowStateWalkerTests
     public async Task BranchedInit_BothPathsInitialized_InitStateIsInitialized()
     {
         var ctx = await Analyze(@"
-            [Houtamelo.Spire.Core.EnforceInitialization]
+            [Houtamelo.Spire.EnforceInitialization]
             struct S { public int X; public S(int x) { X = x; } }
             class C
             {
@@ -168,7 +168,7 @@ public class FlowStateWalkerTests
     public async Task ParameterOfTrackedType_StartsInitialized()
     {
         var ctx = await Analyze(@"
-            [Houtamelo.Spire.Core.EnforceInitialization]
+            [Houtamelo.Spire.EnforceInitialization]
             struct S { public int X; public S(int x) { X = x; } }
             class C
             {
@@ -189,7 +189,7 @@ public class FlowStateWalkerTests
     public async Task NewParameterlessOnEnforceInitialization_InitStateIsDefault()
     {
         var ctx = await Analyze(@"
-            [Houtamelo.Spire.Core.EnforceInitialization]
+            [Houtamelo.Spire.EnforceInitialization]
             struct S { public int X; public S(int x) { X = x; } }
             class C
             {
@@ -213,7 +213,7 @@ public class FlowStateWalkerTests
     public async Task FieldStates_TrackIndividualFields()
     {
         var ctx = await Analyze(@"
-            [Houtamelo.Spire.Core.EnforceInitialization]
+            [Houtamelo.Spire.EnforceInitialization]
             struct S { public int X; public int Y; public S(int x, int y) { X = x; Y = y; } }
             class C
             {
@@ -238,7 +238,7 @@ public class FlowStateWalkerTests
     public async Task FieldStates_CtorSetsAllFields()
     {
         var ctx = await Analyze(@"
-            [Houtamelo.Spire.Core.EnforceInitialization]
+            [Houtamelo.Spire.EnforceInitialization]
             struct S { public int X; public int Y; public S(int x, int y) { X = x; Y = y; } }
             class C
             {
@@ -262,7 +262,7 @@ public class FlowStateWalkerTests
     public async Task MethodReturningEnforceInitializationType_AssumedInitialized()
     {
         var ctx = await Analyze(@"
-            [Houtamelo.Spire.Core.EnforceInitialization]
+            [Houtamelo.Spire.EnforceInitialization]
             struct S { public int X; public S(int x) { X = x; } }
             class C
             {
@@ -309,7 +309,7 @@ public class FlowStateWalkerTests
         //  Finalize(pkt)                   state: MaybeDefault (merge of urgent=all-init + else=maybe)
 
         var ctx = await Analyze(@"
-            [Houtamelo.Spire.Core.EnforceInitialization]
+            [Houtamelo.Spire.EnforceInitialization]
             struct Pkt
             {
                 public int Id;
@@ -424,7 +424,7 @@ public class FlowStateWalkerTests
 
         var cfg = ControlFlowGraph.Create(methodDecl, model)!;
 
-        var enforceInitializationType = compilation.GetTypeByMetadataName("Houtamelo.Spire.Core.EnforceInitializationAttribute")!;
+        var enforceInitializationType = compilation.GetTypeByMetadataName("Houtamelo.Spire.EnforceInitializationAttribute")!;
 
         var initTypes = new List<INamedTypeSymbol>();
         foreach (var syntaxTree in compilation.SyntaxTrees)

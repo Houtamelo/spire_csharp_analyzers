@@ -273,7 +273,7 @@ Resolves concrete types implementing/extending an `[EnforceExhaustiveness]`-mark
 
 ### Attribute resolution
 
-`Spire.PatternAnalysis` resolves Spire attributes via `Compilation.GetTypeByMetadataName()`. No dependency on `Spire.Core`. Attribute metadata names are string constants within the library.
+`Spire.PatternAnalysis` resolves Spire attributes via `Compilation.GetTypeByMetadataName()`. No dependency on `Spire`. Attribute metadata names are string constants within the library.
 
 ## Test strategy
 
@@ -360,7 +360,7 @@ After the library is validated with its own test suite:
 
 - `Microsoft.CodeAnalysis.CSharp` (public API: `IPatternOperation`, `ITypeSymbol`, `Compilation`)
 - `PolySharp` (modern C# on netstandard2.0)
-- No dependency on `Spire.Core` or `Spire.Analyzers`
+- No dependency on `Spire` or `Spire.Analyzers`
 - Minimum Roslyn version: 4.0 (`IRelationalPatternOperation` introduced in 3.7, project uses 5.0.0)
 
 ## Estimated size

@@ -18,7 +18,7 @@ internal sealed class DomainResolver
     {
         _compilation = compilation;
         _hierarchyResolver = hierarchyResolver;
-        _enforceExhaustivenessAttr = compilation.GetTypeByMetadataName("Houtamelo.Spire.Core.EnforceExhaustivenessAttribute");
+        _enforceExhaustivenessAttr = compilation.GetTypeByMetadataName("Houtamelo.Spire.EnforceExhaustivenessAttribute");
         _discriminatedUnionAttr = compilation.GetTypeByMetadataName("Houtamelo.Spire.DiscriminatedUnionAttribute");
     }
 

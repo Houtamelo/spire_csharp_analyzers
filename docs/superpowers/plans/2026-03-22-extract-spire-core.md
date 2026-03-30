@@ -1,10 +1,10 @@
-# Extract Spire.Core + Meta-Package Implementation Plan
+# Extract Spire + Meta-Package Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Extract user-facing API (attributes, future utilities/LINQ extensions) into `Spire.Core`, restructure NuGet packaging into four independent packages + one meta-package.
+**Goal:** Extract user-facing API (attributes, future utilities/LINQ extensions) into `Spire`, restructure NuGet packaging into four independent packages + one meta-package.
 
-**Architecture:** `Spire.Core` is a standalone `lib/` package (no Roslyn dependency). Analyzer/generator/codefix projects remain independent — they resolve types by `GetTypeByMetadataName`, not compile-time references. Phantom `ProjectReference` chains between analyzer projects are removed. A `Spire` meta-package depends on all four sub-packages.
+**Architecture:** `Spire` is a standalone `lib/` package (no Roslyn dependency). Analyzer/generator/codefix projects remain independent — they resolve types by `GetTypeByMetadataName`, not compile-time references. Phantom `ProjectReference` chains between analyzer projects are removed. A `Spire` meta-package depends on all four sub-packages.
 
 **Tech Stack:** .NET (netstandard2.0), Roslyn, NuGet packaging, xUnit
 
@@ -14,7 +14,7 @@
 
 ```
 Spire (meta-package — empty, depends on all four below)
-├── Spire.Core            lib/netstandard2.0    attributes, utilities, LINQ extensions
+├── Spire            lib/netstandard2.0    attributes, utilities, LINQ extensions
 ├── Spire.Analyzers       analyzers/dotnet/cs   SPIRE001–015 struct correctness
 ├── Spire.SourceGenerators analyzers/dotnet/cs   discriminated union generator + coupled analyzers
 └── Spire.CodeFixes       analyzers/dotnet/cs   code fixes + refactorings
@@ -25,7 +25,7 @@ No compile-time references between the four sub-packages. Each is independently 
 ## Internal Project Graph (After)
 
 ```
-Spire.Core                no dependencies (standalone lib)
+Spire                no dependencies (standalone lib)
 Spire.Analyzers.Utils  →  Microsoft.CodeAnalysis.CSharp (Roslyn helpers, internal)
 Spire.Analyzers        →  Spire.Analyzers.Utils (ships Utils.dll alongside)
 Spire.SourceGenerators →  Microsoft.CodeAnalysis.CSharp (standalone)
@@ -36,7 +36,7 @@ Spire.CodeFixes        →  Microsoft.CodeAnalysis.CSharp.Workspaces (standalone
 
 | Area | What changes |
 |------|-------------|
-| New project | `src/Spire.Core/` — attributes moved here, namespace `Spire` |
+| New project | `src/Spire/` — attributes moved here, namespace `Spire` |
 | New project | `src/Spire/` — meta-package (no code) |
 | Namespace | `Spire.Analyzers.EnforceInitializationAttribute` → `Spire.EnforceInitializationAttribute` |
 | Namespace | `Spire.Analyzers.EnforceExhaustivenessAttribute` → `Spire.EnforceExhaustivenessAttribute` |
@@ -47,24 +47,24 @@ Spire.CodeFixes        →  Microsoft.CodeAnalysis.CSharp.Workspaces (standalone
 | Test infra | `AnalyzerTestBase`, `GeneratorTestHelper`, `BehavioralTestBase` updated |
 | Test cases | 9 `_shared.cs` files: `global using Houtamelo.Spire.Analyzers` → `global using Houtamelo.Spire` |
 | Snapshots | 27 `output.cs` files: `Spire.Analyzers.EnforceInitialization` → `Spire.EnforceInitialization` |
-| Consumer projects | `BehavioralTests`, `Benchmarks`: ref `Spire.Core` instead of `Spire.Analyzers` |
+| Consumer projects | `BehavioralTests`, `Benchmarks`: ref `Spire` instead of `Spire.Analyzers` |
 | NuGet packaging | All 5 projects get proper pack metadata |
 | Solution | `Spire.Analyzers.slnx` updated |
 
 ---
 
-### Task 1: Create Spire.Core project
+### Task 1: Create Spire project
 
 **Files:**
-- Create: `src/Spire.Core/Spire.Core.csproj`
-- Create: `src/Spire.Core/EnforceInitializationAttribute.cs`
-- Create: `src/Spire.Core/EnforceExhaustivenessAttribute.cs`
+- Create: `src/Spire/Spire.csproj`
+- Create: `src/Spire/EnforceInitializationAttribute.cs`
+- Create: `src/Spire/EnforceExhaustivenessAttribute.cs`
 
 - [ ] **Step 1: Create project directory**
 
-Run: `mkdir -p src/Spire.Core`
+Run: `mkdir -p src/Spire`
 
-- [ ] **Step 2: Create Spire.Core.csproj**
+- [ ] **Step 2: Create Spire.csproj**
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -73,7 +73,7 @@ Run: `mkdir -p src/Spire.Core`
     <LangVersion>latest</LangVersion>
 
     <!-- NuGet package metadata -->
-    <PackageId>Spire.Core</PackageId>
+    <PackageId>Spire</PackageId>
     <Version>1.0.0</Version>
     <Authors>houtamelo</Authors>
     <Copyright>Copyright (c) 2026 houtamelo</Copyright>
@@ -117,16 +117,16 @@ public sealed class EnforceExhaustivenessAttribute : EnforceInitializationAttrib
 }
 ```
 
-- [ ] **Step 5: Verify Spire.Core builds**
+- [ ] **Step 5: Verify Spire builds**
 
-Run: `dotnet build src/Spire.Core/Spire.Core.csproj`
+Run: `dotnet build src/Spire/Spire.csproj`
 Expected: Build succeeded
 
 - [ ] **Step 6: Commit**
 
 ```
-git add src/Spire.Core/
-git commit -m "feat: create Spire.Core project with EnforceInitialization and EnforceExhaustiveness attributes"
+git add src/Spire/
+git commit -m "feat: create Spire project with EnforceInitialization and EnforceExhaustiveness attributes"
 ```
 
 ---
@@ -286,11 +286,11 @@ git commit -m "refactor: update emitted EnforceInitialization attribute to Spire
 - Modify: `tests/Spire.BehavioralTests/Spire.BehavioralTests.csproj`
 - Modify: `benchmarks/Spire.Benchmarks/Spire.Benchmarks.csproj`
 
-- [ ] **Step 1: Add Spire.Core reference to Spire.Analyzers.Tests.csproj**
+- [ ] **Step 1: Add Spire reference to Spire.Analyzers.Tests.csproj**
 
-Keep the existing `Spire.Analyzers` ProjectReference (provides analyzer types for `TAnalyzer`). Add `Spire.Core` alongside it:
+Keep the existing `Spire.Analyzers` ProjectReference (provides analyzer types for `TAnalyzer`). Add `Spire` alongside it:
 ```xml
-<ProjectReference Include="..\..\src\Spire.Core\Spire.Core.csproj" />
+<ProjectReference Include="..\..\src\Spire\Spire.csproj" />
 ```
 
 - [ ] **Step 2: Update AnalyzerTestBase.cs — add CoreAssemblyReference**
@@ -313,12 +313,12 @@ Update `ResolveReferencesAsync` (line 184-189) — change the return to include 
 
 - [ ] **Step 3: Update Spire.SourceGenerators.Tests.csproj**
 
-Replace the `Spire.Analyzers` ProjectReference with `Spire.Core`:
+Replace the `Spire.Analyzers` ProjectReference with `Spire`:
 ```xml
 <!-- Before -->
 <ProjectReference Include="..\..\src\Spire.Analyzers\Spire.Analyzers.csproj" />
 <!-- After -->
-<ProjectReference Include="..\..\src\Spire.Core\Spire.Core.csproj" />
+<ProjectReference Include="..\..\src\Spire\Spire.csproj" />
 ```
 
 Keep the `Spire.SourceGenerators` and `Spire.CodeFixes` ProjectReferences unchanged.
@@ -354,31 +354,31 @@ Replace (lines 28-30):
 ```
 with:
 ```csharp
-        // Spire.Core — provides [EnforceInitialization] and other marker attributes
+        // Spire — provides [EnforceInitialization] and other marker attributes
         refs.Add(MetadataReference.CreateFromFile(
             typeof(Spire.EnforceInitializationAttribute).Assembly.Location));
 ```
 
 - [ ] **Step 6: Update Spire.BehavioralTests.csproj**
 
-Replace the `Spire.Analyzers` ProjectReference with `Spire.Core`:
+Replace the `Spire.Analyzers` ProjectReference with `Spire`:
 ```xml
 <!-- Before -->
 <ProjectReference Include="..\..\src\Spire.Analyzers\Spire.Analyzers.csproj" />
 <!-- After -->
-<ProjectReference Include="..\..\src\Spire.Core\Spire.Core.csproj" />
+<ProjectReference Include="..\..\src\Spire\Spire.csproj" />
 ```
 
 Keep the `Spire.SourceGenerators` analyzer reference as-is.
 
 - [ ] **Step 7: Update Spire.Benchmarks.csproj**
 
-Replace the `Spire.Analyzers` ProjectReference with `Spire.Core`:
+Replace the `Spire.Analyzers` ProjectReference with `Spire`:
 ```xml
 <!-- Before -->
 <ProjectReference Include="..\..\src\Spire.Analyzers\Spire.Analyzers.csproj" />
 <!-- After -->
-<ProjectReference Include="..\..\src\Spire.Core\Spire.Core.csproj" />
+<ProjectReference Include="..\..\src\Spire\Spire.csproj" />
 ```
 
 Keep the `Spire.SourceGenerators` analyzer reference as-is.
@@ -387,7 +387,7 @@ Keep the `Spire.SourceGenerators` analyzer reference as-is.
 
 ```
 git add tests/ benchmarks/
-git commit -m "refactor: update test infrastructure and project references for Spire.Core"
+git commit -m "refactor: update test infrastructure and project references for Spire"
 ```
 
 ---
@@ -456,12 +456,12 @@ git commit -m "refactor: update test cases and snapshots to Spire namespace"
 **Files:**
 - Modify: `Spire.Analyzers.slnx`
 
-- [ ] **Step 1: Add Spire.Core to solution**
+- [ ] **Step 1: Add Spire to solution**
 
-Update `Spire.Analyzers.slnx` — add `Spire.Core` to the `/src/` folder:
+Update `Spire.Analyzers.slnx` — add `Spire` to the `/src/` folder:
 ```xml
 <Folder Name="/src/">
-  <Project Path="src/Spire.Core/Spire.Core.csproj" />
+  <Project Path="src/Spire/Spire.csproj" />
   <Project Path="src/Spire.Analyzers/Spire.Analyzers.csproj" />
   <Project Path="src/Spire.Analyzers.Utils/Spire.Analyzers.Utils.csproj" />
   <Project Path="src/Spire.SourceGenerators/Spire.SourceGenerators.csproj" />
@@ -488,7 +488,7 @@ Expected: No matches (only in git history)
 
 ```
 git add Spire.Analyzers.slnx
-git commit -m "refactor: add Spire.Core to solution file"
+git commit -m "refactor: add Spire to solution file"
 ```
 
 ---
@@ -632,7 +632,7 @@ folder, rather than relying on transitive NuGet dependencies. This avoids the pr
 `DevelopmentDependency=true` packages get `PrivateAssets="all"` when consumed transitively,
 which would prevent analyzers from activating.
 
-`Spire.Core` is the only dependency declared in the NuGet — it flows to consumers as a `lib/`
+`Spire` is the only dependency declared in the NuGet — it flows to consumers as a `lib/`
 reference. The analyzer DLLs are vendored into the meta-package.
 
 ```xml
@@ -646,7 +646,7 @@ reference. The analyzer DLLs are vendored into the meta-package.
     <Version>1.0.0</Version>
     <Authors>houtamelo</Authors>
     <Copyright>Copyright (c) 2026 houtamelo</Copyright>
-    <Description>Meta-package: installs Spire.Core (attributes/utilities), Spire.Analyzers (struct correctness), Spire.SourceGenerators (discriminated unions), and Spire.CodeFixes.</Description>
+    <Description>Meta-package: installs Spire (attributes/utilities), Spire.Analyzers (struct correctness), Spire.SourceGenerators (discriminated unions), and Spire.CodeFixes.</Description>
     <PackageTags>spire;roslyn;analyzer;source-generator;csharp</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/Houtamelo/spire_csharp_analyzers</PackageProjectUrl>
@@ -656,9 +656,9 @@ reference. The analyzer DLLs are vendored into the meta-package.
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
-  <!-- Spire.Core flows as a lib dependency to consumers -->
+  <!-- Spire flows as a lib dependency to consumers -->
   <ItemGroup>
-    <ProjectReference Include="..\Spire.Core\Spire.Core.csproj" PrivateAssets="none" />
+    <ProjectReference Include="..\Spire\Spire.csproj" PrivateAssets="none" />
   </ItemGroup>
 
   <!--
@@ -731,7 +731,7 @@ Expected: No matches
 
 Run (sequentially):
 ```
-dotnet pack src/Spire.Core/Spire.Core.csproj --no-build -o ./tmp/nupkg
+dotnet pack src/Spire/Spire.csproj --no-build -o ./tmp/nupkg
 dotnet pack src/Spire.Analyzers/Spire.Analyzers.csproj --no-build -o ./tmp/nupkg
 dotnet pack src/Spire.SourceGenerators/Spire.SourceGenerators.csproj --no-build -o ./tmp/nupkg
 dotnet pack src/Spire.CodeFixes/Spire.CodeFixes.csproj --no-build -o ./tmp/nupkg
@@ -741,17 +741,17 @@ Expected: 5 .nupkg files in `./tmp/nupkg/`
 
 - [ ] **Step 5: Inspect meta-package contents**
 
-Verify the Spire meta-package contains vendored analyzer DLLs and a dependency on Spire.Core:
+Verify the Spire meta-package contains vendored analyzer DLLs and a dependency on Spire:
 ```
 unzip -l ./tmp/nupkg/Spire.1.0.0.nupkg | grep -E "analyzers/|\.nuspec"
 ```
 Expected: `analyzers/dotnet/cs/Spire.Analyzers.dll`, `Spire.Analyzers.Utils.dll`, `Spire.SourceGenerators.dll`, `Spire.CodeFixes.dll`
 
-Then check nuspec for Spire.Core dependency:
+Then check nuspec for Spire dependency:
 ```
 unzip -p ./tmp/nupkg/Spire.1.0.0.nupkg Spire.nuspec
 ```
-Expected: `<dependency id="Houtamelo.Spire.Core" .../>` present. No dependencies on `Spire.Analyzers`, `Spire.SourceGenerators`, or `Spire.CodeFixes` (those are vendored, not declared as deps).
+Expected: `<dependency id="Houtamelo.Spire" .../>` present. No dependencies on `Spire.Analyzers`, `Spire.SourceGenerators`, or `Spire.CodeFixes` (those are vendored, not declared as deps).
 
 - [ ] **Step 6: Clean up tmp**
 

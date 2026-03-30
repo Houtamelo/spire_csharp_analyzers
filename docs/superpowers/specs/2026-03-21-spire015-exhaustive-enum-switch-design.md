@@ -12,7 +12,7 @@ Enforces exhaustive handling of all named members in switch statements and switc
 
 ## Attribute
 
-`EnforceExhaustivenessAttribute` inherits `EnforceInitializationAttribute`. Defined in `src/Spire.Core/EnforceExhaustivenessAttribute.cs`.
+`EnforceExhaustivenessAttribute` inherits `EnforceInitializationAttribute`. Defined in `src/Spire/EnforceExhaustivenessAttribute.cs`.
 
 `EnforceInitializationAttribute` currently has `[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]`. Must be updated to include `AttributeTargets.Enum` so that `[EnforceExhaustiveness]` (and `[EnforceInitialization]` directly) can be applied to enums.
 

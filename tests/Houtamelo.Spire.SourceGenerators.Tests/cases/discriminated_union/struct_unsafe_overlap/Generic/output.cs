@@ -4,8 +4,8 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-[global::Houtamelo.Spire.Core.EnforceInitialization]
-partial struct Result<T> : global::Houtamelo.Spire.Core.IDiscriminatedUnion<Result<T>.Kind>
+[global::Houtamelo.Spire.EnforceInitialization]
+partial struct Result<T> : global::Houtamelo.Spire.IDiscriminatedUnion<Result<T>.Kind>
 {
     public enum Kind : byte
     {

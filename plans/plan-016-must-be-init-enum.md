@@ -63,7 +63,7 @@ Key semantic: whether `default` (value 0) is valid depends on whether the enum h
 
 ### Attribute/marker type (if needed)
 
-None — reuses existing `[EnforceInitialization]` attribute from `Spire.Core`.
+None — reuses existing `[EnforceInitialization]` attribute from `Spire`.
 
 ### Detection strategy
 

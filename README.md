@@ -4,6 +4,7 @@ Roslyn analyzers and source generators for C# type safety — struct initializat
 
 ## Installation
 
+Just add the NuGet package:
 ```shell
 dotnet add package Houtamelo.Spire
 ```
@@ -102,7 +103,7 @@ The analyzer provides:
 Apply `[EnforceExhaustiveness]` to a type to require exhaustive switches:
 
 ```csharp
-using Houtamelo.Spire.Core;
+using Houtamelo.Spire;
 
 [EnforceExhaustiveness]
 public abstract class Animal { }

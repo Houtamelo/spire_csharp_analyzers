@@ -23,7 +23,7 @@ public sealed class SPIRE005ActivatorCreateInstanceOfEnforceInitializationStruct
                 .GetTypeByMetadataName("System.Activator");
 
             var enforceInitializationType = compilationContext.Compilation
-                .GetTypeByMetadataName("Houtamelo.Spire.Core.EnforceInitializationAttribute");
+                .GetTypeByMetadataName("Houtamelo.Spire.EnforceInitializationAttribute");
 
             var arrayType = compilationContext.Compilation
                 .GetTypeByMetadataName("System.Array");

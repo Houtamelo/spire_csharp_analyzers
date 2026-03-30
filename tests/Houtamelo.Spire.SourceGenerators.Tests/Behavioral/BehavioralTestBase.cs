@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Houtamelo.Spire.Analyzers.SourceGenerators;
-using Houtamelo.Spire.Core;
+using Houtamelo.Spire;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -27,7 +27,7 @@ public abstract class BehavioralTestBase
             .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
             .ToList();
 
-        // Houtamelo.Spire.Core — provides [EnforceInitialization] and other marker attributes
+        // Houtamelo.Spire — provides [EnforceInitialization] and other marker attributes
         refs.Add(MetadataReference.CreateFromFile(
             typeof(EnforceInitializationAttribute).Assembly.Location));
 

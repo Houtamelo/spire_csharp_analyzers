@@ -1,6 +1,6 @@
 using System;
 
-namespace Houtamelo.Spire.Core;
+namespace Houtamelo.Spire;
 
 /// <summary>
 /// Marks a type for exhaustive switch checking. The Spire analyzer (SPIRE015)

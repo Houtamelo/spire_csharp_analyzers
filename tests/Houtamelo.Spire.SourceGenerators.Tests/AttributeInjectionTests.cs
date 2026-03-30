@@ -2,10 +2,10 @@ using Xunit;
 
 namespace Houtamelo.Spire.SourceGenerators.Tests;
 
-public class AttributeInjectionTests
+public class AttributeResolutionTests
 {
     [Fact]
-    public void Attributes_AreInjected_AndCompile()
+    public void Attributes_ResolvedFromCoreAssembly_AndCompile()
     {
         var source = """
             using Houtamelo.Spire;
@@ -22,7 +22,6 @@ public class AttributeInjectionTests
 
         GeneratorTestHelper.AssertNoGeneratorDiagnostics(diagnostics);
 
-        // Verify the attribute types exist in compilation
         var duAttr = compilation.GetTypeByMetadataName(
             "Houtamelo.Spire.DiscriminatedUnionAttribute");
         Assert.NotNull(duAttr);

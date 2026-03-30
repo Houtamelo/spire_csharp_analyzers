@@ -8,9 +8,9 @@ namespace TestNs
 {
     public partial class Outer
     {
-        [global::Houtamelo.Spire.Core.EnforceInitialization]
+        [global::Houtamelo.Spire.EnforceInitialization]
         [StructLayout(LayoutKind.Explicit)]
-        internal partial struct Shape : global::Houtamelo.Spire.Core.IDiscriminatedUnion<Shape.Kind>
+        internal partial struct Shape : global::Houtamelo.Spire.IDiscriminatedUnion<Shape.Kind>
         {
             public enum Kind : byte
             {

@@ -6,9 +6,9 @@ using System.ComponentModel;
 
 namespace My.Deep.Namespace
 {
-    [global::Houtamelo.Spire.Core.EnforceInitialization]
+    [global::Houtamelo.Spire.EnforceInitialization]
     [StructLayout(LayoutKind.Explicit)]
-    partial struct Result : global::Houtamelo.Spire.Core.IDiscriminatedUnion<Result.Kind>
+    partial struct Result : global::Houtamelo.Spire.IDiscriminatedUnion<Result.Kind>
     {
         public enum Kind : byte
         {

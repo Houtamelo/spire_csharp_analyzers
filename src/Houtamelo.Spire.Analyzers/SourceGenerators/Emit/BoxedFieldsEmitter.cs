@@ -31,8 +31,8 @@ internal static class BoxedFieldsEmitter
         var readonlyMod = union.IsReadonly ? "readonly " : "";
         var refMod = union.IsRefStruct ? "ref " : "";
 
-        sb.AppendLine("[global::Houtamelo.Spire.Core.EnforceInitialization]");
-        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType} : global::Houtamelo.Spire.Core.IDiscriminatedUnion<{unionType}.Kind>");
+        sb.AppendLine("[global::Houtamelo.Spire.EnforceInitialization]");
+        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType} : global::Houtamelo.Spire.IDiscriminatedUnion<{unionType}.Kind>");
         sb.OpenBrace();
 
         // Kind enum

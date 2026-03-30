@@ -260,13 +260,13 @@ public class MyClass
     public void EnforceExhaustiveness_abstract_class_returns_EnforceExhaustiveDomain()
     {
         var source = @"
-namespace Houtamelo.Spire.Core
+namespace Houtamelo.Spire
 {
     [System.AttributeUsage(System.AttributeTargets.Enum | System.AttributeTargets.Class | System.AttributeTargets.Interface)]
     public class EnforceExhaustivenessAttribute : System.Attribute { }
 }
 
-[Houtamelo.Spire.Core.EnforceExhaustiveness]
+[Houtamelo.Spire.EnforceExhaustiveness]
 public abstract class Shape { }
 public class Circle : Shape { }
 public class Square : Shape { }
@@ -296,13 +296,13 @@ public class Square : Shape { }
     {
         var source = @"
 #nullable enable
-namespace Houtamelo.Spire.Core
+namespace Houtamelo.Spire
 {
     [System.AttributeUsage(System.AttributeTargets.Enum | System.AttributeTargets.Class | System.AttributeTargets.Interface)]
     public class EnforceExhaustivenessAttribute : System.Attribute { }
 }
 
-[Houtamelo.Spire.Core.EnforceExhaustiveness]
+[Houtamelo.Spire.EnforceExhaustiveness]
 public abstract class Shape { }
 public class Circle : Shape { }
 public class Square : Shape { }

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using Houtamelo.Spire.Analyzers.SourceGenerators.Attributes;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Emit;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Parsing;
@@ -14,20 +13,6 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        context.RegisterPostInitializationOutput(static ctx =>
-        {
-            ctx.AddSource(AttributeSource.Hint_DiscriminatedUnion,
-                AttributeSource.DiscriminatedUnionAttribute);
-            ctx.AddSource(AttributeSource.Hint_Variant,
-                AttributeSource.VariantAttribute);
-            ctx.AddSource(AttributeSource.Hint_Layout,
-                AttributeSource.LayoutEnum);
-            ctx.AddSource(AttributeSource.Hint_JsonLibrary,
-                AttributeSource.JsonLibraryEnum);
-            ctx.AddSource(AttributeSource.Hint_JsonName,
-                AttributeSource.JsonNameAttribute);
-        });
-
         var unions = context.SyntaxProvider.ForAttributeWithMetadataName(
             "Houtamelo.Spire.DiscriminatedUnionAttribute",
             predicate: static (node, _) => node is TypeDeclarationSyntax,

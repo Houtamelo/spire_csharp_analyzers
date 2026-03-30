@@ -2,14 +2,12 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
-    <IncludeBuildOutput>false</IncludeBuildOutput>
-
     <!-- NuGet package metadata -->
     <PackageId>Houtamelo.Spire</PackageId>
     <Version>3.0.0</Version>
     <Authors>houtamelo</Authors>
     <Copyright>Copyright (c) 2026 houtamelo</Copyright>
-    <Description>Meta-package: installs Spire.Core (attributes/utilities), Spire.Analyzers (analyzers + source generator), and Spire.CodeFixes.</Description>
+    <Description>Spire: attributes, utilities, analyzers, source generator, and code fixes for C# struct correctness.</Description>
     <PackageTags>spire;roslyn;analyzer;source-generator;csharp</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/Houtamelo/spire_csharp_analyzers</PackageProjectUrl>
@@ -19,9 +17,8 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
-  <!-- Spire.Core flows as a lib dependency to consumers -->
   <ItemGroup>
-    <ProjectReference Include="..\Houtamelo.Spire.Core\Houtamelo.Spire.Core.csproj" PrivateAssets="none" />
+    <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all" />
   </ItemGroup>
 
   <!--

@@ -138,10 +138,10 @@ For every struct union the generator produces:
 - `Deconstruct(out Shape.Kind, ...)` — present when `GenerateDeconstruct = true` (default)
 - Factory methods: `Shape.Circle(5.0)`, `Shape.Square(3)`, `Shape.Point()`
 
-`IDiscriminatedUnion<TKind>` and `SpireLINQ.OfKind` live in `Houtamelo.Spire.Core`:
+`IDiscriminatedUnion<TKind>` and `SpireLINQ.OfKind` live in `Houtamelo.Spire`:
 
 ```csharp
-using Houtamelo.Spire.Core;
+using Houtamelo.Spire;
 
 IEnumerable<Shape> shapes = ...;
 IEnumerable<Shape> circles = shapes.OfKind(Shape.Kind.Circle);

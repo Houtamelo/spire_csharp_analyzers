@@ -22,7 +22,7 @@ public sealed class SPIRE001ArrayOfEnforceInitializationStructAnalyzer : Diagnos
         context.RegisterCompilationStartAction(compilationContext =>
         {
             var enforceInitializationType = compilationContext.Compilation
-                .GetTypeByMetadataName("Houtamelo.Spire.Core.EnforceInitializationAttribute");
+                .GetTypeByMetadataName("Houtamelo.Spire.EnforceInitializationAttribute");
 
             if (enforceInitializationType is null)
                 return;

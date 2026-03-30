@@ -142,7 +142,7 @@ Project layout, build configuration, conventions.
 - `.claude/rules/analyzer-conventions.md` — target framework, dependencies
 - `.claude/rules/test-conventions.md` — test framework, target
 - `src/Houtamelo.Spire/Houtamelo.Spire.csproj`
-- `src/Houtamelo.Spire.Core/Houtamelo.Spire.Core.csproj`
+- `src/Houtamelo.Spire/Houtamelo.Spire.csproj`
 - `src/Houtamelo.Spire.Analyzers/Houtamelo.Spire.Analyzers.csproj`
 - `src/Houtamelo.Spire.CodeFixes/Houtamelo.Spire.CodeFixes.csproj`
 - `src/Houtamelo.Spire.PatternAnalysis/Houtamelo.Spire.PatternAnalysis.csproj`

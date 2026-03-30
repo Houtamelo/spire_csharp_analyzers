@@ -3,7 +3,6 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 using Houtamelo.Spire.Analyzers.SourceGenerators;
-using Houtamelo.Spire.Core;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
@@ -59,23 +58,13 @@ internal static class GeneratorTestHelper
         return driver.GetRunResult();
     }
 
-    private static readonly HashSet<string> AttributeHints = new()
-    {
-        "DiscriminatedUnionAttribute.g.cs",
-        "VariantAttribute.g.cs",
-        "Layout.g.cs",
-        "JsonLibrary.g.cs",
-        "JsonNameAttribute.g.cs",
-    };
-
     public static string? GetUnionGeneratedSource(GeneratorDriverRunResult result)
     {
         var unionResult = result.GeneratedTrees
             .Where(t =>
             {
                 var fileName = System.IO.Path.GetFileName(t.FilePath);
-                return !AttributeHints.Contains(fileName)
-                    && !fileName.EndsWith(".Stj.g.cs")
+                return !fileName.EndsWith(".Stj.g.cs")
                     && !fileName.EndsWith(".Nsj.g.cs")
                     && !fileName.EndsWith(".ToString.g.cs")
                     && !fileName.EndsWith(".Schema.g.cs");

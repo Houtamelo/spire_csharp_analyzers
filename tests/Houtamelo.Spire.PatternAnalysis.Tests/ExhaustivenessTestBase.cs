@@ -6,7 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Houtamelo.Spire.Core;
+using Houtamelo.Spire;
 using Houtamelo.Spire.PatternAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;

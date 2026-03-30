@@ -1,6 +1,6 @@
 using System;
 
-namespace Houtamelo.Spire.Core;
+namespace Houtamelo.Spire;
 
 /// <summary>
 /// Marks a type as requiring explicit initialization. The Spire analyzers (SPIRE001-008)

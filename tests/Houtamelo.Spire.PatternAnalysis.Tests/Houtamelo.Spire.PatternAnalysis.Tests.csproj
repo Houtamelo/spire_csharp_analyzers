@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Houtamelo.Spire.PatternAnalysis\Houtamelo.Spire.PatternAnalysis.csproj" />
-    <ProjectReference Include="..\..\src\Houtamelo.Spire.Core\Houtamelo.Spire.Core.csproj" />
+    <ProjectReference Include="..\..\src\Houtamelo.Spire\Houtamelo.Spire.csproj" />
   </ItemGroup>
 
   <ItemGroup>

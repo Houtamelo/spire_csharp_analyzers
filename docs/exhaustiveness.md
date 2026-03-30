@@ -1,11 +1,11 @@
 # [EnforceExhaustiveness]
 
-`[EnforceExhaustiveness]` (namespace `Houtamelo.Spire.Core`) requires every switch expression or statement on the annotated type to explicitly handle all known cases. SPIRE015 fires as an error when any case is unhandled.
+`[EnforceExhaustiveness]` (namespace `Houtamelo.Spire`) requires every switch expression or statement on the annotated type to explicitly handle all known cases. SPIRE015 fires as an error when any case is unhandled.
 
 ## Quick Start
 
 ```csharp
-using Houtamelo.Spire.Core;
+using Houtamelo.Spire;
 
 [EnforceExhaustiveness]
 public enum Color { Red, Green, Blue }
@@ -53,7 +53,7 @@ Alias members (two members with the same underlying value) share coverage — ha
 When applied to an abstract class or interface, SPIRE015 requires every sealed direct subtype discovered in the compilation to be handled.
 
 ```csharp
-using Houtamelo.Spire.Core;
+using Houtamelo.Spire;
 
 [EnforceExhaustiveness]
 public abstract class Animal { }

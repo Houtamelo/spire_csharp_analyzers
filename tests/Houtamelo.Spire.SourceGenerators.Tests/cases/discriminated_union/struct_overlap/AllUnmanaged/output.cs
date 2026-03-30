@@ -6,9 +6,9 @@ using System.ComponentModel;
 
 namespace TestNs
 {
-    [global::Houtamelo.Spire.Core.EnforceInitialization]
+    [global::Houtamelo.Spire.EnforceInitialization]
     [StructLayout(LayoutKind.Explicit)]
-    partial struct Shape : global::Houtamelo.Spire.Core.IDiscriminatedUnion<Shape.Kind>
+    partial struct Shape : global::Houtamelo.Spire.IDiscriminatedUnion<Shape.Kind>
     {
         public enum Kind : byte
         {

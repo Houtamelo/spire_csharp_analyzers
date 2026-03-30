@@ -4,24 +4,24 @@
 
 **Goal:** Add IsVariant properties, IDiscriminatedUnion interface + OfKind LINQ extension, and init-settable properties to all discriminated union emitters.
 
-**Architecture:** Three changes across the generator: (1) Spire.Core gets the interface and LINQ type, (2) all 7 emitters gain IsVariant properties, (3) all 5 struct emitters change backing fields to `{ get; init; }`, public properties to `{ get; init; }`, kind from field to non-auto property, and implement `IDiscriminatedUnion<Kind>`. The generator conditionally emits `init` (C# 9+) or `readonly` (C# <9) based on whether `IsExternalInit` is available in the compilation.
+**Architecture:** Three changes across the generator: (1) Spire gets the interface and LINQ type, (2) all 7 emitters gain IsVariant properties, (3) all 5 struct emitters change backing fields to `{ get; init; }`, public properties to `{ get; init; }`, kind from field to non-auto property, and implement `IDiscriminatedUnion<Kind>`. The generator conditionally emits `init` (C# 9+) or `readonly` (C# <9) based on whether `IsExternalInit` is available in the compilation.
 
-**Tech Stack:** C#, Roslyn source generators, netstandard2.0 (Spire.Core + generators), net10.0 (tests)
+**Tech Stack:** C#, Roslyn source generators, netstandard2.0 (Spire + generators), net10.0 (tests)
 
 **Spec:** `docs/superpowers/specs/2026-03-22-discriminated-union-utilities-design.md`
 
 ---
 
-### Task 1: Add IDiscriminatedUnion and SpireLINQ to Spire.Core
+### Task 1: Add IDiscriminatedUnion and SpireLINQ to Spire
 
 **Files:**
-- Create: `src/Spire.Core/IDiscriminatedUnion.cs`
-- Create: `src/Spire.Core/SpireLINQ.cs`
+- Create: `src/Spire/IDiscriminatedUnion.cs`
+- Create: `src/Spire/SpireLINQ.cs`
 
 - [ ] **Step 1: Create the interface file**
 
 ```csharp
-// src/Spire.Core/IDiscriminatedUnion.cs
+// src/Spire/IDiscriminatedUnion.cs
 using System;
 
 namespace Spire;
@@ -35,7 +35,7 @@ public interface IDiscriminatedUnion<TEnum> where TEnum : Enum
 - [ ] **Step 2: Create the LINQ extension file**
 
 ```csharp
-// src/Spire.Core/SpireLINQ.cs
+// src/Spire/SpireLINQ.cs
 using System;
 using System.Collections.Generic;
 
@@ -57,15 +57,15 @@ public static class SpireLINQ
 }
 ```
 
-- [ ] **Step 3: Build Spire.Core to verify**
+- [ ] **Step 3: Build Spire to verify**
 
-Run: `dotnet build src/Spire.Core/Spire.Core.csproj`
+Run: `dotnet build src/Spire/Spire.csproj`
 Expected: Build succeeded, 0 errors
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add src/Spire.Core/IDiscriminatedUnion.cs src/Spire.Core/SpireLINQ.cs
+git add src/Spire/IDiscriminatedUnion.cs src/Spire/SpireLINQ.cs
 git commit -m "feat(core): add IDiscriminatedUnion interface and OfKind LINQ extension"
 ```
 
@@ -73,7 +73,7 @@ git commit -m "feat(core): add IDiscriminatedUnion interface and OfKind LINQ ext
 
 ### Task 2: Add HasInitProperties flag to UnionDeclaration model
 
-The generator needs to know at emit time whether C# 9+ `init` is available in the consuming compilation. This check happens at the generator driver level (where `Compilation` is accessible) and flows into the model. `IDiscriminatedUnion` does not need a guard — Spire.Core is always present (emitters already emit `[global::Spire.EnforceInitialization]` unconditionally).
+The generator needs to know at emit time whether C# 9+ `init` is available in the consuming compilation. This check happens at the generator driver level (where `Compilation` is accessible) and flows into the model. `IDiscriminatedUnion` does not need a guard — Spire is always present (emitters already emit `[global::Spire.EnforceInitialization]` unconditionally).
 
 **Files:**
 - Modify: `src/Spire.SourceGenerators/Model/UnionDeclaration.cs` — add `HasInitProperties` boolean field
@@ -137,8 +137,8 @@ When not: keep expression-bodied read-only.
 After properties, emit one `Is{VariantName}` per variant (always, not conditional):
 `sb.AppendLine($"public bool Is{variant.Name} => this.kind == Kind.{variant.Name};");`
 
-**e) Add IDiscriminatedUnion interface (unconditional (Spire.Core always present)):**
-On the type declaration line, append `: global::Spire.IDiscriminatedUnion<Kind>` (unconditional — Spire.Core always present).
+**e) Add IDiscriminatedUnion interface (unconditional (Spire always present)):**
+On the type declaration line, append `: global::Spire.IDiscriminatedUnion<Kind>` (unconditional — Spire always present).
 
 **f) Constructor updates:**
 Currently (line 183): `sb.AppendLine("this.kind = kind;");`
@@ -151,7 +151,7 @@ When not: keep direct field assignment.
 - [ ] **Step 2: Modify backing field emission** — conditional `{ get; init; }` vs `readonly` based on `HasInitProperties`
 - [ ] **Step 3: Modify public property emission** — conditional `{ get; init; }` with delegation vs expression-bodied
 - [ ] **Step 4: Add IsVariant property emission** — one `Is{VariantName}` per variant, always emitted
-- [ ] **Step 5: Add IDiscriminatedUnion interface** — unconditional (Spire.Core always present)
+- [ ] **Step 5: Add IDiscriminatedUnion interface** — unconditional (Spire always present)
 - [ ] **Step 6: Update constructor** — adjust to work with new backing storage
 - [ ] **Step 7: Build to verify**
 
@@ -177,13 +177,13 @@ Same pattern as Task 3 with Overlap-specific differences:
 - Backing fields: already have `[FieldOffset(N)]`. When `HasInitProperties`: change to `{ get; init; }` auto-properties with `[field: FieldOffset(N)]`. When not: keep `readonly` fields with `[FieldOffset(N)]`.
 - Public properties: conditional `{ get; init; }`.
 - IsVariant properties: same pattern (always emitted).
-- IDiscriminatedUnion: unconditional (Spire.Core always present).
+- IDiscriminatedUnion: unconditional (Spire always present).
 
 - [ ] **Step 1: Modify kind emission** — keep `[FieldOffset(0)]` on backing field, add public getter property
 - [ ] **Step 2: Modify backing fields** — conditional `[field: FieldOffset(N)]` on `{ get; init; }` vs `[FieldOffset(N)]` on `readonly` fields
 - [ ] **Step 3: Modify public properties** — conditional `{ get; init; }`
 - [ ] **Step 4: Add IsVariant properties**
-- [ ] **Step 5: Add IDiscriminatedUnion interface** — unconditional (Spire.Core always present)
+- [ ] **Step 5: Add IDiscriminatedUnion interface** — unconditional (Spire always present)
 - [ ] **Step 6: Update constructor**
 - [ ] **Step 7: Build to verify**
 
@@ -209,7 +209,7 @@ Same pattern as Task 3. Backing fields are `object? _f{i}`. Follow the same cond
 - [ ] **Step 2: Modify backing fields** — conditional `{ get; init; }`
 - [ ] **Step 3: Modify public properties** — conditional `{ get; init; }` with delegation
 - [ ] **Step 4: Add IsVariant properties**
-- [ ] **Step 5: Add IDiscriminatedUnion interface** — unconditional (Spire.Core always present)
+- [ ] **Step 5: Add IDiscriminatedUnion interface** — unconditional (Spire always present)
 - [ ] **Step 6: Update constructor**
 - [ ] **Step 7: Build to verify**
 - [ ] **Step 8: Commit**
@@ -240,7 +240,7 @@ Public properties use `kind switch` for casting. Init setters:
 - [ ] **Step 2: Modify backing payload** — conditional `{ get; init; }`
 - [ ] **Step 3: Modify public properties** — conditional `{ get; init; }` with strategy-specific init setters (single-field: direct write, multi-field: unbox-modify-rebox)
 - [ ] **Step 4: Add IsVariant properties**
-- [ ] **Step 5: Add IDiscriminatedUnion interface** — unconditional (Spire.Core always present)
+- [ ] **Step 5: Add IDiscriminatedUnion interface** — unconditional (Spire always present)
 - [ ] **Step 6: Update constructor**
 - [ ] **Step 7: Build to verify**
 - [ ] **Step 8: Commit**
@@ -267,7 +267,7 @@ Kind field (line 52): change to private backing field + public getter property (
 - [ ] **Step 2: Modify dedup slot emission** — conditional `{ get; init; }`
 - [ ] **Step 3: Modify public properties** — conditional `{ get; init; }` with init setters using `Unsafe.WriteUnaligned` for buffer fields, delegation for slot fields
 - [ ] **Step 4: Add IsVariant properties**
-- [ ] **Step 5: Add IDiscriminatedUnion interface** — unconditional (Spire.Core always present)
+- [ ] **Step 5: Add IDiscriminatedUnion interface** — unconditional (Spire always present)
 - [ ] **Step 6: Update constructor**
 - [ ] **Step 7: Build to verify**
 - [ ] **Step 8: Commit**

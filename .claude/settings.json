@@ -3,6 +3,7 @@
     "allow": [
       "Read",
       "Write",
+      "Update",
       "Edit",
       "Glob",
       "Grep",
@@ -16,6 +17,9 @@
       "mcp__dev-tools__copy",
       "mcp__dev-tools__move",
       "mcp__dev-tools__parse_syntax_tree",
+      "mcp__dev-tools__dotnet_build",
+      "mcp__dev-tools__dotnet_test",
+      "mcp__dev-tools__dotnet_restore",
       "mcp__git__git_status",
       "mcp__git__git_add",
       "mcp__git__git_commit",

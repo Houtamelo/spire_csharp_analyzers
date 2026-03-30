@@ -2,7 +2,6 @@
   <Folder Name="/src/">
     <Project Path="src\Houtamelo.Spire.Analyzers\Houtamelo.Spire.Analyzers.csproj" />
     <Project Path="src\Houtamelo.Spire.CodeFixes\Houtamelo.Spire.CodeFixes.csproj" />
-    <Project Path="src\Houtamelo.Spire.Core\Houtamelo.Spire.Core.csproj" />
     <Project Path="src\Houtamelo.Spire\Houtamelo.Spire.csproj" />
     <Project Path="src\Houtamelo.Spire.PatternAnalysis\Houtamelo.Spire.PatternAnalysis.csproj" />
   </Folder>
@@ -71,8 +70,8 @@
     <File Path="tests\Spire.BehavioralTests\bin\Debug\net10.0\Spire.BehavioralTests.dll" />
     <File Path="tests\Spire.BehavioralTests\bin\Debug\net10.0\Spire.BehavioralTests.pdb" />
     <File Path="tests\Spire.BehavioralTests\bin\Debug\net10.0\Spire.BehavioralTests.runtimeconfig.json" />
-    <File Path="tests\Spire.BehavioralTests\bin\Debug\net10.0\Spire.Core.dll" />
-    <File Path="tests\Spire.BehavioralTests\bin\Debug\net10.0\Spire.Core.pdb" />
+    <File Path="tests\Spire.BehavioralTests\bin\Debug\net10.0\Spire.dll" />
+    <File Path="tests\Spire.BehavioralTests\bin\Debug\net10.0\Spire.pdb" />
     <File Path="tests\Spire.BehavioralTests\bin\Debug\net10.0\testhost.dll" />
     <File Path="tests\Spire.BehavioralTests\bin\Debug\net10.0\tr\Microsoft.TestPlatform.CommunicationUtilities.resources.dll" />
     <File Path="tests\Spire.BehavioralTests\bin\Debug\net10.0\tr\Microsoft.TestPlatform.CoreUtilities.resources.dll" />

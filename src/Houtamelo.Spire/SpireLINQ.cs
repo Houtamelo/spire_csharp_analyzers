@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Houtamelo.Spire.Core;
+namespace Houtamelo.Spire;
 
 /// <summary>
 /// LINQ extensions for discriminated unions.

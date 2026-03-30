@@ -28,7 +28,7 @@ public bool IsSquare => this is Square;
 
 **Struct unions only.** Record unions already have `OfType<TVariant>()` for collection filtering.
 
-### Interface (Spire.Core, namespace `Spire`)
+### Interface (Spire, namespace `Spire`)
 
 ```csharp
 public interface IDiscriminatedUnion<TEnum> where TEnum : Enum
@@ -41,9 +41,9 @@ Source generators make all struct `[DiscriminatedUnion]` types implement this in
 
 **Breaking change:** struct emitters currently generate `kind` as a `public readonly` field. Fields don't satisfy interface property requirements. `kind` must become a public non-auto property with a getter (see Section 3). Each strategy decides its own backing storage.
 
-**Runtime dependency:** implementing `IDiscriminatedUnion<TEnum>` introduces a runtime dependency on `Spire.Core`. Acceptable — `Spire.Core` is already a compile-time dependency for attributes like `[EnforceInitialization]`.
+**Runtime dependency:** implementing `IDiscriminatedUnion<TEnum>` introduces a runtime dependency on `Spire`. Acceptable — `Spire` is already a compile-time dependency for attributes like `[EnforceInitialization]`.
 
-### LINQ Extension (Spire.Core, namespace `Spire`)
+### LINQ Extension (Spire, namespace `Spire`)
 
 ```csharp
 public static class SpireLINQ
@@ -181,7 +181,7 @@ Slot aliasing: different variants may share backing storage. Setting `radius` on
 ### Constraints
 
 - `init` requires C# 9+. Users on C# 8 or below see properties as read-only.
-- `IsExternalInit` polyfill needed for netstandard2.0 targets. PolySharp (already in Spire.Core) provides this.
+- `IsExternalInit` polyfill needed for netstandard2.0 targets. PolySharp (already in Spire) provides this.
 - Record unions: no change needed — records already support `with` natively.
 - Applies to all struct strategies (Additive, Overlap, BoxedFields, BoxedTuple, UnsafeOverlap).
 

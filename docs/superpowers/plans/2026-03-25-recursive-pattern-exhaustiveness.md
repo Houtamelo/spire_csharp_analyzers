@@ -44,7 +44,7 @@
 
 | File | Responsibility |
 |------|---------------|
-| `Houtamelo.Spire.PatternAnalysis.Tests.csproj` | Test project (net10.0, xUnit, references Houtamelo.Spire.PatternAnalysis + Houtamelo.Spire.Core) |
+| `Houtamelo.Spire.PatternAnalysis.Tests.csproj` | Test project (net10.0, xUnit, references Houtamelo.Spire.PatternAnalysis + Houtamelo.Spire) |
 | `ExhaustivenessTestBase.cs` | File-based test discovery for integration tests |
 | `Domains/BoolDomainTests.cs` | BoolDomain unit tests |
 | `Domains/EnumDomainTests.cs` | EnumDomain unit tests |
@@ -61,7 +61,7 @@
 
 **Known limitation:** All numeric domains use `double` internally for interval arithmetic. This loses precision for `long` values near `long.MaxValue` and for `decimal` beyond 53 bits of significand. In practice, nobody writes switch arms distinguishing `long.MaxValue` from `long.MaxValue - 1`, so this is acceptable. Document in code.
 
-**Note on DiscriminatedUnionAttribute:** This attribute is source-generated (not in `Houtamelo.Spire.Core`). Test compilations for DU domains must include the attribute declaration as a raw C# string in their `_shared.cs` files. `DomainResolver` resolves it via `GetTypeByMetadataName("Houtamelo.Spire.DiscriminatedUnionAttribute")` which works in production (generator emits it) and in tests (included as source text).
+**Note on DiscriminatedUnionAttribute:** This attribute is source-generated (not in `Houtamelo.Spire`). Test compilations for DU domains must include the attribute declaration as a raw C# string in their `_shared.cs` files. `DomainResolver` resolves it via `GetTypeByMetadataName("Houtamelo.Spire.DiscriminatedUnionAttribute")` which works in production (generator emits it) and in tests (included as source text).
 
 **Note on StructuralDomain set operations:** The Maranget algorithm uses `Split()` and `Intersect()` during column specialization, but does NOT call `Subtract()` or `Complement()` on structural/composite domains. Cross-product subtraction is inherently complex and unnecessary — the matrix specialization handles decomposition implicitly. `StructuralDomain` implements `Subtract`/`Complement` as `throw new NotSupportedException()`.
 
@@ -72,7 +72,7 @@
 ## Task 0: Prerequisite — Expand EnforceExhaustivenessAttribute
 
 **Files:**
-- Modify: `src/Houtamelo.Spire.Core/EnforceExhaustivenessAttribute.cs`
+- Modify: `src/Houtamelo.Spire/EnforceExhaustivenessAttribute.cs`
 
 Must be done first — needed by EnforceExhaustiveDomain tests and TypeHierarchy integration tests.
 
@@ -93,7 +93,7 @@ Expected: ALL PASS (expanding attribute targets is backwards-compatible).
 - [ ] **Step 3: Commit**
 
 ```bash
-git add src/Houtamelo.Spire.Core/EnforceExhaustivenessAttribute.cs
+git add src/Houtamelo.Spire/EnforceExhaustivenessAttribute.cs
 git commit -m "feat(core): expand EnforceExhaustivenessAttribute to support class and interface targets"
 ```
 
@@ -151,7 +151,7 @@ git commit -m "feat(core): expand EnforceExhaustivenessAttribute to support clas
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Houtamelo.Spire.PatternAnalysis\Houtamelo.Spire.PatternAnalysis.csproj" />
-    <ProjectReference Include="..\..\src\Houtamelo.Spire.Core\Houtamelo.Spire.Core.csproj" />
+    <ProjectReference Include="..\..\src\Houtamelo.Spire\Houtamelo.Spire.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -761,7 +761,7 @@ Test cases (using compilations with Spire-generated union types):
 - `Split()` returns partitions per Kind member
 - Per-variant field coverage: Circle covered in 2 arms with different radius ranges
 
-Note: Tests need `Houtamelo.Spire.Core` reference to define `[DiscriminatedUnion]` types. The test project already references Houtamelo.Spire.Core.
+Note: Tests need `Houtamelo.Spire` reference to define `[DiscriminatedUnion]` types. The test project already references Houtamelo.Spire.
 
 - [ ] **Step 2: Write DUPropertyPatternDomain tests**
 
@@ -1160,7 +1160,7 @@ Test discovery attribute scans `Integration/{Category}/cases/` for `.cs` files w
 
 Compilation setup:
 - Parse `_shared.cs` + case file as separate syntax trees
-- Create `CSharpCompilation` with `Net80` references + `Houtamelo.Spire.Core` assembly reference
+- Create `CSharpCompilation` with `Net80` references + `Houtamelo.Spire` assembly reference
 - Extract `ISwitchExpressionOperation` or `ISwitchOperation` from the case file's semantic model
 - Run `ExhaustivenessChecker.Check(compilation, switchOp)`
 - Assert result matches header
