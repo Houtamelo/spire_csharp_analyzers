@@ -30,12 +30,16 @@ jobs:
 
       - name: Build
         run: |
-          dotnet build src/ -c Release --no-restore
-          dotnet build tests/ -c Release --no-restore
-          dotnet build tools/ -c Release --no-restore
+          dotnet build src/Houtamelo.Spire/Houtamelo.Spire.csproj -c Release --no-restore
+          dotnet build tests/Houtamelo.Spire.Analyzers.Tests/Houtamelo.Spire.Analyzers.Tests.csproj -c Release --no-restore
+          dotnet build tests/Houtamelo.Spire.SourceGenerators.Tests/Houtamelo.Spire.SourceGenerators.Tests.csproj -c Release --no-restore
+          dotnet build tests/Houtamelo.Spire.PatternAnalysis.Tests/Houtamelo.Spire.PatternAnalysis.Tests.csproj -c Release --no-restore
 
       - name: Test
-        run: dotnet test tests/ -c Release --no-build
+        run: |
+          dotnet test tests/Houtamelo.Spire.Analyzers.Tests/Houtamelo.Spire.Analyzers.Tests.csproj -c Release --no-build
+          dotnet test tests/Houtamelo.Spire.SourceGenerators.Tests/Houtamelo.Spire.SourceGenerators.Tests.csproj -c Release --no-build
+          dotnet test tests/Houtamelo.Spire.PatternAnalysis.Tests/Houtamelo.Spire.PatternAnalysis.Tests.csproj -c Release --no-build
 
       - name: Pack all projects
         run: |
