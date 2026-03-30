@@ -2,7 +2,7 @@
 name: reflect
 description: Reflect on the current session — what went well, what didn't, and any suggestions for improving the workflow or project infrastructure.
 user-invocable: true
-allowed-tools: Bash
+allowed-tools: Read
 argument-hint: [optional:topic]
 ---
 

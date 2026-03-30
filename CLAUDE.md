@@ -4,9 +4,9 @@
 
 Roslyn-based C# analyzer
 
-- **Packages**: `Houtamelo.Spire` (meta-package), `Houtamelo.Spire` (attributes/utilities), `Houtamelo.Spire.Analyzers` (analyzers + source generator), `Houtamelo.Spire.CodeFixes`, `Houtamelo.Spire.PatternAnalysis`
+- **Packages**: `Houtamelo.Spire` (attributes + utilities + vendored analyzers), `Houtamelo.Spire.Analyzers` (analyzers + source generator), `Houtamelo.Spire.CodeFixes`, `Houtamelo.Spire.PatternAnalysis`
 - **Rule prefix**: `SPIRE` (SPIRE001, SPIRE002, ...)
-- **User-facing API** in `Houtamelo.Spire` (namespace `Houtamelo.Spire`) — `EnforceInitializationAttribute`, `EnforceExhaustivenessAttribute`, `IDiscriminatedUnion<TEnum>`, `SpireLINQ.OfKind`
+- **User-facing API** in `Houtamelo.Spire` (namespace `Houtamelo.Spire`) — `EnforceInitializationAttribute`, `EnforceExhaustivenessAttribute`, `DiscriminatedUnionAttribute`, `VariantAttribute`, `Layout`, `JsonLibrary`, `JsonNameAttribute`, `IDiscriminatedUnion<TEnum>`, `SpireLINQ.OfKind`
 - **Code fixes** in separate `Houtamelo.Spire.CodeFixes` project (standalone, no inter-project dependencies)
 
 ## Build Commands
@@ -24,8 +24,7 @@ dotnet run -c Release --project benchmarks/Houtamelo.Spire.Benchmarks/ -- --filt
 ## Project Structure
 
 ```
-src/Houtamelo.Spire/                        # Meta-package (no code, depends on all below)
-src/Houtamelo.Spire/                   # User-facing API: attributes, utilities (netstandard2.0)
+src/Houtamelo.Spire/                        # User-facing API: attributes, utilities, vendors analyzer DLLs (netstandard2.0)
 src/Houtamelo.Spire.Analyzers/              # Analyzers + source generator (netstandard2.0)
   Rules/                                    # One file per rule
   Descriptors.cs                            # Central DiagnosticDescriptor registry
@@ -61,7 +60,7 @@ benchmarks/Houtamelo.Spire.Benchmarks/      # BenchmarkDotNet performance tests
   Benchmarks/                               # Hand-written benchmark classes (UpdateLoop, Match, Micro, JSON, etc.)
   Helpers/                                  # ArrayFiller, Distribution, BenchN constant
 docs/benchmark-results/                     # Auto-generated RESULTS_{job}.md from benchmark runs
-tools/DevTools/                             # MCP server (parse_syntax_tree, filesystem tools)
+tools/DevTools/                             # MCP server (parse_syntax_tree, filesystem tools, dotnet_build, dotnet_test, dotnet_restore)
 docs/rules/                                 # Per-rule docs (SPIRE001.md, ...)
 plans/                                      # Design plans (read before implementing)
 ```
@@ -145,7 +144,7 @@ When a spawned agent stops because it ran out of turns/budget before finishing i
 
 - `plans/` — design plans and research. **Do NOT read unless the user explicitly asks you to.** Plans may be outdated or abandoned; reading them unprompted can lead to following stale instructions.
 - `docs/roslyn-api/` — Roslyn XML docs and curated reference guides (when available)
-- `tools/DevTools` — MCP server with `parse_syntax_tree` and filesystem tools (list_files, create_directory, remove, copy, move)
+- `tools/DevTools` — MCP server with `parse_syntax_tree`, filesystem tools (list_files, create_directory, remove, copy, move), and dotnet tools (dotnet_build, dotnet_test, dotnet_restore)
 - `.mcp.json` — MCP servers: `git` (cyanheads, 28 tools), `dotnet` (Community.Mcp.DotNet), `sherlock`, `dev-tools`
 
 ## MCP Setup — IMPORTANT

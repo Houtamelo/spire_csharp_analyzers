@@ -47,7 +47,7 @@ The step-by-step process for adding a new rule.
 - `.claude/skills/verify-rule/SKILL.md` — step 14
 - `.claude/skills/test/SKILL.md` — steps 8, 11 (run tests)
 - `.claude/skills/syntax-tree/SKILL.md` — AST investigation (uses `dev-tools` MCP server)
-- `tools/DevTools/` — MCP server: parse_syntax_tree, list_files, create_directory, remove, remove_recursive, copy, move
+- `tools/DevTools/` — MCP server: parse_syntax_tree, list_files, create_directory, remove, remove_recursive, copy, move, dotnet_build, dotnet_test, dotnet_restore
 - `.mcp.json` — MCP server config: dev-tools, git (cyanheads/git-mcp-server), dotnet (Community.Mcp.DotNet), sherlock
 
 ## Documentation style
@@ -131,7 +131,7 @@ How benchmarks are structured, run, and results generated.
 - `benchmarks/Houtamelo.Spire.Benchmarks/Types/` — union type declarations ([BenchmarkUnion] + hand-written)
 - `benchmarks/Houtamelo.Spire.Benchmarks/Benchmarks/` — hand-written benchmark classes
 - `src/Houtamelo.Spire.Analyzers/SourceGenerators/BenchmarkUnionGenerator.cs` — [BenchmarkUnion] generator
-- `src/Houtamelo.Spire.Analyzers/SourceGenerators/Attributes/BenchmarkAttributeSource.cs` — attribute source
+- `src/Houtamelo.Spire.Analyzers/SourceGenerators/Attributes/BenchmarkAttributeSource.cs` — benchmark attribute source
 - `docs/benchmark-results/` — auto-generated RESULTS_{job}.md files
 - `README.md` — layout strategy comparison table
 - `CLAUDE.md` — benchmark build commands
@@ -141,7 +141,6 @@ Project layout, build configuration, conventions.
 - `CLAUDE.md` — "Project Structure", "Analyzer Conventions", "Build Commands" sections
 - `.claude/rules/analyzer-conventions.md` — target framework, dependencies
 - `.claude/rules/test-conventions.md` — test framework, target
-- `src/Houtamelo.Spire/Houtamelo.Spire.csproj`
 - `src/Houtamelo.Spire/Houtamelo.Spire.csproj`
 - `src/Houtamelo.Spire.Analyzers/Houtamelo.Spire.Analyzers.csproj`
 - `src/Houtamelo.Spire.CodeFixes/Houtamelo.Spire.CodeFixes.csproj`
