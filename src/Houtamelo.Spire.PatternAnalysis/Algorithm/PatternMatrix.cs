@@ -116,19 +116,20 @@ internal sealed class PatternMatrix
     // ─── Subject type resolution ────────────────────────────────────────
 
     /// Resolves the switch subject type with correct NullableAnnotation.
-    /// Roslyn's IOperation.Type on switch values always returns Annotated for reference types
-    /// (because pattern matching considers null possible). We need the DECLARED type's annotation
-    /// from the underlying symbol (parameter, local, field, property) to determine if null is
-    /// actually in the domain.
+    /// For most symbols (parameters, fields, properties, explicitly-typed locals), the symbol's
+    /// Type property has the correct annotation. However, var-declared locals report Annotated
+    /// even when the inferred type is non-nullable. For those, we fall back to IOperation.Type
+    /// which reflects the flow-analyzed nullability correctly.
     static ITypeSymbol? ResolveSubjectType(IOperation value)
     {
         var type = value.Type;
         if (type == null || type.IsValueType)
             return type;
 
-        // Try to get the declared type from the underlying symbol
         var declaredType = value switch
         {
+            ILocalReferenceOperation localRef when IsVarLocal(localRef.Local)
+                => type, // var locals: symbol annotation is unreliable, use operation type
             IParameterReferenceOperation paramRef => paramRef.Parameter.Type,
             ILocalReferenceOperation localRef => localRef.Local.Type,
             IFieldReferenceOperation fieldRef => fieldRef.Field.Type,
@@ -137,6 +138,17 @@ internal sealed class PatternMatrix
         };
 
         return declaredType ?? type;
+    }
+
+    static bool IsVarLocal(ILocalSymbol local)
+    {
+        foreach (var syntaxRef in local.DeclaringSyntaxReferences)
+        {
+            if (syntaxRef.GetSyntax() is VariableDeclaratorSyntax
+                { Parent: VariableDeclarationSyntax varDecl } && varDecl.Type.IsVar)
+                return true;
+        }
+        return false;
     }
 
     // ─── Build from switch expression ────────────────────────────────────

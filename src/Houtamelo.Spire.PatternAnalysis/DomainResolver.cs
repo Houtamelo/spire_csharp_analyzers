@@ -46,7 +46,7 @@ internal sealed class DomainResolver
         // 1. Nullable check — reference types
         if (!type.IsValueType)
         {
-            // Annotated (string?) or None/oblivious => nullable
+            // Annotated (T?) or None/oblivious => nullable
             if (type.NullableAnnotation != NullableAnnotation.NotAnnotated)
             {
                 var innerDomain = ResolveInner(type);
