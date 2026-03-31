@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>preview</LangVersion>
+    <IsTestProject>true</IsTestProject>
+    <Nullable>enable</Nullable>
+    <!-- CS8524: switch expression does not handle unnamed enum values; expected in exhaustiveness tests -->
+    <NoWarn>$(NoWarn);CS8524</NoWarn>
+
+    <!-- Global config under test -->
+    <Spire_EnforceExhaustivenessOnAllEnumTypes>true</Spire_EnforceExhaustivenessOnAllEnumTypes>
+    <Spire_DU_DefaultLayout>Additive</Spire_DU_DefaultLayout>
+    <Spire_DU_DefaultGenerateDeconstruct>true</Spire_DU_DefaultGenerateDeconstruct>
+    <Spire_DU_DefaultJson>None</Spire_DU_DefaultJson>
+  </PropertyGroup>
+
+  <Import Project="..\..\src\Houtamelo.Spire\build\Houtamelo.Spire.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Houtamelo.Spire.Analyzers\Houtamelo.Spire.Analyzers.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\src\Houtamelo.Spire.PatternAnalysis\Houtamelo.Spire.PatternAnalysis.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\src\Houtamelo.Spire\Houtamelo.Spire.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2" />
+  </ItemGroup>
+
+</Project>
