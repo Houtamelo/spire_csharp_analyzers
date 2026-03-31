@@ -91,6 +91,33 @@ partial abstract record Shape
 
 See [docs/discriminated-unions.md](docs/discriminated-unions.md) for the full guide.
 
+## Global Configuration
+
+Set project-wide defaults via MSBuild properties in your `.csproj` (or `Directory.Build.props`):
+
+```xml
+<PropertyGroup>
+  <!-- Discriminated union defaults -->
+  <Spire_DU_DefaultLayout>Additive</Spire_DU_DefaultLayout>
+  <Spire_DU_DefaultGenerateDeconstruct>true</Spire_DU_DefaultGenerateDeconstruct>
+  <Spire_DU_DefaultJson>SystemTextJson</Spire_DU_DefaultJson>
+  <Spire_DU_DefaultJsonDiscriminator>kind</Spire_DU_DefaultJsonDiscriminator>
+
+  <!-- Treat all enums as [EnforceExhaustiveness] -->
+  <Spire_EnforceExhaustivenessOnAllEnumTypes>false</Spire_EnforceExhaustivenessOnAllEnumTypes>
+</PropertyGroup>
+```
+
+| Property | Values | Default |
+|----------|--------|---------|
+| `Spire_DU_DefaultLayout` | `Auto`, `Additive`, `Overlap`, `UnsafeOverlap`, `BoxedFields`, `BoxedTuple` | `Auto` |
+| `Spire_DU_DefaultGenerateDeconstruct` | `true`, `false` | `true` |
+| `Spire_DU_DefaultJson` | `None`, `SystemTextJson`, `NewtonsoftJson`, `Both` | `None` |
+| `Spire_DU_DefaultJsonDiscriminator` | any string | `kind` |
+| `Spire_EnforceExhaustivenessOnAllEnumTypes` | `true`, `false` | `false` |
+
+Per-attribute values override global defaults. Omitting an attribute parameter (or using `ReadGlobalCfg`) falls through to the global config.
+
 ## EnforceExhaustiveness
 
 The analyzer provides:

@@ -158,6 +158,40 @@ IEnumerable<Shape> circles = shapes.OfKind(Shape.Kind.Circle);
 | [SPIRE013](rules/SPIRE013.md) | Error | Accessing another variant's field |
 | [SPIRE014](rules/SPIRE014.md) | Error | Accessing variant field without kind guard |
 
+## Global Defaults
+
+Instead of specifying `Layout`, `GenerateDeconstruct`, `Json`, and `JsonDiscriminator` on every `[DiscriminatedUnion]` attribute, set project-wide defaults via MSBuild properties:
+
+```xml
+<PropertyGroup>
+  <Spire_DU_DefaultLayout>Additive</Spire_DU_DefaultLayout>
+  <Spire_DU_DefaultGenerateDeconstruct>true</Spire_DU_DefaultGenerateDeconstruct>
+  <Spire_DU_DefaultJson>SystemTextJson</Spire_DU_DefaultJson>
+  <Spire_DU_DefaultJsonDiscriminator>type</Spire_DU_DefaultJsonDiscriminator>
+</PropertyGroup>
+```
+
+| Property | Values | Default |
+|----------|--------|---------|
+| `Spire_DU_DefaultLayout` | `Auto`, `Additive`, `Overlap`, `UnsafeOverlap`, `BoxedFields`, `BoxedTuple` | `Auto` |
+| `Spire_DU_DefaultGenerateDeconstruct` | `true`, `false` | `true` |
+| `Spire_DU_DefaultJson` | `None`, `SystemTextJson`, `NewtonsoftJson`, `Both` | `None` |
+| `Spire_DU_DefaultJsonDiscriminator` | any string | `kind` |
+
+When an attribute parameter is omitted (or explicitly set to `ReadGlobalCfg`), the generator reads the corresponding MSBuild property. If the property is also unset, the built-in default applies.
+
+This means `[DiscriminatedUnion]` with no arguments will inherit all four settings from the project config:
+
+```csharp
+// Uses project-wide Layout, GenerateDeconstruct, Json, and JsonDiscriminator
+[DiscriminatedUnion]
+partial struct Shape { ... }
+
+// Overrides Layout only; other three come from project config
+[DiscriminatedUnion(Layout.Overlap)]
+partial struct Position { ... }
+```
+
 ## Comparison with C# 15 Native Unions
 
 C# 15 `union` types store all variants in a shared memory slot but box value types into `object? Value`. Case types are record classes — every construction heap-allocates. Spire struct unions store all data inline: no allocations for value-type variants.

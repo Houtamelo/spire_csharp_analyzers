@@ -114,6 +114,20 @@ public enum Status
 
 For class hierarchies, the initialization rules apply to the annotated base type itself (arrays of it, `default` expressions, etc.).
 
+## Global Enforcement on All Enums
+
+By default, SPIRE015 only fires on types annotated with `[EnforceExhaustiveness]`. To enforce exhaustive switches on **all** enum types project-wide (without annotating each one), set:
+
+```xml
+<PropertyGroup>
+  <Spire_EnforceExhaustivenessOnAllEnumTypes>true</Spire_EnforceExhaustivenessOnAllEnumTypes>
+</PropertyGroup>
+```
+
+When enabled, every switch on any enum type in the project is checked for exhaustiveness — the same as if `[EnforceExhaustiveness]` were applied to every enum. This also activates SPIRE001-008 (initialization enforcement) and SPIRE016 (invalid enum cast) for all enums.
+
+`[Flags]` enums are still excluded.
+
 ## Comparison with [DiscriminatedUnion]
 
 | | `[EnforceExhaustiveness]` | `[DiscriminatedUnion]` |
