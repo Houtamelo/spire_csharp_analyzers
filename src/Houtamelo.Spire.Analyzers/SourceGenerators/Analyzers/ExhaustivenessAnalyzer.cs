@@ -25,12 +25,13 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
 
         context.RegisterCompilationStartAction(compilationCtx =>
         {
-            var duAttr = compilationCtx.Compilation
-                .GetTypeByMetadataName("Houtamelo.Spire.DiscriminatedUnionAttribute");
             var enforceAttr = compilationCtx.Compilation
                 .GetTypeByMetadataName("Houtamelo.Spire.EnforceExhaustivenessAttribute");
+            if (enforceAttr is null) return;
 
-            if (duAttr is null && enforceAttr is null) return;
+            // DU attr is a subclass of EnforceExhaustiveness — resolve it for DU-specific features
+            var duAttr = compilationCtx.Compilation
+                .GetTypeByMetadataName("Houtamelo.Spire.DiscriminatedUnionAttribute");
 
             compilationCtx.RegisterOperationAction(
                 ctx => AnalyzeSwitch(ctx, duAttr, enforceAttr),
@@ -39,7 +40,7 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
     }
 
     private static void AnalyzeSwitch(
-        OperationAnalysisContext ctx, INamedTypeSymbol? duAttr, INamedTypeSymbol? enforceAttr)
+        OperationAnalysisContext ctx, INamedTypeSymbol? duAttr, INamedTypeSymbol enforceAttr)
     {
         ITypeSymbol? subjectType;
         Location location;
@@ -63,12 +64,11 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
         // Try DU first — provides variant ordering for the code fix
         UnionTypeInfo? unionInfo = null;
         if (duAttr is not null)
-            unionInfo = UnionTypeInfo.TryCreate(UnwrapNullable(subjectType), duAttr);
+            unionInfo = UnionTypeInfo.TryCreate(subjectType, duAttr);
 
         if (unionInfo is null)
         {
-            // Not a DU — check [EnforceExhaustiveness] on non-enum types
-            if (enforceAttr is null) return;
+            // Not a DU — check [EnforceExhaustiveness] (or subclass) on non-enum types
             var actualType = UnwrapNullable(subjectType);
             if (actualType is not INamedTypeSymbol named) return;
             if (named.TypeKind == TypeKind.Enum) return; // SPIRE015 handles enums
