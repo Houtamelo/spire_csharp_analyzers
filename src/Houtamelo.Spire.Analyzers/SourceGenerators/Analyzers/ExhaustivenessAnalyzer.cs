@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Houtamelo.Spire.Analyzers.Utils;
 using Houtamelo.Spire.PatternAnalysis;
 using Houtamelo.Spire.PatternAnalysis.Domains;
 using Houtamelo.Spire.PatternAnalysis.Domains.DiscriminatedUnion;
@@ -26,50 +27,76 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
         {
             var duAttr = compilationCtx.Compilation
                 .GetTypeByMetadataName("Houtamelo.Spire.DiscriminatedUnionAttribute");
-            if (duAttr is null) return;
+            var enforceAttr = compilationCtx.Compilation
+                .GetTypeByMetadataName("Houtamelo.Spire.EnforceExhaustivenessAttribute");
+
+            if (duAttr is null && enforceAttr is null) return;
 
             compilationCtx.RegisterOperationAction(
-                ctx => AnalyzeSwitchExpression(ctx, duAttr),
-                OperationKind.SwitchExpression);
-
-            compilationCtx.RegisterOperationAction(
-                ctx => AnalyzeSwitchStatement(ctx, duAttr),
-                OperationKind.Switch);
+                ctx => AnalyzeSwitch(ctx, duAttr, enforceAttr),
+                OperationKind.SwitchExpression, OperationKind.Switch);
         });
     }
 
-    private static void AnalyzeSwitchExpression(
-        OperationAnalysisContext ctx, INamedTypeSymbol duAttr)
+    private static void AnalyzeSwitch(
+        OperationAnalysisContext ctx, INamedTypeSymbol? duAttr, INamedTypeSymbol? enforceAttr)
     {
-        var switchOp = (ISwitchExpressionOperation)ctx.Operation;
-        var subjectType = switchOp.Value.Type;
+        ITypeSymbol? subjectType;
+        Location location;
+
+        switch (ctx.Operation)
+        {
+            case ISwitchExpressionOperation exprOp:
+                subjectType = exprOp.Value.Type;
+                location = exprOp.Syntax.GetLocation();
+                break;
+            case ISwitchOperation stmtOp:
+                subjectType = stmtOp.Value.Type;
+                location = stmtOp.Syntax.GetLocation();
+                break;
+            default:
+                return;
+        }
+
         if (subjectType is null) return;
 
-        var unionInfo = UnionTypeInfo.TryCreateWithNullableUnwrap(subjectType, duAttr, out _);
-        if (unionInfo is null) return;
+        // Try DU first — provides variant ordering for the code fix
+        UnionTypeInfo? unionInfo = null;
+        if (duAttr is not null)
+            unionInfo = UnionTypeInfo.TryCreate(UnwrapNullable(subjectType), duAttr);
 
-        var result = ExhaustivenessChecker.Check(ctx.Compilation, switchOp);
-        ReportDiagnostics(ctx, subjectType, unionInfo, result, switchOp.Syntax.GetLocation());
+        if (unionInfo is null)
+        {
+            // Not a DU — check [EnforceExhaustiveness] on non-enum types
+            if (enforceAttr is null) return;
+            var actualType = UnwrapNullable(subjectType);
+            if (actualType is not INamedTypeSymbol named) return;
+            if (named.TypeKind == TypeKind.Enum) return; // SPIRE015 handles enums
+            if (!AttributeHelper.HasOrInheritsAttribute(named, enforceAttr)) return;
+        }
+
+        ExhaustivenessResult result;
+        if (ctx.Operation is ISwitchExpressionOperation switchExprOp)
+            result = ExhaustivenessChecker.Check(ctx.Compilation, switchExprOp);
+        else
+            result = ExhaustivenessChecker.Check(ctx.Compilation, (ISwitchOperation)ctx.Operation);
+
+        ReportDiagnostics(ctx, subjectType, unionInfo, result, location);
     }
 
-    private static void AnalyzeSwitchStatement(
-        OperationAnalysisContext ctx, INamedTypeSymbol duAttr)
+    private static ITypeSymbol UnwrapNullable(ITypeSymbol type)
     {
-        var switchOp = (ISwitchOperation)ctx.Operation;
-        var subjectType = switchOp.Value.Type;
-        if (subjectType is null) return;
-
-        var unionInfo = UnionTypeInfo.TryCreateWithNullableUnwrap(subjectType, duAttr, out _);
-        if (unionInfo is null) return;
-
-        var result = ExhaustivenessChecker.Check(ctx.Compilation, switchOp);
-        ReportDiagnostics(ctx, subjectType, unionInfo, result, switchOp.Syntax.GetLocation());
+        if (type is INamedTypeSymbol named
+            && named.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T
+            && named.TypeArguments.Length == 1)
+            return named.TypeArguments[0];
+        return type;
     }
 
     private static void ReportDiagnostics(
         OperationAnalysisContext ctx,
         ITypeSymbol subjectType,
-        UnionTypeInfo unionInfo,
+        UnionTypeInfo? unionInfo,
         ExhaustivenessResult result,
         Location location)
     {
@@ -80,8 +107,9 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
         if (missingNames.Count == 0)
             return;
 
-        // Sort by variant declaration order so code fixes insert arms in the expected order
-        SortByVariantOrder(missingNames, unionInfo.VariantNames);
+        // Sort by declaration order when we have DU variant info
+        if (unionInfo is not null)
+            SortByVariantOrder(missingNames, unionInfo.VariantNames);
 
         var missingStr = string.Join(", ", missingNames.Select(n => $"'{n}'"));
 
