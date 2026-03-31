@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Linq;
+using Houtamelo.Spire.Analyzers.Utils;
 using Houtamelo.Spire.PatternAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -14,13 +15,17 @@ public sealed class CS8509Suppressor : DiagnosticSuppressor
     private static readonly SuppressionDescriptor Descriptor = new(
         id: "SPIRE_SUP001",
         suppressedDiagnosticId: "CS8509",
-        justification: "All variants of discriminated union are handled");
+        justification: "All cases are handled (discriminated union or [EnforceExhaustiveness] type)");
 
     public override ImmutableArray<SuppressionDescriptor> SupportedSuppressions =>
         ImmutableArray.Create(Descriptor);
 
     public override void ReportSuppressions(SuppressionAnalysisContext context)
     {
+        var enforceAttr = context.Compilation
+            .GetTypeByMetadataName("Houtamelo.Spire.EnforceExhaustivenessAttribute");
+        if (enforceAttr is null) return;
+
         foreach (var diagnostic in context.ReportedDiagnostics)
         {
             var tree = diagnostic.Location.SourceTree;
@@ -31,7 +36,6 @@ public sealed class CS8509Suppressor : DiagnosticSuppressor
             var root = tree.GetRoot(context.CancellationToken);
             var node = root.FindNode(diagnostic.Location.SourceSpan);
 
-            // Walk up to find the SwitchExpressionSyntax
             var switchSyntax = node.AncestorsAndSelf()
                 .OfType<SwitchExpressionSyntax>()
                 .FirstOrDefault();
@@ -43,13 +47,8 @@ public sealed class CS8509Suppressor : DiagnosticSuppressor
             var subjectType = switchOp.Value.Type;
             if (subjectType is null) continue;
 
-            var duAttr = context.Compilation
-                .GetTypeByMetadataName("Houtamelo.Spire.DiscriminatedUnionAttribute");
-            if (duAttr is null) continue;
-
-            var unionInfo = UnionTypeInfo.TryCreateWithNullableUnwrap(
-                subjectType, duAttr, out _);
-            if (unionInfo is null) continue;
+            if (!IsExhaustivenessCheckedType(subjectType, enforceAttr))
+                continue;
 
             var result = ExhaustivenessChecker.Check(context.Compilation, switchOp);
             if (result.MissingCases.IsEmpty)
@@ -58,5 +57,20 @@ public sealed class CS8509Suppressor : DiagnosticSuppressor
                     Suppression.Create(Descriptor, diagnostic));
             }
         }
+    }
+
+    private static bool IsExhaustivenessCheckedType(
+        ITypeSymbol subjectType, INamedTypeSymbol enforceAttr)
+    {
+        // Unwrap Nullable<T>
+        if (subjectType is INamedTypeSymbol nullable
+            && nullable.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T
+            && nullable.TypeArguments.Length == 1)
+            subjectType = nullable.TypeArguments[0];
+
+        // [EnforceExhaustiveness] (or subclass like [DiscriminatedUnion]) on non-enum types
+        return subjectType is INamedTypeSymbol named
+            && named.TypeKind != TypeKind.Enum
+            && AttributeHelper.HasOrInheritsAttribute(named, enforceAttr);
     }
 }

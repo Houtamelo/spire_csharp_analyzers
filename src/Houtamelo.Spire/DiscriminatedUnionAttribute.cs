@@ -9,7 +9,7 @@ namespace Houtamelo.Spire;
 [AttributeUsage(
     AttributeTargets.Struct | AttributeTargets.Class,
     Inherited = false)]
-public sealed class DiscriminatedUnionAttribute : Attribute
+public sealed class DiscriminatedUnionAttribute : EnforceExhaustivenessAttribute
 {
     /// <summary>The memory layout strategy for struct unions.</summary>
     public Layout Layout { get; }

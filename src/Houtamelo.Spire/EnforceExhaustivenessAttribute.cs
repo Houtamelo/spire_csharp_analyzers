@@ -14,6 +14,6 @@ namespace Houtamelo.Spire;
 /// compilation and requires each to be handled.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Enum | AttributeTargets.Class | AttributeTargets.Interface)]
-public sealed class EnforceExhaustivenessAttribute : EnforceInitializationAttribute
+public class EnforceExhaustivenessAttribute : EnforceInitializationAttribute
 {
 }
