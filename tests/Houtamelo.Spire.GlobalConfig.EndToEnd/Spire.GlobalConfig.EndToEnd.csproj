@@ -4,9 +4,6 @@
     <LangVersion>preview</LangVersion>
     <IsTestProject>true</IsTestProject>
     <Nullable>enable</Nullable>
-    <!-- CS8524: switch expression does not handle unnamed enum values; expected in exhaustiveness tests -->
-    <NoWarn>$(NoWarn);CS8524</NoWarn>
-
     <!-- Global config under test -->
     <Spire_EnforceExhaustivenessOnAllEnumTypes>true</Spire_EnforceExhaustivenessOnAllEnumTypes>
     <Spire_DU_DefaultLayout>Additive</Spire_DU_DefaultLayout>
