@@ -134,4 +134,16 @@ internal static class Descriptors
                    + "unsafe operations that bypass zero-initialization entirely.",
         helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE016.md"
     );
+
+    public static readonly DiagnosticDescriptor SPIRE016_InvalidEnforceInitializationEnumConstantValue = new(
+        id: "SPIRE016",
+        title: "Cast to [EnforceInitialization] enum uses invalid constant value",
+        messageFormat: "{0} to '{1}' — value {2} does not map to a valid member",
+        category: "Correctness",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "A constant integer value is cast to an [EnforceInitialization] enum but does not correspond "
+                   + "to any named member (or valid flags combination).",
+        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE016.md"
+    );
 }

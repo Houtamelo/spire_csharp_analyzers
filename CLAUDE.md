@@ -6,7 +6,7 @@ Roslyn-based C# analyzer
 
 - **Packages**: `Houtamelo.Spire` (attributes + utilities + vendored analyzers), `Houtamelo.Spire.Analyzers` (analyzers + source generator), `Houtamelo.Spire.CodeFixes`, `Houtamelo.Spire.PatternAnalysis`
 - **Rule prefix**: `SPIRE` (SPIRE001, SPIRE002, ...)
-- **User-facing API** in `Houtamelo.Spire` (namespace `Houtamelo.Spire`) — `EnforceInitializationAttribute`, `EnforceExhaustivenessAttribute`, `DiscriminatedUnionAttribute`, `VariantAttribute`, `Layout`, `GenerateDeconstruct`, `JsonLibrary`, `JsonNameAttribute`, `IDiscriminatedUnion<TEnum>`, `SpireLINQ.OfKind`
+- **User-facing API** in `Houtamelo.Spire` (namespace `Houtamelo.Spire`) — `EnforceInitializationAttribute`, `EnforceExhaustivenessAttribute`, `DiscriminatedUnionAttribute`, `VariantAttribute`, `Layout`, `GenerateDeconstruct`, `JsonLibrary`, `JsonNameAttribute`, `IDiscriminatedUnion<TEnum>`, `SpireLINQ.OfKind`, `SpireEnum<TEnum>` (safe integer-to-enum conversions)
 - **Global config** via MSBuild properties (`CompilerVisibleProperty` in `build/Houtamelo.Spire.props`) — DU defaults (`Spire_DU_Default{Layout,GenerateDeconstruct,Json,JsonDiscriminator}`) and analyzer enforcement (`Spire_EnforceExhaustivenessOnAllEnumTypes`)
 - **Code fixes** in separate `Houtamelo.Spire.CodeFixes` project (standalone, no inter-project dependencies)
 

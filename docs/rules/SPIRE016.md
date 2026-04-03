@@ -55,3 +55,22 @@ Suppress when you intentionally create an enum value from a trusted integer sour
 Status s = (Status)trustedValue;
 #pragma warning restore SPIRE016
 ```
+
+## Code Fix
+
+For **non-constant** casts (`(Status)variable`), the code fix replaces the cast with a safe conversion:
+
+```csharp
+// Before
+Status s = (Status)variable;
+
+// After (non-[Flags])
+Status s = SpireEnum<Status>.From(variable);
+
+// After ([Flags])
+Perms p = SpireEnum<Perms>.FromFlags(variable);
+```
+
+`SpireEnum<T>.From` throws `ArgumentOutOfRangeException` if the value is not a named member. For more control, use `SpireEnum<T>.TryFrom(value, out var result)` manually.
+
+No code fix is offered for constant invalid casts (`(Status)42`) — the diagnostic message reports the exact invalid value.

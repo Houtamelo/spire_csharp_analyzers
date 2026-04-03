@@ -12,7 +12,9 @@ namespace Houtamelo.Spire.Analyzers.Rules;
 public sealed class SPIRE016InvalidEnforceInitializationEnumValueAnalyzer : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(Descriptors.SPIRE016_InvalidEnforceInitializationEnumValue);
+        ImmutableArray.Create(
+            Descriptors.SPIRE016_InvalidEnforceInitializationEnumValue,
+            Descriptors.SPIRE016_InvalidEnforceInitializationEnumConstantValue);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -67,27 +69,50 @@ public sealed class SPIRE016InvalidEnforceInitializationEnumValueAnalyzer : Diag
             return;
 
         var constantValue = operation.Operand.ConstantValue;
+        bool hasFlagsAttribute = flagsAttributeType is not null
+            && HasAttribute(targetType, flagsAttributeType);
+
         if (constantValue.HasValue)
         {
-            bool hasFlagsAttribute = flagsAttributeType is not null
-                && HasAttribute(targetType, flagsAttributeType);
-
             bool isValid = hasFlagsAttribute
                 ? IsValidFlagsCombination(targetType, constantValue.Value)
                 : IsNamedMemberValue(targetType, constantValue.Value);
 
             if (isValid)
                 return;
+
+            var properties = ImmutableDictionary<string, string?>.Empty
+                .Add("IsFlags", hasFlagsAttribute ? "true" : "false")
+                .Add("IsConstant", "true");
+
+            string castLabel = sourceType.TypeKind == TypeKind.Enum ? "Enum cast" : "Integer cast";
+
+            context.ReportDiagnostic(
+                Diagnostic.Create(
+                    Descriptors.SPIRE016_InvalidEnforceInitializationEnumConstantValue,
+                    operation.Syntax.GetLocation(),
+                    properties,
+                    castLabel,
+                    targetType.Name,
+                    constantValue.Value));
+            return;
         }
 
-        string castLabel = sourceType.TypeKind == TypeKind.Enum ? "Enum cast" : "Integer cast";
+        {
+            var properties = ImmutableDictionary<string, string?>.Empty
+                .Add("IsFlags", hasFlagsAttribute ? "true" : "false")
+                .Add("IsConstant", "false");
 
-        context.ReportDiagnostic(
-            Diagnostic.Create(
-                Descriptors.SPIRE016_InvalidEnforceInitializationEnumValue,
-                operation.Syntax.GetLocation(),
-                castLabel,
-                targetType.Name));
+            string castLabel = sourceType.TypeKind == TypeKind.Enum ? "Enum cast" : "Integer cast";
+
+            context.ReportDiagnostic(
+                Diagnostic.Create(
+                    Descriptors.SPIRE016_InvalidEnforceInitializationEnumValue,
+                    operation.Syntax.GetLocation(),
+                    properties,
+                    castLabel,
+                    targetType.Name));
+        }
     }
 
     private static bool HasAttribute(INamedTypeSymbol type, INamedTypeSymbol attributeType)

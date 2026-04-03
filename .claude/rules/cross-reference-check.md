@@ -121,8 +121,10 @@ How code fix providers are developed and tested.
 - `.claude/agents/codefix-test-researcher.md` — coverage matrix
 - `.claude/agents/codefix-test-case-writer.md` — before/after pairs
 - `.claude/agents/codefix-implementer.md` — code fix implementation
-- `tests/Houtamelo.Spire.SourceGenerators.Tests/CodeFixTestBase.cs` — test framework
-- `src/Houtamelo.Spire.CodeFixes/` — code fix providers
+- `tests/Houtamelo.Spire.SourceGenerators.Tests/CodeFixTestBase.cs` — generator-coupled code fix test framework
+- `tests/Houtamelo.Spire.Analyzers.Tests/AnalyzerCodeFixTestBase.cs` — analyzer-only code fix test framework (before/after pairs)
+- `tests/Houtamelo.Spire.Analyzers.Tests/RefactoringTestBase.cs` — CodeRefactoringProvider test framework ([| |] marker spans)
+- `src/Houtamelo.Spire.CodeFixes/` — code fix providers and refactoring providers
 
 ## Benchmark infrastructure
 How benchmarks are structured, run, and results generated.
