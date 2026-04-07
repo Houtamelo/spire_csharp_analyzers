@@ -123,6 +123,7 @@ Per-attribute values override global defaults. Omitting an attribute parameter (
 The analyzer provides:
 
 - Exhaustive switch checking over enum members or sealed subtypes (SPIRE015).
+- Automatic suppression of `CS8509` / `CS8524` for switches Spire's checker proves exhaustive — including tuples of enums, nullable enums, and unmarked enums covering all named members. No opt-in required.
 - Invalid enum cast detection (SPIRE016).
 - Inherits all `[EnforceInitialization]` rules (SPIRE001-008) — prevents `default(T)`, uninitialized arrays, etc.
 - Works on enums, abstract classes, and interfaces.

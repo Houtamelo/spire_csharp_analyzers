@@ -142,6 +142,41 @@ When enabled, every switch on any enum type in the project is checked for exhaus
 
 `[Flags]` enums are still excluded.
 
+## CS8509 / CS8524 Suppression
+
+The C# compiler emits two warnings for switch expressions it cannot prove exhaustive:
+
+- **CS8509** — "The switch expression does not handle all possible values of its input type."
+- **CS8524** — "The switch expression does not handle some values of its input type involving an unnamed enum value." (e.g. `(Color)3` for `Color { Red, Green, Blue }`.)
+
+The compiler is conservative: it never excludes unnamed enum values, treats tuple value spaces as cross-products of unnamed components, and gives up on most non-trivial multi-column patterns. As a result, it warns on many switches that are exhaustive in practice.
+
+Spire ships a `DiagnosticSuppressor` that runs the same Maranget exhaustiveness checker used by SPIRE015 / SPIRE009 against every reported CS8509 / CS8524 site. If the checker proves the switch covers every reachable case, the warning is suppressed automatically. No attribute, no opt-in, no configuration — it works on the entire pattern surface the checker supports:
+
+- Plain enums (named members only — unnamed cast values are not part of the value space).
+- Tuples of enums, including nested tuples and tuples mixed with `bool`.
+- Nullable enums when both `null` and every named member are handled.
+- `[EnforceExhaustiveness]` class/interface hierarchies.
+- `[DiscriminatedUnion]` types.
+- Boolean and numeric range patterns covered by relational / and / or / not patterns.
+
+```csharp
+public enum Stone { Red, White }
+
+// Without Spire: CS8524 fires here ("(Stone)2 is not covered").
+// With Spire: the checker proves the four named combinations exhaust the
+// reachable value space, so CS8524 is suppressed.
+string Outcome((Stone, Stone) result) => result switch
+{
+    (Stone.White, Stone.White) => "GREAT SUCCESS",
+    (Stone.White, Stone.Red)   => "FLAWED SUCCESS",
+    (Stone.Red,   Stone.White) => "BLESSED SETBACK",
+    (Stone.Red,   Stone.Red)   => "FAILURE",
+};
+```
+
+The suppressor never silences a warning when the checker reports missing cases — incomplete switches still surface CS8509 / CS8524 normally. The two suppression IDs are `SPIRE_SUP001` (CS8509) and `SPIRE_SUP002` (CS8524) if you need to reference them in tooling.
+
 ## Comparison with [DiscriminatedUnion]
 
 | | `[EnforceExhaustiveness]` | `[DiscriminatedUnion]` |
