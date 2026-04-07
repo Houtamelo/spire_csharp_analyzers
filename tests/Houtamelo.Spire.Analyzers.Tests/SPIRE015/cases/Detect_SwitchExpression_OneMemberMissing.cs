@@ -8,7 +8,6 @@ public class Detect_SwitchExpression_OneMemberMissing
         {
             Color.Red => "red",
             Color.Green => "green",
-            _ => "other",
         };
     }
 }

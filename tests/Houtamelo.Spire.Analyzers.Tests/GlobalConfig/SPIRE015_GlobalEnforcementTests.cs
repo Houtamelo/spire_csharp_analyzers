@@ -23,7 +23,6 @@ public class SPIRE015_GlobalEnforcementTests
                 {
                     Color.Red => 1,
                     Color.Green => 2,
-                    _ => 0,
                 };
             }
             """;
@@ -45,7 +44,6 @@ public class SPIRE015_GlobalEnforcementTests
                 {
                     Color.Red => 1,
                     Color.Green => 2,
-                    _ => 0,
                 };
             }
             """;
@@ -89,7 +87,6 @@ public class SPIRE015_GlobalEnforcementTests
                 {
                     DayOfWeek.Monday => "Mon",
                     DayOfWeek.Tuesday => "Tue",
-                    _ => "other",
                 };
             }
             """;

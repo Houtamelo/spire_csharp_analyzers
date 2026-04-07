@@ -13,7 +13,6 @@ public class Detect_SwitchStatement_And_SwitchExpression_BothIncomplete
         return color switch //~ ERROR
         {
             Color.Green => "green",
-            _ => "other",
         };
     }
 }

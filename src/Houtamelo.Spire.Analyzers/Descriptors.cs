@@ -117,7 +117,8 @@ internal static class Descriptors
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true,
         description: "Switch statements and expressions on enum types marked with [EnforceExhaustiveness] must "
-                   + "explicitly handle every named member. A default/discard arm does not count as coverage.",
+                   + "explicitly handle every named member. An unguarded catch-all (default:, _, or var x) "
+                   + "opts out of the check — the developer has chosen to handle any unmatched value.",
         helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE015.md"
     );
 

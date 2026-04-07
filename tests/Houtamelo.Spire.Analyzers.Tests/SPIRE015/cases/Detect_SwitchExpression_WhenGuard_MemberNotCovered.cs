@@ -9,7 +9,6 @@ public class Detect_SwitchExpression_WhenGuard_MemberNotCovered
             Color.Red when condition => "red guarded",
             Color.Green => "green",
             Color.Blue => "blue",
-            _ => "other",
         };
     }
 }

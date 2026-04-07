@@ -8,7 +8,6 @@ public class Detect_SwitchExpression_Ternary
             ? color switch //~ ERROR
               {
                   Color.Red => "red",
-                  _ => "other",
               }
             : "static";
     }

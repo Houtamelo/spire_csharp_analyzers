@@ -7,7 +7,6 @@ public class Detect_SwitchExpression_InLambda
         Func<Color, string> describe = color => color switch //~ ERROR
         {
             Color.Red => "red",
-            _ => "other",
         };
     }
 }

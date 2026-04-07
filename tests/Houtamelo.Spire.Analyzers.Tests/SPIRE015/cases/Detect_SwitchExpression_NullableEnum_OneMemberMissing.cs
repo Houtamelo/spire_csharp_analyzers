@@ -7,7 +7,6 @@ public class Detect_SwitchExpression_NullableEnum_OneMemberMissing
         return value switch //~ ERROR
         {
             Color.Red => "red",
-            _ => "other",
         };
     }
 }

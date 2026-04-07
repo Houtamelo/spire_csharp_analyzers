@@ -7,7 +7,6 @@ public class Detect_SwitchExpression_TwoMembersMissing
         return color switch //~ ERROR
         {
             Color.Red => "red",
-            _ => "other",
         };
     }
 }

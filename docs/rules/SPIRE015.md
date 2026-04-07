@@ -9,7 +9,15 @@
 
 ## Description
 
-Switch statements and expressions on enum types marked with `[EnforceExhaustiveness]` must explicitly handle every named member. A `default` or discard (`_`) arm does not count as coverage.
+Switch statements and expressions on enum types marked with `[EnforceExhaustiveness]` must explicitly handle every named member — unless an unguarded catch-all arm is present.
+
+An unguarded **catch-all** opts out of the check:
+
+- `default:` in a switch statement
+- `_ => ...` in a switch expression
+- `var x => ...` / `case var x:` (var declaration pattern)
+
+Guarded catch-alls (e.g. `_ when cond => ...`) do NOT opt out — the guard may fail, leaving members uncovered.
 
 For `[Flags]` enums, handling a composite value covers its constituent bit members. Alias members (same underlying value) share coverage.
 
@@ -25,11 +33,12 @@ int Score(Color c) => c switch  // SPIRE015: does not handle member(s): Blue
 {
     Color.Red => 1,
     Color.Green => 2,
-    _ => 0,
 };
 ```
 
 ### Compliant code
+
+Handle every member explicitly:
 
 ```csharp
 int Score(Color c) => c switch
@@ -37,13 +46,23 @@ int Score(Color c) => c switch
     Color.Red => 1,
     Color.Green => 2,
     Color.Blue => 3,
-    _ => 0,  // allowed, just doesn't count as coverage
+};
+```
+
+Or opt out with a catch-all:
+
+```csharp
+int Score(Color c) => c switch
+{
+    Color.Red => 1,
+    Color.Green => 2,
+    _ => 0,  // catch-all — SPIRE015 does not fire
 };
 ```
 
 ## When to Suppress
 
-Suppress when you intentionally handle a subset of members and rely on `default` for the rest, accepting that new members added to the enum won't trigger a compile-time error.
+Using an unguarded catch-all is the preferred way to opt out — no suppression needed. If you want to keep the analyzer silent without a catch-all (e.g. while refactoring), use:
 
 ```csharp
 #pragma warning disable SPIRE015

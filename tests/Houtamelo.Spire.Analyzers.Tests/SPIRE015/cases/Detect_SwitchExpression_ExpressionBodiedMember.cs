@@ -5,6 +5,5 @@ public class Detect_SwitchExpression_ExpressionBodiedMember
     public string Describe(Color color) => color switch //~ ERROR
     {
         Color.Red => "red",
-        _ => "other",
     };
 }

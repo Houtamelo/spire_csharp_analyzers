@@ -9,7 +9,6 @@ public class Detect_SwitchExpression_InForeachLoop
             string label = color switch //~ ERROR
             {
                 Color.Red => "red",
-                _ => "other",
             };
         }
     }

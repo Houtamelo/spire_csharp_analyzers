@@ -7,7 +7,6 @@ public class Detect_SwitchExpression_NullCoalescing
         return (color switch //~ ERROR
         {
             Color.Red => "red",
-            _ => null,
         }) ?? "fallback";
     }
 }

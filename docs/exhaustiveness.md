@@ -28,7 +28,13 @@ string Name(Color c) => c switch
 
 ## On Enums
 
-Every named member must appear in a switch arm. A `default` or discard (`_`) arm does not count as coverage — it is still allowed as a catch-all, but it does not satisfy SPIRE015.
+Every named member must appear in a switch arm — unless an unguarded catch-all is present. The catch-alls that opt out of the check are:
+
+- `default:` in switch statements
+- `_ => ...` in switch expressions
+- `var x => ...` / `case var x:` (var declaration patterns)
+
+Guarded catch-alls (`_ when cond => ...`) do **not** opt out — the guard may fail, leaving members uncovered.
 
 ```csharp
 [EnforceExhaustiveness]
@@ -40,7 +46,15 @@ string Label(Direction d) => d switch
     Direction.North => "N",
     Direction.South => "S",
     Direction.East  => "E",
-    _               => "?",   // does not cover West
+};
+
+// OK — catch-all opts out of the check
+string LabelLoose(Direction d) => d switch
+{
+    Direction.North => "N",
+    Direction.South => "S",
+    Direction.East  => "E",
+    _               => "?",
 };
 ```
 

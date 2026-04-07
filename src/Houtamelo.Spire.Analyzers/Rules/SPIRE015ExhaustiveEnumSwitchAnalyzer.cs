@@ -64,6 +64,11 @@ public sealed class SPIRE015ExhaustiveEnumSwitchAnalyzer : DiagnosticAnalyzer
         if (!enforceOnAllEnums && !AttributeHelper.HasOrInheritsAttribute(enumType, enforceType))
             return;
 
+        // An unguarded catch-all (default:, _, or var x) deliberately opts out of
+        // exhaustiveness — the developer has chosen to handle any unmatched value.
+        if (HasUnguardedCatchAll(context.Operation))
+            return;
+
         var allMembers = GetEnumMembers(enumType);
         if (allMembers.Count == 0)
             return;
@@ -157,6 +162,60 @@ public sealed class SPIRE015ExhaustiveEnumSwitchAnalyzer : DiagnosticAnalyzer
         }
 
         return result;
+    }
+
+    /// Returns true if the switch has at least one unguarded catch-all clause/arm.
+    /// Catch-alls: `default:` (switch statement), `_ => ...` (switch expression),
+    /// `case _:` (switch statement discard), `var x => ...`/`case var x:` (var pattern).
+    /// Guarded catch-alls (`_ when cond => ...`) do not count.
+    private static bool HasUnguardedCatchAll(IOperation operation)
+    {
+        switch (operation)
+        {
+            case ISwitchOperation switchOp:
+                foreach (var switchCase in switchOp.Cases)
+                {
+                    foreach (var clause in switchCase.Clauses)
+                    {
+                        if (clause is IDefaultCaseClauseOperation)
+                            return true;
+                        if (clause is IPatternCaseClauseOperation { Guard: null } pc
+                            && IsCatchAllPattern(pc.Pattern))
+                            return true;
+                    }
+                }
+                return false;
+
+            case ISwitchExpressionOperation switchExprOp:
+                foreach (var arm in switchExprOp.Arms)
+                {
+                    if (arm.Guard != null)
+                        continue;
+                    if (IsCatchAllPattern(arm.Pattern))
+                        return true;
+                }
+                return false;
+
+            default:
+                return false;
+        }
+    }
+
+    /// Returns true if the pattern matches every value of its input type unconditionally.
+    private static bool IsCatchAllPattern(IPatternOperation pattern)
+    {
+        switch (pattern)
+        {
+            case IDiscardPatternOperation:
+                return true;
+
+            case IDeclarationPatternOperation decl:
+                // `var x` — top-level var declaration pattern matches anything
+                return decl.Syntax is VarPatternSyntax;
+
+            default:
+                return false;
+        }
     }
 
     /// Returns true if the pattern matches null (discard, var, null constant, or-pattern containing null).

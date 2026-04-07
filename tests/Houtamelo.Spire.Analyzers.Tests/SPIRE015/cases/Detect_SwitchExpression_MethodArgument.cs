@@ -7,7 +7,6 @@ public class Detect_SwitchExpression_MethodArgument
         Console.WriteLine(color switch //~ ERROR
         {
             Color.Red => "red",
-            _ => "other",
         });
     }
 }
