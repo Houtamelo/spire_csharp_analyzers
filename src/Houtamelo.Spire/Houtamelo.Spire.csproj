@@ -4,7 +4,7 @@
     <LangVersion>latest</LangVersion>
     <!-- NuGet package metadata -->
     <PackageId>Houtamelo.Spire</PackageId>
-    <Version>4.3.0</Version>
+    <Version>4.4.0</Version>
     <Authors>houtamelo</Authors>
     <Copyright>Copyright (c) 2026 houtamelo</Copyright>
     <Description>Spire: attributes, utilities, analyzers, source generator, and code fixes for C# struct correctness.</Description>
