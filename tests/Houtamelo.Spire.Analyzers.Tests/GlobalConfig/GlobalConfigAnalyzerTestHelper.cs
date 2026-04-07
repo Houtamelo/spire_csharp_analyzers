@@ -44,4 +44,51 @@ internal static class GlobalConfigAnalyzerTestHelper
 
         return await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync();
     }
+
+    public static async Task<ImmutableArray<Diagnostic>> GetAllDiagnosticsAsync<TAnalyzer>(
+        string source,
+        Dictionary<string, string> globalOptions)
+        where TAnalyzer : DiagnosticAnalyzer, new()
+    {
+        var refs = await ReferenceAssemblies.Net.Net80.ResolveAsync(
+            LanguageNames.CSharp, CancellationToken.None);
+        refs = refs.Add(CoreAssemblyReference).Add(AnalyzerAssemblyReference);
+
+        var tree = CSharpSyntaxTree.ParseText(source,
+            CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest));
+
+        var compilation = CSharpCompilation.Create("TestAssembly",
+            new[] { tree }, refs,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        var configProvider = new TestAnalyzerConfigOptionsProvider(globalOptions);
+        var analyzerOptions = new AnalyzerOptions(
+            ImmutableArray<AdditionalText>.Empty, configProvider);
+
+        var analyzer = new TAnalyzer();
+        var compilationWithAnalyzers = compilation.WithAnalyzers(
+            ImmutableArray.Create<DiagnosticAnalyzer>(analyzer), analyzerOptions);
+
+        return await compilationWithAnalyzers.GetAllDiagnosticsAsync();
+    }
+
+    public static async Task<ImmutableArray<Diagnostic>> GetCompilerDiagnosticsAsync(
+        string source,
+        Dictionary<string, string> globalOptions)
+    {
+        _ = globalOptions;
+
+        var refs = await ReferenceAssemblies.Net.Net80.ResolveAsync(
+            LanguageNames.CSharp, CancellationToken.None);
+        refs = refs.Add(CoreAssemblyReference).Add(AnalyzerAssemblyReference);
+
+        var tree = CSharpSyntaxTree.ParseText(source,
+            CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest));
+
+        var compilation = CSharpCompilation.Create("TestAssembly",
+            new[] { tree }, refs,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        return compilation.GetDiagnostics();
+    }
 }

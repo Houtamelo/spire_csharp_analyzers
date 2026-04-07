@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using System.Linq;
-using Houtamelo.Spire.Analyzers.Utils;
 using Houtamelo.Spire.PatternAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -15,24 +14,18 @@ public sealed class CS8509Suppressor : DiagnosticSuppressor
     private static readonly SuppressionDescriptor CS8509Descriptor = new(
         id: "SPIRE_SUP001",
         suppressedDiagnosticId: "CS8509",
-        justification: "All cases are handled (discriminated union or [EnforceExhaustiveness] type)");
+        justification: "Spire's exhaustiveness checker proved the switch covers every reachable case.");
 
     private static readonly SuppressionDescriptor CS8524Descriptor = new(
         id: "SPIRE_SUP002",
         suppressedDiagnosticId: "CS8524",
-        justification: "All named enum members are handled ([EnforceExhaustiveness] enum)");
+        justification: "Spire's exhaustiveness checker proved every named enum member is handled.");
 
     public override ImmutableArray<SuppressionDescriptor> SupportedSuppressions =>
         ImmutableArray.Create(CS8509Descriptor, CS8524Descriptor);
 
     public override void ReportSuppressions(SuppressionAnalysisContext context)
     {
-        var enforceAttr = context.Compilation
-            .GetTypeByMetadataName("Houtamelo.Spire.EnforceExhaustivenessAttribute");
-        if (enforceAttr is null) return;
-
-        var enforceOnAllEnums = GlobalConfigHelper.ReadEnforceExhaustivenessOnAllEnumTypes(context.Options);
-
         foreach (var diagnostic in context.ReportedDiagnostics)
         {
             var tree = diagnostic.Location.SourceTree;
@@ -54,9 +47,9 @@ public sealed class CS8509Suppressor : DiagnosticSuppressor
             var subjectType = switchOp.Value.Type;
             if (subjectType is null) continue;
 
-            if (!IsExhaustivenessCheckedType(subjectType, enforceAttr, enforceOnAllEnums))
-                continue;
-
+            // The Maranget checker is the source of truth — it understands enums, bools, numeric ranges,
+            // tuples, property patterns, type hierarchies, and nullable variants. Run it on every switch
+            // and trust its verdict.
             var result = ExhaustivenessChecker.Check(context.Compilation, switchOp);
             if (result.MissingCases.IsEmpty)
             {
@@ -65,23 +58,5 @@ public sealed class CS8509Suppressor : DiagnosticSuppressor
                     Suppression.Create(descriptor, diagnostic));
             }
         }
-    }
-
-    private static bool IsExhaustivenessCheckedType(
-        ITypeSymbol subjectType, INamedTypeSymbol enforceAttr, bool enforceOnAllEnums)
-    {
-        // Unwrap Nullable<T>
-        if (subjectType is INamedTypeSymbol nullable
-            && nullable.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T
-            && nullable.TypeArguments.Length == 1)
-            subjectType = nullable.TypeArguments[0];
-
-        if (subjectType is not INamedTypeSymbol named)
-            return false;
-
-        if (named.TypeKind == TypeKind.Enum)
-            return enforceOnAllEnums || AttributeHelper.HasOrInheritsAttribute(named, enforceAttr);
-
-        return AttributeHelper.HasOrInheritsAttribute(named, enforceAttr);
     }
 }
