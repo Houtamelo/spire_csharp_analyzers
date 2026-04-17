@@ -10,7 +10,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!--
+      The Analyzers DLL loads PatternAnalysis.dll at analyze-time; Roslyn's analyzer
+      AppDomain resolves both from the @(Analyzer) item set, so both must be listed
+      as analyzer assets. MSBuild does not propagate transitive analyzer dependencies
+      through ProjectReference chains, so PatternAnalysis is wired explicitly here.
+    -->
     <ProjectReference Include="..\..\src\Houtamelo.Spire.Analyzers\Houtamelo.Spire.Analyzers.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\src\Houtamelo.Spire.PatternAnalysis\Houtamelo.Spire.PatternAnalysis.csproj"
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\..\src\Houtamelo.Spire\Houtamelo.Spire.csproj" />
   </ItemGroup>
