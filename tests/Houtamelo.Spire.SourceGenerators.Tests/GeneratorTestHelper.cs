@@ -93,6 +93,41 @@ internal static class GeneratorTestHelper
             .FirstOrDefault();
     }
 
+    public static GeneratorDriverRunResult RunInlinableTwinGenerator(
+        string source,
+        out Compilation outputCompilation,
+        out ImmutableArray<Microsoft.CodeAnalysis.Diagnostic> diagnostics,
+        string path = "test.cs")
+    {
+        var syntaxTree = CSharpSyntaxTree.ParseText(source,
+            CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest),
+            path: path);
+
+        var compilation = CSharpCompilation.Create(
+            "TestAssembly",
+            new[] { syntaxTree },
+            BaseReferences,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                allowUnsafe: true));
+
+        var generator = new Houtamelo.Spire.Analyzers.SourceGenerators.Performance.InlinableTwinGenerator();
+        var driver = CSharpGeneratorDriver.Create(generator)
+            .RunGeneratorsAndUpdateCompilation(
+                compilation,
+                out outputCompilation,
+                out diagnostics);
+
+        return driver.GetRunResult();
+    }
+
+    public static string? GetInlinableGeneratedSource(GeneratorDriverRunResult result)
+    {
+        return result.GeneratedTrees
+            .Where(t => System.IO.Path.GetFileName(t.FilePath).EndsWith(".InlinableTwin.g.cs"))
+            .Select(t => t.GetText().ToString())
+            .FirstOrDefault();
+    }
+
     public static string? GetUnionGeneratedSource(GeneratorDriverRunResult result)
     {
         var unionResult = result.GeneratedTrees
