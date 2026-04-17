@@ -19,7 +19,17 @@ public abstract class GeneratorDiagnosticTestBase
 {
     protected abstract string Category { get; }
 
-    private const string DiagnosticPrefix = "SPIRE_DU";
+    protected virtual string DiagnosticPrefix => "SPIRE_DU";
+
+    protected virtual void RunGenerator(
+        string source,
+        out ImmutableArray<RoslynDiagnostic> diagnostics)
+    {
+        GeneratorTestHelper.RunGenerator(source, out _, out diagnostics, path: "case.cs");
+    }
+
+    protected virtual bool IsRelevantDiagnostic(RoslynDiagnostic d)
+        => d.Id.StartsWith(DiagnosticPrefix, StringComparison.Ordinal);
 
     [Theory]
     [GeneratorDiagnosticCaseDiscovery("should_fail")]
@@ -33,11 +43,10 @@ public abstract class GeneratorDiagnosticTestBase
 
         var strippedSource = StripComments(caseSource);
 
-        GeneratorTestHelper.RunGenerator(strippedSource,
-            out _, out var diagnostics, path: "case.cs");
+        RunGenerator(strippedSource, out var diagnostics);
 
         var relevantDiagnostics = diagnostics
-            .Where(d => d.Id.StartsWith(DiagnosticPrefix, StringComparison.Ordinal))
+            .Where(IsRelevantDiagnostic)
             .ToList();
 
         var diagnosticLines = relevantDiagnostics
@@ -73,11 +82,10 @@ public abstract class GeneratorDiagnosticTestBase
 
         var strippedSource = StripComments(caseSource);
 
-        GeneratorTestHelper.RunGenerator(strippedSource,
-            out _, out var diagnostics, path: "case.cs");
+        RunGenerator(strippedSource, out var diagnostics);
 
         var relevantDiagnostics = diagnostics
-            .Where(d => d.Id.StartsWith(DiagnosticPrefix, StringComparison.Ordinal))
+            .Where(IsRelevantDiagnostic)
             .ToList();
 
         if (relevantDiagnostics.Count > 0)
@@ -202,7 +210,7 @@ public sealed class GeneratorDiagnosticCaseDiscoveryAttribute : DataAttribute
         var testClass = testMethod.ReflectedType ?? testMethod.DeclaringType
             ?? throw new InvalidOperationException("Could not determine test class");
 
-        var category = ExtractCategory(testClass.Name);
+        var category = ResolveCategory(testClass);
         var casesDir = Path.Combine(AppContext.BaseDirectory, category, "cases");
 
         if (!Directory.Exists(casesDir))
@@ -222,6 +230,33 @@ public sealed class GeneratorDiagnosticCaseDiscoveryAttribute : DataAttribute
                 yield return new object[] { fileName };
             }
         }
+    }
+
+    private static string ResolveCategory(Type testClass)
+    {
+        // Prefer the instance's Category property (supports paths with slashes).
+        try
+        {
+            var ctor = testClass.GetConstructor(Type.EmptyTypes);
+            if (ctor is not null)
+            {
+                var instance = ctor.Invoke(null);
+                var prop = testClass.GetProperty("Category",
+                    BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+                if (prop is not null)
+                {
+                    var value = prop.GetValue(instance) as string;
+                    if (!string.IsNullOrEmpty(value))
+                        return value!;
+                }
+            }
+        }
+        catch
+        {
+            // Fall through to name-based convention.
+        }
+
+        return ExtractCategory(testClass.Name);
     }
 
     private static string ExtractCategory(string className)

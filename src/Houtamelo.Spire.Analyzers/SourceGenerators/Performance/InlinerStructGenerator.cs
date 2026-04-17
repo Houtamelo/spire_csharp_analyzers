@@ -46,10 +46,21 @@ public sealed class InlinerStructGenerator : IIncrementalGenerator
                     new Microsoft.CodeAnalysis.Text.LinePosition(d.StartLine, d.StartColumn),
                     new Microsoft.CodeAnalysis.Text.LinePosition(d.EndLine, d.EndColumn)));
 
-        var descriptor = ResolveDescriptor(d.Id)
-            ?? new DiagnosticDescriptor(
+        var template = ResolveDescriptor(d.Id);
+        // Use a per-call descriptor that ships the parser's already-formatted message
+        // in the Title/MessageFormat slots. Keeps Id/Category/Severity from the template
+        // so diagnostic filtering and release-tracking work uniformly.
+        var descriptor = template is null
+            ? new DiagnosticDescriptor(
                 d.Id, d.Id, d.Message, "SourceGeneration",
-                DiagnosticSeverity.Error, isEnabledByDefault: true);
+                DiagnosticSeverity.Error, isEnabledByDefault: true)
+            : new DiagnosticDescriptor(
+                template.Id,
+                template.Title,
+                d.Message,
+                template.Category,
+                template.DefaultSeverity,
+                template.IsEnabledByDefault);
 
         return Diagnostic.Create(descriptor, location);
     }
