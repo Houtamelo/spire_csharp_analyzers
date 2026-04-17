@@ -51,7 +51,7 @@ Attribute lives in `Houtamelo.Spire`. Applied to a static or instance method.
 For method `M` in type `C`:
 
 - Generated struct: `{M}Inliner` emitted as a **sibling of the method** — i.e., nested inside `C`, at the same lexical level as `M`. The generator emits a partial extension of `C` containing the struct.
-- **Every type in the enclosing chain must be declared `partial`** (the declaring type `C` and any enclosing types). Violation → `SPIRE_IL011` error.
+- **Every type in the enclosing chain must be declared `partial`** (the declaring type `C` and any enclosing types). Violation → `SPIRE027` error.
 - Accessibility mirrors `M`.
 - Generic type parameters: all of `C`'s open generics (if any) followed by all of `M`'s method generics, with constraints copied verbatim.
 - Declared `readonly struct {M}Inliner[<...>] : I{Action|Func}Inliner<...>`.
@@ -74,10 +74,10 @@ For method `M` in type `C`:
 
 ### Constraints
 
-- **Parameter modifiers** (`ref`, `in`, `out`, `ref readonly`, `params`, `this` on non-extension methods) → `SPIRE_IL001` error.
-- **Declaring type is `ref struct`** → `SPIRE_IL002` error.
-- **Total arity > 8** (including prepended instance for non-static) → `SPIRE_IL003` error.
-- **Generated struct name collides with an existing type** in the same namespace/nesting → `SPIRE_IL004` error.
+- **Parameter modifiers** (`ref`, `in`, `out`, `ref readonly`, `params`, `this` on non-extension methods) → `SPIRE017` error.
+- **Declaring type is `ref struct`** → `SPIRE018` error.
+- **Total arity > 8** (including prepended instance for non-static) → `SPIRE019` error.
+- **Generated struct name collides with an existing type** in the same namespace/nesting → `SPIRE020` error.
 
 Value-type declaring types are allowed; the instance is copied into the positional arg slot on each call. Documented as a v1 limitation.
 
@@ -127,32 +127,32 @@ Aliases are tracked only in SSA-safe form:
 - Not declared as a `ref` local.
 - Ternary `cond ? p : q` counts as a tracked alias if **both** branches are tracked aliases of the same `[Inlinable]` parameter.
 
-Any other shape → `SPIRE_IL005` error with the specific offending expression location.
+Any other shape → `SPIRE021` error with the specific offending expression location.
 
 ### Constraints
 
-- **`[Inlinable]` on a non-delegate parameter type** → `SPIRE_IL006` error.
-- **Containing type (or any enclosing type) is not `partial`** → `SPIRE_IL007` error (functionally duplicates `SPIRE_IL011`; kept as a Part-2-specific alias for clearer reporting).
-- **Delegate arity > 8** → `SPIRE_IL008` error.
-- **Unsupported use of the parameter in the body** (see list above) → `SPIRE_IL005` error.
-- **`[Inlinable]` on the same parameter as a disallowed ref-kind** (`ref`/`in`/`out`/`ref readonly`) → `SPIRE_IL009` error.
-- **`[Inlinable]` on an expression-bodied property or indexer parameter** → v1 unsupported; `SPIRE_IL010` error.
+- **`[Inlinable]` on a non-delegate parameter type** → `SPIRE022` error.
+- **Containing type (or any enclosing type) is not `partial`** → `SPIRE023` error (functionally duplicates `SPIRE027`; kept as a Part-2-specific alias for clearer reporting).
+- **Delegate arity > 8** → `SPIRE024` error.
+- **Unsupported use of the parameter in the body** (see list above) → `SPIRE021` error.
+- **`[Inlinable]` on the same parameter as a disallowed ref-kind** (`ref`/`in`/`out`/`ref readonly`) → `SPIRE025` error.
+- **`[Inlinable]` on an expression-bodied property or indexer parameter** → v1 unsupported; `SPIRE026` error.
 
 ## Diagnostics summary
 
 | ID | Severity | Description |
 |---|---|---|
-| SPIRE_IL001 | Error | `[InlinerStruct]` method parameter has ref-kind (`ref`/`in`/`out`/`ref readonly`/`params`). |
-| SPIRE_IL002 | Error | `[InlinerStruct]` method is declared on a `ref struct`. |
-| SPIRE_IL003 | Error | `[InlinerStruct]` method arity exceeds 8 (instance methods include the declaring type). |
-| SPIRE_IL004 | Error | Generated `{M}Inliner` struct name collides with an existing type. |
-| SPIRE_IL005 | Error | `[Inlinable]` parameter used outside supported forms (aliasing/capture/storage/etc.). |
-| SPIRE_IL006 | Error | `[Inlinable]` attribute applied to a non-delegate parameter. |
-| SPIRE_IL007 | Error | Type containing an `[Inlinable]` parameter is not declared `partial`. |
-| SPIRE_IL008 | Error | `[Inlinable]` delegate parameter arity exceeds 8. |
-| SPIRE_IL009 | Error | `[Inlinable]` parameter has an unsupported ref-kind. |
-| SPIRE_IL010 | Error | `[Inlinable]` applied on a property / indexer accessor parameter (v1 unsupported). |
-| SPIRE_IL011 | Error | Declaring type (or any enclosing type) of an `[InlinerStruct]` or `[Inlinable]` method is not declared `partial`. |
+| SPIRE017 | Error | `[InlinerStruct]` method parameter has ref-kind (`ref`/`in`/`out`/`ref readonly`/`params`). |
+| SPIRE018 | Error | `[InlinerStruct]` method is declared on a `ref struct`. |
+| SPIRE019 | Error | `[InlinerStruct]` method arity exceeds 8 (instance methods include the declaring type). |
+| SPIRE020 | Error | Generated `{M}Inliner` struct name collides with an existing type. |
+| SPIRE021 | Error | `[Inlinable]` parameter used outside supported forms (aliasing/capture/storage/etc.). |
+| SPIRE022 | Error | `[Inlinable]` attribute applied to a non-delegate parameter. |
+| SPIRE023 | Error | Type containing an `[Inlinable]` parameter is not declared `partial`. |
+| SPIRE024 | Error | `[Inlinable]` delegate parameter arity exceeds 8. |
+| SPIRE025 | Error | `[Inlinable]` parameter has an unsupported ref-kind. |
+| SPIRE026 | Error | `[Inlinable]` applied on a property / indexer accessor parameter (v1 unsupported). |
+| SPIRE027 | Error | Declaring type (or any enclosing type) of an `[InlinerStruct]` or `[Inlinable]` method is not declared `partial`. |
 
 ## Package and project layout
 
@@ -350,7 +350,7 @@ list.ForEach(printer);  // overload resolution picks the generic twin; monomorph
 - Capture-lifting (i.e., non-stateless inliner structs).
 - Source-level `[Inlinable]` lambda literals (generator-side lambda→struct without a named source method).
 - Suggestion analyzer flagging hot delegate calls where `[Inlinable]` would apply.
-- Automatic fallback when the generator cannot rewrite a body: emit the original method only, plus a `SPIRE_IL100` info diagnostic.
+- Automatic fallback when the generator cannot rewrite a body: emit the original method only, plus a `SPIRE100` info diagnostic.
 
 ## Open items before implementation
 

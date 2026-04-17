@@ -4,7 +4,7 @@
 
 **Goal:** Ship `[InlinerStruct]` and `[Inlinable]` attributes plus two source generators that produce monomorphizable struct dispatch, eliminating delegate indirection in hot paths.
 
-**Architecture:** Two `IIncrementalGenerator`s — one emits stateless inliner structs nested inside the declaring type; the other emits generic-struct-constrained twin methods with invocation-site rewrites. Per-arity `IActionInliner` / `IFuncInliner` interfaces (N = 8). Body rewriting uses `CSharpSyntaxRewriter` + `SemanticModel` to find invocations of the attributed parameter (and tracked aliases) and replace them with `.Invoke`. An analyzer (`InlinableUsageAnalyzer`) enforces SPIRE_IL005 when the parameter is used outside the supported forms.
+**Architecture:** Two `IIncrementalGenerator`s — one emits stateless inliner structs nested inside the declaring type; the other emits generic-struct-constrained twin methods with invocation-site rewrites. Per-arity `IActionInliner` / `IFuncInliner` interfaces (N = 8). Body rewriting uses `CSharpSyntaxRewriter` + `SemanticModel` to find invocations of the attributed parameter (and tracked aliases) and replace them with `.Invoke`. An analyzer (`InlinableUsageAnalyzer`) enforces SPIRE021 when the parameter is used outside the supported forms.
 
 **Tech Stack:** Roslyn 5.0.0 (Microsoft.CodeAnalysis.CSharp), netstandard2.0 for generators/analyzers, xUnit for tests. Reuses existing `SourceBuilder` / `EquatableArray<T>` / snapshot test infrastructure.
 
@@ -23,7 +23,7 @@
 - `InlinableAttribute.cs` — attribute for Part 2.
 
 **`src/Houtamelo.Spire.Analyzers/SourceGenerators/Performance/`** (generator + analyzer)
-- `InlinerDescriptors.cs` — 11 diagnostic descriptors (SPIRE_IL001–SPIRE_IL011).
+- `InlinerDescriptors.cs` — 11 diagnostic descriptors (SPIRE017–SPIRE027).
 - `InlinerStructGenerator.cs` — `IIncrementalGenerator` entry point for `[InlinerStruct]`.
 - `InlinableTwinGenerator.cs` — `IIncrementalGenerator` entry point for `[Inlinable]`.
 - `Model/InlinerStructDecl.cs` — model record for a `[InlinerStruct]`-marked method.
@@ -35,15 +35,15 @@
 - `Emit/InlinerStructEmitter.cs` — `InlinerStructDecl` → generated source string.
 - `Emit/InlinableTwinEmitter.cs` — `InlinableHostDecl` → generated source string.
 - `Emit/InlinableBodyRewriter.cs` — `CSharpSyntaxRewriter` that rewrites host body.
-- `Analyzers/InlinableUsageAnalyzer.cs` — `DiagnosticAnalyzer` enforcing SPIRE_IL005/IL006/IL009/IL010.
+- `Analyzers/InlinableUsageAnalyzer.cs` — `DiagnosticAnalyzer` enforcing SPIRE021/SPIRE022/SPIRE025/SPIRE026.
 
 **Tests**
 - `tests/Houtamelo.Spire.SourceGenerators.Tests/cases/Performance/InlinerStruct/<case>/input.cs|output.cs`
 - `tests/Houtamelo.Spire.SourceGenerators.Tests/cases/Performance/Inlinable/<case>/input.cs|output.cs`
 - `tests/Houtamelo.Spire.SourceGenerators.Tests/Performance/InlinerStructSnapshotTests.cs`
 - `tests/Houtamelo.Spire.SourceGenerators.Tests/Performance/InlinableSnapshotTests.cs`
-- `tests/Houtamelo.Spire.Analyzers.Tests/SPIRE_IL005/SPIRE_IL005Tests.cs` + `cases/`
-- (and folders for SPIRE_IL006, IL009, IL010 — the analyzer-reported ones)
+- `tests/Houtamelo.Spire.Analyzers.Tests/SPIRE021/SPIRE021Tests.cs` + `cases/`
+- (and folders for SPIRE022, SPIRE025, SPIRE026 — the analyzer-reported ones)
 - `tests/Houtamelo.Spire.BehavioralTests/Tests/InlinerTests.cs`
 - `tests/Houtamelo.Spire.BehavioralTests/Types/InlinerTargets.cs`
 - `benchmarks/Houtamelo.Spire.Benchmarks/Benchmarks/InlinerDispatch.cs`
@@ -237,9 +237,9 @@ namespace Houtamelo.Spire;
 /// <remarks>
 /// The declaring type and every enclosing type must be declared <c>partial</c>.
 /// Parameter modifiers (ref/in/out/ref readonly/params) are not supported in v1
-/// and will produce SPIRE_IL001. Declaring <c>ref struct</c> types are not
-/// supported and produce SPIRE_IL002. Total arity (plus instance for non-static
-/// methods) cannot exceed 8 and will produce SPIRE_IL003.
+/// and will produce SPIRE017. Declaring <c>ref struct</c> types are not
+/// supported and produce SPIRE018. Total arity (plus instance for non-static
+/// methods) cannot exceed 8 and will produce SPIRE019.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
 public sealed class InlinerStructAttribute : Attribute
@@ -266,7 +266,7 @@ namespace Houtamelo.Spire;
 /// arity must be ≤ 8. Nullability of the delegate parameter is preserved as
 /// <see cref="Nullable{T}"/> on the twin. The parameter may only appear as the
 /// target of an invocation or inside a single-assignment <c>var</c> alias; other
-/// uses produce SPIRE_IL005.
+/// uses produce SPIRE021.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
 public sealed class InlinableAttribute : Attribute
@@ -286,7 +286,7 @@ git add src/Houtamelo.Spire/InlinerStructAttribute.cs src/Houtamelo.Spire/Inlina
 git commit -m "feat(spire): add [InlinerStruct] and [Inlinable] attributes"
 ```
 
-### Task 4: Add SPIRE_IL001–SPIRE_IL011 descriptors
+### Task 4: Add SPIRE017–SPIRE027 descriptors
 
 **Files:**
 - Create: `src/Houtamelo.Spire.Analyzers/SourceGenerators/Performance/InlinerDescriptors.cs`
@@ -303,68 +303,68 @@ internal static class InlinerDescriptors
 {
     private const string Category = "SourceGeneration";
 
-    public static readonly DiagnosticDescriptor SPIRE_IL001_UnsupportedParameterModifier = new(
-        id: "SPIRE_IL001",
+    public static readonly DiagnosticDescriptor SPIRE017_UnsupportedParameterModifier = new(
+        id: "SPIRE017",
         title: "[InlinerStruct] method parameter has unsupported modifier",
         messageFormat: "Parameter '{0}' uses an unsupported modifier ({1}); [InlinerStruct] methods cannot have ref/in/out/ref readonly/params parameters",
         category: Category, defaultSeverity: DiagnosticSeverity.Error, isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SPIRE_IL002_RefStructDeclaringType = new(
-        id: "SPIRE_IL002",
+    public static readonly DiagnosticDescriptor SPIRE018_RefStructDeclaringType = new(
+        id: "SPIRE018",
         title: "[InlinerStruct] not supported on ref struct",
         messageFormat: "[InlinerStruct] cannot be applied to a method declared on a ref struct",
         category: Category, defaultSeverity: DiagnosticSeverity.Error, isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SPIRE_IL003_ArityExceeded = new(
-        id: "SPIRE_IL003",
+    public static readonly DiagnosticDescriptor SPIRE019_ArityExceeded = new(
+        id: "SPIRE019",
         title: "[InlinerStruct] arity exceeds 8",
         messageFormat: "Method '{0}' has arity {1} (instance methods count the receiver), which exceeds the supported maximum of 8",
         category: Category, defaultSeverity: DiagnosticSeverity.Error, isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SPIRE_IL004_NameCollision = new(
-        id: "SPIRE_IL004",
+    public static readonly DiagnosticDescriptor SPIRE020_NameCollision = new(
+        id: "SPIRE020",
         title: "[InlinerStruct] generated struct name collides with existing type",
         messageFormat: "Generated struct '{0}' collides with an existing type in the same namespace/nesting",
         category: Category, defaultSeverity: DiagnosticSeverity.Error, isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SPIRE_IL005_UnsupportedBodyUsage = new(
-        id: "SPIRE_IL005",
+    public static readonly DiagnosticDescriptor SPIRE021_UnsupportedBodyUsage = new(
+        id: "SPIRE021",
         title: "[Inlinable] parameter used in unsupported form",
         messageFormat: "[Inlinable] parameter '{0}' may only be invoked or aliased via single-assignment 'var'; {1}",
         category: "Correctness", defaultSeverity: DiagnosticSeverity.Error, isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SPIRE_IL006_NonDelegateParameter = new(
-        id: "SPIRE_IL006",
+    public static readonly DiagnosticDescriptor SPIRE022_NonDelegateParameter = new(
+        id: "SPIRE022",
         title: "[Inlinable] applied to non-delegate parameter",
         messageFormat: "[Inlinable] can only be applied to Action or Func parameters; '{0}' has type {1}",
         category: "Correctness", defaultSeverity: DiagnosticSeverity.Error, isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SPIRE_IL007_ContainerNotPartial = new(
-        id: "SPIRE_IL007",
+    public static readonly DiagnosticDescriptor SPIRE023_ContainerNotPartial = new(
+        id: "SPIRE023",
         title: "[Inlinable] method's containing type is not partial",
         messageFormat: "The type containing '[Inlinable]' parameter '{0}' must be declared 'partial' (and so must every enclosing type)",
         category: Category, defaultSeverity: DiagnosticSeverity.Error, isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SPIRE_IL008_DelegateArityExceeded = new(
-        id: "SPIRE_IL008",
+    public static readonly DiagnosticDescriptor SPIRE024_DelegateArityExceeded = new(
+        id: "SPIRE024",
         title: "[Inlinable] delegate arity exceeds 8",
         messageFormat: "Delegate parameter '{0}' has arity {1}; supported maximum is 8",
         category: Category, defaultSeverity: DiagnosticSeverity.Error, isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SPIRE_IL009_UnsupportedRefKind = new(
-        id: "SPIRE_IL009",
+    public static readonly DiagnosticDescriptor SPIRE025_UnsupportedRefKind = new(
+        id: "SPIRE025",
         title: "[Inlinable] parameter has unsupported ref-kind",
         messageFormat: "[Inlinable] parameter '{0}' cannot be declared with ref/in/out/ref readonly",
         category: "Correctness", defaultSeverity: DiagnosticSeverity.Error, isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SPIRE_IL010_PropertyOrIndexerParameter = new(
-        id: "SPIRE_IL010",
+    public static readonly DiagnosticDescriptor SPIRE026_PropertyOrIndexerParameter = new(
+        id: "SPIRE026",
         title: "[Inlinable] not supported on property/indexer parameters",
         messageFormat: "[Inlinable] is not supported on indexer or property accessor parameters in v1",
         category: "Correctness", defaultSeverity: DiagnosticSeverity.Error, isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SPIRE_IL011_EnclosingTypeNotPartial = new(
-        id: "SPIRE_IL011",
+    public static readonly DiagnosticDescriptor SPIRE027_EnclosingTypeNotPartial = new(
+        id: "SPIRE027",
         title: "Declaring type (or enclosing type) is not partial",
         messageFormat: "Type '{0}' must be declared 'partial' for inliner-struct generation",
         category: Category, defaultSeverity: DiagnosticSeverity.Error, isEnabledByDefault: true);
@@ -380,17 +380,17 @@ Open `src/Houtamelo.Spire.Analyzers/AnalyzerReleases.Unshipped.md` and add (pres
 
 Rule ID     | Category         | Severity | Notes
 ------------|------------------|----------|--------------------------------------------------
-SPIRE_IL001 | SourceGeneration | Error    | [InlinerStruct] method has unsupported parameter modifier
-SPIRE_IL002 | SourceGeneration | Error    | [InlinerStruct] declared on a ref struct
-SPIRE_IL003 | SourceGeneration | Error    | [InlinerStruct] arity exceeds 8
-SPIRE_IL004 | SourceGeneration | Error    | Generated inliner struct name collides
-SPIRE_IL005 | Correctness      | Error    | [Inlinable] parameter used in unsupported form
-SPIRE_IL006 | Correctness      | Error    | [Inlinable] on non-delegate parameter
-SPIRE_IL007 | SourceGeneration | Error    | Containing type of [Inlinable] method is not partial
-SPIRE_IL008 | SourceGeneration | Error    | [Inlinable] delegate arity exceeds 8
-SPIRE_IL009 | Correctness      | Error    | [Inlinable] parameter has unsupported ref-kind
-SPIRE_IL010 | Correctness      | Error    | [Inlinable] on property/indexer parameter
-SPIRE_IL011 | SourceGeneration | Error    | Declaring/enclosing type is not partial
+SPIRE017 | SourceGeneration | Error    | [InlinerStruct] method has unsupported parameter modifier
+SPIRE018 | SourceGeneration | Error    | [InlinerStruct] declared on a ref struct
+SPIRE019 | SourceGeneration | Error    | [InlinerStruct] arity exceeds 8
+SPIRE020 | SourceGeneration | Error    | Generated inliner struct name collides
+SPIRE021 | Correctness      | Error    | [Inlinable] parameter used in unsupported form
+SPIRE022 | Correctness      | Error    | [Inlinable] on non-delegate parameter
+SPIRE023 | SourceGeneration | Error    | Containing type of [Inlinable] method is not partial
+SPIRE024 | SourceGeneration | Error    | [Inlinable] delegate arity exceeds 8
+SPIRE025 | Correctness      | Error    | [Inlinable] parameter has unsupported ref-kind
+SPIRE026 | Correctness      | Error    | [Inlinable] on property/indexer parameter
+SPIRE027 | SourceGeneration | Error    | Declaring/enclosing type is not partial
 ```
 
 - [ ] **Step 3: Build**
@@ -402,7 +402,7 @@ Expected: succeeds (RS2008 satisfied by the release-tracking entries).
 
 ```
 git add src/Houtamelo.Spire.Analyzers/SourceGenerators/Performance/InlinerDescriptors.cs src/Houtamelo.Spire.Analyzers/AnalyzerReleases.Unshipped.md
-git commit -m "feat(analyzers): add SPIRE_IL001-IL011 descriptors"
+git commit -m "feat(analyzers): add SPIRE017-SPIRE027 descriptors"
 ```
 
 ### Task 5: Full-solution smoke build
@@ -1326,19 +1326,19 @@ Expected: no regressions.
 
 ## Phase 3 — `[InlinerStruct]` diagnostics
 
-### Task 18: SPIRE_IL001 — parameter modifiers
+### Task 18: SPIRE017 — parameter modifiers
 
 **Files:**
-- Create: `tests/Houtamelo.Spire.Analyzers.Tests/SPIRE_IL001/SPIRE_IL001Tests.cs` + `cases/`
+- Create: `tests/Houtamelo.Spire.Analyzers.Tests/SPIRE017/SPIRE017Tests.cs` + `cases/`
 
 - [ ] **Step 1: Write runner**
 
 ```csharp
-namespace Houtamelo.Spire.Analyzers.Tests.SPIRE_IL001;
+namespace Houtamelo.Spire.Analyzers.Tests.SPIRE017;
 
-public sealed class SPIRE_IL001Tests : GeneratorDiagnosticTestBase
+public sealed class SPIRE017Tests : GeneratorDiagnosticTestBase
 {
-    protected override string RuleId => "SPIRE_IL001";
+    protected override string RuleId => "SPIRE017";
 }
 ```
 
@@ -1385,7 +1385,7 @@ foreach (var p in method.Parameters)
     {
         var modifier = p.IsParams ? "params" : p.RefKind.ToString().ToLowerInvariant();
         var diag = new InlinerDiagnostic(
-            InlinerDescriptors.SPIRE_IL001_UnsupportedParameterModifier,
+            InlinerDescriptors.SPIRE017_UnsupportedParameterModifier,
             LocationInfo.From(p.Locations.FirstOrDefault() ?? Location.None),
             new EquatableArray<string>(ImmutableArray.Create(p.Name, modifier)));
         return BuildPartialDeclWithDiagnostic(method, containing, diag);
@@ -1403,10 +1403,10 @@ Expected: `should_fail` cases PASS (diagnostic emitted); `should_pass` case PASS
 
 ```
 git add .
-git commit -m "feat(inliner): SPIRE_IL001 diagnostic for parameter modifiers"
+git commit -m "feat(inliner): SPIRE017 diagnostic for parameter modifiers"
 ```
 
-### Task 19: SPIRE_IL002 — ref struct declaring type
+### Task 19: SPIRE018 — ref struct declaring type
 
 Same shape as Task 18 but:
 - Should-fail case: method on `public ref struct Foo { [InlinerStruct] public void M() {} }`.
@@ -1417,7 +1417,7 @@ Same shape as Task 18 but:
 - [ ] **Step 2: Parser check**
 - [ ] **Step 3: Run + commit**
 
-### Task 20: SPIRE_IL003 — arity > 8
+### Task 20: SPIRE019 — arity > 8
 
 - Should-fail: static method with 9 params.
 - Should-fail: instance method with 8 params (9 total).
@@ -1428,7 +1428,7 @@ Same shape as Task 18 but:
 - [ ] **Step 2: Parser check**
 - [ ] **Step 3: Run + commit**
 
-### Task 21: SPIRE_IL004 — struct name collision
+### Task 21: SPIRE020 — struct name collision
 
 - Should-fail: `public partial class C { public class FooInliner { } [InlinerStruct] public static void Foo() {} }`.
 - Should-pass: when no collision.
@@ -1438,7 +1438,7 @@ Same shape as Task 18 but:
 - [ ] **Step 2: Parser check**
 - [ ] **Step 3: Run + commit**
 
-### Task 22: SPIRE_IL011 — enclosing chain not partial
+### Task 22: SPIRE027 — enclosing chain not partial
 
 - Should-fail: `[InlinerStruct]` on method of non-partial class.
 - Should-fail: method on `partial class Inner` inside non-partial `Outer`.
@@ -1615,7 +1615,7 @@ internal static class InlinableParser
                 var parsed = ParseDelegateParam(p, i);
                 if (parsed is null)
                 {
-                    // SPIRE_IL006 reported by analyzer; skip model for now
+                    // SPIRE022 reported by analyzer; skip model for now
                     return null;
                 }
                 inlinables.Add(parsed);
@@ -2178,7 +2178,7 @@ git commit -m "feat(inliner): body rewrite - track single-assignment var aliases
 
 - [ ] **Step 1: Write case** — `var chosen = cond ? action1 : action2;` with two `[Inlinable]` params.
 
-(Note: two aliases of different inlinable params unify only if they share the same interface; if not, this is SPIRE_IL005. For v1 support only when both branches alias the **same** inlinable param.)
+(Note: two aliases of different inlinable params unify only if they share the same interface; if not, this is SPIRE021. For v1 support only when both branches alias the **same** inlinable param.)
 
 - [ ] **Step 2: Extend alias collector** — also match `ConditionalExpressionSyntax` initializers where both branches are tracked aliases of the same root name.
 
@@ -2202,11 +2202,11 @@ Expected: no regressions.
 
 ## Phase 5 — Diagnostics analyzer
 
-### Task 35: SPIRE_IL006 — `[Inlinable]` on non-delegate parameter
+### Task 35: SPIRE022 — `[Inlinable]` on non-delegate parameter
 
 **Files:**
 - Create: `src/Houtamelo.Spire.Analyzers/SourceGenerators/Performance/Analyzers/InlinableUsageAnalyzer.cs`
-- Create: `tests/Houtamelo.Spire.Analyzers.Tests/SPIRE_IL006/SPIRE_IL006Tests.cs` + cases
+- Create: `tests/Houtamelo.Spire.Analyzers.Tests/SPIRE022/SPIRE022Tests.cs` + cases
 
 - [ ] **Step 1: Write analyzer skeleton**
 
@@ -2225,12 +2225,12 @@ namespace Houtamelo.Spire.Analyzers.SourceGenerators.Performance.Analyzers;
 public sealed class InlinableUsageAnalyzer : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(
-        InlinerDescriptors.SPIRE_IL005_UnsupportedBodyUsage,
-        InlinerDescriptors.SPIRE_IL006_NonDelegateParameter,
-        InlinerDescriptors.SPIRE_IL007_ContainerNotPartial,
-        InlinerDescriptors.SPIRE_IL008_DelegateArityExceeded,
-        InlinerDescriptors.SPIRE_IL009_UnsupportedRefKind,
-        InlinerDescriptors.SPIRE_IL010_PropertyOrIndexerParameter);
+        InlinerDescriptors.SPIRE021_UnsupportedBodyUsage,
+        InlinerDescriptors.SPIRE022_NonDelegateParameter,
+        InlinerDescriptors.SPIRE023_ContainerNotPartial,
+        InlinerDescriptors.SPIRE024_DelegateArityExceeded,
+        InlinerDescriptors.SPIRE025_UnsupportedRefKind,
+        InlinerDescriptors.SPIRE026_PropertyOrIndexerParameter);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -2257,11 +2257,11 @@ public sealed class InlinableUsageAnalyzer : DiagnosticAnalyzer
 
             var loc = p.Locations.FirstOrDefault() ?? Location.None;
 
-            // SPIRE_IL006 — non-delegate
+            // SPIRE022 — non-delegate
             if (!IsActionOrFunc(p.Type, out _, out _))
             {
                 ctx.ReportDiagnostic(Diagnostic.Create(
-                    InlinerDescriptors.SPIRE_IL006_NonDelegateParameter, loc, p.Name, p.Type.ToDisplayString()));
+                    InlinerDescriptors.SPIRE022_NonDelegateParameter, loc, p.Name, p.Type.ToDisplayString()));
                 continue;
             }
             // (other diagnostics in later tasks)
@@ -2292,40 +2292,40 @@ public sealed class InlinableUsageAnalyzer : DiagnosticAnalyzer
 
 - [ ] **Step 2: Test cases**
 
-`SPIRE_IL006/cases/nondelegate_string.cs` (should_fail), a plain-delegate should_pass.
+`SPIRE022/cases/nondelegate_string.cs` (should_fail), a plain-delegate should_pass.
 
 - [ ] **Step 3: Run; commit**
 
 ```
 git add .
-git commit -m "feat(inliner): SPIRE_IL006 for [Inlinable] on non-delegate"
+git commit -m "feat(inliner): SPIRE022 for [Inlinable] on non-delegate"
 ```
 
-### Task 36: SPIRE_IL007 / SPIRE_IL011 — non-partial containing type
+### Task 36: SPIRE023 / SPIRE027 — non-partial containing type
 
 - [ ] **Step 1: Extend analyzer** — walk `method.ContainingType` up to the outermost; for each, check `IsPartial` via `DeclaringSyntaxReferences` (as in Task 22).
-- [ ] **Step 2: Write test cases** (both IDs: use IL007 when the immediate containing type is non-partial, IL011 when a more distant enclosing type is non-partial).
+- [ ] **Step 2: Write test cases** (both IDs: use SPIRE023 when the immediate containing type is non-partial, SPIRE027 when a more distant enclosing type is non-partial).
 - [ ] **Step 3: Run; commit**
 
-### Task 37: SPIRE_IL008 — delegate arity > 8
+### Task 37: SPIRE024 — delegate arity > 8
 
 - [ ] **Step 1: Extend analyzer** — reject when arity > 8.
 - [ ] **Step 2: Tests** (should_fail with `Action<T1..T9>`).
 - [ ] **Step 3: Run; commit**
 
-### Task 38: SPIRE_IL009 — ref-kind on `[Inlinable]` parameter
+### Task 38: SPIRE025 — ref-kind on `[Inlinable]` parameter
 
 - [ ] **Step 1: Analyzer check** — `p.RefKind != RefKind.None`.
 - [ ] **Step 2: Tests** (should_fail with `ref Action<int>`).
 - [ ] **Step 3: Run; commit**
 
-### Task 39: SPIRE_IL010 — parameter on indexer/property accessor
+### Task 39: SPIRE026 — parameter on indexer/property accessor
 
 - [ ] **Step 1: Analyzer check** — `method.MethodKind` is `PropertyGet/Set/Indexer*`.
 - [ ] **Step 2: Tests**.
 - [ ] **Step 3: Run; commit**
 
-### Task 40: SPIRE_IL005 — unsupported body usage
+### Task 40: SPIRE021 — unsupported body usage
 
 **This is the most complex diagnostic.** Cases to detect:
 
@@ -2345,7 +2345,7 @@ For each `[Inlinable]` parameter, walk the method body and inspect every `Identi
 - Parent is `ArgumentSyntax` → allowed (pass-through to another method).
 - Parent is `EqualsValueClauseSyntax` of a `VariableDeclaratorSyntax` with `var` declarator → allowed (alias init). Track alias for further walking.
 - Parent is `BinaryExpressionSyntax` (==, !=) or `IsPatternExpressionSyntax` with null → allowed (null check).
-- Anything else → SPIRE_IL005.
+- Anything else → SPIRE021.
 
 Then recurse over aliases with the same rules. Reject alias if declarator is non-`var`, or if alias is reassigned (second `AssignmentExpressionSyntax.Left == alias`), or if alias appears in a nested `LambdaExpressionSyntax` / `LocalFunctionStatementSyntax`.
 
@@ -2529,7 +2529,7 @@ git commit -m "bench(inliner): compare direct / delegate / inliner-struct dispat
 - Modify: `src/Houtamelo.Spire.Analyzers/Houtamelo.Spire.Analyzers.csproj` — bump `<Version>` to 4.6.0.
 - Modify: `src/Houtamelo.Spire.CodeFixes/Houtamelo.Spire.CodeFixes.csproj` — bump `<Version>` to 4.6.0.
 
-- [ ] **Step 1: Move IL001–IL011 from Unshipped.md to a new release block in Shipped.md** (follow existing release-block format; add a date line).
+- [ ] **Step 1: Move SPIRE017–SPIRE027 from Unshipped.md to a new release block in Shipped.md** (follow existing release-block format; add a date line).
 - [ ] **Step 2: Bump versions in all three `.csproj`.**
 - [ ] **Step 3: Full build + test + pack**
 
@@ -2552,12 +2552,12 @@ After writing this plan I checked it against the spec:
 **Spec coverage:**
 - Interfaces set (18 types) → Tasks 1, 2. ✓
 - Attributes (InlinerStruct, Inlinable) → Task 3. ✓
-- Descriptors IL001–IL011 → Task 4. ✓
+- Descriptors SPIRE017–SPIRE027 → Task 4. ✓
 - [InlinerStruct] static/instance/generic/nested → Tasks 10–16. ✓
-- [InlinerStruct] diagnostics (IL001–IL004, IL011) → Tasks 18–22. ✓
+- [InlinerStruct] diagnostics (SPIRE017–SPIRE020, SPIRE027) → Tasks 18–22. ✓
 - [Inlinable] emit rule → Tasks 25–26. ✓
 - [Inlinable] body rewrite rules 1–7 → Tasks 27 (direct), 30 (nullable), 31 (non-null strip), 32–33 (aliases). ✓
-- [Inlinable] diagnostics (IL005–IL011) → Tasks 35–40. ✓
+- [Inlinable] diagnostics (SPIRE021–SPIRE027) → Tasks 35–40. ✓
 - Behavioral tests → Task 41. ✓
 - Benchmarks → Task 42. ✓
 - Package layout (interfaces in Spire, generator in Performance subfolder) → Tasks 1–4 follow the spec layout. ✓
@@ -2567,6 +2567,6 @@ After writing this plan I checked it against the spec:
 
 **Type consistency:** `InlinerStructDecl`, `InlinableHostDecl`, `InlinableParam`, `InlinerDiagnostic`, `LocationInfo`, `HostParamInfo`, `InlinerParamInfo` — all defined consistently across tasks. Emitter and parser field names align.
 
-**Known risk:** Task 27's use of `CSharpSyntaxTree.ParseText(decl.OriginalBody)` reparses the body in isolation, losing the outer method's generic and parameter context. This is fine for textual rewriting (we only look at identifier names) but cannot resolve semantic meaning. If a future task needs semantic info (e.g., to validate that an alias is declared before use in flow order), use the original method's `SemanticModel` via `SyntaxReference.GetSyntax()` on the captured `IMethodSymbol` instead. Flagged in Task 40 where SPIRE_IL005 analysis benefits from the full semantic model.
+**Known risk:** Task 27's use of `CSharpSyntaxTree.ParseText(decl.OriginalBody)` reparses the body in isolation, losing the outer method's generic and parameter context. This is fine for textual rewriting (we only look at identifier names) but cannot resolve semantic meaning. If a future task needs semantic info (e.g., to validate that an alias is declared before use in flow order), use the original method's `SemanticModel` via `SyntaxReference.GetSyntax()` on the captured `IMethodSymbol` instead. Flagged in Task 40 where SPIRE021 analysis benefits from the full semantic model.
 
 **Open item surfaced by self-review:** Task 30's handling of `p?(x)` syntax. The spec lists `p?(args)` as a form to be rewritten, but C# does not accept `identifier?(args)` as a valid conditional invocation — the conditional-access form is `identifier?.Invoke(args)`. This is a spec inconsistency. **Action:** during implementation of Task 30, verify with a syntax-tree dump and, if confirmed invalid, file a spec amendment removing `p?(args)` from the rewrite rules (the surrounding `p?.Invoke(args)` form covers the use case).
