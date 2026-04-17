@@ -284,7 +284,7 @@ public sealed class InlinableUsageAnalyzer : DiagnosticAnalyzer
                     InlinerDescriptors.SPIRE021_UnsupportedBodyUsage,
                     id.GetLocation(),
                     name,
-                    "captured by nested lambda or local function"));
+                    "captured by a nested lambda or local function (forces a heap-allocated closure and a delegate wrapper around the struct)"));
                 continue;
             }
 
@@ -342,7 +342,7 @@ public sealed class InlinableUsageAnalyzer : DiagnosticAnalyzer
         var parent = id.Parent;
         if (parent is null)
         {
-            violationHint = "bare reference";
+            violationHint = "used as a bare reference";
             return false;
         }
 
@@ -400,8 +400,8 @@ public sealed class InlinableUsageAnalyzer : DiagnosticAnalyzer
             // Parameters can't be reassigned via var aliasing rules; but a parameter
             // itself being reassigned (`p = other;`) is also a violation.
             violationHint = paramNames.Contains(id.Identifier.Text)
-                ? "reassigned (parameter overwritten)"
-                : "alias reassigned";
+                ? "reassigned (the synthesized twin's struct parameter cannot be overwritten)"
+                : "reassigned after its initial var-alias declaration (aliases must be single-assignment)";
             return false;
         }
 
@@ -424,13 +424,13 @@ public sealed class InlinableUsageAnalyzer : DiagnosticAnalyzer
         var p = id.Parent;
         return p switch
         {
-            AssignmentExpressionSyntax => "stored/assigned in a non-alias context",
-            MemberAccessExpressionSyntax => "accessed via member access",
-            CastExpressionSyntax => "used in a cast",
-            LambdaExpressionSyntax => "captured by lambda",
-            AnonymousFunctionExpressionSyntax => "captured by anonymous function",
-            ReturnStatementSyntax => "returned",
-            _ => "used in an unsupported form",
+            AssignmentExpressionSyntax => "stored into a non-alias destination (a field, property, or explicitly delegate-typed local)",
+            MemberAccessExpressionSyntax => "accessed via a member other than .Invoke (e.g. .Target, .Method) — the twin's struct does not expose System.Delegate members",
+            CastExpressionSyntax => "used in a cast — the twin's struct parameter is not assignable to the delegate type",
+            LambdaExpressionSyntax => "captured by a lambda (forces a heap-allocated closure and a delegate wrapper around the struct)",
+            AnonymousFunctionExpressionSyntax => "captured by an anonymous function (forces a heap-allocated closure and a delegate wrapper around the struct)",
+            ReturnStatementSyntax => "returned as a delegate — the twin's struct cannot be implicitly converted to the declared return type",
+            _ => "used in a form the [Inlinable] twin generator cannot rewrite",
         };
     }
 }

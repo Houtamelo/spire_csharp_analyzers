@@ -1,3 +1,9 @@
+### Changed Rules
+
+Rule ID | New Category | New Severity | Old Category | Old Severity | Notes
+--------|--------------|--------------|--------------|--------------|------
+SPIRE021 | Correctness | Warning | Correctness | Error | Downgraded to Warning — the patterns SPIRE021 catches (lambda capture, reassignment, field storage, casts, returns) either silently lose the JIT monomorphization benefit or surface as C# compiler errors in the generated twin; Warning leaves the intentional-override case ergonomic.
+
 ### New Rules
 
 Rule ID | Category | Severity | Notes

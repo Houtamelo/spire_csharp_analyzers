@@ -33,9 +33,12 @@ internal static class InlinerDescriptors
 
     public static readonly DiagnosticDescriptor SPIRE021_UnsupportedBodyUsage = new(
         id: "SPIRE021",
-        title: "[Inlinable] parameter used in unsupported form",
-        messageFormat: "[Inlinable] parameter '{0}' may only be invoked or aliased via single-assignment 'var'; {1}",
-        category: CorrectnessCategory, defaultSeverity: DiagnosticSeverity.Error, isEnabledByDefault: true);
+        title: "[Inlinable] parameter usage loses monomorphization benefit",
+        messageFormat: "[Inlinable] parameter '{0}' is {1}. The synthesized twin overload cannot preserve JIT monomorphization through this shape, so callers fall back to the delegate-taking original (or the twin fails to compile). Keep the parameter to direct invocation + single-assignment 'var' aliases, or drop [Inlinable] if you need this pattern.",
+        category: CorrectnessCategory,
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "The [Inlinable] generator emits a twin overload where the parameter is a generic readonly struct constrained to IActionInliner/IFuncInliner. Direct calls and single-assignment 'var' aliases are rewritten to .Invoke on the struct, giving the JIT a monomorphized call site it can inline. Usages that require the delegate type — capture by lambda or local function, reassignment, storage into a field/property, casts, returns typed as a delegate — either cannot be rewritten (the generated twin fails to compile) or silently defeat the benefit by routing back through the allocated delegate. If the delegate pattern is intentional, remove [Inlinable] so the original method is the only overload.");
 
     public static readonly DiagnosticDescriptor SPIRE022_NonDelegateParameter = new(
         id: "SPIRE022",
