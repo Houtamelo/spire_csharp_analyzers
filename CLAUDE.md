@@ -6,7 +6,7 @@ Roslyn-based C# analyzer
 
 - **Packages**: `Houtamelo.Spire` (attributes + utilities + vendored analyzers), `Houtamelo.Spire.Analyzers` (analyzers + source generator), `Houtamelo.Spire.CodeFixes`, `Houtamelo.Spire.PatternAnalysis`
 - **Rule prefix**: `SPIRE` (SPIRE001, SPIRE002, ...)
-- **User-facing API** in `Houtamelo.Spire` (namespace `Houtamelo.Spire`) — `EnforceInitializationAttribute`, `EnforceExhaustivenessAttribute`, `DiscriminatedUnionAttribute`, `VariantAttribute`, `Layout`, `GenerateDeconstruct`, `JsonLibrary`, `JsonNameAttribute`, `IDiscriminatedUnion<TEnum>`, `SpireLINQ.OfKind`, `SpireEnum<TEnum>` (safe integer-to-enum conversions)
+- **User-facing API** in `Houtamelo.Spire` (namespace `Houtamelo.Spire`) — `EnforceInitializationAttribute`, `EnforceExhaustivenessAttribute`, `DiscriminatedUnionAttribute`, `VariantAttribute`, `Layout`, `GenerateDeconstruct`, `JsonLibrary`, `JsonNameAttribute`, `IDiscriminatedUnion<TEnum>`, `SpireLINQ.OfKind`, `SpireEnum<TEnum>` (safe integer-to-enum conversions), `InlinerStructAttribute`, `InlinableAttribute`, `IActionInliner` / `IActionInliner<T1..T8>`, `IFuncInliner<TR>` / `IFuncInliner<T1..T8, TR>` (JIT-monomorphizable dispatch)
 - **Global config** via MSBuild properties (`CompilerVisibleProperty` in `build/Houtamelo.Spire.props`) — DU defaults (`Spire_DU_Default{Layout,GenerateDeconstruct,Json,JsonDiscriminator}`) and analyzer enforcement (`Spire_EnforceExhaustivenessOnAllEnumTypes`)
 - **Code fixes** in separate `Houtamelo.Spire.CodeFixes` project (standalone, no inter-project dependencies)
 
@@ -32,11 +32,16 @@ src/Houtamelo.Spire.Analyzers/              # Analyzers + source generator (nets
   Descriptors.cs                            # Central DiagnosticDescriptor registry
   Utils/                                    # Shared utilities (EnforceInitializationChecks, OperationUtilities, etc.)
     FlowAnalysis/                           # CFG-based flow analysis (InitState, KindState, NullState tracking)
-  SourceGenerators/                         # Discriminated union source generator
-    Emit/                                   # Per-strategy emitters (Additive, Overlap, BoxedFields, etc.)
+  SourceGenerators/                         # Source generators + coupled analyzers
+    Emit/                                   # Per-strategy DU emitters (Additive, Overlap, BoxedFields, etc.)
     Analyzers/                              # Generator-coupled analyzers — delegates to PatternAnalysis
     Model/                                  # Union declaration model types
     Parsing/                                # Attribute parsing
+    Performance/                            # Closure inliner generator ([InlinerStruct]/[Inlinable])
+      Emit/                                 # InlinerStructEmitter, InlinableTwinEmitter, InlinableBodyRewriter
+      Analyzers/                            # InlinableUsageAnalyzer (SPIRE021-026)
+      Model/                                # InlinerStructDecl, InlinableHostDecl, diagnostics
+      Parsing/                              # InlinerStructParser, InlinableParser
 src/Houtamelo.Spire.CodeFixes/              # Code fixes (standalone, no inter-project deps)
 src/Houtamelo.Spire.PatternAnalysis/        # Recursive pattern exhaustiveness analysis (netstandard2.0)
   Domains/                                  # Value domains (Bool, Enum, Numeric, Nullable, Structural, etc.)
