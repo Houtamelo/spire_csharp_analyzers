@@ -1,0 +1,30 @@
+# Project MCP servers migrated from .mcp.json. Codex loads this layer in trusted projects.
+
+[mcp_servers."sherlock"]
+command = "sherlock-mcp"
+
+[mcp_servers."dev-tools"]
+command = "bash"
+args = ["-c", "exec dotnet run --project \"$(git rev-parse --show-toplevel)/tools/DevTools\""]
+
+[mcp_servers."dev-tools".env]
+NUGET_HTTP_CACHE_PATH = "/tmp/spire-nuget-http-cache"
+
+[mcp_servers."git"]
+command = "npx"
+args = ["@cyanheads/git-mcp-server@latest"]
+
+[mcp_servers."git".env]
+MCP_TRANSPORT_TYPE = "stdio"
+npm_config_cache = "/tmp/spire-npm-cache"
+npm_config_yes = "true"
+
+[mcp_servers."dotnet"]
+command = "dnx"
+args = ["Community.Mcp.DotNet@1.0.0", "--yes"]
+
+[mcp_servers."dotnet".env]
+NUGET_HTTP_CACHE_PATH = "/tmp/spire-nuget-http-cache"
+
+[mcp_servers."microsoft-learn"]
+url = "https://learn.microsoft.com/api/mcp"

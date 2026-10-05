@@ -12,7 +12,7 @@ namespace DevTools;
 public static class FileSystemTools
 {
     static readonly string RepoRoot;
-    static readonly string[] SensitivePatterns = [".git", ".claude", ".csproj", ".sln"];
+    static readonly string[] SensitivePatterns = [".git", ".claude", ".codex", ".agents", ".csproj", ".sln"];
 
     static FileSystemTools()
     {
@@ -196,7 +196,7 @@ public static class FileSystemTools
     }
 
     [McpServerTool(Name = "remove")]
-    [Description("Delete a single file or an empty directory. Rejects non-empty directories (use remove_recursive). Prompts for confirmation on sensitive paths (.git/, .claude/, .csproj, .sln).")]
+    [Description("Delete a single file or an empty directory. Rejects non-empty directories (use remove_recursive). Prompts for confirmation on sensitive paths (.git/, .claude/, .codex/, .agents/, .csproj, .sln).")]
     public static string Remove(
         [Description("File or empty directory to delete (relative to repo root or absolute)")] string path)
     {

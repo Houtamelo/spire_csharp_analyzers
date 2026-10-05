@@ -18,7 +18,7 @@ Compiler (csc / VS / Rider)
 
 `Descriptors.cs` — central registry of all `DiagnosticDescriptor` instances. Analyzers reference descriptors from this file; they never define their own.
 
-Analyzers live in `src/Spire.Analyzers/Rules/`, one file per rule. Each inherits `DiagnosticAnalyzer`, declares `SupportedDiagnostics`, and registers callbacks in `Initialize()`. Detection strategy and conventions are in `.claude/rules/analyzer-conventions.md`.
+Analyzers live in `src/Houtamelo.Spire.Analyzers/Rules/`, one file per rule. Each inherits `DiagnosticAnalyzer`, declares `SupportedDiagnostics`, and registers callbacks in `Initialize()`. Detection strategy and conventions are in `.codex/rules/analyzer-conventions.md`.
 
 ## Package Layout
 
