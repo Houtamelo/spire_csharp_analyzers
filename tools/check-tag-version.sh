@@ -5,7 +5,6 @@ PROJECTS=(
     "src/Houtamelo.Spire/Houtamelo.Spire.csproj"
     "src/Houtamelo.Spire.Analyzers/Houtamelo.Spire.Analyzers.csproj"
     "src/Houtamelo.Spire.CodeFixes/Houtamelo.Spire.CodeFixes.csproj"
-    "src/Houtamelo.Spire/Houtamelo.Spire.csproj"
 )
 
 if [ $# -lt 1 ]; then
