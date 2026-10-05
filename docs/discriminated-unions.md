@@ -37,7 +37,7 @@ All layouts produce identical external APIs. The difference is how variant data 
 
 **Overlap** — all variants share the same memory region. Size = largest variant. Requires all fields to be unmanaged types. Uses `[FieldOffset]`. Fastest match; smallest footprint for wide unions with value-type fields. Not usable with generic structs (SPIRE_DU005).
 
-**UnsafeOverlap** — like Overlap but uses `Unsafe.AsRef` instead of `[FieldOffset]`, allowing managed types in overlapping positions. Requires `<AllowUnsafeBlocks>true</AllowUnsafeBlocks>` (SPIRE_DU009). Use only when Overlap doesn't fit and you can guarantee no GC-visible aliasing of managed refs.
+**UnsafeOverlap** — stores unmanaged fields in a raw buffer accessed through `Unsafe.ReadUnaligned` and `Unsafe.WriteUnaligned`, with managed fields in separate slots. Uses `InlineArrayAttribute` when available and fallback storage otherwise. Requires `<AllowUnsafeBlocks>true</AllowUnsafeBlocks>` (SPIRE_DU009) and a reference providing `System.Runtime.CompilerServices.Unsafe`.
 
 **BoxedFields** — wraps each variant's fields in a heap-allocated object. Size = one object reference per variant. Useful when field types prevent all inline layouts (e.g., ref structs as fields). Allocates on construction.
 
@@ -137,6 +137,8 @@ For every struct union the generator produces:
 - `IDiscriminatedUnion<Shape.Kind>` — implemented unconditionally; exposes `kind` through the interface
 - `Deconstruct(out Shape.Kind, ...)` — present when `GenerateDeconstruct = true` (default)
 - Factory methods: `Shape.Circle(5.0)`, `Shape.Square(3)`, `Shape.Point()`
+
+Field properties have `init` setters when the consuming compilation can access `System.Runtime.CompilerServices.IsExternalInit`, including a local internal shim. Otherwise, they are getter-only.
 
 `IDiscriminatedUnion<TKind>` and `SpireLINQ.OfKind` live in `Houtamelo.Spire`:
 

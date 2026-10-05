@@ -31,8 +31,8 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
                 AllowsUnsafe: ((Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions)comp.Options).AllowUnsafe,
                 HasInlineArray: comp.GetTypeByMetadataName(
                     "System.Runtime.CompilerServices.InlineArrayAttribute") is not null,
-                HasInitProperties: comp.GetTypeByMetadataName(
-                    "System.Runtime.CompilerServices.IsExternalInit") is not null));
+                HasInitProperties: CompilationInfo.HasAccessibleType(
+                    comp, "System.Runtime.CompilerServices.IsExternalInit")));
 
         var combined = unions
             .Combine(globalConfig)

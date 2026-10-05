@@ -67,12 +67,10 @@ internal static class UnsafeOverlapEmitter
             }
             else
             {
-                int longCount = (layout.BufferSize + 7) / 8;
-                for (int i = 0; i < longCount; i++)
-                {
-                    sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-                    sb.AppendLine($"internal long _data{i};");
-                }
+                EmitFallbackBuffer(sb, layout.BufferSize);
+                sb.AppendLine();
+                sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
+                sb.AppendLine("internal _Buffer _data;");
             }
             sb.AppendLine();
         }
@@ -93,14 +91,14 @@ internal static class UnsafeOverlapEmitter
         sb.AppendLine();
 
         // Factory methods
-        EmitFactories(sb, union, unionType, layout);
+        EmitFactories(sb, union, unionType, layout, hasInlineArray);
 
         // Deconstruct overloads
         if (union.GenerateDeconstruct)
-            EmitDeconstructs(sb, union.Variants, layout);
+            EmitDeconstructs(sb, union.Variants, layout, hasInlineArray);
 
         // Public properties for pattern matching
-        EmitProperties(sb, union.Variants, layout, union.HasInitProperties);
+        EmitProperties(sb, union.Variants, layout, union.HasInitProperties, hasInlineArray);
 
         // IsVariant properties
         foreach (var variant in union.Variants)
@@ -266,6 +264,31 @@ internal static class UnsafeOverlapEmitter
 
     #region Emit
 
+    private static void EmitFallbackBuffer(SourceBuilder sb, int bufferSize)
+    {
+        int longCount = (bufferSize + 7) / 8;
+        int storageSize = longCount * 8;
+
+        sb.AppendLine($"[StructLayout(LayoutKind.Sequential, Size = {storageSize})]");
+        sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
+        sb.AppendLine("internal struct _Buffer");
+        sb.OpenBrace();
+        for (int i = 0; i < longCount; i++)
+            sb.AppendLine($"internal long _element{i};");
+        sb.CloseBrace();
+    }
+
+    private static string BufferByteRef(bool hasInlineArray, string dataExpression, int offset)
+    {
+        var firstByte = hasInlineArray
+            ? $"{dataExpression}[0]"
+            : $"Unsafe.As<_Buffer, byte>(ref {dataExpression})";
+
+        return offset == 0
+            ? $"ref {firstByte}"
+            : $"ref Unsafe.Add(ref {firstByte}, {offset})";
+    }
+
     private static void EmitConstructor(SourceBuilder sb, string typeName, UnsafeLayout layout)
     {
         sb.AppendLine($"{typeName}(Kind kind)");
@@ -279,7 +302,8 @@ internal static class UnsafeOverlapEmitter
     }
 
     private static void EmitFactories(
-        SourceBuilder sb, UnionDeclaration union, string unionType, UnsafeLayout layout)
+        SourceBuilder sb, UnionDeclaration union, string unionType, UnsafeLayout layout,
+        bool hasInlineArray)
     {
         foreach (var variant in union.Variants)
         {
@@ -307,10 +331,7 @@ internal static class UnsafeOverlapEmitter
 
                 if (fm.IsBuffer)
                 {
-                    if (fm.BufferOffset == 0)
-                        sb.AppendLine($"Unsafe.WriteUnaligned(ref s._data[0], {field.Name});");
-                    else
-                        sb.AppendLine($"Unsafe.WriteUnaligned(ref Unsafe.Add(ref s._data[0], {fm.BufferOffset}), {field.Name});");
+                    sb.AppendLine($"Unsafe.WriteUnaligned({BufferByteRef(hasInlineArray, "s._data", fm.BufferOffset)}, {field.Name});");
                 }
                 else
                 {
@@ -324,7 +345,8 @@ internal static class UnsafeOverlapEmitter
     }
 
     private static void EmitProperties(
-        SourceBuilder sb, IEnumerable<VariantInfo> variants, UnsafeLayout layout, bool hasInitProperties)
+        SourceBuilder sb, IEnumerable<VariantInfo> variants, UnsafeLayout layout, bool hasInitProperties,
+        bool hasInlineArray)
     {
         var emitted = new HashSet<string>();
         foreach (var variant in variants)
@@ -344,24 +366,13 @@ internal static class UnsafeOverlapEmitter
                     {
                         sb.AppendLine($"public {field.TypeFullName} {field.Name}");
                         sb.OpenBrace();
-                        if (fm.BufferOffset == 0)
-                        {
-                            sb.AppendLine($"get => Unsafe.ReadUnaligned<{field.TypeFullName}>(ref _data[0]);");
-                            sb.AppendLine($"init => Unsafe.WriteUnaligned(ref _data[0], value);");
-                        }
-                        else
-                        {
-                            sb.AppendLine($"get => Unsafe.ReadUnaligned<{field.TypeFullName}>(ref Unsafe.Add(ref _data[0], {fm.BufferOffset}));");
-                            sb.AppendLine($"init => Unsafe.WriteUnaligned(ref Unsafe.Add(ref _data[0], {fm.BufferOffset}), value);");
-                        }
+                        sb.AppendLine($"get => Unsafe.ReadUnaligned<{field.TypeFullName}>({BufferByteRef(hasInlineArray, "_data", fm.BufferOffset)});");
+                        sb.AppendLine($"init => Unsafe.WriteUnaligned({BufferByteRef(hasInlineArray, "_data", fm.BufferOffset)}, value);");
                         sb.CloseBrace();
                     }
                     else
                     {
-                        if (fm.BufferOffset == 0)
-                            sb.AppendLine($"public {field.TypeFullName} {field.Name} => Unsafe.ReadUnaligned<{field.TypeFullName}>(ref _data[0]);");
-                        else
-                            sb.AppendLine($"public {field.TypeFullName} {field.Name} => Unsafe.ReadUnaligned<{field.TypeFullName}>(ref Unsafe.Add(ref _data[0], {fm.BufferOffset}));");
+                        sb.AppendLine($"public {field.TypeFullName} {field.Name} => Unsafe.ReadUnaligned<{field.TypeFullName}>({BufferByteRef(hasInlineArray, "_data", fm.BufferOffset)});");
                     }
                 }
                 else
@@ -391,7 +402,7 @@ internal static class UnsafeOverlapEmitter
     }
 
     private static void EmitDeconstructs(
-        SourceBuilder sb, IEnumerable<VariantInfo> variants, UnsafeLayout layout)
+        SourceBuilder sb, IEnumerable<VariantInfo> variants, UnsafeLayout layout, bool hasInlineArray)
     {
         var variantList = variants.ToList();
         if (variantList.Count == 0) return;
@@ -428,14 +439,14 @@ internal static class UnsafeOverlapEmitter
             sb.AppendLine();
 
             if (groupVariants.Count == 1)
-                EmitTypedDeconstruct(sb, groupVariants[0], layout);
+                EmitTypedDeconstruct(sb, groupVariants[0], layout, hasInlineArray);
             else
-                EmitObjectDeconstruct(sb, group.Key, groupVariants, layout);
+                EmitObjectDeconstruct(sb, group.Key, groupVariants, layout, hasInlineArray);
         }
     }
 
     private static void EmitTypedDeconstruct(
-        SourceBuilder sb, VariantInfo variant, UnsafeLayout layout)
+        SourceBuilder sb, VariantInfo variant, UnsafeLayout layout, bool hasInlineArray)
     {
         var mapping = layout.Variants[variant.Name];
 
@@ -454,10 +465,7 @@ internal static class UnsafeOverlapEmitter
 
             if (fm.IsBuffer)
             {
-                if (fm.BufferOffset == 0)
-                    sb.AppendLine($"{field.Name} = Unsafe.ReadUnaligned<{field.TypeFullName}>(ref _data[0]);");
-                else
-                    sb.AppendLine($"{field.Name} = Unsafe.ReadUnaligned<{field.TypeFullName}>(ref Unsafe.Add(ref _data[0], {fm.BufferOffset}));");
+                sb.AppendLine($"{field.Name} = Unsafe.ReadUnaligned<{field.TypeFullName}>({BufferByteRef(hasInlineArray, "_data", fm.BufferOffset)});");
             }
             else
             {
@@ -473,7 +481,8 @@ internal static class UnsafeOverlapEmitter
     }
 
     private static void EmitObjectDeconstruct(
-        SourceBuilder sb, int fieldCount, List<VariantInfo> groupVariants, UnsafeLayout layout)
+        SourceBuilder sb, int fieldCount, List<VariantInfo> groupVariants, UnsafeLayout layout,
+        bool hasInlineArray)
     {
         var paramList = "out Kind kind";
         for (int i = 0; i < fieldCount; i++)
@@ -503,10 +512,7 @@ internal static class UnsafeOverlapEmitter
 
                     if (fm.IsBuffer)
                     {
-                        if (fm.BufferOffset == 0)
-                            sb.AppendLine($"f{i} = Unsafe.ReadUnaligned<{field.TypeFullName}>(ref _data[0]);");
-                        else
-                            sb.AppendLine($"f{i} = Unsafe.ReadUnaligned<{field.TypeFullName}>(ref Unsafe.Add(ref _data[0], {fm.BufferOffset}));");
+                        sb.AppendLine($"f{i} = Unsafe.ReadUnaligned<{field.TypeFullName}>({BufferByteRef(hasInlineArray, "_data", fm.BufferOffset)});");
                     }
                     else
                     {
