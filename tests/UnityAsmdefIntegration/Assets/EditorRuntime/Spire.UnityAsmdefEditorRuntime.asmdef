@@ -1,0 +1,19 @@
+{
+    "name": "Spire.UnityAsmdefEditorRuntime",
+    "rootNamespace": "Spire.UnityAsmdefIntegration.EditorRuntime",
+    "references": [
+        "Spire.UnityAsmdefRuntimeAuto"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": []
+}

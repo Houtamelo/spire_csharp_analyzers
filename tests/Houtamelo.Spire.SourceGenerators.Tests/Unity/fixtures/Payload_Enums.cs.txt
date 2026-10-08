@@ -1,0 +1,23 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+
+public enum ByteMode : byte
+{
+    None,
+    Active,
+}
+
+public enum IntMode : int
+{
+    None,
+    Active,
+}
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct UnityEnumPayload
+{
+    [Variant] public static partial UnityEnumPayload Value(ByteMode byteMode, IntMode intMode);
+    [Variant] public static partial UnityEnumPayload Empty();
+}

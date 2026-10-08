@@ -1,0 +1,17 @@
+{
+    "name": "Spire.UnityAsmdefRuntimeChild",
+    "rootNamespace": "Spire.UnityAsmdefIntegration.RuntimeChild",
+    "references": [
+        "Spire.UnityAsmdefRuntimeBase"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": []
+}

@@ -1,0 +1,24 @@
+#nullable enable
+using System;
+using System.Collections.Generic;
+using Houtamelo.Spire;
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct UnityNestedCollectionChild
+{
+    [Variant] public static partial UnityNestedCollectionChild Value(int count);
+    [Variant] public static partial UnityNestedCollectionChild Empty();
+}
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct UnityNestedCollectionParent
+{
+    [Variant]
+    public static partial UnityNestedCollectionParent Values(
+        UnityNestedCollectionChild[] array,
+        List<UnityNestedCollectionChild> list);
+
+    [Variant] public static partial UnityNestedCollectionParent Empty();
+}

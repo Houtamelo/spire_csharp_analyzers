@@ -1,0 +1,20 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+using UnityEngine;
+
+[Serializable]
+public sealed class UnityUnsafeOverlapData
+{
+    public int marker;
+}
+
+[Serializable]
+[DiscriminatedUnion(Layout.UnsafeOverlap)]
+public partial struct UnityUnsafeOverlap
+{
+    [Variant] public static partial UnityUnsafeOverlap Number(uint value);
+    [Variant] public static partial UnityUnsafeOverlap Mixed(uint raw, float amount, string? label, Texture2D? icon);
+    [Variant] public static partial UnityUnsafeOverlap Child(UnityUnsafeOverlapData child);
+    [Variant] public static partial UnityUnsafeOverlap Empty();
+}

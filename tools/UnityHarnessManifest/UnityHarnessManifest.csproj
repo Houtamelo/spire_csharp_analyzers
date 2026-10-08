@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>preview</LangVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../tests/UnityTestHarness/ManifestExporter/Program.cs" Link="Program.cs" />
+    <Compile Include="../../tests/UnityTestHarness/Assets/Tests/XunitReflectionBridge.cs" Link="XunitReflectionBridge.cs" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="xunit.assert" Version="2.9.3" />
+    <PackageReference Include="xunit.extensibility.core" Version="2.9.3" />
+    <PackageReference Include="xunit.extensibility.execution" Version="2.9.3" />
+  </ItemGroup>
+</Project>

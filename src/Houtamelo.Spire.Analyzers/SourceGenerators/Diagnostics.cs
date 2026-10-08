@@ -86,6 +86,27 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+
+    private static readonly DiagnosticDescriptor UnitySerializationDeclaration = UnityError(
+        "SPIRE_DU013", "Union declaration cannot use Unity serialization");
+
+    private static readonly DiagnosticDescriptor UnitySerializationField = UnityError(
+        "SPIRE_DU014", "Variant field cannot be serialized by Unity");
+
+    private static readonly DiagnosticDescriptor UnitySerializationMemberConflict = UnityError(
+        "SPIRE_DU015", "Member conflicts with generated Unity serialization");
+
+    private static readonly DiagnosticDescriptor UnitySerializationReference = UnityError(
+        "SPIRE_DU016", "Unity serialization requires UnityEngine references");
+
+    private static DiagnosticDescriptor UnityError(string id, string title) => new(
+        id: id,
+        title: title,
+        messageFormat: "{0}",
+        category: "SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     private static readonly Dictionary<string, DiagnosticDescriptor> DescriptorMap = new()
     {
         ["SPIRE_DU002"] = RefStructNotSupported,
@@ -98,6 +119,10 @@ internal static class Diagnostics
         ["SPIRE_DU009"] = UnsafeOverlapRequiresUnsafe,
         ["SPIRE_DU010"] = FieldNameTypeConflict,
         ["SPIRE_DU011"] = ClassNotSupported,
+        ["SPIRE_DU013"] = UnitySerializationDeclaration,
+        ["SPIRE_DU014"] = UnitySerializationField,
+        ["SPIRE_DU015"] = UnitySerializationMemberConflict,
+        ["SPIRE_DU016"] = UnitySerializationReference,
     };
 
     public static DiagnosticDescriptor GetDescriptor(UnionDiagnostic diag)

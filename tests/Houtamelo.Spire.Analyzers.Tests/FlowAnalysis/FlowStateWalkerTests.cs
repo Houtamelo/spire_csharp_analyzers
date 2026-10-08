@@ -13,6 +13,9 @@ using Houtamelo.Spire.Analyzers.Utils;
 using Houtamelo.Spire.Analyzers.Utils.FlowAnalysis;
 using Houtamelo.Spire;
 using Xunit;
+#if SPIRE_UNITY_TEST_HOST
+using Spire.Tests.Hosting;
+#endif
 
 namespace Houtamelo.Spire.Analyzers.Tests.FlowAnalysis;
 
@@ -403,8 +406,13 @@ public class FlowStateWalkerTests
 
     private static async Task<AnalysisContext> Analyze(string source, string methodName, string localName)
     {
+#if SPIRE_UNITY_TEST_HOST
+        await Task.CompletedTask;
+        var refs = UnityTestHost.FrameworkReferences;
+#else
         var refs = await ReferenceAssemblies.Net.Net80.ResolveAsync(
             LanguageNames.CSharp, CancellationToken.None);
+#endif
         var coreRef = MetadataReference.CreateFromFile(typeof(EnforceInitializationAttribute).Assembly.Location);
 
         var tree = CSharpSyntaxTree.ParseText(source,

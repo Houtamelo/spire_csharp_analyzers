@@ -18,7 +18,7 @@ public abstract class InlinerStructSnapshotTestBase
     [InlinerStructCaseDiscovery]
     public void Verify(string casePath)
     {
-        var casesDir = Path.Combine(AppContext.BaseDirectory, "cases", "Performance", "InlinerStruct");
+        var casesDir = Path.Combine(Houtamelo.Spire.SourceGenerators.Tests.TestHarnessEnvironment.DataRoot, "cases", "Performance", "InlinerStruct");
         var caseDir = Path.Combine(casesDir, casePath);
 
         var inputPath = Path.Combine(caseDir, "input.cs");
@@ -52,7 +52,7 @@ public sealed class InlinerStructCaseDiscoveryAttribute : DataAttribute
 {
     public override IEnumerable<object[]> GetData(MethodInfo testMethod)
     {
-        var casesDir = Path.Combine(AppContext.BaseDirectory, "cases", "Performance", "InlinerStruct");
+        var casesDir = Path.Combine(Houtamelo.Spire.SourceGenerators.Tests.TestHarnessEnvironment.DataRoot, "cases", "Performance", "InlinerStruct");
         if (!Directory.Exists(casesDir))
             yield break;
 

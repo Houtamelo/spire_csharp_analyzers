@@ -32,7 +32,7 @@ public abstract class CodeFixTestBase
         if (caseName == CodeFixCaseDiscoveryAttribute.NoCasesSentinel)
             return;
 
-        var casesDir = Path.Combine(AppContext.BaseDirectory, Category, "cases");
+        var casesDir = Path.Combine(TestHarnessEnvironment.DataRoot, Category, "cases");
         var caseDir = Path.Combine(casesDir, caseName);
 
         var beforeSource = File.ReadAllText(Path.Combine(caseDir, "before.cs"));
@@ -184,7 +184,7 @@ public sealed class CodeFixCaseDiscoveryAttribute : DataAttribute
             ?? throw new InvalidOperationException("Could not determine test class");
 
         var category = ExtractCategory(testClass.Name);
-        var casesDir = Path.Combine(AppContext.BaseDirectory, category, "cases");
+        var casesDir = Path.Combine(TestHarnessEnvironment.DataRoot, category, "cases");
 
         if (!Directory.Exists(casesDir))
         {

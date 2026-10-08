@@ -104,7 +104,7 @@ public abstract class GeneratorAnalyzerTestBase
 
     private (string caseSource, List<int> expectedDiagnosticLines) LoadAndParse(string caseName)
     {
-        var casesDir = Path.Combine(AppContext.BaseDirectory, Category, "cases");
+        var casesDir = Path.Combine(TestHarnessEnvironment.DataRoot, Category, "cases");
         var casePath = Path.Combine(casesDir, $"{caseName}.cs");
 
         var caseContent = File.ReadAllText(casePath);
@@ -217,7 +217,7 @@ public sealed class GeneratorAnalyzerCaseDiscoveryAttribute : DataAttribute
             ?? throw new InvalidOperationException("Could not determine test class");
 
         var category = ExtractCategory(testClass.Name);
-        var casesDir = Path.Combine(AppContext.BaseDirectory, category, "cases");
+        var casesDir = Path.Combine(TestHarnessEnvironment.DataRoot, category, "cases");
 
         if (!Directory.Exists(casesDir))
         {

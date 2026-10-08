@@ -1,0 +1,34 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+using UnityEngine;
+
+[Serializable]
+[DiscriminatedUnion(Layout.BoxedFields)]
+public partial struct UnityBoxedFieldsCompatibleNames
+{
+    [Variant]
+    public static partial UnityBoxedFieldsCompatibleNames Value(
+        int payload,
+        string data,
+        Texture2D buffer,
+        int element);
+
+    [Variant]
+    public static partial UnityBoxedFieldsCompatibleNames Empty();
+}
+
+[Serializable]
+[DiscriminatedUnion(Layout.BoxedTuple)]
+public partial struct UnityBoxedTupleCompatibleNames
+{
+    [Variant]
+    public static partial UnityBoxedTupleCompatibleNames Value(
+        int payload,
+        string data,
+        Texture2D buffer,
+        int element);
+
+    [Variant]
+    public static partial UnityBoxedTupleCompatibleNames Empty();
+}

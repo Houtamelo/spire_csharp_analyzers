@@ -1,0 +1,25 @@
+{
+    "name": "Spire.UnityTestHarness",
+    "rootNamespace": "Spire.UnityTestHarness",
+    "references": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Houtamelo.Spire.dll",
+        "nunit.framework.dll",
+        "xunit.assert.dll",
+        "xunit.core.dll",
+        "xunit.abstractions.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

@@ -1,0 +1,19 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct UnityGeneric<T>
+{
+    [Variant] public static partial UnityGeneric<T> Some(T value);
+    [Variant] public static partial UnityGeneric<T> None();
+}
+
+public static class UnityGenericUses
+{
+    public static UnityGeneric<int> IntValue => UnityGeneric<int>.Some(42);
+    public static UnityGeneric<string> StringValue => UnityGeneric<string>.Some("text");
+    public static UnityGeneric<int> IntNone => UnityGeneric<int>.None();
+    public static UnityGeneric<string> StringNone => UnityGeneric<string>.None();
+}

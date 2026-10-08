@@ -19,16 +19,9 @@ internal static class GeneratorTestHelper
 
     private static MetadataReference[] GetBaseReferences()
     {
-        // Collect core BCL references from the running test process.
-        // Includes System.Runtime, System.Collections, etc.
-        var trustedAssemblies = ((string)System.AppContext.GetData(
-            "TRUSTED_PLATFORM_ASSEMBLIES")!)
-            .Split(System.IO.Path.PathSeparator)
-            .Select(path => MetadataReference.CreateFromFile(path))
-            .Cast<MetadataReference>()
+        return TestHarnessEnvironment.FrameworkReferences
             .Append(CoreAssemblyReference)
             .ToArray();
-        return trustedAssemblies;
     }
 
     public static GeneratorDriverRunResult RunGenerator(

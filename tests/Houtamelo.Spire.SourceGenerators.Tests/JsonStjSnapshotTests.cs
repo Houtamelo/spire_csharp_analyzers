@@ -17,7 +17,7 @@ public class JsonStjSnapshotTests
     [JsonStjCaseDiscovery]
     public void Verify(string casePath)
     {
-        var casesDir = Path.Combine(AppContext.BaseDirectory, "cases", "discriminated_union", "json_stj");
+        var casesDir = Path.Combine(TestHarnessEnvironment.DataRoot, "cases", "discriminated_union", "json_stj");
         var caseDir = Path.Combine(casesDir, casePath);
 
         var inputPath = Path.Combine(caseDir, "input.cs");
@@ -49,7 +49,7 @@ public sealed class JsonStjCaseDiscoveryAttribute : DataAttribute
 {
     public override IEnumerable<object[]> GetData(MethodInfo testMethod)
     {
-        var casesDir = Path.Combine(AppContext.BaseDirectory, "cases", "discriminated_union", "json_stj");
+        var casesDir = Path.Combine(TestHarnessEnvironment.DataRoot, "cases", "discriminated_union", "json_stj");
         if (!Directory.Exists(casesDir))
             yield break;
 

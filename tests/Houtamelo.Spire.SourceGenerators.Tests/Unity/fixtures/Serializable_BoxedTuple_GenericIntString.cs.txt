@@ -1,0 +1,19 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+
+[Serializable]
+[DiscriminatedUnion(Layout.BoxedTuple)]
+public partial struct UnityBoxedTupleGeneric<T>
+{
+    [Variant] public static partial UnityBoxedTupleGeneric<T> Some(T value);
+    [Variant] public static partial UnityBoxedTupleGeneric<T> None();
+}
+
+public static class UnityBoxedTupleGenericUses
+{
+    public static UnityBoxedTupleGeneric<int> IntValue => UnityBoxedTupleGeneric<int>.Some(42);
+    public static UnityBoxedTupleGeneric<string> StringValue => UnityBoxedTupleGeneric<string>.Some("text");
+    public static UnityBoxedTupleGeneric<int> IntNone => UnityBoxedTupleGeneric<int>.None();
+    public static UnityBoxedTupleGeneric<string> StringNone => UnityBoxedTupleGeneric<string>.None();
+}

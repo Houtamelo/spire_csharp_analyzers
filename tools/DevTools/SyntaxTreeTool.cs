@@ -15,7 +15,7 @@ public static class SyntaxTreeTool
         [Description("C# source code to parse")] string code)
     {
         var tree = CSharpSyntaxTree.ParseText(code,
-            new CSharpParseOptions(LanguageVersion.CSharp14));
+            new CSharpParseOptions(LanguageVersion.Preview));
         var root = tree.GetRoot();
 
         var sb = new StringBuilder();

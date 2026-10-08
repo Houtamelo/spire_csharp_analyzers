@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Houtamelo.Spire.Analyzers.SourceGenerators;
@@ -13,9 +14,7 @@ public sealed class GlobalConfigGeneratorTests
         MetadataReference.CreateFromFile(typeof(Houtamelo.Spire.DiscriminatedUnionAttribute).Assembly.Location);
 
     private static readonly MetadataReference[] BaseRefs =
-        ((string)System.AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
-            .Split(System.IO.Path.PathSeparator)
-            .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
+        TestHarnessEnvironment.FrameworkReferences
             .Append(CoreRef)
             .ToArray();
 
@@ -69,6 +68,31 @@ public partial struct Shape
         return string.Join("\n", result.GeneratedTrees.Select(t => t.GetText().ToString()));
     }
 
+    private static (GeneratorDriverRunResult Result, Compilation OutputCompilation) RunWithConfigAndCompilation(
+        string source,
+        Dictionary<string, string> globalOptions)
+    {
+        var tree = CSharpSyntaxTree.ParseText(
+            source,
+            CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest));
+        var compilation = CSharpCompilation.Create(
+            "TestAssembly",
+            new[] { tree },
+            BaseRefs,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
+
+        var configProvider = new TestAnalyzerConfigOptionsProvider(globalOptions);
+        var generator = new DiscriminatedUnionGenerator();
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            generators: new[] { generator.AsSourceGenerator() },
+            optionsProvider: configProvider);
+        driver = driver.RunGeneratorsAndUpdateCompilation(
+            compilation,
+            out var outputCompilation,
+            out _);
+        return (driver.GetRunResult(), outputCompilation);
+    }
+
     [Fact]
     public void DefaultLayout_Auto_NonGeneric_EmitsOverlap()
     {
@@ -117,6 +141,72 @@ public partial struct Shape
         var generated = GetMainGeneratedSource(result);
         Assert.NotNull(generated);
         Assert.Contains("FieldOffset", generated);
+    }
+
+    [Fact]
+    public void GlobalOverlap_GenericContainingUnionReportsDU005AndEmitsNoNestedUnion()
+    {
+        const string source = """
+            using Houtamelo.Spire;
+
+            public partial class GenericContainer<T>
+            {
+                [DiscriminatedUnion]
+                public partial struct Nested
+                {
+                    [Variant] public static partial Nested Some(int value);
+                    [Variant] public static partial Nested Empty();
+                }
+            }
+            """;
+
+        var (result, _) = RunWithConfigAndCompilation(
+            source,
+            new Dictionary<string, string>
+            {
+                ["build_property.Spire_DU_DefaultLayout"] = "Overlap",
+            });
+
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Id == "SPIRE_DU005");
+        Assert.DoesNotContain(
+            result.GeneratedTrees,
+            tree => tree.GetText().ToString().Contains("GenericContainer<T>.Nested", StringComparison.Ordinal));
+        Assert.DoesNotContain(
+            result.GeneratedTrees,
+            tree => tree.GetText().ToString().Contains("partial struct Nested", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void GlobalOverlap_GenericContainingBoxedFieldsUnionRemainsAccepted()
+    {
+        const string source = """
+            using Houtamelo.Spire;
+
+            public partial class GenericContainer<T>
+            {
+                [DiscriminatedUnion(Layout.BoxedFields)]
+                public partial struct Nested
+                {
+                    [Variant] public static partial Nested Some(int value);
+                    [Variant] public static partial Nested Empty();
+                }
+            }
+            """;
+
+        var (result, outputCompilation) = RunWithConfigAndCompilation(
+            source,
+            new Dictionary<string, string>
+            {
+                ["build_property.Spire_DU_DefaultLayout"] = "Overlap",
+            });
+
+        Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Id == "SPIRE_DU005");
+        Assert.Contains(
+            result.GeneratedTrees,
+            tree => tree.GetText().ToString().Contains("partial struct Nested", StringComparison.Ordinal));
+        Assert.DoesNotContain(
+            outputCompilation.GetDiagnostics(),
+            diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
     }
 
     [Fact]

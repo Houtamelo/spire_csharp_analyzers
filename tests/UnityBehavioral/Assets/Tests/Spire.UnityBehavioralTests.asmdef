@@ -1,0 +1,24 @@
+{
+    "name": "Spire.UnityBehavioralTests",
+    "rootNamespace": "Spire.UnityBehavioralTests",
+    "references": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Houtamelo.Spire.dll",
+        "nunit.framework.dll",
+        "xunit.assert.dll",
+        "xunit.core.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

@@ -22,18 +22,19 @@ public abstract class BehavioralTestBase
 
     private static MetadataReference[] GetBaseReferences()
     {
-        var refs = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
-            .Split(Path.PathSeparator)
-            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
-            .ToList();
+        var refs = TestHarnessEnvironment.RuntimeReferences.ToList();
 
         // Houtamelo.Spire — provides [EnforceInitialization] and other marker attributes
         refs.Add(MetadataReference.CreateFromFile(
             typeof(EnforceInitializationAttribute).Assembly.Location));
 
         // Newtonsoft.Json — not a platform assembly, needed for NSJ converter compilation
-        refs.Add(MetadataReference.CreateFromFile(
-            typeof(Newtonsoft.Json.JsonConvert).Assembly.Location));
+        var jsonPath = typeof(Newtonsoft.Json.JsonConvert).Assembly.Location;
+        if (!refs.Any(reference =>
+                string.Equals(reference.Display, jsonPath, StringComparison.OrdinalIgnoreCase)))
+        {
+            refs.Add(MetadataReference.CreateFromFile(jsonPath));
+        }
 
         return refs.ToArray();
     }
@@ -46,10 +47,17 @@ public abstract class BehavioralTestBase
             var syntaxTree = CSharpSyntaxTree.ParseText(src,
                 CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest),
                 path: "test.cs");
+            var parseOptions = (CSharpParseOptions)syntaxTree.Options;
+            var syntaxTrees = new List<SyntaxTree> { syntaxTree };
+            var compatibilityTree = TestHarnessEnvironment.CreateRuntimeCompatibilityTree(
+                parseOptions,
+                BaseReferences);
+            if (compatibilityTree is not null)
+                syntaxTrees.Add(compatibilityTree);
 
             var compilation = CSharpCompilation.Create(
                 $"Behavioral_{Guid.NewGuid():N}",
-                new[] { syntaxTree },
+                syntaxTrees,
                 BaseReferences,
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
                     allowUnsafe: true));
@@ -91,7 +99,7 @@ public abstract class BehavioralTestBase
             }
 
             ms.Seek(0, SeekOrigin.Begin);
-            return Assembly.Load(ms.ToArray());
+            return TestHarnessEnvironment.LoadAssembly(ms.ToArray());
         });
     }
 

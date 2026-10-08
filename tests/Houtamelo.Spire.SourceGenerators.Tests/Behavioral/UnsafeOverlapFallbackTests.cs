@@ -313,9 +313,15 @@ public sealed class UnsafeOverlapFallbackTests : BehavioralTestBase
         var references = await FallbackReferences.Value;
         var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp10);
         var tree = CSharpSyntaxTree.ParseText(source, parseOptions, path: "fallback.cs");
+        var sourceTrees = new List<SyntaxTree> { tree };
+        var compatibilityTree = TestHarnessEnvironment.CreateRuntimeCompatibilityTree(
+            parseOptions,
+            references);
+        if (compatibilityTree is not null)
+            sourceTrees.Add(compatibilityTree);
         var compilation = CSharpCompilation.Create(
             $"UnsafeOverlapFallback_{Guid.NewGuid():N}",
-            new[] { tree },
+            sourceTrees,
             references,
             new CSharpCompilationOptions(
                 OutputKind.DynamicallyLinkedLibrary,
@@ -358,9 +364,14 @@ public sealed class UnsafeOverlapFallbackTests : BehavioralTestBase
         string source,
         bool requireAccessibleInit)
     {
+#if SPIRE_UNITY_TEST_HOST
+        await Task.CompletedTask;
+        var references = TestHarnessEnvironment.RuntimeReferences;
+#else
         var references = await ReferenceAssemblies.NetCore.NetCoreApp31.ResolveAsync(
             LanguageNames.CSharp,
             CancellationToken.None);
+#endif
         var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp10);
         var tree = CSharpSyntaxTree.ParseText(source, parseOptions, path: "legacy-fallback.cs");
         var referencesWithCore = references.Add(CoreReference);
@@ -422,6 +433,10 @@ public sealed class UnsafeOverlapFallbackTests : BehavioralTestBase
 
     private static async Task<ImmutableArray<MetadataReference>> ResolveFallbackReferencesAsync()
     {
+#if SPIRE_UNITY_TEST_HOST
+        await Task.CompletedTask;
+        return TestHarnessEnvironment.RuntimeReferences.Add(CoreReference);
+#else
         var references = await ReferenceAssemblies.Net.Net60.ResolveAsync(
             LanguageNames.CSharp,
             CancellationToken.None);
@@ -441,6 +456,7 @@ public sealed class UnsafeOverlapFallbackTests : BehavioralTestBase
         }
 
         return references.Add(CoreReference);
+#endif
     }
 
     private static void AssertSuccessfulGeneration(GenerationResult result)
@@ -467,7 +483,7 @@ public sealed class UnsafeOverlapFallbackTests : BehavioralTestBase
             .ToList();
         Assert.True(emitResult.Success, FormatDiagnostics("Emit diagnostics", errors));
 
-        return Assembly.Load(stream.ToArray());
+        return TestHarnessEnvironment.LoadAssembly(stream.ToArray());
     }
 
     private static string FormatDiagnostics(string title, IEnumerable<RoslynDiagnostic> diagnostics)

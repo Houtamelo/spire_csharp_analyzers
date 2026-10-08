@@ -11,6 +11,10 @@ internal sealed class OverlapLayoutInfo
     public int R2Slots;
     public int R3Offset;
     public int R3Slots;
+    /// Offset of the generated Unity managed-reference payload, when emitted.
+    public int SerializedPayloadOffset;
+    /// Offset of the generated Unity runtime ownership token, when emitted.
+    public int SerializationOwnerOffset;
 
     /// Per-variant field placements
     public Dictionary<string, VariantLayoutInfo> Variants = new Dictionary<string, VariantLayoutInfo>();
@@ -152,6 +156,10 @@ internal static class OverlapLayoutComputer
             r3Slot++;
         }
         layout.R3Slots = r3Slot;
+
+        var runtimeEnd = layout.R3Offset + r3Slot * 8;
+        layout.SerializedPayloadOffset = AlignUp(runtimeEnd, 8);
+        layout.SerializationOwnerOffset = layout.SerializedPayloadOffset + 8;
 
         // Build per-variant mappings referencing global fields
         foreach (var variant in variantList)

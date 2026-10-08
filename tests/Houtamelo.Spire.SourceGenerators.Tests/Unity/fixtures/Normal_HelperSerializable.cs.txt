@@ -1,0 +1,16 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+
+[Serializable]
+public sealed class SerializableOnlyHelper
+{
+    public int value;
+}
+
+[DiscriminatedUnion(Layout.Additive)]
+public partial struct UnityNormalWithSerializableHelper
+{
+    [Variant] public static partial UnityNormalWithSerializableHelper Value(int value);
+    [Variant] public static partial UnityNormalWithSerializableHelper Empty();
+}

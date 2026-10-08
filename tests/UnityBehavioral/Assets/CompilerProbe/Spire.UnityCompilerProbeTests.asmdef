@@ -1,0 +1,25 @@
+{
+    "name": "Spire.UnityCompilerProbeTests",
+    "rootNamespace": "Spire.UnityCompilerProbeTests",
+    "references": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Houtamelo.Spire.dll",
+        "Houtamelo.Spire.Analyzers.dll",
+        "Houtamelo.Spire.PatternAnalysis.dll",
+        "Houtamelo.Spire.CodeFixes.dll",
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

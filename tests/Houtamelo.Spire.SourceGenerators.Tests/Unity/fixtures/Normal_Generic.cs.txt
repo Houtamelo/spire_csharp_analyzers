@@ -1,0 +1,9 @@
+#nullable enable
+using Houtamelo.Spire;
+
+[DiscriminatedUnion(Layout.Additive)]
+public partial struct UnityNormalGeneric<T>
+{
+    [Variant] public static partial UnityNormalGeneric<T> Some(T value);
+    [Variant] public static partial UnityNormalGeneric<T> None();
+}

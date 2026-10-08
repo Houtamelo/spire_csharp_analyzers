@@ -1,0 +1,19 @@
+{
+    "name": "Spire.UnityAsmdefEditorExplicit",
+    "rootNamespace": "Spire.UnityAsmdefIntegration.EditorExplicit",
+    "references": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Houtamelo.Spire.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": []
+}

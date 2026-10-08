@@ -1,0 +1,20 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+using UnityEngine;
+
+[Serializable]
+public sealed class UnityBoxedFieldsData
+{
+    public int marker;
+}
+
+[Serializable]
+[DiscriminatedUnion(Layout.BoxedFields)]
+public partial struct UnityBoxedFieldsUnion
+{
+    [Variant] public static partial UnityBoxedFieldsUnion Number(int value);
+    [Variant] public static partial UnityBoxedFieldsUnion Text(string? label, Texture2D? icon);
+    [Variant] public static partial UnityBoxedFieldsUnion Child(UnityBoxedFieldsData child);
+    [Variant] public static partial UnityBoxedFieldsUnion Empty();
+}

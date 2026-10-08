@@ -9,6 +9,9 @@ using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Testing;
 using Houtamelo.Spire.Analyzers.Utils.FlowAnalysis;
 using Xunit;
+#if SPIRE_UNITY_TEST_HOST
+using Spire.Tests.Hosting;
+#endif
 
 namespace Houtamelo.Spire.Analyzers.Tests.FlowAnalysis;
 
@@ -136,8 +139,13 @@ class C
 {{
     {methodBody}
 }}";
+#if SPIRE_UNITY_TEST_HOST
+        await Task.CompletedTask;
+        var refs = UnityTestHost.FrameworkReferences;
+#else
         var refs = await ReferenceAssemblies.Net.Net80.ResolveAsync(
             LanguageNames.CSharp, CancellationToken.None);
+#endif
         var tree = CSharpSyntaxTree.ParseText(source,
             CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest));
         var compilation = CSharpCompilation.Create("Test", new[] { tree }, refs,

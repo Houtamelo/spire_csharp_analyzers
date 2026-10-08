@@ -5,6 +5,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
+#if SPIRE_UNITY_TEST_HOST
+using Spire.Tests.Hosting;
+#endif
 
 namespace Houtamelo.Spire.Analyzers.Tests;
 
@@ -36,7 +39,11 @@ public static class TestCaseLoader
 {
     public static string LoadCase(string ruleId, string caseName)
     {
+#if SPIRE_UNITY_TEST_HOST
+        var dir = Path.Combine(UnityTestHost.DataRoot(typeof(TestCaseLoader).Assembly), ruleId, "cases");
+#else
         var dir = Path.Combine(AppContext.BaseDirectory, ruleId, "cases");
+#endif
         var sharedPath = Path.Combine(dir, "_shared.cs");
         var casePath = Path.Combine(dir, $"{caseName}.cs");
 

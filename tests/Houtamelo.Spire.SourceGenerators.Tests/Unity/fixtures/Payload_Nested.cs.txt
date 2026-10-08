@@ -1,0 +1,20 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct UnityNestedChild
+{
+    [Variant] public static partial UnityNestedChild Value(int count);
+    [Variant] public static partial UnityNestedChild Empty();
+}
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct UnityNestedParent
+{
+    [Variant] public static partial UnityNestedParent Parent(UnityNestedChild child, int marker);
+    [Variant] public static partial UnityNestedParent Text(string label);
+    [Variant] public static partial UnityNestedParent Empty();
+}

@@ -102,7 +102,7 @@ public sealed class PublishDryRunTests
                 }
             }
         };
-        process.StartInfo.ArgumentList.Add(scriptPath);
+        DevTools.ProcessCompatibility.AddArgument(process.StartInfo, scriptPath);
 
         Assert.True(process.Start(), $"Could not start publishing script: {scriptPath}");
 
@@ -114,17 +114,17 @@ public sealed class PublishDryRunTests
         {
             try
             {
-                await process.WaitForExitAsync(timeout.Token);
+                await DevTools.ProcessCompatibility.WaitForExitAsync(process, timeout.Token);
             }
             catch (OperationCanceledException) when (timeout.IsCancellationRequested)
             {
                 timedOut = true;
                 if (!process.HasExited)
                 {
-                    process.Kill(entireProcessTree: true);
+                    DevTools.ProcessCompatibility.KillTree(process);
                 }
 
-                await process.WaitForExitAsync();
+                await DevTools.ProcessCompatibility.WaitForExitAsync(process);
             }
         }
 

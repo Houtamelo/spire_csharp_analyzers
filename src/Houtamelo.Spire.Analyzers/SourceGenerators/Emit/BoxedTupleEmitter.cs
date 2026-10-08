@@ -7,6 +7,12 @@ namespace Houtamelo.Spire.Analyzers.SourceGenerators.Emit;
 internal static class BoxedTupleEmitter
 {
     public static string Emit(UnionDeclaration union)
+        => EmitCore(union, unitySerialization: false);
+
+    internal static string EmitUnity(UnionDeclaration union)
+        => EmitCore(union, unitySerialization: true);
+
+    private static string EmitCore(UnionDeclaration union, bool unitySerialization)
     {
         var sb = new SourceBuilder();
 
@@ -29,9 +35,12 @@ internal static class BoxedTupleEmitter
         var accessMod = string.IsNullOrEmpty(union.AccessibilityKeyword) ? "" : union.AccessibilityKeyword + " ";
         var readonlyMod = union.IsReadonly ? "readonly " : "";
         var refMod = union.IsRefStruct ? "ref " : "";
+        var unityInterface = unitySerialization
+            ? ", global::UnityEngine.ISerializationCallbackReceiver"
+            : "";
 
         sb.AppendLine("[global::Houtamelo.Spire.EnforceInitialization]");
-        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType} : global::Houtamelo.Spire.IDiscriminatedUnion<{unionType}.Kind>");
+        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType} : global::Houtamelo.Spire.IDiscriminatedUnion<{unionType}.Kind>{unityInterface}");
         sb.OpenBrace();
 
         // Kind enum
@@ -39,19 +48,32 @@ internal static class BoxedTupleEmitter
         sb.AppendLine();
 
         // Kind field (backing field + property)
-        sb.AppendLine("readonly Kind _kind;");
+        if (unitySerialization)
+        {
+            sb.AppendLine("[global::UnityEngine.SerializeField]");
+            sb.AppendLine("private Kind _kind;");
+        }
+        else
+        {
+            sb.AppendLine("readonly Kind _kind;");
+        }
         sb.AppendLine("public Kind kind => this._kind;");
 
         // Payload field
         sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-        if (union.HasInitProperties)
+        if (unitySerialization)
+            EmitUnitySlot(sb, union.HasInitProperties);
+        else if (union.HasInitProperties)
             sb.AppendLine("internal object? _payload { get; init; }");
         else
             sb.AppendLine("internal readonly object? _payload;");
         sb.AppendLine();
 
+        if (unitySerialization)
+            UnitySerializationEmitter.EmitSerializedStorage(sb, union);
+
         // Private constructor
-        EmitConstructor(sb, union.TypeName);
+        EmitConstructor(sb, union.TypeName, unitySerialization);
         sb.AppendLine();
 
         // Factory methods
@@ -59,14 +81,28 @@ internal static class BoxedTupleEmitter
 
         // Single Deconstruct overload
         if (union.GenerateDeconstruct)
-            EmitDeconstruct(sb);
+            EmitDeconstruct(sb, unitySerialization);
 
         // Public properties for pattern matching (kind switch for correct cast)
-        EmitProperties(sb, union.Variants, union.HasInitProperties);
+        EmitProperties(
+            sb,
+            union.Variants,
+            union.HasInitProperties || (unitySerialization && union.HasInitProperties),
+            unitySerialization,
+            !unitySerialization || union.HasInitProperties);
 
         // IsVariant properties
         foreach (var variant in union.Variants)
             sb.AppendLine($"public bool Is{variant.Name} => this.kind == Kind.{variant.Name};");
+
+        if (unitySerialization)
+        {
+            UnitySerializationEmitter.EmitCallbacksAndPayloads(
+                sb,
+                union,
+                unionType,
+                new[] { "this.__s0 = default!;" });
+        }
 
         ToStringEmitter.EmitStructToString(sb, union);
 
@@ -92,12 +128,33 @@ internal static class BoxedTupleEmitter
         sb.CloseBrace();
     }
 
-    private static void EmitConstructor(SourceBuilder sb, string typeName)
+    private static void EmitUnitySlot(SourceBuilder sb, bool useInitOnly)
+    {
+        sb.AppendLine("[global::System.NonSerialized] private object? __s0;");
+        sb.AppendLine("internal object? _s0");
+        sb.OpenBrace();
+        sb.AppendLine("get => this.__s0;");
+        var setter = useInitOnly ? "init" : "set";
+        sb.AppendLine($"{setter} {{ this.__SpireDetachSerializedCache(0); this.__s0 = value; }}");
+        sb.CloseBrace();
+    }
+
+    private static void EmitConstructor(
+        SourceBuilder sb,
+        string typeName,
+        bool unitySerialization)
     {
         sb.AppendLine($"{typeName}(Kind kind, object? payload)");
         sb.OpenBrace();
         sb.AppendLine("this._kind = kind;");
-        sb.AppendLine("this._payload = payload;");
+        sb.AppendLine(unitySerialization
+            ? "this.__s0 = payload;"
+            : "this._payload = payload;");
+        if (unitySerialization)
+        {
+            sb.AppendLine("this.__SpireSerializationOwner = null;");
+            sb.AppendLine("this._serializedPayload = null;");
+        }
         sb.CloseBrace();
     }
 
@@ -130,17 +187,22 @@ internal static class BoxedTupleEmitter
         }
     }
 
-    private static void EmitDeconstruct(SourceBuilder sb)
+    private static void EmitDeconstruct(SourceBuilder sb, bool unitySerialization)
     {
         sb.AppendLine();
         sb.AppendLine("public void Deconstruct(out Kind kind, out object? payload)");
         sb.OpenBrace();
         sb.AppendLine("kind = this.kind;");
-        sb.AppendLine("payload = this._payload;");
+        sb.AppendLine($"payload = this.{RuntimePayload(unitySerialization)};");
         sb.CloseBrace();
     }
 
-    private static void EmitProperties(SourceBuilder sb, IEnumerable<VariantInfo> variants, bool hasInitProperties)
+    private static void EmitProperties(
+        SourceBuilder sb,
+        IEnumerable<VariantInfo> variants,
+        bool hasInitProperties,
+        bool unitySerialization,
+        bool useInitOnly)
     {
         var variantList = variants.ToList();
 
@@ -179,14 +241,14 @@ internal static class BoxedTupleEmitter
                 if (variant.Fields.Length == 1)
                 {
                     // Single-field variant: payload is the value directly
-                    accessor = $"({propType})this._payload!";
+                    accessor = $"({propType})this.{RuntimePayload(unitySerialization)}!";
                 }
                 else
                 {
                     // Multi-field variant: payload is a boxed ValueTuple
                     var tupleType = "(" + string.Join(", ",
                         variant.Fields.Select(f => f.TypeFullName)) + ")";
-                    accessor = $"(({tupleType})this._payload!).Item{fieldIdx + 1}";
+                    accessor = $"(({tupleType})this.{RuntimePayload(unitySerialization)}!).Item{fieldIdx + 1}";
                 }
 
                 cases.Add(new PropertyCase
@@ -202,7 +264,7 @@ internal static class BoxedTupleEmitter
 
             if (hasInitProperties)
             {
-                EmitPropertyWithInit(sb, propName, propType, cases);
+                EmitPropertyWithInit(sb, propName, propType, cases, unitySerialization, useInitOnly);
             }
             else
             {
@@ -238,7 +300,12 @@ internal static class BoxedTupleEmitter
     }
 
     private static void EmitPropertyWithInit(
-        SourceBuilder sb, string propName, string propType, List<PropertyCase> cases)
+        SourceBuilder sb,
+        string propName,
+        string propType,
+        List<PropertyCase> cases,
+        bool unitySerialization,
+        bool useInitOnly)
     {
         // Getter
         sb.AppendLine($"public {propType} {propName}");
@@ -263,11 +330,11 @@ internal static class BoxedTupleEmitter
         if (cases.Count == 1)
         {
             var c = cases[0];
-            EmitInitSetterBody(sb, c);
+            EmitInitSetterBody(sb, c, unitySerialization, useInitOnly);
         }
         else
         {
-            sb.AppendLine("init");
+            sb.AppendLine(unitySerialization && !useInitOnly ? "set" : "init");
             sb.OpenBrace();
             sb.AppendLine("switch (this.kind)");
             sb.OpenBrace();
@@ -277,15 +344,15 @@ internal static class BoxedTupleEmitter
                 sb.OpenBrace();
                 if (c.Variant.Fields.Length == 1)
                 {
-                    sb.AppendLine("this._payload = value;");
+                    sb.AppendLine($"this.{RuntimePayload(unitySerialization)} = value;");
                 }
                 else
                 {
                     var tupleType = "(" + string.Join(", ",
                         c.Variant.Fields.Select(f => f.TypeFullName)) + ")";
-                    sb.AppendLine($"var t = ({tupleType})this._payload!;");
+                    sb.AppendLine($"var t = ({tupleType})this.{RuntimePayload(unitySerialization)}!;");
                     sb.AppendLine($"t.Item{c.FieldIndex + 1} = value;");
-                    sb.AppendLine("this._payload = t;");
+                    sb.AppendLine($"this.{RuntimePayload(unitySerialization)} = t;");
                 }
                 sb.AppendLine("break;");
                 sb.CloseBrace();
@@ -298,24 +365,32 @@ internal static class BoxedTupleEmitter
         sb.CloseBrace(); // property
     }
 
-    private static void EmitInitSetterBody(SourceBuilder sb, PropertyCase c)
+    private static void EmitInitSetterBody(
+        SourceBuilder sb,
+        PropertyCase c,
+        bool unitySerialization,
+        bool useInitOnly)
     {
         if (c.Variant.Fields.Length == 1)
         {
-            sb.AppendLine("init => this._payload = value;");
+            var setter = unitySerialization && !useInitOnly ? "set" : "init";
+            sb.AppendLine($"{setter} => this.{RuntimePayload(unitySerialization)} = value;");
         }
         else
         {
             var tupleType = "(" + string.Join(", ",
                 c.Variant.Fields.Select(f => f.TypeFullName)) + ")";
-            sb.AppendLine("init");
+            sb.AppendLine(unitySerialization && !useInitOnly ? "set" : "init");
             sb.OpenBrace();
-            sb.AppendLine($"var t = ({tupleType})this._payload!;");
+            sb.AppendLine($"var t = ({tupleType})this.{RuntimePayload(unitySerialization)}!;");
             sb.AppendLine($"t.Item{c.FieldIndex + 1} = value;");
-            sb.AppendLine("this._payload = t;");
+            sb.AppendLine($"this.{RuntimePayload(unitySerialization)} = t;");
             sb.CloseBrace();
         }
     }
+
+    private static string RuntimePayload(bool unitySerialization)
+        => unitySerialization ? "_s0" : "_payload";
 
     private static string FormatTypeParams(EquatableArray<string> typeParameters)
     {

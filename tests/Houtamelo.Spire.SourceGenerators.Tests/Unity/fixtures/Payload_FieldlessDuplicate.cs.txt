@@ -1,0 +1,12 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct UnityFieldlessDuplicate
+{
+    [Variant] public static partial UnityFieldlessDuplicate First(string value);
+    [Variant] public static partial UnityFieldlessDuplicate Second(string value);
+    [Variant] public static partial UnityFieldlessDuplicate Empty();
+}

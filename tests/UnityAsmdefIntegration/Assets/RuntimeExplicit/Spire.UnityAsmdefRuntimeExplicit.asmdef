@@ -1,0 +1,17 @@
+{
+    "name": "Spire.UnityAsmdefRuntimeExplicit",
+    "rootNamespace": "Spire.UnityAsmdefIntegration.RuntimeExplicit",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Houtamelo.Spire.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": []
+}

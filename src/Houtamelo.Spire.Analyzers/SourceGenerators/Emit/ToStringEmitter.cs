@@ -21,12 +21,12 @@ internal static class ToStringEmitter
         {
             if (variant.Fields.Length == 0)
             {
-                sb.AppendLine($"Kind.{variant.Name} => \"{variant.Name}()\",");
+                sb.AppendLine($"Kind.{IdentifierUtility.Escape(variant.Name)} => \"{IdentifierUtility.SerializedName(variant.Name)}()\",");
             }
             else
             {
-                var fieldList = string.Join(", ", variant.Fields.Select(f => $"{{this.{f.Name}}}"));
-                sb.AppendLine($"Kind.{variant.Name} => $\"{variant.Name}({fieldList})\",");
+                var fieldList = string.Join(", ", variant.Fields.Select(f => $"{{this.{IdentifierUtility.Escape(f.Name)}}}"));
+                sb.AppendLine($"Kind.{IdentifierUtility.Escape(variant.Name)} => $\"{IdentifierUtility.SerializedName(variant.Name)}({fieldList})\",");
             }
         }
 
@@ -70,12 +70,12 @@ internal static class ToStringEmitter
 
             if (variant.Fields.Length == 0)
             {
-                sb.AppendLine($"public override string ToString() => \"{variant.Name}()\";");
+                sb.AppendLine($"public override string ToString() => \"{IdentifierUtility.SerializedName(variant.Name)}()\";");
             }
             else
             {
-                var fieldList = string.Join(", ", variant.Fields.Select(f => $"{{this.{f.Name}}}"));
-                sb.AppendLine($"public override string ToString() => $\"{variant.Name}({fieldList})\";");
+                var fieldList = string.Join(", ", variant.Fields.Select(f => $"{{this.{IdentifierUtility.Escape(f.Name)}}}"));
+                sb.AppendLine($"public override string ToString() => $\"{IdentifierUtility.SerializedName(variant.Name)}({fieldList})\";");
             }
 
             sb.CloseBrace();

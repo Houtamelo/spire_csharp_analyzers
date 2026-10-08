@@ -1,0 +1,10 @@
+#nullable enable
+using Houtamelo.Spire;
+
+[DiscriminatedUnion(Layout.UnsafeOverlap)]
+public partial struct UnityNormalUnsafeOverlap
+{
+    [Variant] public static partial UnityNormalUnsafeOverlap Number(uint value);
+    [Variant] public static partial UnityNormalUnsafeOverlap Mixed(uint raw, float amount);
+    [Variant] public static partial UnityNormalUnsafeOverlap Empty();
+}

@@ -7,6 +7,12 @@ namespace Houtamelo.Spire.Analyzers.SourceGenerators.Emit;
 internal static class OverlapEmitter
 {
     public static string Emit(UnionDeclaration union)
+        => EmitCore(union, unitySerialization: false);
+
+    internal static string EmitUnity(UnionDeclaration union)
+        => EmitCore(union, unitySerialization: true);
+
+    private static string EmitCore(UnionDeclaration union, bool unitySerialization)
     {
         var sb = new SourceBuilder();
         var kindSize = OverlapLayoutComputer.KindSize(union.Variants.Length);
@@ -35,7 +41,10 @@ internal static class OverlapEmitter
 
         sb.AppendLine("[global::Houtamelo.Spire.EnforceInitialization]");
         sb.AppendLine($"[StructLayout(LayoutKind.Explicit)]");
-        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {union.TypeName} : global::Houtamelo.Spire.IDiscriminatedUnion<{union.TypeName}.Kind>");
+        var unityInterface = unitySerialization
+            ? ", global::UnityEngine.ISerializationCallbackReceiver"
+            : "";
+        sb.AppendLine($"{accessMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {union.TypeName} : global::Houtamelo.Spire.IDiscriminatedUnion<{union.TypeName}.Kind>{unityInterface}");
         sb.OpenBrace();
 
         EmitKindEnum(sb, union);
@@ -43,21 +52,48 @@ internal static class OverlapEmitter
 
         // Kind field (backing field + property)
         sb.AppendLine("[FieldOffset(0)]");
-        sb.AppendLine("readonly Kind _kind;");
+        if (unitySerialization)
+        {
+            sb.AppendLine("[global::UnityEngine.SerializeField]");
+            sb.AppendLine("private Kind _kind;");
+        }
+        else
+        {
+            sb.AppendLine("readonly Kind _kind;");
+        }
         sb.AppendLine("public Kind kind => this._kind;");
         sb.AppendLine();
 
-        EmitGlobalFields(sb, layout);
-        EmitGlobalConstructor(sb, union.TypeName);
+        EmitGlobalFields(sb, layout, unitySerialization);
+        if (unitySerialization)
+            EmitSerializedStorage(sb, layout);
+        EmitGlobalConstructor(sb, union.TypeName, unitySerialization);
         sb.AppendLine();
-        EmitGlobalFactories(sb, union, layout);
+        EmitGlobalFactories(sb, union, layout, unitySerialization);
         if (union.GenerateDeconstruct)
             EmitGlobalDeconstructs(sb, union.Variants, layout);
-        EmitProperties(sb, layout, union.HasInitProperties);
+        EmitProperties(sb, layout, union.HasInitProperties, unitySerialization);
 
         // IsVariant properties
         foreach (var variant in union.Variants)
             sb.AppendLine($"public bool Is{variant.Name} => this.kind == Kind.{variant.Name};");
+
+        if (unitySerialization)
+        {
+            var resetStatements = new List<string>();
+            foreach (var field in layout.GlobalR1)
+                resetStatements.Add($"this._{field.Name} = default!;");
+            foreach (var field in layout.GlobalR2)
+                resetStatements.Add($"this._{field.Name} = default!;");
+            foreach (var field in layout.GlobalR3)
+                resetStatements.Add($"this._obj_{field.Name} = default!;");
+
+            UnitySerializationEmitter.EmitCallbacksAndPayloads(
+                sb,
+                union,
+                union.TypeName,
+                resetStatements);
+        }
 
         ToStringEmitter.EmitStructToString(sb, union);
 
@@ -81,15 +117,22 @@ internal static class OverlapEmitter
         sb.CloseBrace();
     }
 
-    private static void EmitGlobalFields(SourceBuilder sb, OverlapLayoutInfo layout)
+    private static void EmitGlobalFields(
+        SourceBuilder sb,
+        OverlapLayoutInfo layout,
+        bool unitySerialization)
     {
         // Internal storage must be readonly fields (not auto-properties) because
         // factory methods use Unsafe.AsRef to write through them.
         foreach (var gf in layout.GlobalR1)
         {
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
+            if (unitySerialization)
+                sb.AppendLine("[global::System.NonSerialized]");
             sb.AppendLine($"[FieldOffset({gf.Offset})]");
-            sb.AppendLine($"internal readonly {gf.TypeFullName} _{gf.Name};");
+            sb.AppendLine(unitySerialization
+                ? $"internal {gf.TypeFullName} _{gf.Name};"
+                : $"internal readonly {gf.TypeFullName} _{gf.Name};");
             sb.AppendLine();
         }
 
@@ -97,8 +140,12 @@ internal static class OverlapEmitter
         {
             int offset = layout.R2Offset + gf.Offset * 8;
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
+            if (unitySerialization)
+                sb.AppendLine("[global::System.NonSerialized]");
             sb.AppendLine($"[FieldOffset({offset})]");
-            sb.AppendLine($"internal readonly {gf.TypeFullName}? _{gf.Name};");
+            sb.AppendLine(unitySerialization
+                ? $"internal {NullableReferenceType(gf.TypeFullName)} _{gf.Name};"
+                : $"internal readonly {NullableReferenceType(gf.TypeFullName)} _{gf.Name};");
             sb.AppendLine();
         }
 
@@ -106,22 +153,37 @@ internal static class OverlapEmitter
         {
             int offset = layout.R3Offset + gf.Offset * 8;
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
+            if (unitySerialization)
+                sb.AppendLine("[global::System.NonSerialized]");
             sb.AppendLine($"[FieldOffset({offset})]");
-            sb.AppendLine($"internal readonly object? _obj_{gf.Name};");
+            sb.AppendLine(unitySerialization
+                ? $"internal object? _obj_{gf.Name};"
+                : $"internal readonly object? _obj_{gf.Name};");
             sb.AppendLine();
         }
     }
 
-    private static void EmitGlobalConstructor(SourceBuilder sb, string typeName)
+    private static void EmitGlobalConstructor(
+        SourceBuilder sb,
+        string typeName,
+        bool unitySerialization)
     {
         sb.AppendLine($"{typeName}(Kind kind) : this()");
         sb.OpenBrace();
         sb.AppendLine("this._kind = kind;");
+        if (unitySerialization)
+        {
+            sb.AppendLine("this.__SpireSerializationOwner = null;");
+            sb.AppendLine("this._serializedPayload = null;");
+        }
         sb.CloseBrace();
     }
 
     private static void EmitGlobalFactories(
-        SourceBuilder sb, UnionDeclaration union, OverlapLayoutInfo layout)
+        SourceBuilder sb,
+        UnionDeclaration union,
+        OverlapLayoutInfo layout,
+        bool unitySerialization)
     {
         foreach (var variant in union.Variants)
         {
@@ -143,20 +205,30 @@ internal static class OverlapEmitter
             sb.AppendLine($"var s = new {union.TypeName}(Kind.{variant.Name});");
 
             foreach (var fp in vl.R1Fields)
-                sb.AppendLine($"Unsafe.AsRef(in s._{fp.Field.Name}) = {fp.Field.Name};");
+                sb.AppendLine(unitySerialization
+                    ? $"s._{fp.Field.Name} = {fp.Field.Name};"
+                    : $"Unsafe.AsRef(in s._{fp.Field.Name}) = {fp.Field.Name};");
 
             foreach (var fp in vl.R2Fields)
-                sb.AppendLine($"Unsafe.AsRef(in s._{fp.Field.Name}) = {fp.Field.Name};");
+                sb.AppendLine(unitySerialization
+                    ? $"s._{fp.Field.Name} = {fp.Field.Name};"
+                    : $"Unsafe.AsRef(in s._{fp.Field.Name}) = {fp.Field.Name};");
 
             foreach (var fp in vl.R3Fields)
-                sb.AppendLine($"Unsafe.AsRef(in s._obj_{fp.Field.Name}) = {fp.Field.Name};");
+                sb.AppendLine(unitySerialization
+                    ? $"s._obj_{fp.Field.Name} = {fp.Field.Name};"
+                    : $"Unsafe.AsRef(in s._obj_{fp.Field.Name}) = {fp.Field.Name};");
 
             sb.AppendLine("return s;");
             sb.CloseBrace();
         }
     }
 
-    private static void EmitProperties(SourceBuilder sb, OverlapLayoutInfo layout, bool hasInitProperties)
+    private static void EmitProperties(
+        SourceBuilder sb,
+        OverlapLayoutInfo layout,
+        bool hasInitProperties,
+        bool unitySerialization)
     {
         foreach (var gf in layout.GlobalR1)
         {
@@ -166,7 +238,10 @@ internal static class OverlapEmitter
                 sb.AppendLine($"public {gf.TypeFullName} {gf.Name}");
                 sb.OpenBrace();
                 sb.AppendLine($"get => this._{gf.Name};");
-                sb.AppendLine($"init => this._{gf.Name} = value;");
+                if (unitySerialization)
+                    sb.AppendLine($"init {{ this.__SpireDetachSerializedCache({gf.Offset}); this._{gf.Name} = value; }}");
+                else
+                    sb.AppendLine($"init => this._{gf.Name} = value;");
                 sb.CloseBrace();
             }
             else
@@ -180,7 +255,10 @@ internal static class OverlapEmitter
                 sb.AppendLine($"public {gf.TypeFullName} {gf.Name}");
                 sb.OpenBrace();
                 sb.AppendLine($"get => this._{gf.Name}!;");
-                sb.AppendLine($"init => this._{gf.Name} = value;");
+                if (unitySerialization)
+                    sb.AppendLine($"init {{ this.__SpireDetachSerializedCache({gf.Offset}); this._{gf.Name} = value; }}");
+                else
+                    sb.AppendLine($"init => this._{gf.Name} = value;");
                 sb.CloseBrace();
             }
             else
@@ -194,13 +272,31 @@ internal static class OverlapEmitter
                 sb.AppendLine($"public {gf.TypeFullName} {gf.Name}");
                 sb.OpenBrace();
                 sb.AppendLine($"get => ({gf.TypeFullName})this._obj_{gf.Name}!;");
-                sb.AppendLine($"init => this._obj_{gf.Name} = value;");
+                if (unitySerialization)
+                    sb.AppendLine($"init {{ this.__SpireDetachSerializedCache({gf.Offset}); this._obj_{gf.Name} = value; }}");
+                else
+                    sb.AppendLine($"init => this._obj_{gf.Name} = value;");
                 sb.CloseBrace();
             }
             else
                 sb.AppendLine($"public {gf.TypeFullName} {gf.Name} => ({gf.TypeFullName})this._obj_{gf.Name}!;");
         }
     }
+
+    private static void EmitSerializedStorage(SourceBuilder sb, OverlapLayoutInfo layout)
+    {
+        sb.AppendLine("private sealed class __SpireSerializationOwnerToken { }");
+        sb.AppendLine("[global::UnityEngine.SerializeReference]");
+        sb.AppendLine($"[FieldOffset({layout.SerializedPayloadOffset})]");
+        sb.AppendLine("private __SpireSerializedPayload? _serializedPayload;");
+        sb.AppendLine("[global::System.NonSerialized]");
+        sb.AppendLine($"[FieldOffset({layout.SerializationOwnerOffset})]");
+        sb.AppendLine("private __SpireSerializationOwnerToken? __SpireSerializationOwner;");
+        sb.AppendLine();
+    }
+
+    private static string NullableReferenceType(string type)
+        => type.EndsWith("?", System.StringComparison.Ordinal) ? type : type + "?";
 
     private static void EmitGlobalDeconstructs(
         SourceBuilder sb, IEnumerable<VariantInfo> variants, OverlapLayoutInfo layout)

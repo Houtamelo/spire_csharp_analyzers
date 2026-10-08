@@ -5,6 +5,10 @@ out/
 **/bin/
 **/obj/
 
+# Python runner caches
+__pycache__/
+*.pyc
+
 # NuGet
 *.nupkg
 *.snupkg

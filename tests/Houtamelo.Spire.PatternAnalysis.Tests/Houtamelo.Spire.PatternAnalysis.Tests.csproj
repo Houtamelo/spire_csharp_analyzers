@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework Condition="'$(SpireUnityTestHost)' != 'true'">net10.0</TargetFramework>
+    <TargetFramework Condition="'$(SpireUnityTestHost)' == 'true'">netstandard2.1</TargetFramework>
     <LangVersion>preview</LangVersion>
-    <IsTestProject>true</IsTestProject>
+    <IsTestProject Condition="'$(SpireUnityTestHost)' != 'true'">true</IsTestProject>
+    <DefineConstants Condition="'$(SpireUnityTestHost)' == 'true'">$(DefineConstants);SPIRE_UNITY_TEST_HOST</DefineConstants>
+    <CopyLocalLockFileAssemblies Condition="'$(SpireUnityTestHost)' == 'true'">true</CopyLocalLockFileAssemblies>
     <NoWarn>$(NoWarn);NU1701;xUnit1003</NoWarn>
   </PropertyGroup>
 
@@ -17,10 +20,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" Condition="'$(SpireUnityTestHost)' != 'true'" />
     <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2" Condition="'$(SpireUnityTestHost)' != 'true'" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing" Version="1.1.3" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(SpireUnityTestHost)' == 'true'">
+    <Compile Include="../Shared/UnityTestHost.cs" Link="Hosting/UnityTestHost.cs" />
+    <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all" />
   </ItemGroup>
 </Project>

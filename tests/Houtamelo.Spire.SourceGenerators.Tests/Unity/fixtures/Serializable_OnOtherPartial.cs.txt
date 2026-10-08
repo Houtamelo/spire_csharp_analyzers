@@ -1,0 +1,16 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+using UnityEngine;
+
+[DiscriminatedUnion]
+public partial struct UnityPartialAttribute
+{
+}
+
+[Serializable]
+public partial struct UnityPartialAttribute
+{
+    [Variant] public static partial UnityPartialAttribute Value(int value);
+    [Variant] public static partial UnityPartialAttribute Empty();
+}

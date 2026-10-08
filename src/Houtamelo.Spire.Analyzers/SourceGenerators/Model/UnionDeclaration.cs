@@ -32,7 +32,8 @@ internal sealed record UnionDiagnostic(
 internal sealed record ContainingTypeInfo(
     string AccessibilityKeyword,
     string Keyword,
-    string Name
+    string Name,
+    EquatableArray<string> TypeParameters
 ) : IEquatable<ContainingTypeInfo>;
 
 /// Raw [DiscriminatedUnion] ctor arg values before global config resolution.
@@ -73,5 +74,7 @@ internal sealed record UnionDeclaration(
     /// Raw attribute values for global config resolution.
     RawAttributeConfig RawConfig,
     /// Whether the union type has type parameters (needed for Layout auto-resolution).
-    bool IsGeneric
+    bool IsGeneric,
+    /// Whether the complete union symbol has System.SerializableAttribute.
+    bool IsUnitySerializable = false
 ) : IEquatable<UnionDeclaration>;

@@ -1,0 +1,18 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+using UnityEngine;
+
+[Serializable]
+[DiscriminatedUnion(Layout.Overlap)]
+public partial struct UnityOverlapCompatibleNames
+{
+    [Variant]
+    public static partial UnityOverlapCompatibleNames Value(
+        int buffer,
+        string payload,
+        float cacheValue,
+        Texture2D? ownerValue);
+
+    [Variant] public static partial UnityOverlapCompatibleNames Empty();
+}

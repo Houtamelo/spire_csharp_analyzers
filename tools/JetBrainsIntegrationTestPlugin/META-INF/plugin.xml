@@ -1,0 +1,11 @@
+<idea-plugin>
+  <id>spire.integration.driver</id>
+  <name>Spire Integration Test Driver</name>
+  <vendor>Houtamelo</vendor>
+  <version>1</version>
+  <idea-version since-build="261" until-build="262.*"/>
+  <depends>com.intellij.modules.rider</depends>
+  <extensions defaultExtensionNs="com.intellij">
+    <postStartupActivity implementation="spire.integration.SpireIntegrationDriver"/>
+  </extensions>
+</idea-plugin>

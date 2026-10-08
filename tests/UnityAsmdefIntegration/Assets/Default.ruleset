@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RuleSet Name="Spire Unity asmdef integration" Description="Keeps the Rider code-fix probe observable without blocking compilation." ToolsVersion="16.0">
+  <Rules AnalyzerId="Houtamelo.Spire.Analyzers" RuleNamespace="Houtamelo.Spire.Analyzers">
+    <Rule Id="SPIRE016" Action="Warning" />
+  </Rules>
+</RuleSet>

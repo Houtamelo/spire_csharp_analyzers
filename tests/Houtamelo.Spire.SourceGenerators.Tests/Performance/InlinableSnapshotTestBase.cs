@@ -18,7 +18,7 @@ public abstract class InlinableSnapshotTestBase
     [InlinableCaseDiscovery]
     public void Verify(string casePath)
     {
-        var casesDir = Path.Combine(AppContext.BaseDirectory, "cases", "Performance", "Inlinable");
+        var casesDir = Path.Combine(Houtamelo.Spire.SourceGenerators.Tests.TestHarnessEnvironment.DataRoot, "cases", "Performance", "Inlinable");
         var caseDir = Path.Combine(casesDir, casePath);
 
         var inputPath = Path.Combine(caseDir, "input.cs");
@@ -52,7 +52,7 @@ public sealed class InlinableCaseDiscoveryAttribute : DataAttribute
 {
     public override IEnumerable<object[]> GetData(MethodInfo testMethod)
     {
-        var casesDir = Path.Combine(AppContext.BaseDirectory, "cases", "Performance", "Inlinable");
+        var casesDir = Path.Combine(Houtamelo.Spire.SourceGenerators.Tests.TestHarnessEnvironment.DataRoot, "cases", "Performance", "Inlinable");
         if (!Directory.Exists(casesDir))
             yield break;
 

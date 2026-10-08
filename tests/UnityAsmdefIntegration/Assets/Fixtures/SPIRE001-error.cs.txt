@@ -1,0 +1,9 @@
+using Spire.UnityAsmdefIntegration.Predefined;
+
+namespace Spire.UnityAsmdefIntegration.Predefined
+{
+    public static class SPIRE001ErrorProbe
+    {
+        public static readonly InitializationProbe[] Invalid = new InitializationProbe[2];
+    }
+}

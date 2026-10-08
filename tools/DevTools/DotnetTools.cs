@@ -23,7 +23,7 @@ public static class DotnetTools
         };
         using var process = Process.Start(psi)!;
         RepoRoot = process.StandardOutput.ReadToEnd().Trim();
-        process.WaitForExit(TimeSpan.FromSeconds(5));
+        ProcessCompatibility.WaitForExit(process, TimeSpan.FromSeconds(5));
         if (process.ExitCode != 0 || string.IsNullOrEmpty(RepoRoot))
             throw new InvalidOperationException("Failed to resolve git repo root.");
     }
@@ -52,9 +52,9 @@ public static class DotnetTools
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
-        if (!process.WaitForExit(TimeSpan.FromSeconds(timeoutSeconds)))
+        if (!ProcessCompatibility.WaitForExit(process, TimeSpan.FromSeconds(timeoutSeconds)))
         {
-            process.Kill(entireProcessTree: true);
+            ProcessCompatibility.KillTree(process);
             return (-1, $"Process timed out after {timeoutSeconds}s.\n\nStdout:\n{stdout}\n\nStderr:\n{stderr}");
         }
 

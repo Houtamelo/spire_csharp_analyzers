@@ -23,6 +23,7 @@ internal static class UnionParser
 
         var rawConfig = ReadAttributeArgs(ctx.Attributes);
         var isGeneric = typeSymbol.TypeParameters.Length > 0;
+        var isUnitySerializable = UnitySerializationValidation.HasSerializableAttribute(typeSymbol);
 
         if (declKind is null)
         {
@@ -57,11 +58,16 @@ internal static class UnionParser
         // Initial strategy resolution using built-in defaults for sentinels.
         // Will be re-resolved in ResolveGlobalConfig when global config is available.
         var effectiveLayout = rawConfig.Layout == 0 ? 1 : rawConfig.Layout; // ReadGlobalCfg → Auto
-        var strategy = ResolveStrategy(declKind, effectiveLayout, isGeneric);
+        var strategy = isUnitySerializable
+            ? ResolveUnityStrategy(rawConfig.Layout)
+            : ResolveStrategy(declKind, effectiveLayout, isGeneric);
 
-        // Reject Overlap on generic struct (CLR restriction) — for explicit Layout.Overlap only.
+        // Reject Overlap on generic structs and unions nested in generic containing
+        // types (CLR restriction) — for explicit Layout.Overlap only.
         // Global-config-induced Overlap on generics is caught post-resolution in the generator.
-        if (strategy == EmitStrategy.Overlap && isGeneric && rawConfig.Layout != 0)
+        if (strategy == EmitStrategy.Overlap &&
+            (isGeneric || HasGenericContainingType(typeSymbol)) &&
+            rawConfig.Layout != 0)
         {
             return new UnionDeclaration(
                 Namespace: typeSymbol.ContainingNamespace.IsGlobalNamespace
@@ -81,7 +87,7 @@ internal static class UnionParser
                 Diagnostic: CreateDiagnostic(
                     syntax,
                     "SPIRE_DU005",
-                    "Generic structs cannot use Overlap layout (CLR restriction); use BoxedFields or BoxedTuple",
+                    "Generic structs and unions nested in generic containing types cannot use Overlap layout (CLR restriction); use BoxedFields or BoxedTuple",
                     isError: true),
                 Json: JsonLibrary.None,
                 JsonDiscriminator: "kind",
@@ -102,14 +108,21 @@ internal static class UnionParser
         }
 
         var variants = declKind == "record"
-            ? DiscoverNestedTypeVariants(typeSymbol)
-            : DiscoverMethodVariants(typeSymbol);
+            ? DiscoverNestedTypeVariants(typeSymbol, isUnitySerializable)
+            : DiscoverMethodVariants(typeSymbol, isUnitySerializable);
 
         if (variants.Length == 0)
         {
             var hint = declKind == "record"
                 ? "No nested variant types found inheriting from the union type."
                 : "No [Variant] methods found on discriminated union type.";
+            var noVariantDiagnostic = isUnitySerializable
+                ? UnitySerializationValidation.Validate(
+                    typeSymbol,
+                    syntax,
+                    ctx.SemanticModel.Compilation,
+                    variants)
+                : null;
             return new UnionDeclaration(
                 Namespace: typeSymbol.ContainingNamespace.IsGlobalNamespace
                     ? ""
@@ -125,7 +138,7 @@ internal static class UnionParser
                     .Select(tp => tp.Name).ToImmutableArray()),
                 Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
                 ContainingTypes: new EquatableArray<ContainingTypeInfo>(ImmutableArray<ContainingTypeInfo>.Empty),
-                Diagnostic: CreateDiagnostic(
+                Diagnostic: noVariantDiagnostic ?? CreateDiagnostic(
                     syntax,
                     "SPIRE_DU003",
                     hint,
@@ -134,7 +147,8 @@ internal static class UnionParser
                 JsonDiscriminator: "kind",
                 HasInitProperties: false,
                 RawConfig: rawConfig,
-                IsGeneric: isGeneric);
+                IsGeneric: isGeneric,
+                IsUnitySerializable: isUnitySerializable);
         }
 
         // Resolve with built-in defaults (will be re-resolved with global config later)
@@ -155,6 +169,16 @@ internal static class UnionParser
             .Select(tp => tp.Name)
             .ToImmutableArray();
 
+        UnionDiagnostic? unityDiagnostic = null;
+        if (isUnitySerializable)
+        {
+            unityDiagnostic = UnitySerializationValidation.Validate(
+                typeSymbol,
+                syntax,
+                ctx.SemanticModel.Compilation,
+                variants);
+        }
+
         return new UnionDeclaration(
             Namespace: typeSymbol.ContainingNamespace.IsGlobalNamespace
                 ? ""
@@ -169,12 +193,13 @@ internal static class UnionParser
             TypeParameters: new EquatableArray<string>(typeParams),
             Variants: new EquatableArray<VariantInfo>(variants),
             ContainingTypes: new EquatableArray<ContainingTypeInfo>(GetContainingTypes(typeSymbol)),
-            Diagnostic: layoutWarning,
+            Diagnostic: unityDiagnostic ?? layoutWarning,
             Json: json,
             JsonDiscriminator: rawConfig.JsonDiscriminator ?? "kind",
             HasInitProperties: false,
             RawConfig: rawConfig,
-            IsGeneric: isGeneric);
+            IsGeneric: isGeneric,
+            IsUnitySerializable: isUnitySerializable);
     }
 
     /// Re-resolves sentinel values using global config.
@@ -190,7 +215,9 @@ internal static class UnionParser
         var effectiveLayout = raw.Layout == 0 // ReadGlobalCfg
             ? config.DefaultLayout
             : raw.Layout;
-        var strategy = ResolveStrategy(union.DeclarationKeyword, effectiveLayout, union.IsGeneric);
+        var strategy = union.IsUnitySerializable
+            ? ResolveUnityStrategy(raw.Layout)
+            : ResolveStrategy(union.DeclarationKeyword, effectiveLayout, union.IsGeneric);
 
         var generateDeconstruct = raw.GenerateDeconstruct == 0 // ReadGlobalCfg
             ? config.DefaultGenerateDeconstruct
@@ -276,7 +303,9 @@ internal static class UnionParser
             chain.Add(new ContainingTypeInfo(
                 AccessibilityKeyword: AccessibilityToKeyword(current.DeclaredAccessibility),
                 Keyword: keyword,
-                Name: current.Name));
+                Name: current.Name,
+                TypeParameters: new EquatableArray<string>(
+                    current.TypeParameters.Select(parameter => parameter.Name).ToImmutableArray())));
             current = current.ContainingType;
         }
         chain.Reverse(); // outermost first
@@ -315,6 +344,31 @@ internal static class UnionParser
         };
     }
 
+    private static EmitStrategy ResolveUnityStrategy(int rawLayout)
+    {
+        return rawLayout switch
+        {
+            2 => EmitStrategy.Overlap,
+            3 => EmitStrategy.BoxedFields,
+            4 => EmitStrategy.BoxedTuple,
+            6 => EmitStrategy.UnsafeOverlap,
+            _ => EmitStrategy.Additive,
+        };
+    }
+
+    private static bool HasGenericContainingType(INamedTypeSymbol typeSymbol)
+    {
+        for (var containing = typeSymbol.ContainingType;
+             containing is not null;
+             containing = containing.ContainingType)
+        {
+            if (containing.TypeParameters.Length > 0)
+                return true;
+        }
+
+        return false;
+    }
+
     /// Reads [JsonName] attribute from a symbol and returns the Name value, or null.
     private static string? GetJsonName(ISymbol symbol)
     {
@@ -334,22 +388,26 @@ internal static class UnionParser
     }
 
     /// Discovers variants from [Variant] static methods (struct path).
-    private static ImmutableArray<VariantInfo> DiscoverMethodVariants(INamedTypeSymbol typeSymbol)
+    private static ImmutableArray<VariantInfo> DiscoverMethodVariants(
+        INamedTypeSymbol typeSymbol,
+        bool includeNullableReferenceTypeModifiers)
     {
         return typeSymbol.GetMembers()
             .OfType<IMethodSymbol>()
             .Where(m => m.IsStatic && HasVariantAttribute(m))
-            .Select(m => ParseMethodVariant(m))
+            .Select(m => ParseMethodVariant(m, includeNullableReferenceTypeModifiers))
             .ToImmutableArray();
     }
 
     /// Discovers variants from nested types that inherit from the parent (record path).
-    private static ImmutableArray<VariantInfo> DiscoverNestedTypeVariants(INamedTypeSymbol typeSymbol)
+    private static ImmutableArray<VariantInfo> DiscoverNestedTypeVariants(
+        INamedTypeSymbol typeSymbol,
+        bool includeNullableReferenceTypeModifiers)
     {
         return typeSymbol.GetTypeMembers()
             .Where(nested => SymbolEqualityComparer.Default.Equals(
                 nested.BaseType?.OriginalDefinition, typeSymbol.OriginalDefinition))
-            .Select(nested => ParseNestedTypeVariant(nested))
+            .Select(nested => ParseNestedTypeVariant(nested, includeNullableReferenceTypeModifiers))
             .ToImmutableArray();
     }
 
@@ -368,16 +426,22 @@ internal static class UnionParser
             a.AttributeClass?.Name == "VariantAttribute");
     }
 
-    private static VariantInfo ParseMethodVariant(IMethodSymbol method)
+    private static VariantInfo ParseMethodVariant(
+        IMethodSymbol method,
+        bool includeNullableReferenceTypeModifiers)
     {
         var fields = method.Parameters
             .Select(p => new FieldInfo(
                 Name: p.Name,
-                TypeFullName: p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                TypeFullName: DisplayFieldType(p.Type, includeNullableReferenceTypeModifiers),
                 IsUnmanaged: p.Type.IsUnmanagedType,
                 IsReferenceType: p.Type.IsReferenceType,
                 KnownSize: ComputeKnownSize(p.Type),
-                JsonName: GetJsonName(p)))
+                JsonName: GetJsonName(p),
+                IsUnityUnion: UnitySerializationValidation.IsUnityUnion(p.Type),
+                IsUnityUnionCollection: UnitySerializationValidation.IsUnityUnionCollection(p.Type),
+                IsUnityComposite: UnitySerializationValidation.IsUnityComposite(p.Type),
+                RequiresUnityRuntimeDispatch: UnitySerializationValidation.ContainsTypeParameter(p.Type)))
             .ToImmutableArray();
 
         return new VariantInfo(
@@ -388,7 +452,9 @@ internal static class UnionParser
     }
 
     /// Extracts variant info from a nested type's primary constructor parameters.
-    private static VariantInfo ParseNestedTypeVariant(INamedTypeSymbol nestedType)
+    private static VariantInfo ParseNestedTypeVariant(
+        INamedTypeSymbol nestedType,
+        bool includeNullableReferenceTypeModifiers)
     {
         var primaryCtor = nestedType.Constructors
             .Where(c => !IsCopyConstructor(c, nestedType))
@@ -401,12 +467,16 @@ internal static class UnionParser
             : primaryCtor.Parameters
                 .Select(p => new FieldInfo(
                     Name: p.Name,
-                    TypeFullName: p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                    TypeFullName: DisplayFieldType(p.Type, includeNullableReferenceTypeModifiers),
                     IsUnmanaged: p.Type.IsUnmanagedType,
                     IsReferenceType: p.Type.IsReferenceType,
                     KnownSize: ComputeKnownSize(p.Type),
-                    JsonName: GetJsonName(p)))
-                .ToImmutableArray();
+                    JsonName: GetJsonName(p),
+                    IsUnityUnion: UnitySerializationValidation.IsUnityUnion(p.Type),
+                    IsUnityUnionCollection: UnitySerializationValidation.IsUnityUnionCollection(p.Type),
+                    IsUnityComposite: UnitySerializationValidation.IsUnityComposite(p.Type),
+                    RequiresUnityRuntimeDispatch: UnitySerializationValidation.ContainsTypeParameter(p.Type)))
+            .ToImmutableArray();
 
         return new VariantInfo(
             Name: nestedType.Name,
@@ -414,6 +484,15 @@ internal static class UnionParser
             JsonName: GetJsonName(nestedType),
             AccessibilityKeyword: ExplicitAccessibility(nestedType));
     }
+
+    private static string DisplayFieldType(
+        ITypeSymbol type,
+        bool includeNullableReferenceTypeModifiers)
+        => type.ToDisplayString(
+            includeNullableReferenceTypeModifiers
+                ? SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+                    SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier)
+                : SymbolDisplayFormat.FullyQualifiedFormat);
 
     /// Returns sizeof for primitives, enums (underlying type), bool, nint/nuint.
     /// Null for everything else. Called at parse time while semantic model is available.

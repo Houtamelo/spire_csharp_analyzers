@@ -17,7 +17,7 @@ public class JsonSchemaSnapshotTests
     [JsonSchemaCaseDiscovery]
     public void Verify(string casePath)
     {
-        var casesDir = Path.Combine(AppContext.BaseDirectory, "cases", "discriminated_union", "json_schema");
+        var casesDir = Path.Combine(TestHarnessEnvironment.DataRoot, "cases", "discriminated_union", "json_schema");
         var caseDir = Path.Combine(casesDir, casePath);
 
         var inputPath = Path.Combine(caseDir, "input.cs");
@@ -49,7 +49,7 @@ public sealed class JsonSchemaCaseDiscoveryAttribute : DataAttribute
 {
     public override IEnumerable<object[]> GetData(MethodInfo testMethod)
     {
-        var casesDir = Path.Combine(AppContext.BaseDirectory, "cases", "discriminated_union", "json_schema");
+        var casesDir = Path.Combine(TestHarnessEnvironment.DataRoot, "cases", "discriminated_union", "json_schema");
         if (!Directory.Exists(casesDir))
             yield break;
 

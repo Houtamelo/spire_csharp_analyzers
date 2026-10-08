@@ -26,7 +26,7 @@ public static class FileSystemTools
         };
         using var process = Process.Start(psi)!;
         RepoRoot = process.StandardOutput.ReadToEnd().Trim();
-        process.WaitForExit(TimeSpan.FromSeconds(5));
+        ProcessCompatibility.WaitForExit(process, TimeSpan.FromSeconds(5));
         if (process.ExitCode != 0 || string.IsNullOrEmpty(RepoRoot))
             throw new InvalidOperationException("Failed to resolve git repo root.");
     }

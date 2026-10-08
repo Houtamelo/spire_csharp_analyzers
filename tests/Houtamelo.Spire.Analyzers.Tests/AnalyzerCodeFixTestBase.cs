@@ -15,6 +15,9 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 using Xunit.Sdk;
+#if SPIRE_UNITY_TEST_HOST
+using Spire.Tests.Hosting;
+#endif
 
 namespace Houtamelo.Spire.Analyzers.Tests;
 
@@ -42,7 +45,7 @@ public abstract class AnalyzerCodeFixTestBase
         if (caseName == AnalyzerCodeFixCaseDiscoveryAttribute.NoCasesSentinel)
             return;
 
-        var casesDir = Path.Combine(AppContext.BaseDirectory, Category, "cases");
+        var casesDir = GetCasesDirectory(Category);
         var caseDir = Path.Combine(casesDir, caseName);
         var sharedPath = Path.Combine(casesDir, "_shared.cs");
 
@@ -151,9 +154,24 @@ public abstract class AnalyzerCodeFixTestBase
 
     private static async Task<ImmutableArray<MetadataReference>> ResolveReferencesAsync()
     {
+#if SPIRE_UNITY_TEST_HOST
+        await Task.CompletedTask;
+        return UnityTestHost.FrameworkReferences
+            .Add(AnalyzerAssemblyReference);
+#else
         var refs = await ReferenceAssemblies.Net.Net80.ResolveAsync(
             LanguageNames.CSharp, CancellationToken.None);
         return refs.Add(AnalyzerAssemblyReference).Add(CoreAssemblyReference);
+#endif
+    }
+
+    private static string GetCasesDirectory(string category)
+    {
+#if SPIRE_UNITY_TEST_HOST
+        return Path.Combine(UnityTestHost.DataRoot(typeof(AnalyzerCodeFixTestBase).Assembly), category, "cases");
+#else
+        return Path.Combine(AppContext.BaseDirectory, category, "cases");
+#endif
     }
 }
 
@@ -168,7 +186,11 @@ public sealed class AnalyzerCodeFixCaseDiscoveryAttribute : DataAttribute
             ?? throw new InvalidOperationException("Could not determine test class");
 
         var category = ExtractCategory(testClass.Name);
+#if SPIRE_UNITY_TEST_HOST
+        var casesDir = Path.Combine(UnityTestHost.DataRoot(testClass.Assembly), category, "cases");
+#else
         var casesDir = Path.Combine(AppContext.BaseDirectory, category, "cases");
+#endif
 
         if (!Directory.Exists(casesDir))
         {

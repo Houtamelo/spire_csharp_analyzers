@@ -13,6 +13,9 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 using Xunit.Sdk;
+#if SPIRE_UNITY_TEST_HOST
+using Spire.Tests.Hosting;
+#endif
 
 namespace Houtamelo.Spire.Analyzers.Tests;
 
@@ -92,7 +95,7 @@ public abstract class AnalyzerTestBase<TAnalyzer> where TAnalyzer : DiagnosticAn
 
     private (string caseSource, string? sharedSource, List<int> expectedDiagnosticLines) LoadAndParse(string caseName)
     {
-        var casesDir = Path.Combine(AppContext.BaseDirectory, RuleId, "cases");
+        var casesDir = GetCasesDirectory(RuleId);
         var sharedPath = Path.Combine(casesDir, "_shared.cs");
         var casePath = Path.Combine(casesDir, $"{caseName}.cs");
 
@@ -187,9 +190,25 @@ public abstract class AnalyzerTestBase<TAnalyzer> where TAnalyzer : DiagnosticAn
 
     private static async Task<ImmutableArray<MetadataReference>> ResolveReferencesAsync()
     {
+#if SPIRE_UNITY_TEST_HOST
+        await Task.CompletedTask;
+        return UnityTestHost.FrameworkReferences
+            .Add(AnalyzerAssemblyReference);
+#else
         var refs = await ReferenceAssemblies.Net.Net80.ResolveAsync(
             LanguageNames.CSharp, CancellationToken.None);
         return refs.Add(AnalyzerAssemblyReference).Add(CoreAssemblyReference);
+#endif
+    }
+
+    private static string GetCasesDirectory(string ruleId)
+    {
+#if SPIRE_UNITY_TEST_HOST
+        return Path.Combine(
+            UnityTestHost.DataRoot(typeof(AnalyzerTestBase<>).Assembly), ruleId, "cases");
+#else
+        return Path.Combine(AppContext.BaseDirectory, ruleId, "cases");
+#endif
     }
 
     private static async Task<ImmutableArray<Diagnostic>> GetAnalyzerDiagnosticsAsync(
@@ -264,7 +283,11 @@ public sealed class TestCaseDiscoveryAttribute : DataAttribute
             ?? throw new InvalidOperationException("Could not determine test class");
 
         var ruleId = ExtractRuleId(testClass.Name);
+#if SPIRE_UNITY_TEST_HOST
+        var casesDir = Path.Combine(UnityTestHost.DataRoot(testClass.Assembly), ruleId, "cases");
+#else
         var casesDir = Path.Combine(AppContext.BaseDirectory, ruleId, "cases");
+#endif
 
         if (!Directory.Exists(casesDir))
             yield break;

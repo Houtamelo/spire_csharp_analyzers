@@ -1,0 +1,13 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+using UE = UnityEngine;
+using SerializableAlias = System.SerializableAttribute;
+
+[SerializableAlias]
+[DiscriminatedUnion]
+public partial struct UnityAlias
+{
+    [Variant] public static partial UnityAlias Value(UE.Vector3 value);
+    [Variant] public static partial UnityAlias Empty();
+}

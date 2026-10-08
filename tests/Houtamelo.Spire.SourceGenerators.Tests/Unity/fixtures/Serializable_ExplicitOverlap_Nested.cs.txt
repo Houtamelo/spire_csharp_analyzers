@@ -1,0 +1,21 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+
+[Serializable]
+public sealed partial class UnityOverlapContainer
+{
+    [Serializable]
+    [DiscriminatedUnion(Layout.Overlap)]
+    public partial struct Nested
+    {
+        [Variant] public static partial Nested Number(int value);
+        [Variant] public static partial Nested Empty();
+    }
+}
+
+public static class UnityOverlapNestedUses
+{
+    public static UnityOverlapContainer.Nested Value
+        => UnityOverlapContainer.Nested.Number(17);
+}

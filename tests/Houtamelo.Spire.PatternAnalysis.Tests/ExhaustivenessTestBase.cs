@@ -15,6 +15,9 @@ using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 using Xunit.Sdk;
+#if SPIRE_UNITY_TEST_HOST
+using Spire.Tests.Hosting;
+#endif
 
 namespace Houtamelo.Spire.PatternAnalysis.Tests;
 
@@ -208,7 +211,7 @@ public abstract class ExhaustivenessTestBase
 
     private (string rawContent, string? sharedContent) LoadRaw(string caseName)
     {
-        var casesDir = Path.Combine(AppContext.BaseDirectory, "Integration", Category, "cases");
+        var casesDir = GetCasesDirectory(Category);
         var sharedPath = Path.Combine(casesDir, "_shared.cs");
         var casePath = Path.Combine(casesDir, $"{caseName}.cs");
 
@@ -297,9 +300,27 @@ public abstract class ExhaustivenessTestBase
 
     private static async Task<ImmutableArray<MetadataReference>> ResolveReferencesAsync()
     {
+#if SPIRE_UNITY_TEST_HOST
+        await Task.CompletedTask;
+        return UnityTestHost.FrameworkReferences;
+#else
         var refs = await ReferenceAssemblies.Net.Net80.ResolveAsync(
             LanguageNames.CSharp, CancellationToken.None);
         return refs.Add(CoreAssemblyReference);
+#endif
+    }
+
+    private static string GetCasesDirectory(string category)
+    {
+#if SPIRE_UNITY_TEST_HOST
+        return Path.Combine(
+            UnityTestHost.DataRoot(typeof(ExhaustivenessTestBase).Assembly),
+            "Integration",
+            category,
+            "cases");
+#else
+        return Path.Combine(AppContext.BaseDirectory, "Integration", category, "cases");
+#endif
     }
 
     private static string StripComments(string source)
@@ -353,7 +374,12 @@ public sealed class ExhaustivenessTestDiscoveryAttribute : DataAttribute
             ?? throw new InvalidOperationException("Could not determine test class");
 
         var category = ExtractCategory(testClass);
+#if SPIRE_UNITY_TEST_HOST
+        var casesDir = Path.Combine(
+            UnityTestHost.DataRoot(testClass.Assembly), "Integration", category, "cases");
+#else
         var casesDir = Path.Combine(AppContext.BaseDirectory, "Integration", category, "cases");
+#endif
 
         if (!Directory.Exists(casesDir))
             yield break;

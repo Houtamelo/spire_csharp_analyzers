@@ -1,0 +1,12 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+using UnityEngine;
+
+[Serializable]
+[DiscriminatedUnion(Layout.Additive)]
+public partial struct UnityExplicitAdditive
+{
+    [Variant] public static partial UnityExplicitAdditive Value(int value);
+    [Variant] public static partial UnityExplicitAdditive Empty();
+}

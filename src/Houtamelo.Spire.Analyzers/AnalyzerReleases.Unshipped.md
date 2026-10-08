@@ -33,3 +33,7 @@ SPIRE_DU008 | SourceGeneration | Error | ref struct cannot use JSON generation
 SPIRE_DU009 | SourceGeneration | Error | UnsafeOverlap layout requires AllowUnsafeBlocks
 SPIRE_DU010 | SourceGeneration | Error | Field name conflict across variants
 SPIRE_DU011 | SourceGeneration | Error | Class types are not supported for [DiscriminatedUnion]
+SPIRE_DU013 | SourceGeneration | Error | Union declaration cannot use Unity serialization
+SPIRE_DU014 | SourceGeneration | Error | Variant field cannot be serialized by Unity
+SPIRE_DU015 | SourceGeneration | Error | Member conflicts with generated Unity serialization
+SPIRE_DU016 | SourceGeneration | Error | Unity serialization requires UnityEngine references

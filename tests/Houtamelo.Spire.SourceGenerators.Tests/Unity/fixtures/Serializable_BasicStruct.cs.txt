@@ -1,0 +1,13 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+using UnityEngine;
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct UnityBasic
+{
+    [Variant] public static partial UnityBasic Circle(float radius);
+    [Variant] public static partial UnityBasic Label(string? text, Texture2D? icon);
+    [Variant] public static partial UnityBasic Point();
+}

@@ -1,0 +1,11 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct UnityGenericOpen<T>
+{
+    [Variant] public static partial UnityGenericOpen<T> Some(T value);
+    [Variant] public static partial UnityGenericOpen<T> None();
+}

@@ -19,7 +19,7 @@ public abstract class GeneratorSnapshotTestBase
     [SnapshotCaseDiscovery]
     public void Verify(string casePath)
     {
-        var casesDir = Path.Combine(AppContext.BaseDirectory, "cases");
+        var casesDir = Path.Combine(TestHarnessEnvironment.DataRoot, "cases");
         var caseDir = Path.Combine(casesDir, casePath);
 
         var inputPath = Path.Combine(caseDir, "input.cs");
@@ -55,7 +55,7 @@ public sealed class SnapshotCaseDiscoveryAttribute : DataAttribute
 {
     public override IEnumerable<object[]> GetData(MethodInfo testMethod)
     {
-        var casesDir = Path.Combine(AppContext.BaseDirectory, "cases");
+        var casesDir = Path.Combine(TestHarnessEnvironment.DataRoot, "cases");
         if (!Directory.Exists(casesDir))
             yield break;
 

@@ -7,6 +7,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
+#if SPIRE_UNITY_TEST_HOST
+using Spire.Tests.Hosting;
+#endif
 
 namespace Houtamelo.Spire.Analyzers.Tests.GlobalConfig;
 
@@ -23,9 +26,15 @@ internal static class GlobalConfigAnalyzerTestHelper
         Dictionary<string, string> globalOptions)
         where TAnalyzer : DiagnosticAnalyzer, new()
     {
+#if SPIRE_UNITY_TEST_HOST
+        await Task.CompletedTask;
+        var refs = UnityTestHost.FrameworkReferences;
+#else
         var refs = await ReferenceAssemblies.Net.Net80.ResolveAsync(
             LanguageNames.CSharp, CancellationToken.None);
-        refs = refs.Add(CoreAssemblyReference).Add(AnalyzerAssemblyReference);
+        refs = refs.Add(CoreAssemblyReference);
+#endif
+        refs = refs.Add(AnalyzerAssemblyReference);
 
         var tree = CSharpSyntaxTree.ParseText(source,
             CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest));
@@ -50,9 +59,15 @@ internal static class GlobalConfigAnalyzerTestHelper
         Dictionary<string, string> globalOptions)
         where TAnalyzer : DiagnosticAnalyzer, new()
     {
+#if SPIRE_UNITY_TEST_HOST
+        await Task.CompletedTask;
+        var refs = UnityTestHost.FrameworkReferences;
+#else
         var refs = await ReferenceAssemblies.Net.Net80.ResolveAsync(
             LanguageNames.CSharp, CancellationToken.None);
-        refs = refs.Add(CoreAssemblyReference).Add(AnalyzerAssemblyReference);
+        refs = refs.Add(CoreAssemblyReference);
+#endif
+        refs = refs.Add(AnalyzerAssemblyReference);
 
         var tree = CSharpSyntaxTree.ParseText(source,
             CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest));
@@ -78,9 +93,15 @@ internal static class GlobalConfigAnalyzerTestHelper
     {
         _ = globalOptions;
 
+#if SPIRE_UNITY_TEST_HOST
+        await Task.CompletedTask;
+        var refs = UnityTestHost.FrameworkReferences;
+#else
         var refs = await ReferenceAssemblies.Net.Net80.ResolveAsync(
             LanguageNames.CSharp, CancellationToken.None);
-        refs = refs.Add(CoreAssemblyReference).Add(AnalyzerAssemblyReference);
+        refs = refs.Add(CoreAssemblyReference);
+#endif
+        refs = refs.Add(AnalyzerAssemblyReference);
 
         var tree = CSharpSyntaxTree.ParseText(source,
             CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest));

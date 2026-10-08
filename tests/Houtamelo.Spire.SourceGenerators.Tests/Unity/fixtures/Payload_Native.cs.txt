@@ -1,0 +1,18 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+using UnityEngine;
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct UnityNativePayload
+{
+    [Variant]
+    public static partial UnityNativePayload Value(
+        Vector2 position,
+        Vector3 direction,
+        Color tint,
+        Texture2D texture);
+
+    [Variant] public static partial UnityNativePayload Empty();
+}

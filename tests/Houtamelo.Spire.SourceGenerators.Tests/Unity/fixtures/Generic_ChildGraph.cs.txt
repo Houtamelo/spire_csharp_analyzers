@@ -1,0 +1,41 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+
+[Serializable]
+[DiscriminatedUnion(Layout.Additive)]
+public partial struct UnityGenericChildGraphUnion
+{
+    [Variant] public static partial UnityGenericChildGraphUnion Value(int value);
+    [Variant] public static partial UnityGenericChildGraphUnion Empty();
+}
+
+[Serializable]
+public sealed class UnityGenericChildGraphHelper
+{
+    public UnityGenericChildGraphUnion child;
+    public int marker;
+}
+
+[Serializable]
+[DiscriminatedUnion(Layout.Additive)]
+public partial struct UnityGenericChildGraph<T>
+{
+    [Variant] public static partial UnityGenericChildGraph<T> Some(T value);
+    [Variant] public static partial UnityGenericChildGraph<T> None();
+}
+
+public static class UnityGenericChildGraphUses
+{
+    public static UnityGenericChildGraph<UnityGenericChildGraphUnion> Child
+        => UnityGenericChildGraph<UnityGenericChildGraphUnion>.Some(
+            UnityGenericChildGraphUnion.Value(7));
+
+    public static UnityGenericChildGraph<UnityGenericChildGraphHelper> Helper
+        => UnityGenericChildGraph<UnityGenericChildGraphHelper>.Some(
+            new UnityGenericChildGraphHelper
+            {
+                child = UnityGenericChildGraphUnion.Value(8),
+                marker = 9,
+            });
+}

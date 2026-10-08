@@ -1,0 +1,47 @@
+#nullable enable
+using System;
+using System.Collections.Generic;
+using Houtamelo.Spire;
+using UnityEngine;
+
+[Serializable]
+public struct SerializableData
+{
+    public int id;
+    public string label;
+}
+
+public enum SmallEnum : short
+{
+    None,
+    First,
+    Second,
+}
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct UnityPayloadFieldMatrix
+{
+    [Variant]
+    public static partial UnityPayloadFieldMatrix Values(
+        bool flag,
+        int count,
+        float amount,
+        double precise,
+        string? label,
+        SmallEnum mode);
+
+    [Variant]
+    public static partial UnityPayloadFieldMatrix Native(
+        Vector3 position,
+        Color tint,
+        Texture2D texture);
+
+    [Variant]
+    public static partial UnityPayloadFieldMatrix Nested(SerializableData data);
+
+    [Variant]
+    public static partial UnityPayloadFieldMatrix Collections(
+        int[] samples,
+        List<SerializableData> entries);
+}

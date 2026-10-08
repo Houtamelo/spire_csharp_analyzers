@@ -1,14 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
+    <OutputType Condition="'$(SpireUnityTestHost)' != 'true'">Exe</OutputType>
+    <OutputType Condition="'$(SpireUnityTestHost)' == 'true'">Library</OutputType>
+    <TargetFramework Condition="'$(SpireUnityTestHost)' != 'true'">net10.0</TargetFramework>
+    <TargetFramework Condition="'$(SpireUnityTestHost)' == 'true'">netstandard2.1</TargetFramework>
     <LangVersion>preview</LangVersion>
     <RootNamespace>DevTools</RootNamespace>
+    <DefineConstants Condition="'$(SpireUnityTestHost)' == 'true'">$(DefineConstants);SPIRE_UNITY_TEST_HOST</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
     <PackageReference Include="ModelContextProtocol" Version="1.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0-preview.4.25258.110" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0-preview.4.25258.110" Condition="'$(SpireUnityTestHost)' != 'true'" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(SpireUnityTestHost)' == 'true'">
+    <Compile Remove="Program.cs" />
+    <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="DevTools.Tests" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,23 @@
+#nullable enable
+using System;
+using System.Collections.Generic;
+using Houtamelo.Spire;
+using UnityEngine;
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct UnityDrawer
+{
+    [Variant] public static partial UnityDrawer Empty();
+    [Variant] public static partial UnityDrawer Number(float value);
+    [Variant] public static partial UnityDrawer Text(int count, string label);
+    [Variant] public static partial UnityDrawer ObjectRef(Texture2D texture);
+}
+
+[Serializable]
+public sealed class UnityDrawerHost
+{
+    public UnityDrawer single;
+    public UnityDrawer[] array = Array.Empty<UnityDrawer>();
+    public List<UnityDrawer> list = new();
+}

@@ -1,0 +1,17 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+using UnityEngine;
+
+[DiscriminatedUnion]
+[Serializable]
+public partial struct UnityPartialVariants
+{
+}
+
+public partial struct UnityPartialVariants
+{
+    [Variant] public static partial UnityPartialVariants First(Texture2D texture);
+    [Variant] public static partial UnityPartialVariants Second(float value);
+    [Variant] public static partial UnityPartialVariants Empty();
+}

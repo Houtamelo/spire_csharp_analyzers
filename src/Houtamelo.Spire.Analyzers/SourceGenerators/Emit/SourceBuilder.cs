@@ -39,8 +39,8 @@ internal sealed class SourceBuilder
             // "static class" requires "static partial class" ordering;
             // for all others, "partial {keyword}" works.
             var declaration = ct.Keyword == "static class"
-                ? $"{ct.AccessibilityKeyword} static partial class {ct.Name}"
-                : $"{ct.AccessibilityKeyword} partial {ct.Keyword} {ct.Name}";
+                ? $"{ct.AccessibilityKeyword} static partial class {IdentifierUtility.Escape(ct.Name)}{FormatTypeParams(ct.TypeParameters)}"
+                : $"{ct.AccessibilityKeyword} partial {ct.Keyword} {IdentifierUtility.Escape(ct.Name)}{FormatTypeParams(ct.TypeParameters)}";
             AppendLine(declaration);
             OpenBrace();
         }
@@ -54,4 +54,9 @@ internal sealed class SourceBuilder
     }
 
     public override string ToString() => _sb.ToString();
+
+    private static string FormatTypeParams(EquatableArray<string> typeParameters)
+        => typeParameters.Length == 0
+            ? string.Empty
+            : "<" + string.Join(", ", typeParameters) + ">";
 }

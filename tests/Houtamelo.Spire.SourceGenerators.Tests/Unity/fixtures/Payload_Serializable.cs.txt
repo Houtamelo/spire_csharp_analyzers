@@ -1,0 +1,28 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+
+[Serializable]
+public sealed class SerializableClass
+{
+    public int id;
+    public string label = string.Empty;
+}
+
+[Serializable]
+public struct SerializableStruct
+{
+    public float amount;
+}
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct UnitySerializablePayload
+{
+    [Variant]
+    public static partial UnitySerializablePayload Value(
+        SerializableClass classValue,
+        SerializableStruct structValue);
+
+    [Variant] public static partial UnitySerializablePayload Empty();
+}

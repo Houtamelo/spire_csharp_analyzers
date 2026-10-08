@@ -1,0 +1,22 @@
+#nullable enable
+using System;
+using System.Collections.Generic;
+using Houtamelo.Spire;
+
+[Serializable]
+public struct CollectionData
+{
+    public int value;
+}
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct UnityCollectionPayload
+{
+    [Variant]
+    public static partial UnityCollectionPayload Value(
+        int[] values,
+        List<CollectionData> entries);
+
+    [Variant] public static partial UnityCollectionPayload Empty();
+}

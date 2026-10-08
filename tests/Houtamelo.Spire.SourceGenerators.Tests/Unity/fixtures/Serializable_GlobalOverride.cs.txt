@@ -1,0 +1,12 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+using UnityEngine;
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct UnityGlobalOverride
+{
+    [Variant] public static partial UnityGlobalOverride Value(int value);
+    [Variant] public static partial UnityGlobalOverride Empty();
+}

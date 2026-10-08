@@ -4,10 +4,18 @@ Roslyn analyzers and source generators for C# type safety — struct initializat
 
 ## Installation
 
-Just add the NuGet package:
-```shell
-dotnet add package Houtamelo.Spire
+This `unity-6000` branch targets Unity 6000.5 and Mono. Build its local package:
+
+```sh
+python3 tools/build-unity-package.py
 ```
+
+Add `tmp/unity-package/com.houtamelo.spire/package.json` through Unity's Package
+Manager. Apply `[Serializable]` to a mutable struct union to enable generated
+serialization and Inspector drawers. See [the Unity guide](docs/unity.md) for
+field support, asmdef references, and validation.
+
+The normal NuGet build is maintained on `main`.
 
 ## Rules
 
