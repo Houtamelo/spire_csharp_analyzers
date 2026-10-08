@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using Spire.Tool;
 using Xunit;
 
 namespace DevTools.Tests;
@@ -45,7 +43,6 @@ public sealed class UnityBehavioralRunnerTests
             rootOverride: null,
             editorPath);
 
-        Assert.False(result.TimedOut, result.CombinedOutput);
         Assert.Equal(0, result.ExitCode);
 
         AssertCopiedBehavioralSources(repositoryRoot, fixture.ProjectPath);
@@ -68,7 +65,6 @@ public sealed class UnityBehavioralRunnerTests
             rootOverride: null,
             editorPath);
 
-        Assert.False(repeated.TimedOut, repeated.CombinedOutput);
         Assert.Equal(0, repeated.ExitCode);
         Assert.False(File.Exists(staleDependency));
         Assert.False(File.Exists(staleDependency + ".meta"));
@@ -96,9 +92,8 @@ public sealed class UnityBehavioralRunnerTests
             configuration,
             rootOverride: null);
 
-        Assert.False(result.TimedOut, result.CombinedOutput);
-        Assert.True(result.ExitCode != 0, $"Exit code {result.ExitCode}\n{result.CombinedOutput}");
-        Assert.Contains("unrelated files", result.CombinedOutput, StringComparison.OrdinalIgnoreCase);
+        Assert.True(result.ExitCode != 0, $"Exit code {result.ExitCode}\n{CombinedOutput(result)}");
+        Assert.Contains("unrelated files", CombinedOutput(result), StringComparison.OrdinalIgnoreCase);
         Assert.Equal("preserve this file", File.ReadAllText(sentinel));
         Assert.False(File.Exists(Path.Combine(fixture.ProjectPath, ".spire-unity-behavioral")));
     }
@@ -116,9 +111,8 @@ public sealed class UnityBehavioralRunnerTests
             configuration,
             rootOverride: null);
 
-        Assert.False(result.TimedOut, result.CombinedOutput);
-        Assert.True(result.ExitCode != 0, $"Exit code {result.ExitCode}\n{result.CombinedOutput}");
-        Assert.Contains("tracked fixture", result.CombinedOutput, StringComparison.OrdinalIgnoreCase);
+        Assert.True(result.ExitCode != 0, $"Exit code {result.ExitCode}\n{CombinedOutput(result)}");
+        Assert.Contains("tracked fixture", CombinedOutput(result), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -145,9 +139,8 @@ public sealed class UnityBehavioralRunnerTests
             configuration,
             fixture.IsolatedRoot);
 
-        Assert.False(result.TimedOut, result.CombinedOutput);
-        Assert.True(result.ExitCode != 0, $"Exit code {result.ExitCode}\n{result.CombinedOutput}");
-        Assert.Contains("Missing test dependency: xunit.core.dll", result.CombinedOutput, StringComparison.Ordinal);
+        Assert.True(result.ExitCode != 0, $"Exit code {result.ExitCode}\n{CombinedOutput(result)}");
+        Assert.Contains("Missing test dependency: xunit.core.dll", CombinedOutput(result), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -191,9 +184,8 @@ public sealed class UnityBehavioralRunnerTests
             configuration,
             fixture.IsolatedRoot);
 
-        Assert.False(result.TimedOut, result.CombinedOutput);
-        Assert.True(result.ExitCode != 0, $"Exit code {result.ExitCode}\n{result.CombinedOutput}");
-        Assert.Contains("Unsupported behavioral source shape", result.CombinedOutput, StringComparison.Ordinal);
+        Assert.True(result.ExitCode != 0, $"Exit code {result.ExitCode}\n{CombinedOutput(result)}");
+        Assert.Contains("Unsupported behavioral source shape", CombinedOutput(result), StringComparison.Ordinal);
     }
 
     private static void AssertCopiedBehavioralSources(string repositoryRoot, string projectPath)
@@ -258,6 +250,9 @@ public sealed class UnityBehavioralRunnerTests
             "Runtime",
             "Houtamelo.Spire.dll");
         Assert.True(File.Exists(packageRuntime), packageRuntime);
+        Assert.False(
+            Directory.Exists(Path.Combine(projectPath, "Assets", "CompilerProbe")),
+            "Standalone behavioral preparation must not include the compiler probe fixture.");
 
         var asmdefPath = Path.Combine(
             projectPath,
@@ -417,8 +412,6 @@ public sealed class UnityBehavioralRunnerTests
             Path.Combine(repositoryRoot, "tests", "Houtamelo.Spire.BehavioralTests", "Tests"),
             Path.Combine(isolatedRoot, "tests", "Houtamelo.Spire.BehavioralTests", "Tests"));
         CopyFile(repositoryRoot, isolatedRoot, "LICENSE");
-        CopyFile(repositoryRoot, isolatedRoot, "tools/build-unity-package.py");
-
         foreach (var name in new[]
                  {
                      "Houtamelo.Spire",
@@ -464,84 +457,50 @@ public sealed class UnityBehavioralRunnerTests
         string? rootOverride,
         string? editorPath = null)
     {
-        var scriptDirectory = Path.Combine(
+        var cliPath = Path.Combine(
             repositoryRoot,
-            "tmp",
-            "devtools-unity-behavioral-tests",
-            Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(scriptDirectory);
-        var scriptPath = Path.Combine(scriptDirectory, "prepare.py");
-        var script = $"""
-            import runpy
-            from pathlib import Path
+            "tools",
+            "Spire.Tool",
+            "bin",
+            configuration,
+            "net10.0",
+            "Spire.Tool.dll");
+        Assert.True(File.Exists(cliPath), $"Missing Spire.Tool CLI: {cliPath}");
 
-            module = runpy.run_path({PythonString(Path.Combine(repositoryRoot, "tools", "test-unity-behavioral.py"))})
-            {(rootOverride is null ? "" : $"module[\"prepare_project\"].__globals__[\"ROOT\"] = Path({PythonString(rootOverride)})")}
-            module["prepare_project"](
-                Path({PythonString(projectPath)}),
-                {PythonString(configuration)},
-                False{(editorPath is null ? "" : $", Path({PythonString(editorPath)})")})
-            """;
-        File.WriteAllText(scriptPath, script, Encoding.UTF8);
+        var arguments = new List<string>();
+        if (rootOverride is not null)
+        {
+            arguments.Add("--root");
+            arguments.Add(rootOverride);
+        }
 
-        try
+        arguments.Add("unity-behavioral");
+        arguments.Add("--project");
+        arguments.Add(projectPath);
+        arguments.Add("--configuration");
+        arguments.Add(configuration);
+        arguments.Add("--no-build");
+        arguments.Add("--prepare-only");
+        if (editorPath is not null)
         {
-            return await RunPythonAsync(repositoryRoot, scriptPath);
+            arguments.Add("--editor");
+            arguments.Add(editorPath);
         }
-        finally
-        {
-            if (Directory.Exists(scriptDirectory))
-                Directory.Delete(scriptDirectory, recursive: true);
-        }
+
+        return await ProcessRunner.RunAsync(
+            new ToolContext(repositoryRoot).Dotnet,
+            new[] { cliPath }.Concat(arguments),
+            repositoryRoot,
+            ProcessTimeout,
+            new Dictionary<string, string?>
+            {
+                ["CI"] = "true",
+                ["GIT_TERMINAL_PROMPT"] = "0",
+            });
     }
 
-    private static async Task<ProcessResult> RunPythonAsync(string workingDirectory, string scriptPath)
-    {
-        var python = Environment.GetEnvironmentVariable("PYTHON") ?? "python3";
-        using var process = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = python,
-                WorkingDirectory = workingDirectory,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                Environment =
-                {
-                    ["CI"] = "true",
-                    ["GIT_TERMINAL_PROMPT"] = "0",
-                    ["PYTHONUNBUFFERED"] = "1",
-                },
-            },
-        };
-        DevTools.ProcessCompatibility.AddArgument(process.StartInfo, scriptPath);
-        Assert.True(process.Start(), $"Could not start Python process '{python}'.");
-
-        var standardOutput = process.StandardOutput.ReadToEndAsync();
-        var standardError = process.StandardError.ReadToEndAsync();
-        var timedOut = false;
-        using (var timeout = new CancellationTokenSource(ProcessTimeout))
-        {
-            try
-            {
-                await DevTools.ProcessCompatibility.WaitForExitAsync(process, timeout.Token);
-            }
-            catch (OperationCanceledException) when (timeout.IsCancellationRequested)
-            {
-                timedOut = true;
-                if (!process.HasExited)
-                    DevTools.ProcessCompatibility.KillTree(process);
-                await DevTools.ProcessCompatibility.WaitForExitAsync(process);
-            }
-        }
-
-        return new ProcessResult(
-            process.ExitCode,
-            await standardOutput,
-            await standardError,
-            timedOut);
-    }
+    private static string CombinedOutput(ProcessResult result)
+        => $"{result.StandardOutput}\n{result.StandardError}";
 
     private static string BuildConfiguration()
 #if SPIRE_UNITY_TEST_HOST
@@ -578,7 +537,7 @@ public sealed class UnityBehavioralRunnerTests
             var directory = new DirectoryInfo(startingPath);
             while (directory is not null)
             {
-                if (File.Exists(Path.Combine(directory.FullName, "tools", "test-unity-behavioral.py")) &&
+                if (File.Exists(Path.Combine(directory.FullName, "tools", "Spire.Tool", "Spire.Tool.csproj")) &&
                     File.Exists(Path.Combine(directory.FullName, "src", "Houtamelo.Spire", "Houtamelo.Spire.csproj")))
                 {
                     return directory.FullName;
@@ -593,9 +552,6 @@ public sealed class UnityBehavioralRunnerTests
 
     private static string RelativePath(string root, string path)
         => Path.GetRelativePath(root, path).Replace(Path.DirectorySeparatorChar, '/');
-
-    private static string PythonString(string value)
-        => JsonSerializer.Serialize(value);
 
     private sealed class PreparationFixture : IDisposable
     {
@@ -666,12 +622,4 @@ public sealed class UnityBehavioralRunnerTests
         }
     }
 
-    private sealed record ProcessResult(
-        int ExitCode,
-        string StandardOutput,
-        string StandardError,
-        bool TimedOut)
-    {
-        public string CombinedOutput => $"{StandardOutput}\n{StandardError}";
-    }
 }

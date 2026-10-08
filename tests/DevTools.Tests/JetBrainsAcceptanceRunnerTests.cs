@@ -1,21 +1,18 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Text.Json.Nodes;
+using Spire.Tool;
 using Xunit;
 
 namespace DevTools.Tests;
 
 public sealed class JetBrainsAcceptanceRunnerTests
 {
-    private static readonly TimeSpan ProcessTimeout = TimeSpan.FromMinutes(2);
-
     [Fact]
-    public async Task IssueRows_ReadsInspectCodeSarifAndPreservesDiagnosticLocations()
+    public void IssueRows_ReadsInspectCodeSarifAndPreservesDiagnosticLocations()
     {
         var repositoryRoot = FindRepositoryRoot();
         using var fixture = AcceptanceFixture.Create(repositoryRoot);
@@ -27,48 +24,30 @@ public sealed class JetBrainsAcceptanceRunnerTests
         else
             File.WriteAllText(report, SarifFixture, Encoding.UTF8);
 
-        var result = await RunModuleAsync(
-            fixture.Root,
-            Path.Combine(repositoryRoot, "tools", "test-jetbrains-integration.py"),
-            """
-            import json, runpy, sys
-            from pathlib import Path
-
-            module = runpy.run_path(sys.argv[1])
-            print(json.dumps(module["issue_rows"](Path(sys.argv[2])), sort_keys=True))
-            """,
-            report);
-
-        AssertSuccess(result);
-        using var document = JsonDocument.Parse(result.StandardOutput.Trim());
-        var rows = document.RootElement.EnumerateArray().ToArray();
+        var rows = JetBrainsWorkflow.IssueRows(report);
         Assert.NotEmpty(rows);
 
-        var spire002 = rows.Where(row =>
-                row.GetProperty("id").GetString()!.EndsWith("SPIRE002", StringComparison.Ordinal) &&
-                NormalizePath(row.GetProperty("uri").GetString()!).EndsWith(
-                    "Assets/RuntimeAuto/RuntimeAuto.cs",
-                    StringComparison.Ordinal))
+        var spire002 = rows.OfType<JsonObject>()
+            .Where(row => GetString(row, "id").EndsWith("SPIRE002", StringComparison.Ordinal) &&
+                NormalizePath(GetString(row, "uri")).EndsWith("Assets/RuntimeAuto/RuntimeAuto.cs", StringComparison.Ordinal))
             .ToArray();
-        var spire016 = rows.Where(row =>
-                row.GetProperty("id").GetString()!.EndsWith("SPIRE016", StringComparison.Ordinal) &&
-                NormalizePath(row.GetProperty("uri").GetString()!).EndsWith(
-                    "Assets/RuntimeAuto/_rider.cs",
-                    StringComparison.Ordinal))
+        var spire016 = rows.OfType<JsonObject>()
+            .Where(row => GetString(row, "id").EndsWith("SPIRE016", StringComparison.Ordinal) &&
+                NormalizePath(GetString(row, "uri")).EndsWith("Assets/RuntimeAuto/_rider.cs", StringComparison.Ordinal))
             .ToArray();
         Assert.NotEmpty(spire002);
         Assert.Single(spire016);
 
         if (!usesGeneratedReport)
         {
-            Assert.Equal(11, spire002[0].GetProperty("region").GetProperty("startLine").GetInt32());
-            Assert.Equal(7, spire016[0].GetProperty("region").GetProperty("startLine").GetInt32());
-            Assert.Equal(18, spire016[0].GetProperty("region").GetProperty("startColumn").GetInt32());
+            Assert.Equal(11, GetInt(GetObject(spire002[0], "region"), "startLine"));
+            Assert.Equal(7, GetInt(GetObject(spire016[0], "region"), "startLine"));
+            Assert.Equal(18, GetInt(GetObject(spire016[0], "region"), "startColumn"));
         }
     }
 
     [Fact]
-    public async Task IssueRows_RejectsAResultWithoutAPhysicalLocation()
+    public void IssueRows_RejectsAResultWithoutAPhysicalLocation()
     {
         var repositoryRoot = FindRepositoryRoot();
         using var fixture = AcceptanceFixture.Create(repositoryRoot);
@@ -78,60 +57,23 @@ public sealed class JetBrainsAcceptanceRunnerTests
             "{\"version\":\"2.1.0\",\"runs\":[{\"tool\":{\"driver\":{\"name\":\"InspectCode\"}},\"results\":[{\"ruleId\":\"SPIRE002\",\"message\":{\"text\":\"missing location\"},\"locations\":[]}]}]}",
             Encoding.UTF8);
 
-        var result = await RunModuleAsync(
-            fixture.Root,
-            Path.Combine(repositoryRoot, "tools", "test-jetbrains-integration.py"),
-            """
-            import runpy, sys
-            from pathlib import Path
-
-            module = runpy.run_path(sys.argv[1])
-            try:
-                module["issue_rows"](Path(sys.argv[2]))
-            except Exception as error:
-                print("EXPECTED_ERROR:" + type(error).__name__ + ":" + str(error))
-                raise SystemExit(0)
-            raise SystemExit("issue_rows unexpectedly accepted a result without a physical location")
-            """,
-            report);
-
-        Assert.False(result.TimedOut, result.CombinedOutput);
-        Assert.True(result.ExitCode == 0, result.CombinedOutput);
-        Assert.Contains("EXPECTED_ERROR:", result.StandardOutput, StringComparison.Ordinal);
+        var error = Assert.ThrowsAny<Exception>(() => JetBrainsWorkflow.IssueRows(report));
+        Assert.Contains("physical location", error.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public async Task IssueRows_RejectsMalformedSarifJson()
+    public void IssueRows_RejectsMalformedSarifJson()
     {
         var repositoryRoot = FindRepositoryRoot();
         using var fixture = AcceptanceFixture.Create(repositoryRoot);
         var report = Path.Combine(fixture.Root, "malformed-json.sarif");
         File.WriteAllText(report, "{ this is not SARIF", Encoding.UTF8);
 
-        var result = await RunModuleAsync(
-            fixture.Root,
-            Path.Combine(repositoryRoot, "tools", "test-jetbrains-integration.py"),
-            """
-            import runpy, sys
-            from pathlib import Path
-
-            module = runpy.run_path(sys.argv[1])
-            try:
-                module["issue_rows"](Path(sys.argv[2]))
-            except Exception as error:
-                print("EXPECTED_ERROR:" + type(error).__name__ + ":" + str(error))
-                raise SystemExit(0)
-            raise SystemExit("issue_rows unexpectedly accepted malformed JSON")
-            """,
-            report);
-
-        Assert.False(result.TimedOut, result.CombinedOutput);
-        Assert.True(result.ExitCode == 0, result.CombinedOutput);
-        Assert.Contains("EXPECTED_ERROR:", result.StandardOutput, StringComparison.Ordinal);
+        Assert.ThrowsAny<Exception>(() => JetBrainsWorkflow.IssueRows(report));
     }
 
     [Fact]
-    public async Task IssueRows_RejectsEmptyPhysicalLocationUriLineAndWrongSchema()
+    public void IssueRows_RejectsEmptyPhysicalLocationUriLineAndWrongSchema()
     {
         var repositoryRoot = FindRepositoryRoot();
         using var fixture = AcceptanceFixture.Create(repositoryRoot);
@@ -175,11 +117,7 @@ public sealed class JetBrainsAcceptanceRunnerTests
         {
             var report = Path.Combine(fixture.Root, malformed.Name + ".sarif");
             File.WriteAllText(report, malformed.Json, Encoding.UTF8);
-            var result = await RunIssueRowsExpectedFailureAsync(repositoryRoot, fixture, report);
-
-            Assert.False(result.TimedOut, malformed.Name + ": " + result.CombinedOutput);
-            Assert.True(result.ExitCode == 0, malformed.Name + ": " + result.CombinedOutput);
-            Assert.Contains("EXPECTED_ERROR:", result.StandardOutput, StringComparison.Ordinal);
+            Assert.ThrowsAny<Exception>(() => JetBrainsWorkflow.IssueRows(report));
         }
     }
 
@@ -228,104 +166,16 @@ public sealed class JetBrainsAcceptanceRunnerTests
         }
         """;
 
-    private const string RejectIssueRowsScript = """
-        import runpy, sys
-        from pathlib import Path
+    private static JsonObject GetObject(JsonObject parent, string property)
+        => parent[property]?.AsObject() ?? throw new Xunit.Sdk.XunitException($"JSON object property '{property}' was missing.");
 
-        module = runpy.run_path(sys.argv[1])
-        try:
-            module["issue_rows"](Path(sys.argv[2]))
-        except Exception as error:
-            print("EXPECTED_ERROR:" + type(error).__name__ + ":" + str(error))
-            raise SystemExit(0)
-        raise SystemExit("issue_rows unexpectedly accepted malformed SARIF")
-        """;
+    private static string GetString(JsonObject parent, string property)
+        => parent[property]?.GetValue<string>() ?? throw new Xunit.Sdk.XunitException($"JSON string property '{property}' was missing.");
 
-    private static void AssertSuccess(ProcessResult result)
-    {
-        Assert.False(result.TimedOut, result.CombinedOutput);
-        Assert.True(result.ExitCode == 0, result.CombinedOutput);
-    }
+    private static int GetInt(JsonObject parent, string property)
+        => parent[property]?.GetValue<int>() ?? throw new Xunit.Sdk.XunitException($"JSON integer property '{property}' was missing.");
 
-    private static string NormalizePath(string path)
-        => path.Replace('\\', '/');
-
-    private static Task<ProcessResult> RunIssueRowsExpectedFailureAsync(
-        string repositoryRoot,
-        AcceptanceFixture fixture,
-        string report)
-        => RunModuleAsync(
-            fixture.Root,
-            Path.Combine(repositoryRoot, "tools", "test-jetbrains-integration.py"),
-            RejectIssueRowsScript,
-            report);
-
-    private static async Task<ProcessResult> RunModuleAsync(
-        string workingDirectory,
-        string modulePath,
-        string launcher,
-        params string[] arguments)
-    {
-        var scriptPath = Path.Combine(workingDirectory, "invoke-helper.py");
-        File.WriteAllText(scriptPath, launcher, Encoding.UTF8);
-        var processArguments = new string[arguments.Length + 1];
-        processArguments[0] = modulePath;
-        Array.Copy(arguments, 0, processArguments, 1, arguments.Length);
-        return await RunPythonAsync(workingDirectory, scriptPath, processArguments);
-    }
-
-    private static async Task<ProcessResult> RunPythonAsync(
-        string workingDirectory,
-        string scriptPath,
-        params string[] arguments)
-    {
-        var python = Environment.GetEnvironmentVariable("PYTHON") ?? "python3";
-        using var process = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = python,
-                WorkingDirectory = workingDirectory,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                Environment =
-                {
-                    ["CI"] = "true",
-                    ["GIT_TERMINAL_PROMPT"] = "0",
-                    ["PYTHONUNBUFFERED"] = "1",
-                },
-            },
-        };
-        DevTools.ProcessCompatibility.AddArgument(process.StartInfo, scriptPath);
-        foreach (var argument in arguments)
-            DevTools.ProcessCompatibility.AddArgument(process.StartInfo, argument);
-
-        Assert.True(process.Start(), $"Could not start Python process '{python}'.");
-        var standardOutput = process.StandardOutput.ReadToEndAsync();
-        var standardError = process.StandardError.ReadToEndAsync();
-        var timedOut = false;
-        using (var timeout = new CancellationTokenSource(ProcessTimeout))
-        {
-            try
-            {
-                await DevTools.ProcessCompatibility.WaitForExitAsync(process, timeout.Token);
-            }
-            catch (OperationCanceledException) when (timeout.IsCancellationRequested)
-            {
-                timedOut = true;
-                if (!process.HasExited)
-                    DevTools.ProcessCompatibility.KillTree(process);
-                await DevTools.ProcessCompatibility.WaitForExitAsync(process);
-            }
-        }
-
-        return new ProcessResult(
-            process.ExitCode,
-            await standardOutput,
-            await standardError,
-            timedOut);
-    }
+    private static string NormalizePath(string path) => path.Replace('\\', '/');
 
     private static string FindRepositoryRoot()
     {
@@ -334,17 +184,14 @@ public sealed class JetBrainsAcceptanceRunnerTests
             var directory = new DirectoryInfo(startingPath);
             while (directory is not null)
             {
-                if (File.Exists(Path.Combine(directory.FullName, "tools", "test-jetbrains-integration.py")) &&
+                if (File.Exists(Path.Combine(directory.FullName, "tools", "Spire.Tool.Core", "Spire.Tool.Core.csproj")) &&
                     File.Exists(Path.Combine(directory.FullName, "src", "Houtamelo.Spire", "Houtamelo.Spire.csproj")))
-                {
                     return directory.FullName;
-                }
-
                 directory = directory.Parent;
             }
         }
 
-        throw new InvalidOperationException("Could not locate the repository root for JetBrains acceptance tests.");
+        throw new InvalidOperationException("Could not locate the repository root containing the Spire.Tool implementation.");
     }
 
     private sealed class AcceptanceFixture : IDisposable
@@ -358,37 +205,12 @@ public sealed class JetBrainsAcceptanceRunnerTests
         public string Root { get; }
 
         public static AcceptanceFixture Create(string repositoryRoot)
-            => new(Path.Combine(
-                repositoryRoot,
-                "tmp",
-                "devtools-jetbrains-acceptance-tests",
-                Guid.NewGuid().ToString("N")));
+            => new(Path.Combine(repositoryRoot, "tmp", "devtools-jetbrains-acceptance-tests", Guid.NewGuid().ToString("N")));
 
         public void Dispose()
         {
             if (Directory.Exists(Root))
                 Directory.Delete(Root, recursive: true);
         }
-    }
-
-    private sealed class ProcessResult
-    {
-        public ProcessResult(int exitCode, string standardOutput, string standardError, bool timedOut)
-        {
-            ExitCode = exitCode;
-            StandardOutput = standardOutput;
-            StandardError = standardError;
-            TimedOut = timedOut;
-        }
-
-        public int ExitCode { get; }
-
-        public string StandardOutput { get; }
-
-        public string StandardError { get; }
-
-        public bool TimedOut { get; }
-
-        public string CombinedOutput => $"{StandardOutput}\n{StandardError}";
     }
 }

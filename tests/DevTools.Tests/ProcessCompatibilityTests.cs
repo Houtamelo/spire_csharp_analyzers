@@ -17,12 +17,6 @@ public sealed class ProcessCompatibilityTests
     public async Task AddArgument_PreservesSpacesQuotesAndBackslashes()
     {
         using var fixture = ProcessFixture.Create();
-        var script = Path.Combine(fixture.Root, "print-arguments.py");
-        File.WriteAllText(
-            script,
-            "import sys\nfor value in sys.argv[1:]: print(value)\n",
-            Encoding.UTF8);
-
         var expected = new[]
         {
             "value with spaces",
@@ -30,7 +24,13 @@ public sealed class ProcessCompatibilityTests
             "slash\\value",
             "mixed \\ and \"quotes\"",
         };
-        var result = await RunPythonAsync(script, expected);
+
+        using var process = StartShell(
+            fixture.Root,
+            "for value in \"$@\"; do printf '%s\\n' \"$value\"; done",
+            "print-arguments",
+            expected);
+        var result = await WaitForShellAsync(process);
 
         Assert.Equal(0, result.ExitCode);
         Assert.Equal(expected, result.StandardOutput.Split(
@@ -42,10 +42,7 @@ public sealed class ProcessCompatibilityTests
     public async Task WaitForExitAsync_CancellationDoesNotLeaveTheProcessRunning()
     {
         using var fixture = ProcessFixture.Create();
-        var script = Path.Combine(fixture.Root, "sleep.py");
-        File.WriteAllText(script, "import time\ntime.sleep(30)\n", Encoding.UTF8);
-
-        using var process = StartPython(script);
+        using var process = StartShell(fixture.Root, "sleep 30", "sleep");
         using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(150));
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
             await DevTools.ProcessCompatibility.WaitForExitAsync(process, cancellation.Token));
@@ -68,17 +65,12 @@ public sealed class ProcessCompatibilityTests
     public async Task KillTree_StopsAChildProcessToo()
     {
         using var fixture = ProcessFixture.Create();
-        var script = Path.Combine(fixture.Root, "spawn-child.py");
         var childPidFile = Path.Combine(fixture.Root, "child.pid");
-        File.WriteAllText(
-            script,
-            "import pathlib, subprocess, sys\n"
-            + "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'])\n"
-            + "pathlib.Path(sys.argv[1]).write_text(str(child.pid))\n"
-            + "child.wait()\n",
-            Encoding.UTF8);
-
-        using var process = StartPython(script, childPidFile);
+        using var process = StartShell(
+            fixture.Root,
+            "sleep 30 & child=$!; printf '%s' \"$child\" > \"$1\"; wait \"$child\"",
+            "spawn-child",
+            childPidFile);
         try
         {
             var childPid = await WaitForChildPidAsync(childPidFile);
@@ -113,29 +105,29 @@ public sealed class ProcessCompatibilityTests
             actual);
     }
 
-    private static Process StartPython(string script, params string[] arguments)
+    private static Process StartShell(string workingDirectory, string command, string zero, params string[] arguments)
     {
-        var python = Environment.GetEnvironmentVariable("PYTHON") ?? "python3";
         var info = new ProcessStartInfo
         {
-            FileName = python,
+            FileName = "/bin/sh",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-            WorkingDirectory = Path.GetDirectoryName(script)!,
+            WorkingDirectory = workingDirectory,
         };
-        DevTools.ProcessCompatibility.AddArgument(info, script);
+        DevTools.ProcessCompatibility.AddArgument(info, "-c");
+        DevTools.ProcessCompatibility.AddArgument(info, command);
+        DevTools.ProcessCompatibility.AddArgument(info, zero);
         foreach (var argument in arguments)
             DevTools.ProcessCompatibility.AddArgument(info, argument);
 
         var process = new Process { StartInfo = info };
-        Assert.True(process.Start(), $"Could not start Python process '{python}'.");
+        Assert.True(process.Start(), "Could not start /bin/sh.");
         return process;
     }
 
-    private static async Task<ProcessResult> RunPythonAsync(string script, params string[] arguments)
+    private static async Task<ProcessResult> WaitForShellAsync(Process process)
     {
-        using var process = StartPython(script, arguments);
         var output = process.StandardOutput.ReadToEndAsync();
         var error = process.StandardError.ReadToEndAsync();
         using var cancellation = new CancellationTokenSource(ProcessTimeout);
@@ -157,7 +149,8 @@ public sealed class ProcessCompatibilityTests
     {
         var found = await WaitUntilAsync(() => File.Exists(path), TimeSpan.FromSeconds(5));
         Assert.True(found, "The child process did not publish its PID.");
-        Assert.True(int.TryParse(File.ReadAllText(path), out var pid), File.ReadAllText(path));
+        var value = File.ReadAllText(path);
+        Assert.True(int.TryParse(value, out var pid), value);
         return pid;
     }
 
@@ -198,12 +191,9 @@ public sealed class ProcessCompatibilityTests
             var directory = new DirectoryInfo(startingPath);
             while (directory is not null)
             {
-                if (File.Exists(Path.Combine(directory.FullName, "tools", "build-unity-package.py")) &&
+                if (File.Exists(Path.Combine(directory.FullName, "tools", "Spire.Tool.Core", "Spire.Tool.Core.csproj")) &&
                     File.Exists(Path.Combine(directory.FullName, "src", "Houtamelo.Spire", "Houtamelo.Spire.csproj")))
-                {
                     return directory.FullName;
-                }
-
                 directory = directory.Parent;
             }
         }
@@ -222,14 +212,7 @@ public sealed class ProcessCompatibilityTests
         public string Root { get; }
 
         public static ProcessFixture Create()
-        {
-            var root = Path.Combine(
-                FindRepositoryRoot(),
-                "tmp",
-                "devtools-process-tests",
-                Guid.NewGuid().ToString("N"));
-            return new ProcessFixture(root);
-        }
+            => new(Path.Combine(FindRepositoryRoot(), "tmp", "devtools-process-tests", Guid.NewGuid().ToString("N")));
 
         public void Dispose()
         {

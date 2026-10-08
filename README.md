@@ -7,7 +7,7 @@ Roslyn analyzers and source generators for C# type safety — struct initializat
 This `unity-6000` branch targets Unity 6000.5 and Mono. Build its local package:
 
 ```sh
-python3 tools/build-unity-package.py
+dotnet run -c Release --project tools/Spire.Tool -- package
 ```
 
 Add `tmp/unity-package/com.houtamelo.spire/package.json` through Unity's Package

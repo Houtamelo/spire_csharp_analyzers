@@ -10,6 +10,10 @@
 
   <ItemGroup>
     <ProjectReference Include="../../tools/DevTools/DevTools.csproj" />
+    <ProjectReference Include="../../tools/Spire.Tool.Core/Spire.Tool.Core.csproj" />
+    <ProjectReference Include="../../tools/Spire.Tool/Spire.Tool.csproj"
+                      ReferenceOutputAssembly="false" PrivateAssets="all"
+                      Condition="'$(SpireUnityTestHost)' != 'true'" />
     <ProjectReference Include="../../tools/UnityTestDependencies/UnityTestDependencies.csproj"
                       ReferenceOutputAssembly="false" PrivateAssets="all" />
     <ProjectReference Include="../../src/Houtamelo.Spire/Houtamelo.Spire.csproj"

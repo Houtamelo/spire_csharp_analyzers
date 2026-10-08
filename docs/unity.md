@@ -4,12 +4,19 @@ The `unity-6000` branch targets Unity 6000.5 with Roslyn 4.10 and Mono. The
 normal NuGet build remains on `main`. IL2CPP and other Unity minor versions
 require separate validation. Rider is the supported IDE.
 
+All build and acceptance workflows use the C# CLI in `tools/Spire.Tool`. It
+requires the .NET 10 SDK for preparation; using the built package requires only
+Unity. Run `dotnet run -c Release --project tools/Spire.Tool -- --help` for commands
+and options. `Spire.Tool.Core` targets .NET Standard 2.1 so the same preparation
+contracts can be tested in Editor Mono. The SDK, installed Editor, and Rider/JDK
+requirements of their respective workflows remain unchanged.
+
 ## Install
 
 From this branch, build the local Unity package:
 
 ```sh
-python3 tools/build-unity-package.py
+dotnet run -c Release --project tools/Spire.Tool -- package
 ```
 
 In Unity's Package Manager, choose **Add package from disk** and select
@@ -32,7 +39,7 @@ runtime/editor asmdefs, explicit DLL references, disabled auto references, and
 direct/transitive assembly dependencies:
 
 ```sh
-python3 tools/test-unity-asmdefs.py --timeout 900
+dotnet run -c Release --project tools/Spire.Tool -- unity-asmdefs --timeout 900
 ```
 
 It asserts generated APIs and actual compiler diagnostics in eight assemblies,
@@ -44,7 +51,7 @@ Inspect the generated solution with the matching JetBrains command-line tools:
 
 ```sh
 dotnet tool install JetBrains.ReSharper.GlobalTools --tool-path tmp/jetbrains-cli --version 2026.2.3.1
-python3 tools/test-jetbrains-integration.py --stage inspect
+dotnet run -c Release --project tools/Spire.Tool -- jetbrains --stage inspect
 ```
 
 The acceptance check requires the expected `SPIRE002` diagnostics in all eight
@@ -54,7 +61,7 @@ the original SARIF output and inspection log under `tmp/unity-asmdefs`.
 Run the complete IDE acceptance check after preparing the asmdef fixture:
 
 ```sh
-python3 tools/test-jetbrains-integration.py --stage all --timeout 900
+dotnet run -c Release --project tools/Spire.Tool -- jetbrains --stage all --timeout 900
 ```
 
 This requires a licensed Rider installation, its bundled JDK, and `Xvfb` on
@@ -66,7 +73,7 @@ exact saved source change, then recompiles all eight assemblies in Unity and
 executes valid/invalid conversion probes. It preserves source snapshots,
 hashes, IDE logs, SARIF, and `jetbrains-integration-results.json`.
 
-Re-run `test-unity-asmdefs.py` before repeating the complete check; preparation
+Re-run the `unity-asmdefs` command before repeating the complete check; preparation
 restores the unfixed source. Its disposable project pins SDK 8 to match Unity's
 Rider toolset instead of inheriting this repository's SDK selection. This
 acceptance test covers one representative IDE quick fix; the existing provider
@@ -152,7 +159,7 @@ prepares nested state, so measure costs for frequently serialized large unions.
 Use the installed Editor executable:
 
 ```sh
-SPIRE_UNITY_EDITOR=/path/to/Editor/Unity python3 tools/test-unity.py --graphics
+SPIRE_UNITY_EDITOR=/path/to/Editor/Unity dotnet run -c Release --project tools/Spire.Tool -- unity-integration --graphics
 ```
 
 The runner copies the tracked fixture to `tmp/unity-integration`, builds the
@@ -164,7 +171,7 @@ graphics-dependent checks are reported as observations rather than passes.
 Build the Mono player fixture separately:
 
 ```sh
-python3 tools/test-unity.py --method Spire.UnityIntegration.SpireUnityIntegration.BuildPlayer
+dotnet run -c Release --project tools/Spire.Tool -- unity-integration --method Spire.UnityIntegration.SpireUnityIntegration.BuildPlayer
 ```
 
 The build report contains the executable path and runtime report argument. Run
@@ -180,7 +187,7 @@ itself. The design and feasibility evidence are recorded in
 Run the existing runtime behavioral tests inside the Unity Editor:
 
 ```sh
-python3 tools/test-unity-behavioral.py
+dotnet run -c Release --project tools/Spire.Tool -- unity-behavioral
 ```
 
 This runner copies the original union declarations and all 129 xUnit test
@@ -197,7 +204,7 @@ are Editor-only test assets, outside the shipped Spire package.
 Run the complete repository harness in Editor Mono:
 
 ```sh
-python3 tools/test-unity-harness.py --timeout 900
+dotnet run -c Release --project tools/Spire.Tool -- unity-harness --timeout 900
 ```
 
 Use `--probe` to run the five Roslyn feasibility checks first. They exercise
@@ -223,7 +230,7 @@ limited to Spire's four DLLs. Analyzer and snapshot tests use .NET reference
 assemblies as compiler inputs, while runtime tests load generated assemblies
 against Unity Mono. Preparation builds portable test assemblies and runs the
 net10.0 independent discovery tool through `dotnet`. DevTools preparation tests
-invoke that workflow again from inside Unity, using Python and `dotnet` child
+invoke that workflow again from inside Unity, using the C# CLI and `dotnet` child
 processes. Global-configuration tests exercise SDK/MSBuild configuration during
 their preparation build; their assertions execute in Mono. The .NET 8 reference
 pack is compiler metadata and does not require a .NET 8 runtime.
@@ -233,8 +240,8 @@ reuses existing portable outputs and checks that the dependency bundle contains
 the current test assemblies. Set `SPIRE_UNITY_EDITOR` or `--editor` to choose the
 installed Editor; validation currently covers 6000.5.6f1 on Linux.
 
-Validated results: five feasibility probes and all 2,025 full-harness checks pass
+Validated results: five feasibility probes and all 2,036 full-harness checks pass
 in Editor Mono, including nine adapter checks. The normal .NET host passes all
-2,016 repository tests. Both full runs have zero failures or skips. The separate
+2,027 repository tests. Both full runs have zero failures or skips. The separate
 eight-assembly acceptance fixture, matching InspectCode 2026.2.3.1 inspection,
 and actual Rider 2026.2.3.1 quick-fix/recompilation pipeline also pass.

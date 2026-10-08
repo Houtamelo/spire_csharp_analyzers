@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Spire.Tool;
 using Xunit;
 
 namespace DevTools.Tests;
@@ -34,7 +32,6 @@ public sealed class UnityPackagingTests
         using var fixture = PackageFixture.Create(repositoryRoot);
         var result = await RunPackageBuilderAsync(repositoryRoot, fixture.OutputPath);
 
-        Assert.False(result.TimedOut, result.CombinedOutput);
         Assert.Equal(0, result.ExitCode);
         AssertDllWhitelist(fixture.OutputPath);
         AssertManifest(fixture.OutputPath, ReadCoreVersion(repositoryRoot));
@@ -62,13 +59,11 @@ public sealed class UnityPackagingTests
 
         using var fixture = PackageFixture.Create(repositoryRoot);
         var first = await RunPackageBuilderAsync(repositoryRoot, fixture.OutputPath);
-        Assert.False(first.TimedOut, first.CombinedOutput);
-        Assert.True(first.ExitCode == 0, first.CombinedOutput);
+        Assert.True(first.ExitCode == 0, CombinedOutput(first));
         var before = CaptureFileDigests(fixture.OutputPath);
 
         var second = await RunPackageBuilderAsync(repositoryRoot, fixture.OutputPath);
-        Assert.False(second.TimedOut, second.CombinedOutput);
-        Assert.True(second.ExitCode == 0, second.CombinedOutput);
+        Assert.True(second.ExitCode == 0, CombinedOutput(second));
 
         Assert.Equal(before, CaptureFileDigests(fixture.OutputPath));
         AssertDllWhitelist(fixture.OutputPath);
@@ -87,122 +82,86 @@ public sealed class UnityPackagingTests
 
         var result = await RunPackageBuilderAsync(repositoryRoot, fixture.OutputPath);
 
-        Assert.False(result.TimedOut, result.CombinedOutput);
         Assert.NotEqual(0, result.ExitCode);
-        Assert.Contains("unrelated", result.CombinedOutput, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("unrelated", CombinedOutput(result), StringComparison.OrdinalIgnoreCase);
         Assert.Equal("preserve this sentinel", File.ReadAllText(sentinelPath));
         Assert.Empty(Directory.EnumerateFiles(fixture.OutputPath, "*.dll", SearchOption.AllDirectories));
     }
 
     [Fact]
-    public async Task BuildPackage_VersionMismatchGuardUsesRealRunpyAndCreatesNoOutput()
+    public async Task BuildPackage_VersionMismatchGuardUsesRealCliAndCreatesNoOutput()
     {
         var repositoryRoot = FindRepositoryRoot();
         using var fixture = PackageFixture.Create(repositoryRoot);
         CreateVersionFixture(fixture.Root);
 
-        var scriptPath = Path.Combine(fixture.Root, "version-mismatch-guard.py");
-        File.WriteAllText(
-            scriptPath,
-            $"""
-            import runpy
-            from pathlib import Path
+        var result = await RunPackageBuilderAsync(
+            repositoryRoot,
+            fixture.OutputPath,
+            fixture.Root);
 
-            module = runpy.run_path({PythonString(Path.Combine(repositoryRoot, "tools", "build-unity-package.py"))})
-            build_package = module["build_package"]
-            build_package.__globals__["ROOT"] = Path({PythonString(fixture.Root)})
-            output = Path({PythonString(fixture.OutputPath)})
-
-            try:
-                build_package(output, "Debug", False)
-            except ValueError as error:
-                print("EXPECTED_VERSION_MISMATCH:" + str(error))
-                raise SystemExit(0)
-
-            raise SystemExit("The mismatched project fixture was unexpectedly accepted.")
-            """);
-
-        var result = await RunPythonAsync(
-            fixture.Root,
-            scriptPath);
-
-        Assert.False(result.TimedOut, result.CombinedOutput);
-        Assert.True(result.ExitCode == 0, result.CombinedOutput);
-        Assert.Contains("EXPECTED_VERSION_MISMATCH", result.CombinedOutput, StringComparison.Ordinal);
-        Assert.Contains("versions must match", result.CombinedOutput, StringComparison.OrdinalIgnoreCase);
+        Assert.NotEqual(0, result.ExitCode);
+        Assert.Contains("versions must match", CombinedOutput(result), StringComparison.OrdinalIgnoreCase);
         Assert.False(Directory.Exists(fixture.OutputPath));
     }
 
     private static async Task<ProcessResult> RunPackageBuilderAsync(
         string repositoryRoot,
-        string outputPath)
+        string outputPath,
+        string? rootOverride = null)
     {
-        var scriptPath = Path.Combine(repositoryRoot, "tools", "build-unity-package.py");
-        return await RunPythonAsync(
+        var configuration = "Debug";
+        var launcherConfiguration = BuildConfiguration();
+        var cliPath = Path.Combine(
             repositoryRoot,
-            scriptPath,
-            "--output",
-            outputPath,
-            "--configuration",
-            "Debug",
-            "--no-build");
-    }
+            "tools",
+            "Spire.Tool",
+            "bin",
+            launcherConfiguration,
+            "net10.0",
+            "Spire.Tool.dll");
+        Assert.True(File.Exists(cliPath), $"Missing Spire.Tool CLI: {cliPath}");
 
-    private static async Task<ProcessResult> RunPythonAsync(
-        string workingDirectory,
-        string scriptPath,
-        params string[] arguments)
-    {
-        var python = Environment.GetEnvironmentVariable("PYTHON") ?? "python3";
-        using var process = new Process
+        var arguments = new List<string>();
+        if (rootOverride is not null)
         {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = python,
-                WorkingDirectory = workingDirectory,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                Environment =
-                {
-                    ["CI"] = "true",
-                    ["GIT_TERMINAL_PROMPT"] = "0",
-                    ["PYTHONUNBUFFERED"] = "1",
-                },
-            },
-        };
-        DevTools.ProcessCompatibility.AddArgument(process.StartInfo, scriptPath);
-        foreach (var argument in arguments)
-            DevTools.ProcessCompatibility.AddArgument(process.StartInfo, argument);
-
-        Assert.True(process.Start(), $"Could not start Python process '{python}'.");
-
-        var standardOutput = process.StandardOutput.ReadToEndAsync();
-        var standardError = process.StandardError.ReadToEndAsync();
-        var timedOut = false;
-
-        using (var timeout = new CancellationTokenSource(ProcessTimeout))
-        {
-            try
-            {
-                await DevTools.ProcessCompatibility.WaitForExitAsync(process, timeout.Token);
-            }
-            catch (OperationCanceledException) when (timeout.IsCancellationRequested)
-            {
-                timedOut = true;
-                if (!process.HasExited)
-                    DevTools.ProcessCompatibility.KillTree(process);
-
-                await DevTools.ProcessCompatibility.WaitForExitAsync(process);
-            }
+            arguments.Add("--root");
+            arguments.Add(rootOverride);
         }
 
-        return new ProcessResult(
-            process.ExitCode,
-            await standardOutput,
-            await standardError,
-            timedOut);
+        arguments.Add("package");
+        arguments.Add("--output");
+        arguments.Add(outputPath);
+        arguments.Add("--configuration");
+        arguments.Add(configuration);
+        arguments.Add("--no-build");
+
+        return await ProcessRunner.RunAsync(
+            new ToolContext(repositoryRoot).Dotnet,
+            new[] { cliPath }.Concat(arguments),
+            repositoryRoot,
+            ProcessTimeout,
+            new Dictionary<string, string?>
+            {
+                ["CI"] = "true",
+                ["GIT_TERMINAL_PROMPT"] = "0",
+            });
     }
+
+    private static string CombinedOutput(ProcessResult result)
+        => $"{result.StandardOutput}\n{result.StandardError}";
+
+    private static string BuildConfiguration()
+#if SPIRE_UNITY_TEST_HOST
+        => Environment.GetEnvironmentVariable("SPIRE_UNITY_TEST_CONFIGURATION") ?? "Release";
+#else
+        => Environment.GetEnvironmentVariable("SPIRE_UNITY_TEST_CONFIGURATION") ??
+            (AppContext.BaseDirectory.Contains(
+                Path.DirectorySeparatorChar + "Release" + Path.DirectorySeparatorChar,
+                StringComparison.Ordinal)
+                ? "Release"
+                : "Debug");
+#endif
 
     private static void AssertDebugArtifactsPresent(string repositoryRoot)
     {
@@ -345,7 +304,7 @@ public sealed class UnityPackagingTests
             var directory = new DirectoryInfo(startingPath);
             while (directory is not null)
             {
-                if (File.Exists(Path.Combine(directory.FullName, "tools", "build-unity-package.py")) &&
+                if (File.Exists(Path.Combine(directory.FullName, "tools", "Spire.Tool", "Spire.Tool.csproj")) &&
                     File.Exists(Path.Combine(directory.FullName, "src", "Houtamelo.Spire", "Houtamelo.Spire.csproj")))
                 {
                     return directory.FullName;
@@ -360,9 +319,6 @@ public sealed class UnityPackagingTests
 
     private static string RelativePath(string root, string path)
         => Path.GetRelativePath(root, path).Replace(Path.DirectorySeparatorChar, '/');
-
-    private static string PythonString(string value)
-        => JsonSerializer.Serialize(value);
 
     private sealed class PackageFixture : IDisposable
     {
@@ -394,12 +350,4 @@ public sealed class UnityPackagingTests
         }
     }
 
-    private sealed record ProcessResult(
-        int ExitCode,
-        string StandardOutput,
-        string StandardError,
-        bool TimedOut)
-    {
-        public string CombinedOutput => $"{StandardOutput}\n{StandardError}";
-    }
 }
