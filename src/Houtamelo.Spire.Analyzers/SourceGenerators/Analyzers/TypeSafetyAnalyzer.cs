@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Linq;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -333,7 +334,8 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
 
         for (int i = 0; i < factoryMethod.Parameters.Length; i++)
         {
-            if (factoryMethod.Parameters[i].Name == memberName)
+            if (factoryMethod.Parameters[i].Name == memberName ||
+                memberName == FieldNameResolver.CamelCase(variantName) + "_" + factoryMethod.Parameters[i].Name)
                 return i;
         }
 

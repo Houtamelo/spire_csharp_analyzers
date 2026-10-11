@@ -15,7 +15,7 @@ namespace TestNs
             int Test(Direction d) => d switch
             {
                 { kind: Direction.Kind.North, steps: var s } => s,
-                { kind: Direction.Kind.South, steps: int steps } => throw new System.NotImplementedException()
+                { kind: Direction.Kind.South, steps: var steps } => throw new System.NotImplementedException()
             };
         }
     }

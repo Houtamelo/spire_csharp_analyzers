@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 using Microsoft.CodeAnalysis;
 
 namespace Houtamelo.Spire.Analyzers.SourceGenerators.Analyzers;
@@ -8,15 +10,18 @@ namespace Houtamelo.Spire.Analyzers.SourceGenerators.Analyzers;
 /// for struct discriminated unions.
 internal sealed class VariantFieldMap
 {
-    private readonly Dictionary<string, string> _memberToVariant;
+    private readonly Dictionary<string, ImmutableHashSet<string>> _memberToVariants;
 
-    private VariantFieldMap(Dictionary<string, string> map) => _memberToVariant = map;
+    private VariantFieldMap(Dictionary<string, ImmutableHashSet<string>> map)
+        => _memberToVariants = map;
 
-    /// Returns the variant name that owns this field/property, or null if not a variant member.
-    public string? GetOwningVariant(string memberName)
+    /// Returns all variants that expose this field/property, or an empty set if
+    /// it is not a generated variant member.
+    public ImmutableHashSet<string> GetOwningVariants(string memberName)
     {
-        _memberToVariant.TryGetValue(memberName, out var variant);
-        return variant;
+        return _memberToVariants.TryGetValue(memberName, out var variants)
+            ? variants
+            : ImmutableHashSet<string>.Empty;
     }
 
     /// Builds the map from a union type's fields, properties, and Kind enum members.
@@ -24,7 +29,7 @@ internal sealed class VariantFieldMap
     {
         if (!info.IsStructUnion) return null;
 
-        var map = new Dictionary<string, string>();
+        var map = new Dictionary<string, ImmutableHashSet<string>>();
 
         // Scan [EditorBrowsable(Never)] properties for variant field info
         // These have bare field names. Map each property to its owning variant
@@ -38,7 +43,8 @@ internal sealed class VariantFieldMap
     }
 
     private static void ScanProperties(
-        INamedTypeSymbol unionType, UnionTypeInfo info, Dictionary<string, string> map)
+        INamedTypeSymbol unionType, UnionTypeInfo info,
+        Dictionary<string, ImmutableHashSet<string>> map)
     {
         // Find all [Variant] methods to build parameter→variant mapping
         var variantMethods = unionType.GetMembers()
@@ -46,27 +52,28 @@ internal sealed class VariantFieldMap
             .Where(m => m.IsStatic && HasVariantAttribute(m))
             .ToList();
 
-        // For each [EditorBrowsable(Never)] property, find which variant owns it
+        // Resolve each generated property from the original factory parameter.
+        // Qualified properties are named camelCaseVariant_field.
         foreach (var prop in unionType.GetMembers().OfType<IPropertySymbol>())
         {
             if (prop.Name == "kind") continue;
             if (!HasEditorBrowsableNever(prop)) continue;
 
-            // Find the first variant method that has a parameter matching this property name
             foreach (var method in variantMethods)
             {
-                if (method.Parameters.Any(p => p.Name == prop.Name))
+                if (method.Parameters.Any(parameter =>
+                    parameter.Name == prop.Name ||
+                    prop.Name == ToCamelCase(method.Name) + "_" + parameter.Name))
                 {
-                    if (!map.ContainsKey(prop.Name))
-                        map[prop.Name] = method.Name;
-                    break;
+                    Add(map, prop.Name, method.Name);
                 }
             }
         }
     }
 
     private static void ScanFields(
-        INamedTypeSymbol unionType, UnionTypeInfo info, Dictionary<string, string> map)
+        INamedTypeSymbol unionType, UnionTypeInfo info,
+        Dictionary<string, ImmutableHashSet<string>> map)
     {
         var variantCamelNames = info.VariantNames
             .Select(v => (Original: v, CamelCase: ToCamelCase(v)))
@@ -86,11 +93,21 @@ internal sealed class VariantFieldMap
             {
                 if (field.Name == camel || field.Name.StartsWith(camel + "_"))
                 {
-                    map[field.Name] = original;
+                    Add(map, field.Name, original);
                     break;
                 }
             }
         }
+    }
+
+    private static void Add(
+        Dictionary<string, ImmutableHashSet<string>> map,
+        string memberName,
+        string variantName)
+    {
+        if (!map.TryGetValue(memberName, out var variants))
+            variants = ImmutableHashSet<string>.Empty;
+        map[memberName] = variants.Add(variantName);
     }
 
     private static bool HasVariantAttribute(IMethodSymbol method)
@@ -109,8 +126,5 @@ internal sealed class VariantFieldMap
     }
 
     private static string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name.Substring(1);
-    }
+        => FieldNameResolver.CamelCase(name);
 }

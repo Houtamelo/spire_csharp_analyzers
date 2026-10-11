@@ -1,0 +1,114 @@
+#nullable enable
+using System;
+using System.Collections.Generic;
+using Houtamelo.Spire;
+using UnityEngine;
+
+[Serializable]
+[DiscriminatedUnion(Layout.Additive)]
+public partial struct StabilityMigrationUnion
+{
+    [Variant(FormerlySerializedAs = "OldRenamed")]
+    public static partial StabilityMigrationUnion Renamed(
+        int amount,
+        string? label,
+        int? count,
+        (int X, string Y) pair,
+        UnityEngine.Object asset,
+        StabilityNestedChildUnion child,
+        List<int> values);
+
+    [Variant(FormerlySerializedAs = "OldEmpty")]
+    public static partial StabilityMigrationUnion Empty();
+
+    [Variant]
+    public static partial StabilityMigrationUnion Other(string? otherLabel);
+}
+
+[Serializable]
+[DiscriminatedUnion(Layout.Additive)]
+public partial struct StabilityNestedChildUnion
+{
+    [Variant(FormerlySerializedAs = "PriorChild")]
+    public static partial StabilityNestedChildUnion Current(int count, string? label);
+
+    [Variant] public static partial StabilityNestedChildUnion Empty();
+}
+
+[Serializable]
+[DiscriminatedUnion(Layout.Additive)]
+public partial struct StabilityNestedParentUnion
+{
+    [Variant]
+    public static partial StabilityNestedParentUnion Child(
+        StabilityNestedChildUnion child,
+        int marker);
+
+    [Variant] public static partial StabilityNestedParentUnion Empty();
+}
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct StabilityGenericUnion<T>
+{
+    [Variant(FormerlySerializedAs = "OldFirst")]
+    public static partial StabilityGenericUnion<T> First(T value);
+
+    [Variant] public static partial StabilityGenericUnion<T> Nested(StabilityNestedChildUnion child);
+    [Variant] public static partial StabilityGenericUnion<T> Empty();
+}
+
+[Serializable]
+[DiscriminatedUnion(Layout.Additive)]
+public partial struct StabilityKeywordAliasUnion
+{
+    [Variant(FormerlySerializedAs = "class")]
+    public static partial StabilityKeywordAliasUnion @new(int value);
+
+    [Variant] public static partial StabilityKeywordAliasUnion Empty();
+}
+
+[Serializable]
+[DiscriminatedUnion(Layout.Additive)]
+public partial struct StabilityAliasAdditive
+{
+    [Variant(FormerlySerializedAs = "OldFirst")]
+    public static partial StabilityAliasAdditive First(int value);
+    [Variant] public static partial StabilityAliasAdditive Empty();
+}
+
+[Serializable]
+[DiscriminatedUnion(Layout.BoxedFields)]
+public partial struct StabilityAliasBoxedFields
+{
+    [Variant(FormerlySerializedAs = "OldFirst")]
+    public static partial StabilityAliasBoxedFields First(int value);
+    [Variant] public static partial StabilityAliasBoxedFields Empty();
+}
+
+[Serializable]
+[DiscriminatedUnion(Layout.BoxedTuple)]
+public partial struct StabilityAliasBoxedTuple
+{
+    [Variant(FormerlySerializedAs = "OldFirst")]
+    public static partial StabilityAliasBoxedTuple First(int value);
+    [Variant] public static partial StabilityAliasBoxedTuple Empty();
+}
+
+[Serializable]
+[DiscriminatedUnion(Layout.UnsafeOverlap)]
+public partial struct StabilityAliasUnsafeOverlap
+{
+    [Variant(FormerlySerializedAs = "OldFirst")]
+    public static partial StabilityAliasUnsafeOverlap First(int value);
+    [Variant] public static partial StabilityAliasUnsafeOverlap Empty();
+}
+
+[Serializable]
+[DiscriminatedUnion(Layout.Overlap)]
+public partial struct StabilityAliasOverlap
+{
+    [Variant(FormerlySerializedAs = "OldFirst")]
+    public static partial StabilityAliasOverlap First(int value);
+    [Variant] public static partial StabilityAliasOverlap Empty();
+}

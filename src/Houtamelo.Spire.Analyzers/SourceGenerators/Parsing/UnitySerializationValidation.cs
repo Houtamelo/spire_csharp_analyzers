@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Houtamelo.Spire.Analyzers.SourceGenerators.Parsing;
@@ -11,7 +12,6 @@ namespace Houtamelo.Spire.Analyzers.SourceGenerators.Parsing;
 internal static class UnitySerializationValidation
 {
     private const string SerializableAttribute = "System.SerializableAttribute";
-    private const string UnityObject = "UnityEngine.Object";
     private const string UnityCallbackReceiver = "UnityEngine.ISerializationCallbackReceiver";
     private const string ListDefinition = "System.Collections.Generic.List<T>";
 
@@ -45,40 +45,9 @@ internal static class UnitySerializationValidation
         if (reserved is not null)
             return reserved;
 
-        foreach (var method in union.GetMembers().OfType<IMethodSymbol>())
-        {
-            if (!method.IsStatic || !HasAttribute(method, "Houtamelo.Spire.VariantAttribute"))
-                continue;
-
-            foreach (var parameter in method.Parameters)
-            {
-                if (parameter.RefKind != RefKind.None)
-                {
-                    return CreateDiagnostic(
-                        syntax,
-                        "SPIRE_DU014",
-                        $"Variant field '{parameter.Name}' cannot be serialized by Unity.");
-                }
-
-                if (!IsSupportedField(parameter.Type, compilation, allowTypeParameter: true, nestedContainer: false))
-                {
-                    return CreateDiagnostic(
-                        syntax,
-                        "SPIRE_DU014",
-                        $"Variant field '{parameter.Name}' of type '{parameter.Type.ToDisplayString()}' cannot be serialized by Unity.");
-                }
-            }
-        }
-
-        if (union.TypeParameters.Length > 0)
-        {
-            var closedArgumentError = ValidateClosedGenericUses(union, compilation);
-            if (closedArgumentError is not null)
-                return CreateDiagnostic(
-                    syntax,
-                    "SPIRE_DU014",
-                    closedArgumentError);
-        }
+        var aliases = ValidateAliases(union, syntax, variants);
+        if (aliases is not null)
+            return aliases;
 
         return null;
     }
@@ -230,377 +199,157 @@ internal static class UnitySerializationValidation
         return null;
     }
 
-    private static bool IsSupportedField(
-        ITypeSymbol type,
-        Compilation compilation,
-        bool allowTypeParameter,
-        bool nestedContainer,
-        HashSet<INamedTypeSymbol>? compositeVisited = null)
+    private static UnionDiagnostic? ValidateAliases(
+        INamedTypeSymbol union,
+        TypeDeclarationSyntax syntax,
+        ImmutableArray<VariantInfo> variants)
     {
-        compositeVisited ??= new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+        var currentNames = new HashSet<string>(
+            variants.Select(variant => variant.Name),
+            StringComparer.Ordinal);
+        var aliases = new Dictionary<string, string>(StringComparer.Ordinal);
+        var payloadNames = new Dictionary<string, string>(StringComparer.Ordinal);
 
-        if (type is ITypeParameterSymbol)
-            return allowTypeParameter;
-
-        if (type.TypeKind == TypeKind.Pointer || type.TypeKind == TypeKind.FunctionPointer)
-            return false;
-
-        if (type is IArrayTypeSymbol array)
+        foreach (var variant in variants)
         {
-            return !nestedContainer && array.Rank == 1 &&
-                IsSupportedField(
-                    array.ElementType,
-                    compilation,
-                    allowTypeParameter: true,
-                    nestedContainer: true,
-                    compositeVisited: compositeVisited) &&
-                !IsContainer(array.ElementType);
-        }
-
-        if (type is not INamedTypeSymbol named)
-            return false;
-
-        if (named.IsTupleType || named.IsAbstract && !IsUnityObject(named, compilation))
-            return false;
-
-        if (named.TypeKind == TypeKind.Interface ||
-            named.SpecialType == SpecialType.System_Object ||
-            named.TypeKind == TypeKind.Dynamic)
-        {
-            return false;
-        }
-
-        if (named.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
-            return false;
-
-        var metadataName = named.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        if (metadataName is "global::System.Decimal" or
-            "global::System.DateTime" or
-            "global::System.Guid" or
-            "global::System.IntPtr" or
-            "global::System.UIntPtr" or
-            "global::System.Collections.Generic.Dictionary<TKey, TValue>" or
-            "global::System.Collections.Generic.IDictionary<TKey, TValue>" ||
-            metadataName.StartsWith("global::System.Tuple<", StringComparison.Ordinal) ||
-            metadataName.StartsWith("global::System.ValueTuple<", StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        if (named.TypeKind == TypeKind.Enum)
-        {
-            var underlying = named.EnumUnderlyingType;
-            return underlying is not null && KnownPrimitiveSize(underlying) <= 4;
-        }
-
-        if (IsPrimitive(named))
-            return true;
-
-        if (IsUnityObject(named, compilation))
-            return true;
-
-        if (named.ContainingNamespace?.ToDisplayString() == "UnityEngine")
-            return true;
-
-        if (IsList(named))
-        {
-            return !nestedContainer && named.TypeArguments.Length == 1 &&
-                !IsContainer(named.TypeArguments[0]) &&
-                IsSupportedField(
-                    named.TypeArguments[0],
-                    compilation,
-                    allowTypeParameter: true,
-                    nestedContainer: true,
-                    compositeVisited: compositeVisited);
-        }
-
-        if (named.IsRefLikeType)
-            return false;
-
-        if (!HasSerializableAttribute(named))
-            return false;
-
-        if (ImplementsUnityCallback(named, compilation) && IsUnityComposite(named))
-            return false;
-
-        if (!compositeVisited.Add(named))
-            return false;
-
-        try
-        {
-            foreach (var argument in named.TypeArguments)
+            var alias = variant.FormerlySerializedAs;
+            if (string.IsNullOrEmpty(alias) ||
+                string.Equals(alias, variant.Name, StringComparison.Ordinal))
             {
-                if (!IsSupportedField(
-                        argument,
-                        compilation,
-                        allowTypeParameter: true,
-                        nestedContainer: false,
-                        compositeVisited: compositeVisited))
+                continue;
+            }
+
+            var aliasValue = alias!;
+            if (!IsValidAlias(aliasValue))
+            {
+                return CreateAliasDiagnostic(
+                    union,
+                    syntax,
+                    variant.Name,
+                    $"FormerlySerializedAs alias '{aliasValue}' is not a valid variant name.");
+            }
+
+            if (currentNames.Contains(aliasValue))
+            {
+                return CreateAliasDiagnostic(
+                    union,
+                    syntax,
+                    variant.Name,
+                    $"FormerlySerializedAs alias '{aliasValue}' identifies another current variant.");
+            }
+
+            if (aliases.TryGetValue(aliasValue, out var priorVariant))
+            {
+                return CreateAliasDiagnostic(
+                    union,
+                    syntax,
+                    variant.Name,
+                    $"FormerlySerializedAs alias '{aliasValue}' is already used by variant '{priorVariant}'.");
+            }
+
+            var payloadName = SerializedPayloadIdentity(aliasValue);
+            if (payloadNames.TryGetValue(payloadName, out priorVariant))
+            {
+                return CreateAliasDiagnostic(
+                    union,
+                    syntax,
+                    variant.Name,
+                    $"FormerlySerializedAs alias '{aliasValue}' maps to the same generated payload name as '{priorVariant}'.");
+            }
+
+            foreach (var currentName in currentNames)
+            {
+                if (string.Equals(
+                        payloadName,
+                        SerializedPayloadIdentity(currentName),
+                        StringComparison.Ordinal) &&
+                    !string.Equals(aliasValue, currentName, StringComparison.Ordinal))
                 {
-                    return false;
+                    return CreateAliasDiagnostic(
+                        union,
+                        syntax,
+                        variant.Name,
+                        $"FormerlySerializedAs alias '{aliasValue}' collides with generated payload name '{currentName}'.");
                 }
             }
 
-            for (var current = named;
-                 current is not null;
-                 current = current.BaseType)
-            {
-                foreach (var field in current.GetMembers().OfType<IFieldSymbol>())
-                {
-                    if (!IsSerializedCompositeField(field))
-                        continue;
-
-                    if (!IsSupportedField(
-                            field.Type,
-                            compilation,
-                            allowTypeParameter: true,
-                            nestedContainer,
-                            compositeVisited: compositeVisited))
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
+            aliases.Add(aliasValue, variant.Name);
+            payloadNames.Add(payloadName, variant.Name);
         }
-        finally
-        {
-            compositeVisited.Remove(named);
-        }
+
+        return null;
     }
 
-    private static bool IsContainer(ITypeSymbol type)
+    private static bool IsValidAlias(string alias)
+        => SyntaxFacts.IsValidIdentifier(alias) ||
+            SyntaxFacts.GetKeywordKind(alias) != SyntaxKind.None ||
+            SyntaxFacts.GetContextualKeywordKind(alias) != SyntaxKind.None;
+
+    private static string SerializedPayloadIdentity(string name)
     {
-        if (type is IArrayTypeSymbol)
-            return true;
-
-        return type is INamedTypeSymbol named &&
-            (IsList(named) ||
-             named.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.Dictionary<TKey, TValue>" ||
-             named.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.IDictionary<TKey, TValue>");
+        var raw = name.StartsWith("@", StringComparison.Ordinal)
+            ? name.Substring(1)
+            : name;
+        var chars = raw
+            .Select(character => char.IsLetterOrDigit(character) || character == '_' ? character : '_')
+            .ToArray();
+        return chars.Length == 0 ? "Value" : new string(chars);
     }
 
-    private static bool IsPrimitive(INamedTypeSymbol type)
+    private static UnionDiagnostic CreateAliasDiagnostic(
+        INamedTypeSymbol union,
+        TypeDeclarationSyntax syntax,
+        string variantName,
+        string message)
     {
-        if (type.SpecialType is SpecialType.System_Decimal)
-            return false;
-
-        if (type.SpecialType is SpecialType.System_String)
-            return true;
-
-        if (type.SpecialType is >= SpecialType.System_Boolean and <= SpecialType.System_Double)
-            return true;
-
-        return false;
+        var location = FindAliasLocation(union, variantName) ?? syntax.Identifier.GetLocation();
+        return CreateDiagnostic(location, "SPIRE_DU017", message);
     }
 
-    private static int KnownPrimitiveSize(ITypeSymbol type)
-        => type.SpecialType switch
-        {
-            SpecialType.System_Byte or SpecialType.System_SByte or SpecialType.System_Boolean => 1,
-            SpecialType.System_Int16 or SpecialType.System_UInt16 or SpecialType.System_Char => 2,
-            SpecialType.System_Int32 or SpecialType.System_UInt32 or SpecialType.System_Single => 4,
-            _ => 8,
-        };
+    private static Location? FindAliasLocation(INamedTypeSymbol union, string variantName)
+    {
+        var symbol = union.GetMembers()
+            .FirstOrDefault(member => member.Name == variantName &&
+                (member is IMethodSymbol || member is INamedTypeSymbol));
+        if (symbol is null)
+            return null;
+
+        var attribute = symbol.GetAttributes()
+            .FirstOrDefault(candidate => candidate.AttributeClass?.Name == "VariantAttribute" &&
+                candidate.NamedArguments.Any(argument =>
+                    argument.Key == "FormerlySerializedAs"));
+        var declaration = symbol.DeclaringSyntaxReferences
+            .FirstOrDefault()
+            ?.GetSyntax() as MethodDeclarationSyntax;
+        var syntaxAttribute = declaration?.AttributeLists
+            .SelectMany(list => list.Attributes)
+            .FirstOrDefault(candidate =>
+                candidate.Name.ToString().EndsWith("Variant", StringComparison.Ordinal));
+        var aliasArgument = syntaxAttribute?.ArgumentList?.Arguments
+            .FirstOrDefault(argument =>
+                argument.NameEquals?.Name.Identifier.ValueText == "FormerlySerializedAs");
+        return aliasArgument?.GetLocation() ?? syntaxAttribute?.GetLocation() ??
+            attribute?.ApplicationSyntaxReference?.GetSyntax().GetLocation();
+    }
 
     private static bool IsList(INamedTypeSymbol type)
         => type.OriginalDefinition.ToDisplayString() == ListDefinition;
-
-    private static bool IsUnityObject(INamedTypeSymbol type, Compilation compilation)
-    {
-        var unityObject = compilation.GetTypeByMetadataName(UnityObject);
-        if (unityObject is null)
-            return false;
-
-        return SymbolEqualityComparer.Default.Equals(type, unityObject) ||
-            type.InheritsFrom(unityObject);
-    }
-
-    private static bool ImplementsUnityCallback(
-        INamedTypeSymbol type,
-        Compilation compilation)
-    {
-        var callbackReceiver = compilation.GetTypeByMetadataName(UnityCallbackReceiver);
-        return callbackReceiver is not null &&
-            type.AllInterfaces.Any(interfaceType =>
-                SymbolEqualityComparer.Default.Equals(interfaceType, callbackReceiver));
-    }
-
-    private static string? ValidateClosedGenericUses(
-        INamedTypeSymbol union,
-        Compilation compilation)
-    {
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var type in EnumerateNamedTypes(compilation.GlobalNamespace))
-        {
-            foreach (var member in type.GetMembers())
-            {
-                switch (member)
-                {
-                    case IFieldSymbol field:
-                        {
-                            var failure = InspectConstructedType(field.Type, union, compilation, seen);
-                            if (failure is not null) return failure;
-                            break;
-                        }
-                    case IPropertySymbol property:
-                        {
-                            var failure = InspectConstructedType(property.Type, union, compilation, seen);
-                            if (failure is not null) return failure;
-                            break;
-                        }
-                    case IMethodSymbol method:
-                        {
-                            var failure = InspectConstructedType(method.ReturnType, union, compilation, seen);
-                            if (failure is not null) return failure;
-                            foreach (var parameter in method.Parameters)
-                            {
-                                failure = InspectConstructedType(parameter.Type, union, compilation, seen);
-                                if (failure is not null) return failure;
-                            }
-                            break;
-                        }
-                }
-            }
-        }
-
-        foreach (var syntaxTree in compilation.SyntaxTrees)
-        {
-            var semanticModel = compilation.GetSemanticModel(syntaxTree);
-            foreach (var typeSyntax in syntaxTree.GetRoot().DescendantNodes().OfType<TypeSyntax>())
-            {
-                var failure = InspectConstructedType(
-                    semanticModel.GetTypeInfo(typeSyntax).Type,
-                    union,
-                    compilation,
-                    seen);
-                if (failure is not null)
-                    return failure;
-            }
-        }
-
-        return null;
-    }
-
-    private static string? InspectConstructedType(
-        ITypeSymbol? type,
-        INamedTypeSymbol union,
-        Compilation compilation,
-        HashSet<string> seen)
-    {
-        if (type is null)
-            return null;
-
-        if (type is IArrayTypeSymbol array)
-            return InspectConstructedType(array.ElementType, union, compilation, seen);
-
-        if (type is not INamedTypeSymbol named)
-            return null;
-
-        if (SymbolEqualityComparer.Default.Equals(named.OriginalDefinition, union.OriginalDefinition) &&
-            named.TypeArguments.Any(argument => argument.TypeKind != TypeKind.TypeParameter))
-        {
-            var key = named.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            if (seen.Add(key))
-            {
-                foreach (var argument in named.TypeArguments)
-                {
-                    if (!IsSupportedField(argument, compilation, allowTypeParameter: false, nestedContainer: false))
-                        return $"Closed generic Unity union argument '{argument.ToDisplayString()}' cannot be serialized by Unity.";
-                }
-            }
-        }
-
-        if (named.IsGenericType && HasSourceLocation(named.OriginalDefinition))
-        {
-            var memberKey = "members:" + named.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            if (seen.Add(memberKey))
-            {
-                foreach (var member in named.GetMembers())
-                {
-                    var failure = member switch
-                    {
-                        IFieldSymbol field => InspectConstructedType(field.Type, union, compilation, seen),
-                        IPropertySymbol property => InspectConstructedType(property.Type, union, compilation, seen),
-                        IMethodSymbol method => InspectMethodConstructedTypes(method, union, compilation, seen),
-                        _ => null,
-                    };
-
-                    if (failure is not null)
-                        return failure;
-                }
-            }
-        }
-
-        foreach (var argument in named.TypeArguments)
-        {
-            var failure = InspectConstructedType(argument, union, compilation, seen);
-            if (failure is not null) return failure;
-        }
-
-        return null;
-    }
-
-    private static string? InspectMethodConstructedTypes(
-        IMethodSymbol method,
-        INamedTypeSymbol union,
-        Compilation compilation,
-        HashSet<string> seen)
-    {
-        var failure = InspectConstructedType(method.ReturnType, union, compilation, seen);
-        if (failure is not null)
-            return failure;
-
-        foreach (var parameter in method.Parameters)
-        {
-            failure = InspectConstructedType(parameter.Type, union, compilation, seen);
-            if (failure is not null)
-                return failure;
-        }
-
-        return null;
-    }
-
-    private static IEnumerable<INamedTypeSymbol> EnumerateNamedTypes(INamespaceSymbol root)
-    {
-        foreach (var type in root.GetTypeMembers().Where(type => HasSourceLocation(type)))
-        {
-            yield return type;
-            foreach (var nested in EnumerateNestedTypes(type))
-                yield return nested;
-        }
-
-        foreach (var child in root.GetNamespaceMembers().Where(namespaceSymbol => HasSourceLocation(namespaceSymbol)))
-        {
-            foreach (var type in EnumerateNamedTypes(child))
-                yield return type;
-        }
-    }
-
-    private static IEnumerable<INamedTypeSymbol> EnumerateNestedTypes(INamedTypeSymbol root)
-    {
-        foreach (var type in root.GetTypeMembers().Where(type => HasSourceLocation(type)))
-        {
-            yield return type;
-            foreach (var nested in EnumerateNestedTypes(type))
-                yield return nested;
-        }
-    }
 
     private static bool HasAttribute(ISymbol symbol, string metadataName)
         => symbol.GetAttributes().Any(attribute =>
             string.Equals(attribute.AttributeClass?.ToDisplayString(), metadataName, StringComparison.Ordinal));
 
-    private static bool HasSourceLocation(ISymbol symbol)
-        => symbol.Locations.Any(location => location.IsInSource);
-
     private static UnionDiagnostic CreateDiagnostic(
         TypeDeclarationSyntax syntax,
         string id,
         string message)
+        => CreateDiagnostic(syntax.Identifier.GetLocation(), id, message);
+
+    private static UnionDiagnostic CreateDiagnostic(
+        Location location,
+        string id,
+        string message)
     {
-        var location = syntax.Identifier.GetLocation();
         var lineSpan = location.GetLineSpan();
         return new UnionDiagnostic(
             id,
@@ -613,17 +362,6 @@ internal static class UnitySerializationValidation
             lineSpan.StartLinePosition.Character,
             lineSpan.EndLinePosition.Line,
             lineSpan.EndLinePosition.Character);
-    }
-
-    private static bool InheritsFrom(this INamedTypeSymbol type, INamedTypeSymbol baseType)
-    {
-        for (var current = type.BaseType; current is not null; current = current.BaseType)
-        {
-            if (SymbolEqualityComparer.Default.Equals(current, baseType))
-                return true;
-        }
-
-        return false;
     }
 
 }

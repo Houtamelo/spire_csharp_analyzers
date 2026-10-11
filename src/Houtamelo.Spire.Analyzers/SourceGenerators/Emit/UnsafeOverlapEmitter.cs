@@ -57,21 +57,21 @@ internal static class UnsafeOverlapEmitter
         sb.AppendLine($"public enum Kind : {kindType}");
         sb.OpenBrace();
         foreach (var variant in union.Variants)
-            sb.AppendLine($"{variant.Name},");
+            sb.AppendLine($"{IdentifierUtility.Escape(variant.Name)},");
         sb.CloseBrace();
         sb.AppendLine();
 
         // Kind field (backing field + property)
         if (unitySerialization)
         {
-            sb.AppendLine("[global::UnityEngine.SerializeField]");
-            sb.AppendLine("private Kind _kind;");
+            sb.AppendLine("[global::System.NonSerialized]");
+            sb.AppendLine($"private Kind {UnitySerializationEmitter.RuntimeKindFieldName};");
         }
         else
         {
             sb.AppendLine("readonly Kind _kind;");
         }
-        sb.AppendLine("public Kind kind => this._kind;");
+        sb.AppendLine($"public Kind kind => this.{(unitySerialization ? UnitySerializationEmitter.RuntimeKindFieldName : "_kind")};");
         sb.AppendLine();
 
         // InlineArray buffer (if any unmanaged fields)
@@ -126,7 +126,7 @@ internal static class UnsafeOverlapEmitter
 
         // Deconstruct overloads
         if (union.GenerateDeconstruct)
-            EmitDeconstructs(sb, union.Variants, layout, hasInlineArray);
+            EmitDeconstructs(sb, union.Variants, layout, hasInlineArray, unitySerialization);
 
         // Public properties for pattern matching
         EmitProperties(
@@ -140,7 +140,7 @@ internal static class UnsafeOverlapEmitter
 
         // IsVariant properties
         foreach (var variant in union.Variants)
-            sb.AppendLine($"public bool Is{variant.Name} => this.kind == Kind.{variant.Name};");
+            sb.AppendLine($"public bool Is{variant.Name} => this.kind == Kind.{IdentifierUtility.Escape(variant.Name)};");
 
         if (unitySerialization)
         {
@@ -225,7 +225,7 @@ internal static class UnsafeOverlapEmitter
     {
         var layout = new UnsafeLayout();
 
-        // Collect unique buffer fields and slot fields by name
+        // Collect unique buffer fields and slot fields by resolved property name.
         var bufferFields = new Dictionary<string, FieldInfo>();
         var slotFields = new Dictionary<string, FieldInfo>();
 
@@ -235,13 +235,13 @@ internal static class UnsafeOverlapEmitter
             {
                 if (IsBufferField(field))
                 {
-                    if (!bufferFields.ContainsKey(field.Name))
-                        bufferFields[field.Name] = field;
+                    if (!bufferFields.ContainsKey(field.ResolvedPropertyName))
+                        bufferFields[field.ResolvedPropertyName] = field;
                 }
                 else
                 {
-                    if (!slotFields.ContainsKey(field.Name))
-                        slotFields[field.Name] = field;
+                    if (!slotFields.ContainsKey(field.ResolvedPropertyName))
+                        slotFields[field.ResolvedPropertyName] = field;
                 }
             }
         }
@@ -252,7 +252,7 @@ internal static class UnsafeOverlapEmitter
         {
             layout.NamedBufferFields[kv.Key] = new BufferFieldInfo
             {
-                TypeFullName = kv.Value.TypeFullName,
+                TypeFullName = kv.Value.ResolvedPropertyTypeFullName,
                 Offset = bufferOffset,
                 Size = kv.Value.KnownSize!.Value,
             };
@@ -264,7 +264,7 @@ internal static class UnsafeOverlapEmitter
         int slotIndex = 0;
         foreach (var kv in slotFields.OrderBy(x => x.Key))
         {
-            var slotTypeKey = kv.Value.IsReferenceType ? "object?" : kv.Value.TypeFullName;
+            var slotTypeKey = kv.Value.IsReferenceType ? "object?" : kv.Value.ResolvedPropertyTypeFullName;
             bool isRef = kv.Value.IsReferenceType;
 
             layout.Slots.Add(new SlotInfo
@@ -286,7 +286,7 @@ internal static class UnsafeOverlapEmitter
             {
                 if (IsBufferField(field))
                 {
-                    var bf = layout.NamedBufferFields[field.Name];
+                    var bf = layout.NamedBufferFields[field.ResolvedPropertyName];
                     mapping.Fields.Add(new FieldMapping
                     {
                         IsBuffer = true,
@@ -299,7 +299,7 @@ internal static class UnsafeOverlapEmitter
                     mapping.Fields.Add(new FieldMapping
                     {
                         IsBuffer = false,
-                        SlotIndex = layout.NamedSlots[field.Name],
+                        SlotIndex = layout.NamedSlots[field.ResolvedPropertyName],
                     });
                     mapping.HasSlotFields = true;
                 }
@@ -346,13 +346,8 @@ internal static class UnsafeOverlapEmitter
         int index,
         bool useInitOnly)
     {
-        sb.AppendLine($"[global::System.NonSerialized] private {slotType} __s{index};");
-        sb.AppendLine($"internal {slotType} _s{index}");
-        sb.OpenBrace();
-        sb.AppendLine($"get => this.__s{index};");
-        var setter = useInitOnly ? "init" : "set";
-        sb.AppendLine($"{setter} {{ this.__SpireDetachSerializedCache({index}); this.__s{index} = value; }}");
-        sb.CloseBrace();
+        sb.AppendLine($"[global::System.NonSerialized] internal {slotType} __s{index};");
+        _ = useInitOnly;
     }
 
     private static void EmitConstructor(
@@ -363,7 +358,7 @@ internal static class UnsafeOverlapEmitter
     {
         sb.AppendLine($"{typeName}(Kind kind)");
         sb.OpenBrace();
-        sb.AppendLine("this._kind = kind;");
+        sb.AppendLine($"this.{(unitySerialization ? UnitySerializationEmitter.RuntimeKindFieldName : "_kind")} = kind;");
         if (layout.BufferSize > 0)
             sb.AppendLine("this._data = default;");
         foreach (var slot in layout.Slots)
@@ -371,10 +366,7 @@ internal static class UnsafeOverlapEmitter
                 ? $"this.__s{slot.Index} = default!;"
                 : $"this._s{slot.Index} = default!;");
         if (unitySerialization)
-        {
-            sb.AppendLine("this.__SpireSerializationOwner = null;");
             sb.AppendLine("this._serializedPayload = null;");
-        }
         sb.CloseBrace();
     }
 
@@ -387,20 +379,20 @@ internal static class UnsafeOverlapEmitter
         {
             var mapping = layout.Variants[variant.Name];
             var typedParams = string.Join(", ",
-                variant.Fields.Select(f => $"{f.TypeFullName} {f.Name}"));
+                variant.Fields.Select(f => $"{f.TypeFullName} {IdentifierUtility.Escape(f.Name)}"));
 
             bool hasFields = variant.Fields.Length > 0;
 
             if (!hasFields)
             {
-                sb.AppendLine($"public static partial {unionType} {variant.Name}()");
-                sb.AppendLine($"    => new {unionType}(Kind.{variant.Name});");
+                sb.AppendLine($"public static partial {unionType} {IdentifierUtility.Escape(variant.Name)}()");
+                sb.AppendLine($"    => new {unionType}(Kind.{IdentifierUtility.Escape(variant.Name)});");
                 continue;
             }
 
-            sb.AppendLine($"public static partial {unionType} {variant.Name}({typedParams})");
+            sb.AppendLine($"public static partial {unionType} {IdentifierUtility.Escape(variant.Name)}({typedParams})");
             sb.OpenBrace();
-            sb.AppendLine($"var s = new {unionType}(Kind.{variant.Name});");
+            sb.AppendLine($"var s = new {unionType}(Kind.{IdentifierUtility.Escape(variant.Name)});");
 
             for (int i = 0; i < variant.Fields.Length; i++)
             {
@@ -409,13 +401,13 @@ internal static class UnsafeOverlapEmitter
 
                 if (fm.IsBuffer)
                 {
-                    sb.AppendLine($"Unsafe.WriteUnaligned({BufferByteRef(hasInlineArray, "s._data", fm.BufferOffset)}, {field.Name});");
+                    sb.AppendLine($"Unsafe.WriteUnaligned({BufferByteRef(hasInlineArray, "s._data", fm.BufferOffset)}, {IdentifierUtility.Escape(field.Name)});");
                 }
                 else
                 {
                     sb.AppendLine(unitySerialization
-                        ? $"s.__s{fm.SlotIndex} = {field.Name};"
-                        : $"s._s{fm.SlotIndex} = {field.Name};");
+                        ? $"s.__s{fm.SlotIndex} = {IdentifierUtility.Escape(field.Name)};"
+                        : $"s._s{fm.SlotIndex} = {IdentifierUtility.Escape(field.Name)};");
                 }
             }
 
@@ -440,7 +432,7 @@ internal static class UnsafeOverlapEmitter
             for (int i = 0; i < variant.Fields.Length; i++)
             {
                 var field = variant.Fields[i];
-                if (!emitted.Add(field.Name)) continue;
+                if (!emitted.Add(field.ResolvedPropertyName)) continue;
 
                 var fm = mapping.Fields[i];
                 sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
@@ -449,13 +441,13 @@ internal static class UnsafeOverlapEmitter
                 {
                     if (hasInitProperties)
                     {
-                        sb.AppendLine($"public {field.TypeFullName} {field.Name}");
+                        sb.AppendLine($"public {field.ResolvedPropertyTypeFullName} {IdentifierUtility.Escape(field.ResolvedPropertyName)}");
                         sb.OpenBrace();
                         sb.AppendLine($"get => Unsafe.ReadUnaligned<{field.TypeFullName}>({BufferByteRef(hasInlineArray, "_data", fm.BufferOffset)});");
                         if (unitySerialization)
                         {
                             var setter = useInitOnly ? "init" : "set";
-                            sb.AppendLine($"{setter} {{ this.__SpireDetachSerializedCache({fm.BufferOffset}); Unsafe.WriteUnaligned({BufferByteRef(hasInlineArray, "_data", fm.BufferOffset)}, value); }}");
+                            sb.AppendLine($"{setter} {{ Unsafe.WriteUnaligned({BufferByteRef(hasInlineArray, "_data", fm.BufferOffset)}, value); }}");
                         }
                         else
                         {
@@ -465,7 +457,7 @@ internal static class UnsafeOverlapEmitter
                     }
                     else
                     {
-                        sb.AppendLine($"public {field.TypeFullName} {field.Name} => Unsafe.ReadUnaligned<{field.TypeFullName}>({BufferByteRef(hasInlineArray, "_data", fm.BufferOffset)});");
+                        sb.AppendLine($"public {field.ResolvedPropertyTypeFullName} {IdentifierUtility.Escape(field.ResolvedPropertyName)} => Unsafe.ReadUnaligned<{field.TypeFullName}>({BufferByteRef(hasInlineArray, "_data", fm.BufferOffset)});");
                     }
                 }
                 else
@@ -473,24 +465,28 @@ internal static class UnsafeOverlapEmitter
                     var slotInfo = layout.Slots[fm.SlotIndex];
                     if (hasInitProperties)
                     {
-                        sb.AppendLine($"public {field.TypeFullName} {field.Name}");
+                        sb.AppendLine($"public {field.ResolvedPropertyTypeFullName} {IdentifierUtility.Escape(field.ResolvedPropertyName)}");
                         sb.OpenBrace();
                         if (slotInfo.IsRefSlot)
-                            sb.AppendLine($"get => ({field.TypeFullName})this._s{fm.SlotIndex}!;");
+                            sb.AppendLine(unitySerialization
+                                ? $"get => this.{RuntimeSlot(fm.SlotIndex, unitySerialization)} is null ? default! : ({field.ResolvedPropertyTypeFullName})this.{RuntimeSlot(fm.SlotIndex, unitySerialization)};"
+                                : $"get => ({field.ResolvedPropertyTypeFullName})this.{RuntimeSlot(fm.SlotIndex, false)}!;");
                         else
-                            sb.AppendLine($"get => this._s{fm.SlotIndex};");
+                            sb.AppendLine($"get => this.{RuntimeSlot(fm.SlotIndex, unitySerialization)};");
                         var setter = unitySerialization
                             ? (useInitOnly ? "init" : "set")
                             : "init";
-                        sb.AppendLine($"{setter} => this._s{fm.SlotIndex} = value;");
+                        sb.AppendLine($"{setter} => this.{RuntimeSlot(fm.SlotIndex, unitySerialization)} = value;");
                         sb.CloseBrace();
                     }
                     else
                     {
                         if (slotInfo.IsRefSlot)
-                            sb.AppendLine($"public {field.TypeFullName} {field.Name} => ({field.TypeFullName})this._s{fm.SlotIndex}!;");
+                            sb.AppendLine(unitySerialization
+                                ? $"public {field.ResolvedPropertyTypeFullName} {IdentifierUtility.Escape(field.ResolvedPropertyName)} => this.{RuntimeSlot(fm.SlotIndex, unitySerialization)} is null ? default! : ({field.ResolvedPropertyTypeFullName})this.{RuntimeSlot(fm.SlotIndex, unitySerialization)};"
+                                : $"public {field.ResolvedPropertyTypeFullName} {IdentifierUtility.Escape(field.ResolvedPropertyName)} => ({field.ResolvedPropertyTypeFullName})this.{RuntimeSlot(fm.SlotIndex, false)}!;");
                         else
-                            sb.AppendLine($"public {field.TypeFullName} {field.Name} => this._s{fm.SlotIndex};");
+                            sb.AppendLine($"public {field.ResolvedPropertyTypeFullName} {IdentifierUtility.Escape(field.ResolvedPropertyName)} => this.{RuntimeSlot(fm.SlotIndex, unitySerialization)};");
                     }
                 }
             }
@@ -498,7 +494,8 @@ internal static class UnsafeOverlapEmitter
     }
 
     private static void EmitDeconstructs(
-        SourceBuilder sb, IEnumerable<VariantInfo> variants, UnsafeLayout layout, bool hasInlineArray)
+        SourceBuilder sb, IEnumerable<VariantInfo> variants, UnsafeLayout layout,
+        bool hasInlineArray, bool unitySerialization)
     {
         var variantList = variants.ToList();
         if (variantList.Count == 0) return;
@@ -535,20 +532,21 @@ internal static class UnsafeOverlapEmitter
             sb.AppendLine();
 
             if (groupVariants.Count == 1)
-                EmitTypedDeconstruct(sb, groupVariants[0], layout, hasInlineArray);
+                EmitTypedDeconstruct(sb, groupVariants[0], layout, hasInlineArray, unitySerialization);
             else
-                EmitObjectDeconstruct(sb, group.Key, groupVariants, layout, hasInlineArray);
+                EmitObjectDeconstruct(sb, group.Key, groupVariants, layout, hasInlineArray, unitySerialization);
         }
     }
 
     private static void EmitTypedDeconstruct(
-        SourceBuilder sb, VariantInfo variant, UnsafeLayout layout, bool hasInlineArray)
+        SourceBuilder sb, VariantInfo variant, UnsafeLayout layout, bool hasInlineArray,
+        bool unitySerialization)
     {
         var mapping = layout.Variants[variant.Name];
 
         var paramList = "out Kind kind";
         foreach (var field in variant.Fields)
-            paramList += $", out {field.TypeFullName} {field.Name}";
+            paramList += $", out {field.TypeFullName} {IdentifierUtility.Escape(field.Name)}";
 
         sb.AppendLine($"public void Deconstruct({paramList})");
         sb.OpenBrace();
@@ -561,15 +559,15 @@ internal static class UnsafeOverlapEmitter
 
             if (fm.IsBuffer)
             {
-                sb.AppendLine($"{field.Name} = Unsafe.ReadUnaligned<{field.TypeFullName}>({BufferByteRef(hasInlineArray, "_data", fm.BufferOffset)});");
+                sb.AppendLine($"{IdentifierUtility.Escape(field.Name)} = Unsafe.ReadUnaligned<{field.TypeFullName}>({BufferByteRef(hasInlineArray, "_data", fm.BufferOffset)});");
             }
             else
             {
                 var slotInfo = layout.Slots[fm.SlotIndex];
                 if (slotInfo.IsRefSlot)
-                    sb.AppendLine($"{field.Name} = ({field.TypeFullName})this._s{fm.SlotIndex}!;");
+                    sb.AppendLine($"{IdentifierUtility.Escape(field.Name)} = ({field.TypeFullName})this.{RuntimeSlot(fm.SlotIndex, unitySerialization)}!;");
                 else
-                    sb.AppendLine($"{field.Name} = this._s{fm.SlotIndex};");
+                    sb.AppendLine($"{IdentifierUtility.Escape(field.Name)} = this.{RuntimeSlot(fm.SlotIndex, unitySerialization)};");
             }
         }
 
@@ -578,7 +576,7 @@ internal static class UnsafeOverlapEmitter
 
     private static void EmitObjectDeconstruct(
         SourceBuilder sb, int fieldCount, List<VariantInfo> groupVariants, UnsafeLayout layout,
-        bool hasInlineArray)
+        bool hasInlineArray, bool unitySerialization)
     {
         var paramList = "out Kind kind";
         for (int i = 0; i < fieldCount; i++)
@@ -598,7 +596,7 @@ internal static class UnsafeOverlapEmitter
             foreach (var variant in realVariants)
             {
                 var mapping = layout.Variants[variant.Name];
-                sb.AppendLine($"case Kind.{variant.Name}:");
+                sb.AppendLine($"case Kind.{IdentifierUtility.Escape(variant.Name)}:");
                 sb.Indent();
 
                 for (int i = 0; i < variant.Fields.Length; i++)
@@ -612,7 +610,7 @@ internal static class UnsafeOverlapEmitter
                     }
                     else
                     {
-                        sb.AppendLine($"f{i} = this._s{fm.SlotIndex};");
+                        sb.AppendLine($"f{i} = this.{RuntimeSlot(fm.SlotIndex, unitySerialization)};");
                     }
                 }
 
@@ -659,6 +657,9 @@ internal static class UnsafeOverlapEmitter
         if (typeParameters.Length == 0) return "";
         return "<" + string.Join(", ", typeParameters) + ">";
     }
+
+    private static string RuntimeSlot(int slot, bool unitySerialization)
+        => unitySerialization ? $"__s{slot}" : $"_s{slot}";
 
     #endregion
 }

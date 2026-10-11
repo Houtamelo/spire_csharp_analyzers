@@ -15,7 +15,7 @@ namespace TestNs
             int Classify(Event ev) => ev switch
             {
                 { kind: Event.Kind.Click, x: var c } => c,
-                { kind: Event.Kind.KeyPress, key: char key } => throw new System.NotImplementedException()
+                { kind: Event.Kind.KeyPress, key: var key } => throw new System.NotImplementedException()
             };
             return Classify(e);
         }

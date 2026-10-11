@@ -1,0 +1,109 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 448e250abd9f694af51638ffce25d865, type: 3}
+  m_Name: ShowcasePreset
+  m_EditorClassIdentifier: Houtamelo.Spire.Showcase::Houtamelo.Spire.Showcase.ShowcasePreset
+  selectedCommand:
+    _serializedPayload:
+      rid: 1321628597169422346
+  commands:
+  - _serializedPayload:
+      rid: 1321628597169422347
+  - _serializedPayload:
+      rid: 1321628597169422348
+  - _serializedPayload:
+      rid: 1321628597169422349
+  - _serializedPayload:
+      rid: 1321628597169422350
+  - _serializedPayload:
+      rid: 1321628597169422351
+  - _serializedPayload:
+      rid: 1321628597169422352
+  shape:
+    _serializedPayload:
+      rid: 1321628597169422353
+  result:
+    _serializedPayload:
+      rid: 1321628597169422354
+  boxedTuple:
+    _serializedPayload:
+      rid: 1321628597169422355
+  unsafeOverlap:
+    _serializedPayload:
+      rid: 1321628597169422356
+  overlap:
+    _serializedPayload:
+      rid: 1321628597169422357
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
+    - rid: 1321628597169422346
+      type: {class: GameplayCommand/__SpireMovePayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
+      data:
+        destination: {x: 3, y: 4}
+        speed: 2
+    - rid: 1321628597169422347
+      type: {class: GameplayCommand/__SpireIdlePayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
+      data: 
+    - rid: 1321628597169422348
+      type: {class: GameplayCommand/__SpireMovePayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
+      data:
+        destination: {x: 3, y: 4}
+        speed: 2
+    - rid: 1321628597169422349
+      type: {class: GameplayCommand/__SpireSpeakPayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
+      data:
+        speech: Hello from Spire
+    - rid: 1321628597169422350
+      type: {class: GameplayCommand/__SpireApplyEffectPayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
+      data:
+        effect:
+          rid: 1321628597169422358
+    - rid: 1321628597169422351
+      type: {class: GameplayCommand/__SpireApplyEffectPayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
+      data:
+        effect:
+          rid: 1321628597169422358
+    - rid: 1321628597169422352
+      type: {class: GameplayCommand/__SpireApplyEffectPayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
+      data:
+        effect:
+          rid: -2
+    - rid: 1321628597169422353
+      type: {class: Shape/__SpireRectanglePayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
+      data:
+        width: 3
+        height: 4
+    - rid: 1321628597169422354
+      type: {class: 'OperationResult`1/__SpireSuccessPayload[[System.Int32, mscorlib]]', ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
+      data:
+        value: 42
+    - rid: 1321628597169422355
+      type: {class: BoxedTupleStats/__SpireStatsPayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
+      data:
+        score: 7
+        label: tuple
+    - rid: 1321628597169422356
+      type: {class: UnsafeStats/__SpireSamplesPayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
+      data:
+        raw: 123
+        weight: 1.5
+    - rid: 1321628597169422357
+      type: {class: OverlapShape/__SpireCirclePayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
+      data:
+        radius: 2
+    - rid: 1321628597169422358
+      type: {class: DamageEffect, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
+      data:
+        amount: 10

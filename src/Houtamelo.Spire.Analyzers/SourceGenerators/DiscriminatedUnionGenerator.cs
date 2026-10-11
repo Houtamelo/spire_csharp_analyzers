@@ -49,6 +49,15 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
             .Combine(globalConfig)
             .Combine(compilationInfo);
 
+        var diagnostics = combined.Combine(context.CompilationProvider);
+
+        context.RegisterSourceOutput(diagnostics, static (ctx, pair) =>
+        {
+            var (((union, _), _), compilation) = pair;
+            if (union?.Diagnostic is { } diagnostic)
+                ReportUnionDiagnostic(ctx, diagnostic, compilation);
+        });
+
         context.RegisterSourceOutput(combined, static (ctx, pair) =>
         {
             var ((union, config), compInfo) = pair;
@@ -58,24 +67,10 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
             union = UnionParser.ResolveGlobalConfig(union, config);
             union = union with { HasInitProperties = compInfo.HasInitProperties };
 
-            // Report diagnostic if present
-            if (union.Diagnostic is { } diag)
-            {
-                var descriptor = Diagnostics.GetDescriptor(diag);
-                var location = Location.Create(
-                    diag.FilePath,
-                    new Microsoft.CodeAnalysis.Text.TextSpan(diag.StartOffset, diag.Length),
-                    new Microsoft.CodeAnalysis.Text.LinePositionSpan(
-                        new Microsoft.CodeAnalysis.Text.LinePosition(diag.StartLine, diag.StartColumn),
-                        new Microsoft.CodeAnalysis.Text.LinePosition(diag.EndLine, diag.EndColumn)));
-                ctx.ReportDiagnostic(
-                    descriptor.MessageFormat.ToString().Contains("{0}")
-                        ? Microsoft.CodeAnalysis.Diagnostic.Create(descriptor, location, diag.Message)
-                        : Microsoft.CodeAnalysis.Diagnostic.Create(descriptor, location));
-
-                // Don't emit source for error diagnostics
-                if (diag.IsError) return;
-            }
+            // Don't emit source for error diagnostics. Diagnostics are reported
+            // through a separate compilation-bound pipeline so source output
+            // remains incremental when only the diagnostic location changes.
+            if (union.Diagnostic is { IsError: true }) return;
 
             // Post-resolution validation: Overlap on generic struct (e.g., via global config)
             if (union.Strategy == EmitStrategy.Overlap &&
@@ -87,8 +82,9 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
                 return;
             }
 
-            // Check for field name+type conflicts across variants (always an error)
-            if (HasFieldNameConflicts(ctx, union))
+            // Preserve the record generator's existing field-conflict behavior.
+            // Struct unions resolve incompatible names before reaching emitters.
+            if (union.DeclarationKeyword == "record" && HasFieldNameConflicts(ctx, union))
                 return;
 
             // UnsafeOverlap requires AllowUnsafe
@@ -168,6 +164,32 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
         });
     }
 
+    private static void ReportUnionDiagnostic(
+        SourceProductionContext ctx,
+        UnionDiagnostic diagnostic,
+        Compilation compilation)
+    {
+        var descriptor = Diagnostics.GetDescriptor(diagnostic);
+        var location = compilation.SyntaxTrees
+            .FirstOrDefault(tree => string.Equals(
+                tree.FilePath,
+                diagnostic.FilePath,
+                System.StringComparison.Ordinal)) is { } syntaxTree
+            ? Location.Create(
+                syntaxTree,
+                new Microsoft.CodeAnalysis.Text.TextSpan(diagnostic.StartOffset, diagnostic.Length))
+            : Location.Create(
+                diagnostic.FilePath,
+                new Microsoft.CodeAnalysis.Text.TextSpan(diagnostic.StartOffset, diagnostic.Length),
+                new Microsoft.CodeAnalysis.Text.LinePositionSpan(
+                    new Microsoft.CodeAnalysis.Text.LinePosition(diagnostic.StartLine, diagnostic.StartColumn),
+                    new Microsoft.CodeAnalysis.Text.LinePosition(diagnostic.EndLine, diagnostic.EndColumn)));
+        ctx.ReportDiagnostic(
+            descriptor.MessageFormat.ToString().Contains("{0}")
+                ? Microsoft.CodeAnalysis.Diagnostic.Create(descriptor, location, diagnostic.Message)
+                : Microsoft.CodeAnalysis.Diagnostic.Create(descriptor, location));
+    }
+
     private static void ReportDiagnostic(
         SourceProductionContext ctx, string id, string message)
     {
@@ -180,11 +202,10 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
             Microsoft.CodeAnalysis.Diagnostic.Create(descriptor, Location.None));
     }
 
-    /// Returns true if field name conflicts exist (same name, different type).
-    /// Reports SPIRE_DU010 for each conflict and prevents source emission.
+    /// Returns true if record field name conflicts exist (same name, different type).
+    /// This is retained for record compatibility; struct conflicts are qualified.
     private static bool HasFieldNameConflicts(SourceProductionContext ctx, UnionDeclaration union)
     {
-        // Collect all (name → set of types) across all variants
         var fieldTypes = new Dictionary<string, HashSet<string>>();
         foreach (var variant in union.Variants)
         {
@@ -199,21 +220,28 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
             }
         }
 
-        bool hasConflict = false;
-        foreach (var kv in fieldTypes)
+        var hasConflict = false;
+        foreach (var pair in fieldTypes)
         {
-            if (kv.Value.Count <= 1) continue;
+            if (pair.Value.Count <= 1)
+                continue;
 
             hasConflict = true;
-            var typeList = string.Join(", ", kv.Value.OrderBy(t => t));
-            var message = $"Field '{kv.Key}' has conflicting types across variants: {typeList}. " +
-                          $"Rename the field to resolve the conflict.";
-
-            var diag = new UnionDiagnostic(
-                Id: "SPIRE_DU010", Message: message, IsError: true,
-                FilePath: "", StartOffset: 0, Length: 0,
-                StartLine: 0, StartColumn: 0, EndLine: 0, EndColumn: 0);
-            var descriptor = Diagnostics.GetDescriptor(diag);
+            var typeList = string.Join(", ", pair.Value.OrderBy(type => type));
+            var message = $"Field '{pair.Key}' has conflicting types across variants: {typeList}. " +
+                "Rename the field to resolve the conflict.";
+            var diagnostic = new UnionDiagnostic(
+                Id: "SPIRE_DU010",
+                Message: message,
+                IsError: true,
+                FilePath: "",
+                StartOffset: 0,
+                Length: 0,
+                StartLine: 0,
+                StartColumn: 0,
+                EndLine: 0,
+                EndColumn: 0);
+            var descriptor = Diagnostics.GetDescriptor(diagnostic);
             ctx.ReportDiagnostic(
                 Microsoft.CodeAnalysis.Diagnostic.Create(descriptor, Location.None, message));
         }

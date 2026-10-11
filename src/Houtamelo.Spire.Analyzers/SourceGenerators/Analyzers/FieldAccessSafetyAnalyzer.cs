@@ -61,8 +61,8 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
         if (fieldMap is null)
             return;
 
-        var owningVariant = fieldMap.GetOwningVariant(field.Name);
-        if (owningVariant is null)
+        var owningVariants = fieldMap.GetOwningVariants(field.Name);
+        if (owningVariants.IsEmpty)
             return;
 
         // If the field reference is inside a property subpattern, it's inherently guarded
@@ -83,7 +83,7 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
         }
 
         // Guard found — check if the field's variant is in the guarded set
-        if (guardResult.GuardedVariants.Contains(owningVariant))
+        if (owningVariants.Any(guardResult.GuardedVariants.Contains))
             return; // Correct variant — no diagnostic
 
         // Wrong variant — report SPIRE013
@@ -92,7 +92,7 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
             AnalyzerDescriptors.SPIRE013_WrongVariantFieldAccess,
             fieldRefOp.Syntax.GetLocation(),
             field.Name,
-            owningVariant,
+            string.Join(" or ", owningVariants),
             guardedDisplay));
     }
 
@@ -116,8 +116,8 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
         if (fieldMap is null)
             return;
 
-        var owningVariant = fieldMap.GetOwningVariant(property.Name);
-        if (owningVariant is null)
+        var owningVariants = fieldMap.GetOwningVariants(property.Name);
+        if (owningVariants.IsEmpty)
             return;
 
         if (IsInsidePropertySubpattern(propRefOp))
@@ -134,7 +134,7 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        if (guardResult.GuardedVariants.Contains(owningVariant))
+        if (owningVariants.Any(guardResult.GuardedVariants.Contains))
             return;
 
         var guardedDisplay = string.Join(", ", guardResult.GuardedVariants);
@@ -142,7 +142,7 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
             AnalyzerDescriptors.SPIRE013_WrongVariantFieldAccess,
             propRefOp.Syntax.GetLocation(),
             property.Name,
-            owningVariant,
+            string.Join(" or ", owningVariants),
             guardedDisplay));
     }
 
@@ -199,26 +199,28 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
             switch (current)
             {
                 case ISwitchExpressionArmOperation arm:
-                {
-                    var variants = new List<string>();
-                    ExhaustivenessChecker.CollectVariants(
-                        arm.Pattern, info.KindEnumType, info.VariantNames,
-                        info.VariantTypes, info.IsStructUnion, variants);
-                    return GuardResult.WithVariants(variants);
-                }
+                    {
+                        var variants = new List<string>();
+                        ExhaustivenessChecker.CollectVariants(
+                            arm.Pattern, info.KindEnumType, info.VariantNames,
+                            info.VariantTypes, info.IsStructUnion, variants);
+                        return GuardResult.WithVariants(variants);
+                    }
 
                 case ISwitchCaseOperation switchCase:
-                {
-                    var variants = new List<string>();
-                    foreach (var clause in switchCase.Clauses)
                     {
-                        if (clause is IPatternCaseClauseOperation patternClause)
-                            ExhaustivenessChecker.CollectVariants(
-                                patternClause.Pattern, info.KindEnumType, info.VariantNames,
-                                info.VariantTypes, info.IsStructUnion, variants);
+                        var variants = new List<string>();
+                        foreach (var clause in switchCase.Clauses)
+                        {
+                            if (clause is IPatternCaseClauseOperation patternClause)
+                                ExhaustivenessChecker.CollectVariants(
+                                    patternClause.Pattern, info.KindEnumType, info.VariantNames,
+                                    info.VariantTypes, info.IsStructUnion, variants);
+                            else if (clause is ISingleValueCaseClauseOperation singleValueClause)
+                                TryExtractKindVariant(singleValueClause.Value, info, variants);
+                        }
+                        return GuardResult.WithVariants(variants);
                     }
-                    return GuardResult.WithVariants(variants);
-                }
 
                 case IConditionalOperation conditional:
                     if (IsInWhenTrueBranch(memberRefOp, conditional) &&

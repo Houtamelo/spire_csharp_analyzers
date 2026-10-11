@@ -15,7 +15,7 @@ namespace TestNs
         {
             (Token.Kind.Ident, var n) => 1,
             (Token.Kind.Number, var v) => 2,
-            (Token.Kind.Eof, _) => throw new System.NotImplementedException()
+            { kind: Token.Kind.Eof } => throw new System.NotImplementedException()
         };
     }
 }

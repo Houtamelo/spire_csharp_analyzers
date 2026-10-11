@@ -125,7 +125,7 @@ internal static class SystemTextJsonEmitter
             {
                 var ctor = IsRecord(union)
                     ? $"new {unionType}.{variant.Name}()"
-                    : $"{unionType}.{variant.Name}()";
+                    : $"{unionType}.{IdentifierUtility.Escape(variant.Name)}()";
                 sb.AppendLine($"\"{jsonName}\" => {ctor},");
             }
             else
@@ -139,7 +139,7 @@ internal static class SystemTextJsonEmitter
 
                 var ctor = IsRecord(union)
                     ? $"new {unionType}.{variant.Name}({args})"
-                    : $"{unionType}.{variant.Name}({args})";
+                    : $"{unionType}.{IdentifierUtility.Escape(variant.Name)}({args})";
                 sb.AppendLine($"\"{jsonName}\" => {ctor},");
             }
         }
@@ -180,13 +180,13 @@ internal static class SystemTextJsonEmitter
 
             if (variant.Fields.Length == 0)
             {
-                sb.AppendLine($"case {{ kind: {unionType}.Kind.{variant.Name} }}:");
+                sb.AppendLine($"case {{ kind: {unionType}.Kind.{IdentifierUtility.Escape(variant.Name)} }}:");
             }
             else
             {
                 var props = string.Join(", ",
-                    variant.Fields.Select(f => $"{f.Name}: var __{f.Name}"));
-                sb.AppendLine($"case {{ kind: {unionType}.Kind.{variant.Name}, {props} }}:");
+                    variant.Fields.Select(f => $"{IdentifierUtility.Escape(f.ResolvedPropertyName)}: var __{f.Name}"));
+                sb.AppendLine($"case {{ kind: {unionType}.Kind.{IdentifierUtility.Escape(variant.Name)}, {props} }}:");
             }
 
             sb.OpenBrace();

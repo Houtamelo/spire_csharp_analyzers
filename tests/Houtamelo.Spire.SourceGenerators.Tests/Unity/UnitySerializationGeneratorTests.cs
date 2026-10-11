@@ -4,8 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Houtamelo.Spire;
+using Houtamelo.Spire.Analyzers.SourceGenerators;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Xunit;
 
 namespace Houtamelo.Spire.SourceGenerators.Tests.Unity;
@@ -257,7 +259,8 @@ public sealed class UnitySerializationGeneratorTests
         Assert.False(kindField.IsStatic);
         Assert.Equal(TypeKind.Enum, kindField.Type.TypeKind);
         Assert.Equal("Kind", kindField.Type.Name);
-        Assert.True(HasAttribute(kindField, "UnityEngine.SerializeField"));
+        Assert.True(HasAttribute(kindField, "System.NonSerializedAttribute"));
+        Assert.False(HasAttribute(kindField, "UnityEngine.SerializeField"));
         Assert.True(HasAttribute(payloadField!, "UnityEngine.SerializeReference"));
 
         var serializedFields = union.GetMembers()
@@ -270,8 +273,7 @@ public sealed class UnitySerializationGeneratorTests
             .Where(field => !field.IsStatic &&
                 HasAttribute(field, "UnityEngine.SerializeReference"))
             .ToArray();
-        Assert.Single(serializedFields);
-        Assert.Equal("_kind", serializedFields[0].Name);
+        Assert.Empty(serializedFields);
         Assert.Single(managedReferenceFields);
         Assert.Equal("_serializedPayload", managedReferenceFields[0].Name);
 
@@ -347,6 +349,402 @@ public sealed class UnitySerializationGeneratorTests
             list.Name == "List" &&
             list.TypeArguments.Length == 1 &&
             IsNamedType(list.TypeArguments[0], "SerializableData"));
+    }
+
+    [Fact]
+    public void GeneratedPayloadFields_CarrySerializeFieldAcrossAllLayouts()
+    {
+        foreach (var (fixtureName, metadataName) in new[]
+        {
+            ("Serializable_ExplicitAdditive", "UnityExplicitAdditive"),
+            ("Serializable_ExplicitBoxedFields", "UnityBoxedFieldsUnion"),
+            ("Serializable_ExplicitBoxedTuple", "UnityBoxedTupleUnion"),
+            ("Serializable_ExplicitUnsafeOverlap", "UnityUnsafeOverlap"),
+            ("Serializable_ExplicitOverlap", "UnityOverlapUnion"),
+        })
+        {
+            var result = UnityGeneratorTestHarness.Run(
+                UnityGeneratorTestHarness.LoadFixture(fixtureName));
+
+            UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
+            UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
+
+            var union = FindUnion(result, metadataName);
+            var payloadTypes = union.GetTypeMembers()
+                .Where(type => HasAttribute(type, "System.SerializableAttribute"))
+                .ToArray();
+            var concretePayloadTypes = payloadTypes
+                .Where(type => !type.IsAbstract)
+                .ToArray();
+            var payloadFields = concretePayloadTypes
+                .SelectMany(type => type.GetMembers().OfType<IFieldSymbol>())
+                .Where(field => !field.IsStatic)
+                .ToArray();
+
+            Assert.Contains(
+                concretePayloadTypes,
+                type => !type.GetMembers().OfType<IFieldSymbol>().Any(field => !field.IsStatic));
+            Assert.NotEmpty(payloadFields);
+            Assert.All(payloadFields, field =>
+            {
+                Assert.Equal(Accessibility.Public, field.DeclaredAccessibility);
+                Assert.True(
+                    HasAttribute(field, "UnityEngine.SerializeField"),
+                    $"Payload field '{field.ContainingType.Name}.{field.Name}' in " +
+                    $"{fixtureName} must carry UnityEngine.SerializeField.");
+            });
+        }
+    }
+
+    [Fact]
+    public void CanonicalPayloadSchema_AllFiveLayouts()
+    {
+        var result = UnityGeneratorTestHarness.Run(
+            UnityGeneratorTestHarness.LoadFixture("Stability_AllLayouts"));
+
+        UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
+        UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
+
+        foreach (var metadataName in new[]
+        {
+            "StabilityAdditiveUnion",
+            "StabilityBoxedFieldsUnion",
+            "StabilityBoxedTupleUnion",
+            "StabilityUnsafeOverlapUnion",
+            "StabilityOverlapUnion",
+        })
+        {
+            AssertPayloadFirstSchema(FindUnion(result, metadataName));
+        }
+    }
+
+    [Fact]
+    public void FormerNamePayloadClass_FieldParity()
+    {
+        var result = UnityGeneratorTestHarness.Run(
+            UnityGeneratorTestHarness.LoadFixture("Stability_Aliases"));
+
+        UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
+        UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
+
+        var migration = FindUnion(result, "StabilityMigrationUnion");
+        AssertPayloadFirstSchema(migration);
+
+        var payloadTypes = SerializablePayloadTypes(migration)
+            .Where(type => !type.IsAbstract)
+            .ToArray();
+        Assert.Equal(5, payloadTypes.Length);
+
+        var canonical = payloadTypes.Single(type => type.Name.Contains("Renamed", StringComparison.Ordinal) &&
+            !type.Name.Contains("OldRenamed", StringComparison.Ordinal));
+        var formerNamePayload = payloadTypes.Single(type =>
+            type.Name.Contains("OldRenamed", StringComparison.Ordinal));
+        Assert.Equal(Accessibility.Private, formerNamePayload.DeclaredAccessibility);
+        Assert.Equal(
+            PayloadTypeFieldSignatures(canonical),
+            PayloadTypeFieldSignatures(formerNamePayload));
+        Assert.All(
+            InstancePayloadFields(formerNamePayload),
+            field => Assert.True(
+                HasAttribute(field, "UnityEngine.SerializeField"),
+                $"Former-name payload field '{formerNamePayload.Name}.{field.Name}' must carry SerializeField."));
+
+        var canonicalEmpty = payloadTypes.Single(type =>
+            type.Name.Contains("Empty", StringComparison.Ordinal) &&
+            !type.Name.Contains("OldEmpty", StringComparison.Ordinal));
+        var formerNameEmptyPayload = payloadTypes.Single(type =>
+            type.Name.Contains("OldEmpty", StringComparison.Ordinal));
+        Assert.Equal(Accessibility.Private, formerNameEmptyPayload.DeclaredAccessibility);
+        Assert.Empty(InstancePayloadFields(canonicalEmpty));
+        Assert.Empty(InstancePayloadFields(formerNameEmptyPayload));
+
+        var generic = FindUnion(result, "StabilityGenericUnion`1");
+        var genericFormerNamePayload = SerializablePayloadTypes(generic)
+            .Single(type => type.Name.Contains("OldFirst", StringComparison.Ordinal));
+        Assert.Equal(Accessibility.Private, genericFormerNamePayload.DeclaredAccessibility);
+        var genericField = Assert.Single(InstancePayloadFields(genericFormerNamePayload));
+        Assert.Equal(TypeKind.TypeParameter, genericField.Type.TypeKind);
+        Assert.True(HasAttribute(genericField, "UnityEngine.SerializeField"));
+    }
+
+    [Fact]
+    public void FormerlySerializedAs_AllFiveLayouts()
+    {
+        var result = UnityGeneratorTestHarness.Run(
+            UnityGeneratorTestHarness.LoadFixture("Stability_Aliases"));
+
+        UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
+        UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
+
+        foreach (var metadataName in new[]
+        {
+            "StabilityAliasAdditive",
+            "StabilityAliasBoxedFields",
+            "StabilityAliasBoxedTuple",
+            "StabilityAliasUnsafeOverlap",
+            "StabilityAliasOverlap",
+        })
+        {
+            var union = FindUnion(result, metadataName);
+            AssertPayloadFirstSchema(union);
+            var formerNamePayload = SerializablePayloadTypes(union)
+                .Where(type => !type.IsAbstract)
+                .Single(type => type.Name.Contains("OldFirst", StringComparison.Ordinal));
+            Assert.Equal(Accessibility.Private, formerNamePayload.DeclaredAccessibility);
+            var field = Assert.Single(InstancePayloadFields(formerNamePayload));
+            Assert.Equal("value", field.Name);
+            Assert.Equal(SpecialType.System_Int32, field.Type.SpecialType);
+            Assert.True(HasAttribute(field, "UnityEngine.SerializeField"));
+        }
+    }
+
+    [Fact]
+    public void FormerlySerializedAs_KeywordAliasIsValid()
+    {
+        var result = UnityGeneratorTestHarness.Run(
+            UnityGeneratorTestHarness.LoadFixture("Stability_Aliases"));
+
+        UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
+        UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
+
+        var union = FindUnion(result, "StabilityKeywordAliasUnion");
+        AssertPayloadFirstSchema(union);
+        var concretePayloadTypes = SerializablePayloadTypes(union)
+            .Where(type => !type.IsAbstract)
+            .ToArray();
+        Assert.Equal(3, concretePayloadTypes.Length);
+        var fieldedPayloads = concretePayloadTypes
+            .Where(type => InstancePayloadFields(type).Length == 1)
+            .ToArray();
+        Assert.Equal(2, fieldedPayloads.Length);
+        Assert.All(
+            fieldedPayloads.SelectMany(InstancePayloadFields),
+            field => Assert.True(HasAttribute(field, "UnityEngine.SerializeField")));
+    }
+
+    [Fact]
+    public void FormerlySerializedAs_NullEmptyAndSelfNoOp()
+    {
+        const string source = """
+            using System;
+            using Houtamelo.Spire;
+
+            [Serializable]
+            [DiscriminatedUnion]
+            public partial struct StabilityAliasNoOps
+            {
+                [Variant(FormerlySerializedAs = null)]
+                public static partial StabilityAliasNoOps First();
+
+                [Variant(FormerlySerializedAs = "")]
+                public static partial StabilityAliasNoOps Empty();
+
+                [Variant(FormerlySerializedAs = "Current")]
+                public static partial StabilityAliasNoOps Current();
+
+                [Variant]
+                public static partial StabilityAliasNoOps Value(int value);
+            }
+            """;
+
+        var result = UnityGeneratorTestHarness.Run(source);
+        UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
+        UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
+
+        var union = FindUnion(result, "StabilityAliasNoOps");
+        AssertPayloadFirstSchema(union);
+        Assert.Equal(
+            4,
+            SerializablePayloadTypes(union).Count(type => !type.IsAbstract));
+    }
+
+    [Fact]
+    public void NonUnityAlias_DoesNotChangeGeneration()
+    {
+        const string source = """
+            using Houtamelo.Spire;
+
+            [DiscriminatedUnion]
+            public partial struct StabilityNonUnityAlias
+            {
+                [Variant(FormerlySerializedAs = "OldValue")]
+                public static partial StabilityNonUnityAlias Value(int value);
+            }
+            """;
+
+        var result = UnityGeneratorTestHarness.Run(source);
+        UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
+        UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
+        Assert.DoesNotContain("ISerializationCallbackReceiver", result.GeneratedSource);
+        Assert.DoesNotContain("SerializeField", result.GeneratedSource);
+        Assert.DoesNotContain("SerializeReference", result.GeneratedSource);
+        Assert.DoesNotContain("OldValue", result.GeneratedSource);
+    }
+
+    [Fact]
+    public void Drawer_PayloadTypeSelectorWithoutKindProperty()
+    {
+        var result = UnityGeneratorTestHarness.Run(
+            UnityGeneratorTestHarness.LoadFixture("Stability_AllLayouts"),
+            includeEditorReferences: true);
+
+        UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
+        UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
+
+        var union = FindUnion(result, "StabilityAdditiveUnion");
+        var drawer = FindDrawerForTarget(result, union);
+        AssertDrawerEntryPoints(drawer);
+
+        var drawerSource = Assert.Single(drawer.DeclaringSyntaxReferences)
+            .GetSyntax()
+            .ToFullString();
+        Assert.DoesNotContain("_kind", drawerSource);
+        Assert.Contains("managedReferenceValue", drawerSource);
+    }
+
+    [Fact]
+    public void Drawer_PayloadTypeDispatchUsesExactTypeIdentity()
+    {
+        const string source = """
+            using System;
+            using Houtamelo.Spire;
+
+            [Serializable]
+            [DiscriminatedUnion]
+            public partial struct StabilityDrawerPayloadNameCollision
+            {
+                [Variant(FormerlySerializedAs = "OldPayload")]
+                public static partial StabilityDrawerPayloadNameCollision Current(int value);
+
+                [Variant]
+                public static partial StabilityDrawerPayloadNameCollision Old(string label);
+            }
+            """;
+
+        var result = UnityGeneratorTestHarness.Run(
+            source,
+            includeEditorReferences: true);
+        UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
+        UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
+
+        var union = FindUnion(result, "StabilityDrawerPayloadNameCollision");
+        var drawer = FindDrawerForTarget(result, union);
+        AssertDrawerEntryPoints(drawer);
+        var drawerSource = Assert.Single(drawer.DeclaringSyntaxReferences)
+            .GetSyntax()
+            .ToFullString();
+
+        Assert.Contains("__SpireOldPayload", drawerSource);
+        Assert.Contains("__SpireOldPayloadPayload", drawerSource);
+        Assert.Contains("managedReferenceValue", drawerSource);
+
+        var payloadDispatchMethod = drawer.DeclaringSyntaxReferences
+            .Single()
+            .GetSyntax()
+            .DescendantNodes()
+            .OfType<MethodDeclarationSyntax>()
+            .Single(method => method.Identifier.Text == "IsPayloadTypeName");
+        var payloadDispatchSource = payloadDispatchMethod.ToFullString();
+        Assert.Contains("LastIndexOf", payloadDispatchSource);
+        Assert.Contains("typeName[end]", payloadDispatchSource);
+        Assert.DoesNotContain("Contains(", payloadDispatchSource);
+    }
+
+    [Fact]
+    public void IncrementalGeneration_UnchangedUnionOutputIsCachedWhenUnrelatedSourceChanges()
+    {
+        const string unionSource = """
+            using System;
+            using Houtamelo.Spire;
+
+            [Serializable]
+            [DiscriminatedUnion]
+            public partial struct StabilityTrackedUnion
+            {
+                [Variant] public static partial StabilityTrackedUnion Value(int amount);
+                [Variant] public static partial StabilityTrackedUnion Empty();
+            }
+            """;
+        const string unrelatedSource = "public static class StabilityUnrelated { public const int Value = 1; }";
+        const string changedUnrelatedSource = "public static class StabilityUnrelated { public const int Value = 2; }";
+
+        var parseOptions = CSharpParseOptions.Default
+            .WithLanguageVersion(LanguageVersion.Preview);
+        var unionTree = CSharpSyntaxTree.ParseText(
+            unionSource,
+            parseOptions,
+            path: "stability-union.cs");
+        var unrelatedTree = CSharpSyntaxTree.ParseText(
+            unrelatedSource,
+            parseOptions,
+            path: "stability-unrelated.cs");
+        var firstCompilation = CSharpCompilation.Create(
+            "StabilityIncrementalAssembly",
+            new[] { unionTree, unrelatedTree },
+            UnityGeneratorTestHarness.GetReferences(
+                includeUnityReferences: true,
+                includeEditorReferences: false),
+            new CSharpCompilationOptions(
+                OutputKind.DynamicallyLinkedLibrary,
+                allowUnsafe: true,
+                nullableContextOptions: NullableContextOptions.Enable));
+
+        var generator = new DiscriminatedUnionGenerator();
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            generators: new[] { generator.AsSourceGenerator() },
+            parseOptions: parseOptions,
+            driverOptions: new GeneratorDriverOptions(
+                IncrementalGeneratorOutputKind.None,
+                trackIncrementalGeneratorSteps: true));
+        driver = driver.RunGeneratorsAndUpdateCompilation(
+            firstCompilation,
+            out _,
+            out var firstDiagnostics);
+        Assert.Empty(firstDiagnostics);
+        var firstRun = driver.GetRunResult();
+        var firstSource = firstRun.GeneratedTrees
+            .Single(tree =>
+                Path.GetFileName(tree.FilePath)
+                    .Contains("StabilityTrackedUnion", StringComparison.Ordinal) &&
+                !Path.GetFileName(tree.FilePath)
+                    .Contains(".UnityDrawer", StringComparison.Ordinal))
+            .GetText()
+            .ToString();
+
+        var changedUnrelatedTree = CSharpSyntaxTree.ParseText(
+            changedUnrelatedSource,
+            parseOptions,
+            path: "stability-unrelated.cs");
+        var secondCompilation = firstCompilation.ReplaceSyntaxTree(
+            unrelatedTree,
+            changedUnrelatedTree);
+        driver = driver.RunGeneratorsAndUpdateCompilation(
+            secondCompilation,
+            out _,
+            out var secondDiagnostics);
+        Assert.Empty(secondDiagnostics);
+        var secondRun = driver.GetRunResult();
+        var secondSource = secondRun.GeneratedTrees
+            .Single(tree =>
+                Path.GetFileName(tree.FilePath)
+                    .Contains("StabilityTrackedUnion", StringComparison.Ordinal) &&
+                !Path.GetFileName(tree.FilePath)
+                    .Contains(".UnityDrawer", StringComparison.Ordinal))
+            .GetText()
+            .ToString();
+        Assert.Equal(firstSource, secondSource);
+
+        var trackedOutputs = secondRun.Results
+            .SelectMany(result => result.TrackedSteps.Values)
+            .SelectMany(steps => steps)
+            .SelectMany(step => step.Outputs)
+            .ToArray();
+        Assert.Contains(
+            trackedOutputs,
+            output => output.Reason == IncrementalStepRunReason.Cached &&
+                output.Value?.ToString()?.Contains(
+                    "StabilityTrackedUnion",
+                    StringComparison.Ordinal) == true);
     }
 
     [Fact]
@@ -470,7 +868,7 @@ public sealed class UnitySerializationGeneratorTests
     }
 
     [Fact]
-    public void GeneratedInitAndCallbacks_ExposeMutationAndInvalidStorageBranches()
+    public void GeneratedInitAndCallbacks_ExposeMutationWithoutCacheInvalidation()
     {
         var result = UnityGeneratorTestHarness.Run(
             UnityGeneratorTestHarness.LoadFixture("Serializable_BasicStruct"));
@@ -487,19 +885,19 @@ public sealed class UnitySerializationGeneratorTests
             Assert.True(property.SetMethod!.IsInitOnly);
         }
 
-        var internalSlots = union.GetMembers()
-            .OfType<IPropertySymbol>()
-            .Where(property =>
-                property.Name.StartsWith("_s", StringComparison.Ordinal) &&
-                property.DeclaredAccessibility == Accessibility.Internal)
+        var runtimeSlots = union.GetMembers()
+            .OfType<IFieldSymbol>()
+            .Where(field => field.Name.StartsWith("__s", StringComparison.Ordinal))
             .ToArray();
-        Assert.NotEmpty(internalSlots);
-        Assert.All(internalSlots, property =>
+        Assert.NotEmpty(runtimeSlots);
+        Assert.All(runtimeSlots, field =>
         {
-            Assert.NotNull(property.GetMethod);
-            Assert.NotNull(property.SetMethod);
-            Assert.True(property.SetMethod!.IsInitOnly);
+            Assert.True(
+                HasAttribute(field, "System.NonSerializedAttribute"),
+                "Runtime storage field '" + field.Name + "' must not be serialized by Unity.");
         });
+
+        Assert.DoesNotContain("__SpireDetachSerializedCache", result.GeneratedSource);
 
         Assert.NotNull(union.GetMembers("_serializedPayload")
             .OfType<IFieldSymbol>()
@@ -730,7 +1128,7 @@ public sealed class UnitySerializationGeneratorTests
     }
 
     [Fact]
-    public void ExplicitBoxedLayouts_SelectTheirRuntimeStorageInEmittedAssemblies()
+    public void ExplicitBoxedLayouts_SelectRuntimeStorageWithOneReferenceCache()
     {
         var fieldsResult = UnityGeneratorTestHarness.Run(
             UnityGeneratorTestHarness.LoadFixture("Serializable_ExplicitBoxedFields"));
@@ -764,10 +1162,18 @@ public sealed class UnitySerializationGeneratorTests
             .ToArray();
         Assert.Single(
             tupleRuntimeSlots);
+        var tupleImplementationFields = RuntimeFields(tupleType!)
+            .Where(field => field.Name != "_kind" &&
+                field.Name != "_serializedPayload")
+            .ToArray();
         Assert.DoesNotContain(
-            RuntimeFields(tupleType!),
-            field => field.FieldType.IsValueType &&
-                field.Name != "_kind");
+            tupleImplementationFields,
+            field => field.Name is "__SpireSerializationState" or "__SpireSerializationOwner");
+        Assert.All(
+            tupleImplementationFields,
+            field => Assert.True(
+                field.FieldType == typeof(object),
+                "BoxedTuple retained an unexpected runtime field: " + field.Name));
     }
 
     [Fact]
@@ -844,9 +1250,9 @@ public sealed class UnitySerializationGeneratorTests
             .OfType<IFieldSymbol>()
             .Single();
 
-        Assert.True(HasAttribute(kind, "UnityEngine.SerializeField"));
+        Assert.True(HasAttribute(kind, "System.NonSerializedAttribute"));
+        Assert.False(HasAttribute(kind, "UnityEngine.SerializeField"));
         Assert.True(HasAttribute(payload, "UnityEngine.SerializeReference"));
-        Assert.False(HasAttribute(kind, "System.NonSerializedAttribute"));
         Assert.False(HasAttribute(payload, "System.NonSerializedAttribute"));
 
         var serializedFields = union.GetMembers()
@@ -855,7 +1261,8 @@ public sealed class UnitySerializationGeneratorTests
                 (HasAttribute(field, "UnityEngine.SerializeField") ||
                     HasAttribute(field, "UnityEngine.SerializeReference")))
             .ToArray();
-        Assert.Equal(2, serializedFields.Length);
+        Assert.Single(serializedFields);
+        Assert.Equal("_serializedPayload", serializedFields[0].Name);
 
         var runtimeFields = union.GetMembers()
             .OfType<IFieldSymbol>()
@@ -884,9 +1291,11 @@ public sealed class UnitySerializationGeneratorTests
         var serialized = fields.Where(field =>
             HasAttribute(field, "UnityEngine.SerializeField") ||
             HasAttribute(field, "UnityEngine.SerializeReference")).ToArray();
-        Assert.Equal(2, serialized.Length);
-        Assert.Contains(serialized, field => field.Name == "_kind");
+        Assert.Single(serialized);
         Assert.Contains(serialized, field => field.Name == "_serializedPayload");
+        var kind = fields.Single(field => field.Name == "_kind");
+        Assert.True(HasAttribute(kind, "System.NonSerializedAttribute"));
+        Assert.DoesNotContain(serialized, field => field.Name == "_kind");
         Assert.All(
             fields.Where(field => field.Name != "_kind" && field.Name != "_serializedPayload"),
             field => Assert.True(
@@ -902,6 +1311,77 @@ public sealed class UnitySerializationGeneratorTests
             .Select(field => field.Name + ":" + NormalizePayloadType(field.Type.ToDisplayString()))
             .OrderBy(signature => signature, StringComparer.Ordinal)
             .ToArray();
+
+    private static string[] PayloadTypeFieldSignatures(INamedTypeSymbol payloadType)
+        => InstancePayloadFields(payloadType)
+            .Select(field => field.Name + ":" + NormalizePayloadType(field.Type.ToDisplayString()))
+            .OrderBy(signature => signature, StringComparer.Ordinal)
+            .ToArray();
+
+    private static INamedTypeSymbol[] SerializablePayloadTypes(INamedTypeSymbol union)
+        => union.GetTypeMembers()
+            .Where(type => HasAttribute(type, "System.SerializableAttribute"))
+            .ToArray();
+
+    private static IFieldSymbol[] InstancePayloadFields(INamedTypeSymbol payloadType)
+        => payloadType.GetMembers()
+            .OfType<IFieldSymbol>()
+            .Where(field => !field.IsStatic)
+            .ToArray();
+
+    private static void AssertPayloadFirstSchema(INamedTypeSymbol union)
+    {
+        var kind = FindField(union, "_kind");
+        var payload = FindField(union, "_serializedPayload");
+        Assert.NotNull(kind);
+        Assert.NotNull(payload);
+        Assert.True(HasAttribute(kind!, "System.NonSerializedAttribute"));
+        Assert.False(HasAttribute(kind!, "UnityEngine.SerializeField"));
+        Assert.False(HasAttribute(kind!, "UnityEngine.SerializeReference"));
+        Assert.True(HasAttribute(payload!, "UnityEngine.SerializeReference"));
+        Assert.False(HasAttribute(payload!, "UnityEngine.SerializeField"));
+
+        var serializedOwnerFields = union.GetMembers()
+            .OfType<IFieldSymbol>()
+            .Where(field => !field.IsStatic &&
+                (HasAttribute(field, "UnityEngine.SerializeField") ||
+                    HasAttribute(field, "UnityEngine.SerializeReference")))
+            .ToArray();
+        Assert.Single(serializedOwnerFields);
+        Assert.Equal("_serializedPayload", serializedOwnerFields[0].Name);
+
+        var runtimeFields = union.GetMembers()
+            .OfType<IFieldSymbol>()
+            .Where(field => !field.IsStatic && field.Name != "_serializedPayload")
+            .ToArray();
+        Assert.NotEmpty(runtimeFields);
+        Assert.All(
+            runtimeFields,
+            field => Assert.True(
+                HasAttribute(field, "System.NonSerializedAttribute"),
+                $"Runtime field '{field.Name}' must be explicitly non-serialized."));
+
+        var payloadTypes = SerializablePayloadTypes(union);
+        var concretePayloadTypes = payloadTypes
+            .Where(type => !type.IsAbstract)
+            .ToArray();
+        Assert.NotEmpty(concretePayloadTypes);
+        Assert.Contains(
+            concretePayloadTypes,
+            type => InstancePayloadFields(type).Length == 0);
+
+        var payloadFields = concretePayloadTypes
+            .SelectMany(InstancePayloadFields)
+            .ToArray();
+        Assert.NotEmpty(payloadFields);
+        Assert.All(payloadFields, field =>
+        {
+            Assert.Equal(Accessibility.Public, field.DeclaredAccessibility);
+            Assert.True(
+                HasAttribute(field, "UnityEngine.SerializeField"),
+                $"Payload field '{field.ContainingType.Name}.{field.Name}' must carry SerializeField.");
+        });
+    }
 
     private static string NormalizePayloadType(string type)
         => type

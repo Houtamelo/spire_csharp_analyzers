@@ -4,7 +4,8 @@ Roslyn analyzers and source generators for C# type safety — struct initializat
 
 ## Installation
 
-This `unity-6000` branch targets Unity 6000.5 and Mono. Build its local package:
+This `unity-6000` branch targets Unity 6000.5, with Mono and Linux IL2CPP
+validation. Build its local package:
 
 ```sh
 dotnet run -c Release --project tools/Spire.Tool -- package
@@ -14,6 +15,12 @@ Add `tmp/unity-package/com.houtamelo.spire/package.json` through Unity's Package
 Manager. Apply `[Serializable]` to a mutable struct union to enable generated
 serialization and Inspector drawers. See [the Unity guide](docs/unity.md) for
 field support, asmdef references, and validation.
+
+Annotate a variant parameter with `[UnitySerializeReference]` when its value needs
+to preserve null, derived types, or shared references through Unity serialization.
+
+Open the tracked [Unity showcase project](examples/UnityShowcase/README.md) for
+Inspector-editable presets, a runnable scene, and real Unity tests of the examples.
 
 The normal NuGet build is maintained on `main`.
 

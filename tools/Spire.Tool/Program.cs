@@ -13,19 +13,25 @@ try
         Console.WriteLine("Unity tests: --editor PATH --project PATH --timeout SECONDS");
         Console.WriteLine("unity-integration: --graphics --method NAME");
         Console.WriteLine("unity-behavioral, unity-harness, unity-asmdefs: --prepare-only");
+        Console.WriteLine("unity-behavioral: --backend Mono|IL2CPP (Mono runs in EditMode; IL2CPP builds a Linux player)");
         Console.WriteLine("unity-harness: --probe");
         Console.WriteLine("unity-asmdefs: --rider PATH");
         Console.WriteLine("jetbrains: --rider PATH --cli PATH --stage all|inspect|quick-fix|recompile");
         Console.WriteLine("hook [SessionStart|Stop|SessionEnd]: read the event JSON from standard input");
         return 0;
     }
+    var backend = options.Value("backend", "Mono");
+    if (options.Flag("backend") && options.Command != "unity-behavioral")
+        throw new ArgumentException("Option --backend is only supported by unity-behavioral.");
+    if (backend is not ("Mono" or "IL2CPP"))
+        throw new ArgumentException("Backend must be Mono or IL2CPP.");
     var root = options.Root ?? FindRoot();
     var context = new ToolContext(root);
     var configuration = options.Value("configuration", "Release");
     if (configuration is not ("Debug" or "Release")) throw new ArgumentException("Configuration must be Debug or Release.");
     var editor = options.Value("editor", ToolContext.DefaultEditor);
     var rider = options.Value("rider", ToolContext.DefaultRider);
-    var timeout = TimeSpan.FromSeconds(options.Integer("timeout", options.Command == "unity-integration" ? 240 : 900));
+    var timeout = TimeSpan.FromSeconds(options.Integer("timeout", options.Command == "unity-integration" ? 240 : backend == "IL2CPP" ? 1200 : 900));
     var build = !options.Flag("no-build");
     var prepare = options.Flag("prepare-only");
     string Project(string name) => options.Value("project", context.PathOf("tmp/" + name));
@@ -39,7 +45,7 @@ try
             return await IntegrationWorkflow.RunAsync(context, Project("unity-integration"), editor, configuration, build, options.Flag("graphics"),
                 options.Value("method", "Spire.UnityIntegration.SpireUnityIntegration.Run"), timeout);
         case "unity-behavioral":
-            return await BehavioralWorkflow.RunAsync(context, Project("unity-behavioral"), editor, configuration, build, prepare, timeout);
+            return await BehavioralWorkflow.RunAsync(context, Project(backend == "IL2CPP" ? "unity-il2cpp-behavioral" : "unity-behavioral"), editor, configuration, build, prepare, timeout, backend);
         case "unity-harness":
             return await HarnessWorkflow.RunAsync(context, Project("unity-compiler-tests"), editor, configuration, build, prepare, options.Flag("probe"), timeout);
         case "unity-asmdefs":
@@ -88,7 +94,7 @@ internal sealed class Options
     {
         var options = new Options();
         var flags = new HashSet<string>(new[] { "help", "no-build", "prepare-only", "graphics", "probe" }, StringComparer.Ordinal);
-        var values = new HashSet<string>(new[] { "root", "configuration", "editor", "project", "output", "timeout", "rider", "cli", "stage", "method" }, StringComparer.Ordinal);
+        var values = new HashSet<string>(new[] { "root", "configuration", "editor", "project", "output", "timeout", "rider", "cli", "stage", "method", "backend" }, StringComparer.Ordinal);
         for (var index = 0; index < args.Length; index++)
         {
             var argument = args[index];

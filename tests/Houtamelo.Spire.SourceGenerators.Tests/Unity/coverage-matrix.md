@@ -105,7 +105,7 @@ changing the public runtime field layout or introducing a wrapper type.
 |-----------|-------------|
 | `Serializable_Overlap_NonGenericBasic` | Explicit `Layout.Overlap` on a non-generic mutable struct with unmanaged fielded and fieldless variants compiles and selects `StructLayout(LayoutKind.Explicit)`. |
 | `Serializable_Overlap_NonGenericManagedReferences` | A non-generic Overlap union with the runtime's supported reference fields plus the generated managed serialized payload loads on Mono; reference fields retain identity after save/reload and never overlap value storage. |
-| `Serializable_Overlap_FieldOffsetReferencePlacement` | Generated metadata gives every explicit-layout instance field a valid nonoverlapping offset; discriminator, runtime fields, serialized payload, ownership/cache references, and any managed slots are placed in legal aligned regions. |
+| `Serializable_Overlap_FieldOffsetReferencePlacement` | Generated metadata gives every explicit-layout instance field a valid nonoverlapping offset; discriminator, runtime fields, the single serialized payload reference, and any managed slots are placed in legal aligned regions. |
 | `Serializable_Overlap_NestedInNonGenericType` | An Overlap union nested in a non-generic containing type retains valid explicit layout, generated qualification, and drawer discovery. |
 | `Serializable_Overlap_GenericUnion_Diagnostic` | A generic Overlap union reports the existing `SPIRE_DU005` CLR restriction and emits no incomplete Unity serialization surface. |
 | `Serializable_Overlap_GenericContainingType_Diagnostic` | A non-generic union nested in a generic containing type is rejected consistently with generic CLR explicit-layout restrictions using `SPIRE_DU005`; there is no silent Additive fallback. |
@@ -122,13 +122,13 @@ changing the public runtime field layout or introducing a wrapper type.
 | `Serializable_Record_Diagnostic` | A serializable record union reports `SPIRE_DU013`; record-union serialization is outside the initial scope. |
 | `Serializable_RecordStruct_Diagnostic` | A serializable `record struct` is covered by the struct-only decision and reports `SPIRE_DU013`. |
 | `Serializable_GenericStruct_ClosedIntAndString` | Closed `GenericProbeUnion<int>` and `GenericProbeUnion<string>` compile against real Unity metadata and snapshot the serializable payload/drawer shape; both are positive cases. |
-| `Serializable_GenericStruct_OpenTypeParameter` | A generic declaration whose payload field is the unconstrained `T` compiles and preserves the established open-generic shape; supported closed arguments are positive and known unsupported closed arguments use the existing field-policy diagnostics. |
+| `Serializable_GenericStruct_OpenTypeParameter` | A generic declaration whose payload field is the unconstrained `T` compiles and preserves the established open-generic shape; closed arguments are generated with typed payload fields and Unity owns any later field-serializability decision. |
 | `Serializable_NestedInGenericType_CompileAgainstUnity` | A union nested inside a generic containing type remains a positive Additive case; explicit Overlap in the same containing context is covered by the established `SPIRE_DU005` restriction. |
 | `Serializable_WithoutUnityEngine_Diagnostic` | A serializable union compiled without UnityEngine metadata reports `SPIRE_DU016`; tests must omit the reference rather than add a fake namespace. |
 | `Serializable_WithUnityEngineAlias` | `using UE = UnityEngine;` in the input still resolves the actual Unity attributes/types and produces the same output as the fully qualified form. |
 | `NormalGeneric_NoSerializable` | A generic Additive union without `[Serializable]` remains on the existing non-Unity path for every closed type argument. |
 
-### Category C: Supported payload field shapes
+### Category C: Payload field metadata
 
 | Case Name | Description |
 |-----------|-------------|
@@ -136,62 +136,71 @@ changing the public runtime field layout or introducing a wrapper type.
 | `Fields_EnumsWithin32Bits` | An enum with an underlying type no wider than 32 bits is emitted as a serializable payload field and remains distinct from the discriminator. |
 | `Fields_UnityNativeTypesAndConcreteObjectRefs` | `Vector2`/`Vector3`/`Color` plus concrete `UnityEngine.Object` references such as `Texture2D` are retained in typed payload classes. |
 | `Fields_SerializableConcreteClassAndStruct` | `[Serializable]` concrete helper classes and structs are accepted as payload fields and retain nested values. |
+| `Fields_NonSerializableConcreteClass_UnityOwned` | A public concrete class without `[Serializable]` remains a typed payload field; Unity owns whether the field can be persisted. |
+| `Fields_CustomNamespaceType_UnityOwned` | A payload type declared in a custom namespace is retained with its fully qualified type identity and `[SerializeField]` metadata. |
 | `Fields_OneDimensionalArraysAndLists` | One-dimensional arrays and `List<T>` whose element types are supported Unity values are emitted without silently dropping fields. |
 | `Fields_FieldlessMixedWithFielded` | Fieldless and fielded variants share one union; every variant still receives the correct payload type and factory path. |
 | `Fields_DuplicateNamesAcrossPayloadClasses` | Different variants use the same field name and type; separate payload classes prevent cross-variant member collisions. |
 | `Fields_EscapedKeywordIdentifiers` | Variant/field identifiers escaped with `@` (for example `@event` and `@class`) generate compilable payload members and drawer paths. |
 | `Fields_NestedUnionField` | A supported child union is used as a parent payload field; generated types compile and the established real-Unity nested graph cases cover preparation, repeated saves, arrays/lists, and copy isolation. |
 
-### Category D: Unsupported native Unity payload fields
+### Category D: Unity-owned payload field serializability
 
-Every row expects `SPIRE_DU014` at the variant field and no generated output
-that silently omits the declaration.
-
-| Case Name | Description |
-|-----------|-------------|
-| `Fields_DecimalDateTimeGuid_Diagnostic` | `decimal`, `DateTime`, and `Guid` payload fields are rejected as unsupported native Unity field shapes. |
-| `Fields_NullableValue_Diagnostic` | `int?`/`Nullable<T>` payload fields are rejected; nullable-reference annotations remain covered by the supported case. |
-| `Fields_Tuple_Diagnostic` | `ValueTuple`/tuple payload fields are rejected unless a later Unity-specific field policy explicitly supports them. |
-| `Fields_Dictionary_Diagnostic` | `Dictionary<TKey,TValue>` payload fields are rejected. |
-| `Fields_MultidimensionalArray_Diagnostic` | `int[,]` and other multidimensional arrays are rejected. |
-| `Fields_JaggedArray_Diagnostic` | `int[][]` and equivalent nested arrays are rejected. |
-| `Fields_NestedContainer_Diagnostic` | A list/array whose element is itself a list/array or other nested container is rejected. |
-| `Fields_Object_Diagnostic` | `object` payload fields are rejected in the initial typed-payload policy. |
-| `Fields_Interface_Diagnostic` | Interface-typed payload fields are rejected; the initial scope does not add a polymorphic managed-reference dropdown. |
-| `Fields_AbstractClass_Diagnostic` | Abstract-class payload fields are rejected for the same initial no-polymorphism policy. |
-| `Fields_LongBackedEnum_Diagnostic` | An enum with a wider-than-32-bit underlying type is rejected. |
-
-### Category D.1: Generic closed-argument field-policy probes
-
-These cases remain alongside the positive `int`/`string` generic cases. The
-field policy is already settled: diagnose a known unsupported closed argument
-precisely and never silently omit the value; do not blanket-reject generic
-unions or defer the decision to an Editor-only failure.
+The generator emits every declared field as a typed payload field with
+`[SerializeField]`. It does not classify these shapes with a generator-side
+field-policy diagnostic; the Unity importer and serializer own the later
+decision about whether a field is persisted. Roslyn tests assert that
+generation and compilation succeed and that the typed field is present.
 
 | Case Name | Description |
 |-----------|-------------|
-| `GenericClosedArg_Object_Diagnostic` | Exercise `UnityGenericUnion<object>`; the constructed payload reports the established `SPIRE_DU014` field-policy diagnostic. |
-| `GenericClosedArg_Dictionary_Diagnostic` | Exercise `UnityGenericUnion<Dictionary<int,string>>`; the constructed payload reports the established `SPIRE_DU014` field-policy diagnostic and never silently omits the `Some` value. |
+| `Fields_DecimalDateTimeGuid_UnityOwned` | `decimal`, `DateTime`, and `Guid` payload fields are generated and annotated; Unity decides whether each field can be persisted. |
+| `Fields_NullableValue_UnityOwned` | `int?`/`Nullable<T>` payload fields are generated; nullable-reference annotations remain covered by the ordinary supported cases. |
+| `Fields_Tuple_UnityOwned` | `ValueTuple`/tuple payload fields are generated and remain typed; no generator-side polymorphism or field-policy rejection is added. |
+| `Fields_Dictionary_UnityOwned` | `Dictionary<TKey,TValue>` payload fields are generated and annotated for Unity to evaluate. |
+| `Fields_MultidimensionalArray_UnityOwned` | `int[,]` and other multidimensional arrays are generated as typed payload fields. |
+| `Fields_JaggedArray_UnityOwned` | `int[][]` and equivalent nested arrays are generated as typed payload fields. |
+| `Fields_NestedContainer_UnityOwned` | A list/array whose element is itself a list/array or other nested container is generated without a generator-side field-policy classification. |
+| `Fields_Object_UnityOwned` | `object` payload fields are generated and annotated; polymorphic Inspector behavior remains Unity's responsibility. |
+| `Fields_Interface_UnityOwned` | Interface-typed payload fields are generated and remain typed; the generator does not add a polymorphic managed-reference dropdown. |
+| `Fields_AbstractClass_UnityOwned` | Abstract-class payload fields are generated and remain typed; Unity owns any persistence limitation. |
+| `Fields_LongBackedEnum_UnityOwned` | An enum with a wider-than-32-bit underlying type is generated as a typed payload field. |
+
+### Category D.1: Generic closed-argument generation probes
+
+These cases remain alongside the positive `int`/`string` generic cases. Closed
+arguments are generated without a field-policy diagnostic, and their typed
+payload fields carry `[SerializeField]`. Unity owns any later serialization
+decision for the constructed field type.
+
+| Case Name | Description |
+|-----------|-------------|
+| `GenericClosedArg_Object_Generated` | Exercise `UnityGenericFieldUnion<object>`; the constructed payload is generated and retains its typed `Some.value` field with `[SerializeField]`. |
+| `GenericClosedArg_Dictionary_Generated` | Exercise `UnityGenericFieldUnion<Dictionary<int,string>>`; the constructed payload is generated and retains its typed `Some.value` field with `[SerializeField]`. |
+| `Fields_GenericNestedHelperClosedExternal_UnityOwned` | A serializable generic helper closed over `Dictionary<int,string>` remains a typed payload field; generation does not classify the nested external type. |
 
 ### Category E: Generated storage and callback shape
 
 | Case Name | Description |
 |-----------|-------------|
 | `Generated_PayloadHierarchy` | The output has one serializable payload base class and one serializable, typed concrete payload class per variant, including a fieldless variant. |
-| `Generated_KindAndSinglePayloadStorage` | The owner has one mutable `[SerializeField]` discriminator and one private `[SerializeReference]` payload; no per-variant serialized storage is emitted. |
+| `Generated_PayloadFieldsCarrySerializeField` | Every instance field in every concrete typed payload for Additive, BoxedFields, BoxedTuple, UnsafeOverlap, and accepted non-generic Overlap carries `[SerializeField]`; the fieldless payload remains present with no fields. Existing Unity-owned field controls and non-serializable controls remain unchanged. |
+| `Generated_KindAndSinglePayloadStorage` | The owner has one nonserialized runtime discriminator and one private `[SerializeReference]` payload reference; no per-variant serialized storage is emitted. |
+| `GeneratedSerializationSurface_UsesOneReferenceCacheAndHiddenImplementationMembers` | A serializable probe exposes exactly one serialized reference field, no per-value owner/state holder, no unused scalar write helpers, and `EditorBrowsable(Never)` on remaining public/internal generated implementation methods. |
+| `FactoryConstruction_DoesNotAttachSerializedPayload` | Ordinary factory construction leaves the sole serialization cache null; payload allocation begins only during serialization preparation. |
 | `Generated_RuntimeFieldsNonSerialized` | Every Additive runtime field is explicitly `[NonSerialized]`, including fields that would otherwise be included during hot reload. |
 | `Generated_AutoPropertyBackingFieldsNonSerialized` | Compiler-generated backing fields for generated runtime properties carry field-targeted `[NonSerialized]`; a property-only attribute is insufficient. |
 | `Generated_CallbackInterfaceAndMethods` | The owner implements `ISerializationCallbackReceiver` and emits both callbacks under the normal runtime compilation path. |
 | `Generated_OnBeforeSerializeRefreshesRuntime` | The output refreshes the active typed payload from current runtime fields on every `OnBeforeSerialize`, including values changed through generated init accessors. |
-| `Generated_OnBeforeSerializeReusesMatchingPayload` | The output updates an existing same-type active payload in place and allocates a new payload when the active variant type changes. |
+| `Generated_OnBeforeSerializeReusesMatchingPayload` | The output reuses an unchanged same-type active snapshot and allocates a replacement when serialized runtime fields change or the active variant type changes. |
 | `Generated_OnAfterDeserializeUsesFactory` | The output reconstructs through the variant factory and then retains the serialized payload for Inspector access. |
 | `Generated_KnownKindMissingPayload` | A known discriminator with a null/missing payload reconstructs the known variant with that variant's fields at default values and does not throw. |
 | `Generated_KnownKindMismatchedPayload` | A known discriminator paired with another variant's payload reconstructs the known variant with default fields and does not read stale fields. |
 | `Generated_UnknownKindKeepsInvalidDefaultStorage` | An unknown discriminator takes a safe switch default, leaves runtime storage at its default/invalid state, and does not throw in either callback. |
 | `Generated_VariantSwitchDropsStalePayload` | Switching from variant A to B creates B's payload and clears A's runtime/persisted data; switching back does not resurrect old A values. |
 | `Generated_NestedCallbackPreparationAndRefresh` | Parent/child callback code contains the established recursive child snapshot preparation and same-type in-place refresh used by the one-child, repeated-save, array/list, and copy-isolation contract. |
-| `Generated_CopyInitMutationDetachesSerializedCache` | Any generated runtime init mutation on a copied struct detaches the serialized cache before refresh, preventing payload aliasing between independent values. |
-| `Generated_NestedCollectionInitPath` | Init/write-back paths for array/list elements of nested unions preserve independent payload ownership; native support is validated by the established real Editor fixture. |
+| `Generated_CopyInitMutationDetachesSerializedCache` | Any generated runtime mutation on a copied struct leaves the shared snapshot untouched until serialization, then replaces only the changed value's snapshot. |
+| `Generated_NestedCollectionInitPath` | Init/write-back paths for array/list elements of nested unions preserve independent payload snapshots; native support is validated by the established real Editor fixture. |
 | `Generated_GenericPayloadBaseShape` | A generic serializable union uses a nongeneric serializable payload base with nested typed payload classes carrying the closed type parameter; the generated shape must remain valid for `int` and `string`. |
 | `Generated_BoxedFields_RuntimeStorageSelected` | Reflection and generated-tree metadata prove that explicit BoxedFields retains its object-backed variant slots, while every runtime slot/cache is `[NonSerialized]` and the only Unity serialized fields are the canonical kind and managed payload. |
 | `Generated_BoxedTuple_RuntimeStorageSelected` | Reflection and generated-tree metadata prove that explicit BoxedTuple retains its single runtime tuple/object payload, separate from the canonical managed-reference payload; no per-field Unity storage is introduced. |
@@ -227,9 +236,9 @@ unions or defer the decision to an Editor-only failure.
 
 ## Section 2: Behavioral Type Definitions
 
-These declarations are compiled into the real Unity fixture. Invalid field-policy
-cases remain snapshot/diagnostic inputs so the Editor suite only loads valid
-generated code.
+These declarations are compiled into the real Unity fixture. Field shapes that
+Unity may later reject remain valid generator inputs; Unity import and runtime
+tests own the persistence outcome.
 
 | Union Name / Fixture | Description | Variants / Serialized Fields |
 |----------------------|-------------|------------------------------|
@@ -238,14 +247,14 @@ generated code.
 | `UnityCallbackChild` | Child union used in managed-reference callback graphs. | `Text(int count, string label, Texture2D asset)`, `Number(float value)`, `Empty()` |
 | `UnityCallbackParent` | Parent payload containing a child union and a marker. | `Parent(UnityCallbackChild child, int marker)`, `Text(string label)`, `Empty()` |
 | `UnityCollectionUnion` | Collection element coverage for arrays and lists of union values. | `Child(UnityCallbackChild child)`, `Number(float value)`, `Empty()` |
-| `UnityCopyProbe` | Copy/init mutation and payload ownership coverage. | `Text(int count, string label, Texture2D asset)`, `Number(float value)`, `Parent(UnityCallbackChild child, int marker)` |
+| `UnityCopyProbe` | Copy/runtime mutation and payload snapshot isolation coverage. | `Text(int count, string label, Texture2D asset)`, `Number(float value)`, `Parent(UnityCallbackChild child, int marker)` |
 | `UnityDrawerUnion` | Union with fieldless, scalar, text, and object-reference Inspector shapes. | `Empty()`, `Number(float value)`, `Text(int count, string label)`, `ObjectRef(Texture2D texture)` |
 | `UnityNestedOwnerData` | Ordinary `[Serializable]` containing struct; no wrapper/callback code authored by the user. | `UnityShapeSerializable value`, `UnityCollectionUnion[] array`, `List<UnityCollectionUnion> list` |
 | `UnitySerializationAsset` | `ScriptableObject` host for persistence and managed-reference identity. | `UnityShapeSerializable single`, `UnityCollectionUnion[] array`, `List<UnityCollectionUnion> list`, `UnityCallbackParent parent`, `UnityCopyProbe original/sharedCopy/detachedCopy`, plus a `Texture2D reference` |
 | `UnitySerializationMono` | `MonoBehaviour` host for script reload, Play Mode, and Mono player checks. | Same union fields as `UnitySerializationAsset`, with scene-authored values |
 | `UnityDrawerHost` | Editor host with ordinary serialized fields, array/list elements, nested owner data, and prefab instance data. | `UnityDrawerUnion single`, `UnityDrawerUnion[] array`, `List<UnityDrawerUnion> list`, `UnityNestedOwnerData nested` |
 | `UnityGenericUnion<T>` | Generic serializable struct with proven closed-type coverage. | `Some(T value)`, `None()`; `int` and `string` closed instances save/reload exactly, and the drawer targets the open generic definition. |
-| `UnityGenericUnsupportedClosedArg<T>` | Negative closed-argument probe for a generic payload whose concrete type is a known unsupported Unity field shape. | `Some(T value)` with `Dictionary<int,string>`/other unsupported closed arguments; existing `SPIRE_DU014` field-policy diagnostics apply. |
+| `UnityGenericFieldUnion<T>` | Closed-argument generation probe for a generic payload whose concrete type may be rejected by Unity's own field rules. | `Some(T value)` with `object`, `Dictionary<int,string>`, and other closed arguments; generation keeps the typed field and emits no field-policy diagnostic. |
 | `UnityNestedGenericOwner<T>` | Nested generic containing-type control for the settled Additive/boxed policy and explicit Overlap restriction. | A serializable union nested in `Outer<T>`; Additive and boxed layouts retain generated qualification and persistence, while Overlap receives `SPIRE_DU005`. |
 | `UnityBoxedFieldsUnion` | Phase 1 explicit BoxedFields union used for runtime storage, persistence, drawer, copy, and nested-child checks. | `Number(int value)`, `Text(string label, Texture2D icon)`, `Child(UnityCallbackChild child)`, `Empty()` |
 | `UnityBoxedTupleUnion` | Phase 1 explicit BoxedTuple union with the same logical field matrix as BoxedFields for schema-parity comparisons. | `Number(int value)`, `Text(string label, Texture2D icon)`, `Child(UnityCallbackChild child)`, `Empty()` |
@@ -274,14 +283,14 @@ field and does not manually call a snapshot-preparation helper.
 | `Factory_Text_KindAndFields` | union: `UnityShapeSerializable` | Factory construction sets the expected kind and every active field. |
 | `Factory_Fieldless_KindAndDefaults` | union: `UnityShapeSerializable` | Fieldless construction sets its kind and leaves all inactive runtime fields at defaults. |
 | `OnBeforeSerialize_RefreshesWithoutManualPrepare` | union: `UnityShapeSerializable` | Assign a factory value to an owner, save/serialize it, and assert the managed payload contains the latest runtime values without an owner wrapper or prepare call. |
-| `OnBeforeSerialize_RefreshesMatchingPayloadInPlace` | union: `UnityCopyProbe` | After a runtime init mutation, serialization updates the existing same-type managed payload and preserves its active object reference. |
+| `OnBeforeSerialize_ReplacesChangedSnapshot` | union: `UnityCopyProbe` | After a serialized payload edit, the runtime union remains authoritative and serialization replaces the edited snapshot with current runtime fields while preserving active object references. |
 | `OnAfterDeserialize_ReconstructsThroughFactory` | union: `UnityShapeSerializable` | Asset unload/reload reconstructs the active runtime value and resets inactive fields. |
 | `OnAfterDeserialize_KnownKindMissingPayload` | union: `UnityShapeSerializable` | Remove the managed payload while retaining a known kind; reload completes without exception and the known variant fields are default. |
 | `OnAfterDeserialize_KnownKindMismatchedPayload` | union: `UnityShapeSerializable` | Pair a known kind with another variant payload; reload completes without exception and does not copy mismatched fields. |
 | `OnAfterDeserialize_UnknownKindNoThrow` | union: `UnityShapeSerializable` | Write an invalid discriminator value; callbacks do not throw, runtime fields remain default/invalid, and the serialized invalid storage is observable for diagnosis. |
 | `VariantSwitch_DropsStaleInactiveData` | union: `UnityDrawerUnion` | Switch Text to Number and back through generated replacement; neither the payload nor runtime storage resurrects the old text. |
 | `PayloadOnlyEdit_ReconstructsImmediateRuntime` | union: `UnityShapeSerializable` | Change only the managed-reference payload through `SerializedProperty`; applying properties reconstructs the immediate runtime value from serialized data. |
-| `GeneratedInitMutation_RefreshesPayload` | union: `UnityCopyProbe` | Mutate each generated init-accessor path, serialize, and assert the matching typed payload reflects the mutation. |
+| `GeneratedRuntimeMutation_ReplacesSnapshot` | union: `UnityCopyProbe` | Mutate each generated runtime-storage path, retain the copied snapshot until serialization, and assert serialization replaces it with the mutation. |
 
 ### Category B: Persistence, references, copies, and callback graphs
 
@@ -292,12 +301,12 @@ field and does not manually call a snapshot-preparation helper.
 | `List_RoundTrip` | host: `UnitySerializationAsset` | List elements retain exact active variants, null/reference values, and count after reload. |
 | `ContainingStruct_RoundTrip` | host: `UnityNestedOwnerData` | A union inside an ordinary serializable containing struct survives save/reload. |
 | `NestedParent_AutomaticChildSnapshotRepeatedSave` | union: `UnityCallbackParent` | Parent construction automatically owns/prepares the child snapshot; two save/reload cycles preserve child values and object references. |
-| `NestedParent_MatchingPayloadRefreshRepeatedSave` | union: `UnityCallbackParent` | Parent and child same-type payloads refresh in place across repeated saves without depending on callback order. |
+| `NestedParent_MatchingPayloadRefreshRepeatedSave` | union: `UnityCallbackParent` | Parent and child changed snapshots are replaced across repeated saves without depending on callback order; unchanged saves remain stable. |
 | `NestedParent_CopyIsolation` | union: `UnityCallbackParent` | Copy a parent, mutate the child in the copy, and assert the original parent has independent runtime and serialized values. |
 | `NestedArrayElements_IndependentChildSnapshots` | host: `UnitySerializationAsset` | Nested child unions in array elements serialize independently; changing one element does not alter another element's payload. |
 | `NestedListElements_IndependentChildSnapshots` | host: `UnitySerializationAsset` | The same isolation assertion holds for `List<UnityCollectionUnion>` elements and list growth/write-back. |
-| `NestedCollection_InitMutationDetachesCache` | host: `UnitySerializationAsset` | Mutate a nested union through an array/list element's generated init path, save twice, and assert the changed element detaches its serialized cache from siblings. |
-| `CopiedValue_SharedPayloadMutationDetaches` | host: `UnitySerializationAsset` | Construct an intentional managed-reference alias control, mutate one copied struct, and require the generated init path to detach it so the original retains its own values. |
+| `NestedCollection_RuntimeMutationIsolated` | host: `UnitySerializationAsset` | Mutate a nested union through an array/list element's generated runtime-storage path, save twice, and assert serialization replaces only the changed element's snapshot while siblings remain unchanged. |
+| `CopiedValue_SharedPayloadMutationDetaches` | host: `UnitySerializationAsset` | Construct an intentional managed-reference alias control, mutate one copied struct, and require the next serialization to replace its snapshot so the original retains its own values. |
 | `CopiedValue_DetachedPayloadRepeatedSaveVariantChange` | union: `UnityCopyProbe` | A detached copy survives repeated save/reload and a Text-to-Number variant change while the original remains Text with its original values. |
 | `ActivePayloadOnly_NoInactivePayloadOrRuntimeFields` | host: `UnitySerializationAsset` | Force-text serialized data contains only the active payload class; inactive payload classes and all runtime Additive fields are absent. |
 | `BoxedFields_AssetSaveUnloadReload` | host: `UnityBoxedFieldsUnion` | A BoxedFields value with primitive, string, object-reference, and fieldless variants survives actual asset save/unload/reload with exact logical values and references. |
@@ -393,17 +402,17 @@ managed-reference payload, and uses the strategy's normal runtime storage for
 getters, factories, init mutation, copy detachment, and reset.
 
 1. **Generic payloads and drawers.** Closed `int`/`string` generic payloads,
-   open-definition drawer discovery, and known unsupported closed arguments
-   already have coverage and an established outcome. Preserve those cases;
-   do not reopen the generic field policy while adding layout-specific storage.
+   open-definition drawer discovery, and object/dictionary closed arguments
+   already have coverage. Preserve those cases; generic field serializability
+   belongs to Unity rather than a generator-side diagnostic.
 2. **Nested callback graphs.** Child preparation, repeated saves, arrays/lists,
    and copy/alias isolation are already part of the serialization contract.
    Reuse those controls for each runtime layout and do not widen the supported
    graph policy during this work.
-3. **Native field policy.** The supported and rejected Unity field shapes are
-   already settled by the existing `SPIRE_DU014` fixtures. Layout-specific
-   emitters must use the same policy without adding strategy-dependent field
-   exceptions.
+3. **Native field policy.** The generator emits every declared payload field and
+   applies `[SerializeField]` uniformly across layouts. It does not reject
+   shapes based on Unity's field rules; Unity import and serialization tests own
+   the resulting persistence behavior.
 4. **Record structs and readonly/ref declarations.** The initial contract is
    settled: mutable struct unions only. `record`, `record struct`, readonly
    struct, and ref struct all use `SPIRE_DU013`; layout-specific work must not
@@ -439,7 +448,7 @@ getters, factories, init mutation, copy detachment, and reset.
 |-------|------|
 | `unity-snapshot-opt-in` | Category A semantic/output pairs and normal non-serializable control. |
 | `unity-snapshot-declarations` | Category B declaration/reference cases and `SPIRE_DU012`, `SPIRE_DU013`, `SPIRE_DU016` diagnostics. |
-| `unity-snapshot-field-policy` | Categories C and D accepted/rejected native field shapes and `SPIRE_DU014`. |
+| `unity-snapshot-field-metadata` | Categories C and D typed payload fields, uniform `[SerializeField]` metadata, and Unity-owned field serializability probes. |
 | `unity-snapshot-storage-callbacks` | Category E payload hierarchy, field attributes, callback branches, invalid-state defaults, stale-data reset, copy-detach, and nested collection source cases. |
 | `unity-snapshot-drawer` | Category F guarded drawer source and compile checks with actual `UnityEditor.dll`; no runtime Unity launch from the Roslyn suite. |
 | `unity-editor-serialization` | Behavioral Categories A and B using durable 6000.5.6f1 ScriptableObject/Mono fixtures, asset save/reload, arrays/lists, nested graphs, object references, copy alias/detach, and active-only YAML. |

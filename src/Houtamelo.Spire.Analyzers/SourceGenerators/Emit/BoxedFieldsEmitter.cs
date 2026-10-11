@@ -52,14 +52,14 @@ internal static class BoxedFieldsEmitter
         // Kind field (backing field + property)
         if (unitySerialization)
         {
-            sb.AppendLine("[global::UnityEngine.SerializeField]");
-            sb.AppendLine("private Kind _kind;");
+            sb.AppendLine("[global::System.NonSerialized]");
+            sb.AppendLine($"private Kind {UnitySerializationEmitter.RuntimeKindFieldName};");
         }
         else
         {
             sb.AppendLine("readonly Kind _kind;");
         }
-        sb.AppendLine("public Kind kind => this._kind;");
+        sb.AppendLine($"public Kind kind => this.{(unitySerialization ? UnitySerializationEmitter.RuntimeKindFieldName : "_kind")};");
 
         // Boxed slot fields
         for (int i = 0; i < layout.SlotCount; i++)
@@ -76,7 +76,7 @@ internal static class BoxedFieldsEmitter
 
         if (unitySerialization && layout.SlotCount > 0)
         {
-            sb.AppendLine("private sealed class __SpireBoxedFieldSlot");
+            sb.AppendLine("internal sealed class __SpireBoxedFieldSlot");
             sb.OpenBrace();
             sb.AppendLine("public object? Value;");
             sb.CloseBrace();
@@ -106,9 +106,12 @@ internal static class BoxedFieldsEmitter
             unitySerialization,
             !unitySerialization || unityUsesInitProperties);
 
+        if (unitySerialization)
+            EmitUnityRuntimeFieldAccessors(sb, union, layout);
+
         // IsVariant properties
         foreach (var variant in union.Variants)
-            sb.AppendLine($"public bool Is{variant.Name} => this.kind == Kind.{variant.Name};");
+            sb.AppendLine($"public bool Is{variant.Name} => this.kind == Kind.{IdentifierUtility.Escape(variant.Name)};");
 
         if (unitySerialization)
         {
@@ -156,7 +159,7 @@ internal static class BoxedFieldsEmitter
         int slotIndex = 0;
         foreach (var name in variantList
             .SelectMany(v => v.Fields)
-            .Select(f => f.Name)
+            .Select(f => f.ResolvedPropertyName)
             .Distinct()
             .OrderBy(n => n))
         {
@@ -169,7 +172,7 @@ internal static class BoxedFieldsEmitter
         {
             var mapping = new VariantMapping();
             foreach (var field in variant.Fields)
-                mapping.FieldToSlot.Add(nameToSlot[field.Name]);
+                mapping.FieldToSlot.Add(nameToSlot[field.ResolvedPropertyName]);
             layout.Variants[variant.Name] = mapping;
         }
 
@@ -186,19 +189,14 @@ internal static class BoxedFieldsEmitter
         sb.AppendLine($"public enum Kind : {kindType}");
         sb.OpenBrace();
         foreach (var variant in union.Variants)
-            sb.AppendLine($"{variant.Name},");
+            sb.AppendLine($"{IdentifierUtility.Escape(variant.Name)},");
         sb.CloseBrace();
     }
 
     private static void EmitUnitySlot(SourceBuilder sb, int index, bool useInitOnly)
     {
-        sb.AppendLine($"[global::System.NonSerialized] private __SpireBoxedFieldSlot? __s{index};");
-        sb.AppendLine($"internal object? _s{index}");
-        sb.OpenBrace();
-        sb.AppendLine($"get => this.__s{index}?.Value;");
-        var setter = useInitOnly ? "init" : "set";
-        sb.AppendLine($"{setter} {{ this.__SpireDetachSerializedCache({index}); this.__s{index} = value is null ? null : new __SpireBoxedFieldSlot {{ Value = value }}; }}");
-        sb.CloseBrace();
+        sb.AppendLine($"[global::System.NonSerialized] internal __SpireBoxedFieldSlot? __s{index};");
+        _ = useInitOnly;
     }
 
     private static void EmitConstructor(
@@ -213,16 +211,13 @@ internal static class BoxedFieldsEmitter
 
         sb.AppendLine($"{typeName}({paramList})");
         sb.OpenBrace();
-        sb.AppendLine("this._kind = kind;");
+        sb.AppendLine($"this.{(unitySerialization ? UnitySerializationEmitter.RuntimeKindFieldName : "_kind")} = kind;");
         for (int i = 0; i < slotCount; i++)
             sb.AppendLine(unitySerialization
                 ? $"this.__s{i} = f{i} is null ? null : new __SpireBoxedFieldSlot {{ Value = f{i} }};"
                 : $"this._f{i} = f{i};");
         if (unitySerialization)
-        {
-            sb.AppendLine("this.__SpireSerializationOwner = null;");
             sb.AppendLine("this._serializedPayload = null;");
-        }
         sb.CloseBrace();
     }
 
@@ -233,20 +228,20 @@ internal static class BoxedFieldsEmitter
         {
             var mapping = layout.Variants[variant.Name];
             var typedParams = string.Join(", ",
-                variant.Fields.Select(f => $"{f.TypeFullName} {f.Name}"));
+                variant.Fields.Select(f => $"{f.TypeFullName} {IdentifierUtility.Escape(f.Name)}"));
 
             var args = new string[layout.SlotCount];
             for (int i = 0; i < layout.SlotCount; i++)
                 args[i] = "null";
 
             for (int fi = 0; fi < variant.Fields.Length; fi++)
-                args[mapping.FieldToSlot[fi]] = variant.Fields[fi].Name;
+                args[mapping.FieldToSlot[fi]] = IdentifierUtility.Escape(variant.Fields[fi].Name);
 
-            var ctorArgs = "Kind." + variant.Name;
+            var ctorArgs = "Kind." + IdentifierUtility.Escape(variant.Name);
             if (layout.SlotCount > 0)
                 ctorArgs += ", " + string.Join(", ", args);
 
-            sb.AppendLine($"public static partial {unionType} {variant.Name}({typedParams})");
+            sb.AppendLine($"public static partial {unionType} {IdentifierUtility.Escape(variant.Name)}({typedParams})");
             sb.AppendLine($"    => new {unionType}({ctorArgs});");
         }
     }
@@ -259,34 +254,89 @@ internal static class BoxedFieldsEmitter
         bool unitySerialization,
         bool useInitOnly)
     {
+        var variantList = variants.ToList();
         var emitted = new HashSet<string>();
-        foreach (var variant in variants)
+        foreach (var variant in variantList)
         {
             var mapping = layout.Variants[variant.Name];
             for (int i = 0; i < variant.Fields.Length; i++)
             {
                 var field = variant.Fields[i];
-                if (!emitted.Add(field.Name)) continue;
+                if (!emitted.Add(field.ResolvedPropertyName)) continue;
 
                 int slot = mapping.FieldToSlot[i];
-                var runtimeSlot = unitySerialization ? $"_s{slot}" : $"_f{slot}";
+                var runtimeSlot = RuntimeSlot(slot, unitySerialization);
+                var valueExpression = unitySerialization
+                    ? $"this.{runtimeSlot} is null ? default! : ({field.ResolvedPropertyTypeFullName})this.{runtimeSlot}.Value!"
+                    : $"({field.ResolvedPropertyTypeFullName})this.{runtimeSlot}!";
+                var getter = valueExpression;
+                if (unitySerialization)
+                {
+                    var validKinds = variantList
+                        .Where(candidate => candidate.Fields.Any(candidateField => candidateField.ResolvedPropertyName == field.ResolvedPropertyName))
+                        .Select(candidate => $"Kind.{IdentifierUtility.Escape(candidate.Name)}")
+                        .ToArray();
+                    getter = validKinds.Length == 1
+                        ? $"this.kind == {validKinds[0]} ? {valueExpression} : default!"
+                        : "this.kind switch\n" +
+                            "{\n" +
+                            string.Join(",\n", validKinds.Select(kind => $"    {kind} => {valueExpression}")) +
+                            ",\n    _ => default!\n}";
+                }
                 sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
                 if (hasInitProperties)
                 {
-                    sb.AppendLine($"public {field.TypeFullName} {field.Name}");
+                    sb.AppendLine($"public {field.ResolvedPropertyTypeFullName} {IdentifierUtility.Escape(field.ResolvedPropertyName)}");
                     sb.OpenBrace();
-                    sb.AppendLine($"get => ({field.TypeFullName})this.{runtimeSlot}!;");
+                    sb.AppendLine($"get => {getter};");
                     var setter = unitySerialization
                         ? (useInitOnly ? "init" : "set")
                         : "init";
-                    sb.AppendLine($"{setter} => this.{runtimeSlot} = value;");
+                    if (unitySerialization)
+                    {
+                        var assignment = CanBeNull(field)
+                            ? $"value is null ? null : new __SpireBoxedFieldSlot {{ Value = value }}"
+                            : "new __SpireBoxedFieldSlot { Value = value }";
+                        sb.AppendLine($"{setter} => this.{runtimeSlot} = {assignment};");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"{setter} => this.{runtimeSlot} = value;");
+                    }
                     sb.CloseBrace();
                 }
                 else
                 {
-                    sb.AppendLine($"public {field.TypeFullName} {field.Name} => ({field.TypeFullName})this.{runtimeSlot}!;");
+                    sb.AppendLine($"public {field.ResolvedPropertyTypeFullName} {IdentifierUtility.Escape(field.ResolvedPropertyName)} => {getter};");
                 }
             }
+        }
+    }
+
+    private static void EmitUnityRuntimeFieldAccessors(
+        SourceBuilder sb,
+        UnionDeclaration union,
+        BoxedFieldsLayout layout)
+    {
+        foreach (var field in union.Variants
+                     .SelectMany(variant => variant.Fields)
+                     .GroupBy(field => field.ResolvedPropertyName)
+                     .Select(group => group.First()))
+        {
+            var match = layout.Variants
+                .SelectMany(pair => pair.Value.FieldToSlot.Select((slot, index) =>
+                    (pair.Key, slot, index)))
+                .First(item => union.Variants
+                    .First(variant => variant.Name == item.Key)
+                    .Fields[item.index].ResolvedPropertyName == field.ResolvedPropertyName);
+            var setterName = new string(IdentifierUtility.SerializedName(field.ResolvedPropertyName)
+                .Select(character => char.IsLetterOrDigit(character) || character == '_' ? character : '_')
+                .ToArray());
+            sb.AppendLine($"private {field.TypeFullName} __SpireGetSerializedField_{setterName}()");
+            sb.OpenBrace();
+            sb.AppendLine($"var __SpireValue = this.__s{match.slot}?.Value;");
+            sb.AppendLine($"return __SpireValue is null ? default! : ({field.TypeFullName})__SpireValue!;");
+            sb.CloseBrace();
         }
     }
 
@@ -356,8 +406,10 @@ internal static class BoxedFieldsEmitter
         {
             var field = variant.Fields[i];
             int slot = mapping.FieldToSlot[i];
-            var runtimeSlot = unitySerialization ? $"_s{slot}" : $"_f{slot}";
-            sb.AppendLine($"{field.Name} = ({field.TypeFullName})this.{runtimeSlot}!;");
+            var runtimeSlot = RuntimeSlot(slot, unitySerialization);
+            sb.AppendLine(unitySerialization
+                ? $"{field.Name} = ({field.TypeFullName})this.{runtimeSlot}?.Value!;"
+                : $"{field.Name} = ({field.TypeFullName})this.{runtimeSlot}!;");
         }
         sb.CloseBrace();
     }
@@ -388,13 +440,15 @@ internal static class BoxedFieldsEmitter
             foreach (var variant in realVariants)
             {
                 var mapping = layout.Variants[variant.Name];
-                sb.AppendLine($"case Kind.{variant.Name}:");
+                sb.AppendLine($"case Kind.{IdentifierUtility.Escape(variant.Name)}:");
                 sb.Indent();
                 for (int i = 0; i < variant.Fields.Length; i++)
                 {
                     int slot = mapping.FieldToSlot[i];
-                    var runtimeSlot = unitySerialization ? $"_s{slot}" : $"_f{slot}";
-                    sb.AppendLine($"f{i} = this.{runtimeSlot};");
+                    var runtimeSlot = RuntimeSlot(slot, unitySerialization);
+                    sb.AppendLine(unitySerialization
+                        ? $"f{i} = this.{runtimeSlot}?.Value;"
+                        : $"f{i} = this.{runtimeSlot};");
                 }
                 sb.AppendLine("break;");
                 sb.Dedent();
@@ -433,6 +487,14 @@ internal static class BoxedFieldsEmitter
         }
         return groups;
     }
+
+    private static string RuntimeSlot(int slot, bool unitySerialization)
+        => unitySerialization ? $"__s{slot}" : $"_f{slot}";
+
+    private static bool CanBeNull(FieldInfo field)
+        => field.IsReferenceType ||
+            field.TypeFullName.EndsWith("?", System.StringComparison.Ordinal) ||
+            field.TypeFullName.IndexOf("Nullable<", System.StringComparison.Ordinal) >= 0;
 
     #endregion
 

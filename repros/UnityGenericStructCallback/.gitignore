@@ -1,0 +1,14 @@
+Library/
+Temp/
+Obj/
+Logs/
+UserSettings/
+MemoryCaptures/
+*.csproj
+*.sln
+*.slnx
+Assets/**/*.meta
+Assets/Probe.asset*
+Packages/packages-lock.json
+ProjectSettings/*
+!ProjectSettings/ProjectVersion.txt

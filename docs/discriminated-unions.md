@@ -27,7 +27,7 @@ double area = s switch
 };
 ```
 
-SPIRE009 (error) fires if any variant arm is missing. The "Add missing variant arms" code fix (SPIRE010) fills them in automatically.
+SPIRE009 (error) fires if any variant arm is missing. The "Add missing variant arms" code fix fills them in automatically.
 
 ## Layout Strategies
 
@@ -98,7 +98,17 @@ s switch
 };
 ```
 
-`Deconstruct` signature: `void Deconstruct(out Shape.Kind kind, out double radius, out int side)` — all variant fields are out-parameters at every arm; unneeded ones are conventionally discarded with `_`.
+`Deconstruct` overloads group variants by field count. An overload for a unique field count uses the variant's field types. When several variants share a field count, its field outputs use `object?`; value-type fields are boxed by that overload. Property patterns access the typed field properties directly.
+
+For nullable fields, use a property pattern with `var`:
+
+```csharp
+case { kind: GameplayCommand.Kind.ApplyEffect, effect: var effect }:
+    // effect retains its declared Effect? type and can be null.
+    break;
+```
+
+`Effect? effect` is not a valid declaration pattern, and `Effect effect` excludes null. A positional `var effect` accepts null but inherits the selected `Deconstruct` output type, which may be `object?`. Missing-arm fixes and wildcard expansion always generate property patterns with `var` captures for struct unions. Record/class arm generation retains its existing behavior.
 
 ## JSON Serialization
 
@@ -139,6 +149,17 @@ For every struct union the generator produces:
 - Factory methods: `Shape.Circle(5.0)`, `Shape.Square(3)`, `Shape.Point()`
 
 Field properties have `init` setters when the consuming compilation can access `System.Runtime.CompilerServices.IsExternalInit`, including a local internal shim. Otherwise, they are getter-only.
+
+Struct variants can reuse a field name. Compatible types share a property, with
+reference-nullability annotations combined conservatively: `Effect` and `Effect?`
+share `Effect? effect`. Factory parameter annotations remain unchanged. Genuinely
+different types get variant-qualified properties: `Count(int value)` and
+`Text(string value)` expose `count_value` and `text_value`. Match them with
+`{ kind: Result.Kind.Count, count_value: var value }`. Noncolliding names stay
+unchanged; adding an incompatible variant can therefore rename a shared property.
+Serialized field names retain their original parameter names. Secondary member
+name collisions use ordinary C# compiler diagnostics. This policy applies only
+to struct unions.
 
 `IDiscriminatedUnion<TKind>` and `SpireLINQ.OfKind` live in `Houtamelo.Spire`:
 

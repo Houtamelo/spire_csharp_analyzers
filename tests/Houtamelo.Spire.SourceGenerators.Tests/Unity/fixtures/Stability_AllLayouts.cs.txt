@@ -1,0 +1,56 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+
+[Serializable]
+[DiscriminatedUnion(Layout.Additive)]
+public partial struct StabilityNestedChildUnion
+{
+    [Variant] public static partial StabilityNestedChildUnion Text(int count, string? label);
+    [Variant] public static partial StabilityNestedChildUnion Empty();
+}
+
+[Serializable]
+[DiscriminatedUnion(Layout.Additive)]
+public partial struct StabilityAdditiveUnion
+{
+    [Variant] public static partial StabilityAdditiveUnion First(int amount, string? label);
+    [Variant] public static partial StabilityAdditiveUnion Empty();
+    [Variant] public static partial StabilityAdditiveUnion Nested(StabilityNestedChildUnion child);
+}
+
+[Serializable]
+[DiscriminatedUnion(Layout.BoxedFields)]
+public partial struct StabilityBoxedFieldsUnion
+{
+    [Variant] public static partial StabilityBoxedFieldsUnion First(int amount, string? label);
+    [Variant] public static partial StabilityBoxedFieldsUnion Empty();
+    [Variant] public static partial StabilityBoxedFieldsUnion Nested(StabilityNestedChildUnion child);
+}
+
+[Serializable]
+[DiscriminatedUnion(Layout.BoxedTuple)]
+public partial struct StabilityBoxedTupleUnion
+{
+    [Variant] public static partial StabilityBoxedTupleUnion First(int amount, string? label);
+    [Variant] public static partial StabilityBoxedTupleUnion Empty();
+    [Variant] public static partial StabilityBoxedTupleUnion Nested(StabilityNestedChildUnion child);
+}
+
+[Serializable]
+[DiscriminatedUnion(Layout.UnsafeOverlap)]
+public partial struct StabilityUnsafeOverlapUnion
+{
+    [Variant] public static partial StabilityUnsafeOverlapUnion First(int amount, string? label);
+    [Variant] public static partial StabilityUnsafeOverlapUnion Empty();
+    [Variant] public static partial StabilityUnsafeOverlapUnion Nested(StabilityNestedChildUnion child);
+}
+
+[Serializable]
+[DiscriminatedUnion(Layout.Overlap)]
+public partial struct StabilityOverlapUnion
+{
+    [Variant] public static partial StabilityOverlapUnion First(int amount, string? label);
+    [Variant] public static partial StabilityOverlapUnion Empty();
+    [Variant] public static partial StabilityOverlapUnion Nested(StabilityNestedChildUnion child);
+}

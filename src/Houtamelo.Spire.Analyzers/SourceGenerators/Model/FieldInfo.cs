@@ -26,5 +26,18 @@ internal sealed record FieldInfo(
     bool IsUnityComposite = false,
     /// True when the field shape contains an unresolved generic type parameter.
     /// Closed runtime values are dispatched through the managed Unity bridge.
-    bool RequiresUnityRuntimeDispatch = false
-) : IEquatable<FieldInfo>;
+    bool RequiresUnityRuntimeDispatch = false,
+    /// True when the variant parameter explicitly requests Unity managed-reference serialization.
+    bool IsUnityManagedReference = false,
+    /// Null for fields that keep their declared name. Incompatible struct-union
+    /// collisions use a variant-qualified name here.
+    string? PropertyName = null,
+    /// Null for fields whose property keeps the declared type. Compatible
+    /// reference-nullability collisions use the merged nullable type here.
+    string? PropertyTypeFullName = null
+) : IEquatable<FieldInfo>
+{
+    public string ResolvedPropertyName => PropertyName ?? Name;
+
+    public string ResolvedPropertyTypeFullName => PropertyTypeFullName ?? TypeFullName;
+}

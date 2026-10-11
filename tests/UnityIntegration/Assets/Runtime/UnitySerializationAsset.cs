@@ -52,6 +52,7 @@ namespace Spire.UnityIntegration
         public Texture2D reference = null!;
         public UnityNestedOwnerData nested;
         public UnityCompositeDerived composite = null!;
+        public StabilityEditorHost stability = new StabilityEditorHost();
     }
 
 }

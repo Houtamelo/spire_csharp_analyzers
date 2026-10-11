@@ -53,6 +53,9 @@ internal static class UnityGeneratorTestHarness
     public static string UnityEngineRoot
         => Path.Combine(ManagedRoot, "UnityEngine");
 
+    public static string UnityScriptingAssemblyPath
+        => Path.Combine(UnityEngineRoot, "Unity.Scripting.dll");
+
     public static UnityGeneratorRun Run(
         string source,
         bool includeUnityReferences = true,
@@ -186,6 +189,11 @@ internal static class UnityGeneratorTestHarness
         Assert.True(
             File.Exists(Path.Combine(UnityEngineRoot, "UnityEngine.CoreModule.dll")),
             $"UnityEngine.CoreModule.dll was not found below '{UnityEngineRoot}'. " +
+            "Set SPIRE_UNITY_EDITOR to the installed Unity 6000.5.6f1 root or Unity executable.");
+
+        Assert.True(
+            File.Exists(UnityScriptingAssemblyPath),
+            $"Unity.Scripting.dll was not found below '{UnityEngineRoot}'. " +
             "Set SPIRE_UNITY_EDITOR to the installed Unity 6000.5.6f1 root or Unity executable.");
 
         if (includeEditor)
@@ -394,6 +402,8 @@ internal static class UnityGeneratorTestHarness
 
 #if !SPIRE_UNITY_TEST_HOST
         var unityReferences = Directory.EnumerateFiles(UnityEngineRoot, "UnityEngine*.dll")
+            .Append(UnityScriptingAssemblyPath)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
             .Select(path => MetadataReference.CreateFromFile(path));
 
@@ -401,7 +411,8 @@ internal static class UnityGeneratorTestHarness
 #else
         AddReferenceFiles(
             references,
-            Directory.EnumerateFiles(UnityEngineRoot, "UnityEngine*.dll"));
+            Directory.EnumerateFiles(UnityEngineRoot, "UnityEngine*.dll")
+                .Append(UnityScriptingAssemblyPath));
 #endif
 
         if (includeEditorReferences)
@@ -494,7 +505,11 @@ internal static class UnityGeneratorTestHarness
         AssemblyName assemblyName)
     {
         if (assemblyName.Name is null ||
-            !assemblyName.Name.StartsWith("UnityEngine", StringComparison.OrdinalIgnoreCase))
+            (!assemblyName.Name.StartsWith("UnityEngine", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(
+                    assemblyName.Name,
+                    "Unity.Scripting",
+                    StringComparison.OrdinalIgnoreCase)))
         {
             return null;
         }

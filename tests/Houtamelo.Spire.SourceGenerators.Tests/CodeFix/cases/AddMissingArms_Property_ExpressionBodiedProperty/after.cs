@@ -14,7 +14,7 @@ namespace TestNs
         int Value => _flag switch
         {
             { kind: Flag.Kind.On, level: var l } => l,
-            { kind: Flag.Kind.Off, reason: string reason } => throw new System.NotImplementedException()
+            { kind: Flag.Kind.Off, reason: var reason } => throw new System.NotImplementedException()
         };
     }
 }

@@ -44,5 +44,17 @@ feedback/summaries/
 # Project-local temp files
 tmp/
 
+# Unity showcase generated state
+examples/UnityShowcase/Library/
+examples/UnityShowcase/Temp/
+examples/UnityShowcase/Logs/
+examples/UnityShowcase/UserSettings/
+examples/UnityShowcase/Builds/
+examples/UnityShowcase/MemoryCaptures/
+examples/UnityShowcase/Recordings/
+examples/UnityShowcase/*.csproj
+examples/UnityShowcase/*.sln
+examples/UnityShowcase/*.slnx
+
 # Session reviews (local-only)
 session-reviews/*.md

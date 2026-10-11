@@ -1,0 +1,33 @@
+#nullable enable
+
+using System;
+using Houtamelo.Spire;
+using UnityEngine;
+
+[Serializable]
+public sealed partial class ManagedReferenceGenericContainer<T>
+{
+    [Serializable]
+    [DiscriminatedUnion(Layout.Additive)]
+    public partial struct NestedUnion
+    {
+        [Variant]
+        public static partial NestedUnion Value(
+            [UnitySerializeReference] T value);
+
+        [Variant]
+        public static partial NestedUnion Empty();
+    }
+}
+
+[Serializable]
+public sealed class ManagedReferenceGenericContainerOwner
+{
+    public ManagedReferenceGenericContainer<ManagedReferenceGenericNode>.NestedUnion value;
+}
+
+[Serializable]
+public sealed class ManagedReferenceGenericNode
+{
+    public int amount;
+}

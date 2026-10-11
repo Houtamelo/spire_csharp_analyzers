@@ -59,7 +59,13 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
                 as INamedTypeSymbol;
             if (subjectType is null) return document;
 
-            return ApplySwitchExpression(document, root, switchExpr, subjectType, missingVariants);
+            return ApplySwitchExpression(
+                document,
+                root,
+                switchExpr,
+                subjectType,
+                missingVariants,
+                model);
         }
 
         // Try switch statement
@@ -72,7 +78,13 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
                 as INamedTypeSymbol;
             if (subjectType is null) return document;
 
-            return ApplySwitchStatement(document, root, switchStmt, subjectType, missingVariants);
+            return ApplySwitchStatement(
+                document,
+                root,
+                switchStmt,
+                subjectType,
+                missingVariants,
+                model);
         }
 
         return document;
@@ -83,11 +95,11 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
     private static Document ApplySwitchExpression(
         Document document, SyntaxNode root,
         SwitchExpressionSyntax switchExpr, INamedTypeSymbol subjectType,
-        string[] missingVariants)
+        string[] missingVariants,
+        SemanticModel semanticModel)
     {
         bool isStruct = subjectType.IsValueType;
-        bool usePropertyPattern = isStruct && ExistingArmsUsePropertyPattern(switchExpr);
-        var kindPrefix = $"{subjectType.Name}.Kind";
+        var kindPrefix = StructPropertyPatternBuilder.GetKindPrefix(subjectType);
 
         var newArms = new List<SwitchExpressionArmSyntax>();
         foreach (var variant in missingVariants)
@@ -98,9 +110,13 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
             if (isStruct)
             {
                 var factory = FindStaticFactory(subjectType, trimmed);
-                arm = usePropertyPattern
-                    ? BuildStructPropertyArm(trimmed, kindPrefix, factory)
-                    : BuildStructPositionalArm(trimmed, kindPrefix, factory, subjectType);
+                arm = BuildStructPropertyArm(
+                    trimmed,
+                    kindPrefix,
+                    factory,
+                    subjectType,
+                    switchExpr,
+                    semanticModel);
             }
             else
             {
@@ -120,11 +136,11 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
     private static Document ApplySwitchStatement(
         Document document, SyntaxNode root,
         SwitchStatementSyntax switchStmt, INamedTypeSymbol subjectType,
-        string[] missingVariants)
+        string[] missingVariants,
+        SemanticModel semanticModel)
     {
         bool isStruct = subjectType.IsValueType;
-        bool usePropertyPattern = isStruct && ExistingStmtLabelsUsePropertyPattern(switchStmt);
-        var kindPrefix = $"{subjectType.Name}.Kind";
+        var kindPrefix = StructPropertyPatternBuilder.GetKindPrefix(subjectType);
 
         var newSections = new List<SwitchSectionSyntax>();
         foreach (var variant in missingVariants)
@@ -135,9 +151,13 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
             if (isStruct)
             {
                 var factory = FindStaticFactory(subjectType, trimmed);
-                section = usePropertyPattern
-                    ? BuildStructPropertySection(trimmed, kindPrefix, factory)
-                    : BuildStructPositionalSection(trimmed, kindPrefix, factory, subjectType);
+                section = BuildStructPropertySection(
+                    trimmed,
+                    kindPrefix,
+                    factory,
+                    subjectType,
+                    switchStmt,
+                    semanticModel);
             }
             else
             {
@@ -152,37 +172,12 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
         return document.WithSyntaxRoot(newRoot);
     }
 
-    // ─── Pattern detection ───
-
-    private static bool ExistingArmsUsePropertyPattern(SwitchExpressionSyntax switchExpr)
-    {
-        foreach (var arm in switchExpr.Arms)
-        {
-            if (arm.Pattern is RecursivePatternSyntax recursive &&
-                recursive.PropertyPatternClause is not null)
-                return true;
-        }
-        return false;
-    }
-
-    private static bool ExistingStmtLabelsUsePropertyPattern(SwitchStatementSyntax switchStmt)
-    {
-        foreach (var section in switchStmt.Sections)
-        {
-            foreach (var label in section.Labels)
-            {
-                if (label is CasePatternSwitchLabelSyntax { Pattern: RecursivePatternSyntax recursive } &&
-                    recursive.PropertyPatternClause is not null)
-                    return true;
-            }
-        }
-        return false;
-    }
-
     // ─── Shared helpers ───
 
     private static IMethodSymbol? FindStaticFactory(INamedTypeSymbol type, string name) =>
-        type.GetMembers(name).OfType<IMethodSymbol>().FirstOrDefault(m => m.IsStatic);
+        type.GetMembers(StructPropertyPatternBuilder.NormalizeIdentifier(name))
+            .OfType<IMethodSymbol>()
+            .FirstOrDefault(m => m.IsStatic);
 
     /// Gets positional field info for a record/class DU variant by looking at
     /// its Deconstruct method, then falling back to its primary constructor.
@@ -242,76 +237,20 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
     // ─── Struct DU: switch expression arms ───
 
     private static SwitchExpressionArmSyntax BuildStructPropertyArm(
-        string variantName, string kindPrefix, IMethodSymbol? factory)
+        string variantName,
+        string kindPrefix,
+        IMethodSymbol? factory,
+        INamedTypeSymbol subjectType,
+        SyntaxNode scope,
+        SemanticModel semanticModel)
     {
-        var subpatterns = new List<SubpatternSyntax>();
-
-        subpatterns.Add(SyntaxFactory.Subpattern(
-            SyntaxFactory.NameColon(SyntaxFactory.IdentifierName("kind")),
-            SyntaxFactory.ConstantPattern(
-                SyntaxFactory.ParseExpression($"{kindPrefix}.{variantName}"))));
-
-        if (factory is not null)
-        {
-            foreach (var param in factory.Parameters)
-            {
-                var typeName = param.Type.ToDisplayString(
-                    SymbolDisplayFormat.MinimallyQualifiedFormat);
-                subpatterns.Add(SyntaxFactory.Subpattern(
-                    SyntaxFactory.NameColon(SyntaxFactory.IdentifierName(param.Name)),
-                    SyntaxFactory.DeclarationPattern(
-                        SyntaxFactory.ParseTypeName(typeName),
-                        SyntaxFactory.SingleVariableDesignation(
-                            SyntaxFactory.Identifier(param.Name)))));
-            }
-        }
-
-        var pattern = SyntaxFactory.RecursivePattern()
-            .WithPropertyPatternClause(
-                SyntaxFactory.PropertyPatternClause(
-                    SyntaxFactory.SeparatedList(subpatterns)));
-
-        return SyntaxFactory.SwitchExpressionArm(pattern, ThrowNotImplementedExpr());
-    }
-
-    private static SwitchExpressionArmSyntax BuildStructPositionalArm(
-        string variantName, string kindPrefix, IMethodSymbol? factory,
-        INamedTypeSymbol subjectType)
-    {
-        int fieldCount = factory?.Parameters.Length ?? 0;
-        var subpatterns = new List<SubpatternSyntax>();
-
-        subpatterns.Add(SyntaxFactory.Subpattern(
-            SyntaxFactory.ConstantPattern(
-                SyntaxFactory.ParseExpression($"{kindPrefix}.{variantName}"))));
-
-        if (factory is not null)
-        {
-            foreach (var param in factory.Parameters)
-            {
-                var typeName = param.Type.ToDisplayString(
-                    SymbolDisplayFormat.MinimallyQualifiedFormat);
-                subpatterns.Add(SyntaxFactory.Subpattern(
-                    SyntaxFactory.DeclarationPattern(
-                        SyntaxFactory.ParseTypeName(typeName),
-                        SyntaxFactory.SingleVariableDesignation(
-                            SyntaxFactory.Identifier(param.Name)))));
-            }
-        }
-
-        if (fieldCount == 0)
-        {
-            var hasSharedDeconstruct = subjectType.GetMembers("Deconstruct")
-                .OfType<IMethodSymbol>()
-                .Any(m => m.Parameters.Length == 2);
-            if (hasSharedDeconstruct)
-                subpatterns.Add(SyntaxFactory.Subpattern(SyntaxFactory.DiscardPattern()));
-        }
-
-        var pattern = SyntaxFactory.RecursivePattern()
-            .WithPositionalPatternClause(
-                SyntaxFactory.PositionalPatternClause(
-                    SyntaxFactory.SeparatedList(subpatterns)));
+        var pattern = StructPropertyPatternBuilder.Build(
+            subjectType,
+            variantName,
+            factory,
+            scope,
+            kindPrefix,
+            semanticModel);
 
         return SyntaxFactory.SwitchExpressionArm(pattern, ThrowNotImplementedExpr());
     }
@@ -346,77 +285,20 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
     // ─── Struct DU: switch statement sections ───
 
     private static SwitchSectionSyntax BuildStructPropertySection(
-        string variantName, string kindPrefix, IMethodSymbol? factory)
+        string variantName,
+        string kindPrefix,
+        IMethodSymbol? factory,
+        INamedTypeSymbol subjectType,
+        SyntaxNode scope,
+        SemanticModel semanticModel)
     {
-        var subpatterns = new List<SubpatternSyntax>();
-
-        subpatterns.Add(SyntaxFactory.Subpattern(
-            SyntaxFactory.NameColon(SyntaxFactory.IdentifierName("kind")),
-            SyntaxFactory.ConstantPattern(
-                SyntaxFactory.ParseExpression($"{kindPrefix}.{variantName}"))));
-
-        if (factory is not null)
-        {
-            foreach (var param in factory.Parameters)
-            {
-                var typeName = param.Type.ToDisplayString(
-                    SymbolDisplayFormat.MinimallyQualifiedFormat);
-                subpatterns.Add(SyntaxFactory.Subpattern(
-                    SyntaxFactory.NameColon(SyntaxFactory.IdentifierName(param.Name)),
-                    SyntaxFactory.DeclarationPattern(
-                        SyntaxFactory.ParseTypeName(typeName),
-                        SyntaxFactory.SingleVariableDesignation(
-                            SyntaxFactory.Identifier(param.Name)))));
-            }
-        }
-
-        var pattern = SyntaxFactory.RecursivePattern()
-            .WithPropertyPatternClause(
-                SyntaxFactory.PropertyPatternClause(
-                    SyntaxFactory.SeparatedList(subpatterns)));
-
-        return MakeSection(SyntaxFactory.CasePatternSwitchLabel(
-            pattern, SyntaxFactory.Token(SyntaxKind.ColonToken)));
-    }
-
-    private static SwitchSectionSyntax BuildStructPositionalSection(
-        string variantName, string kindPrefix, IMethodSymbol? factory,
-        INamedTypeSymbol subjectType)
-    {
-        int fieldCount = factory?.Parameters.Length ?? 0;
-        var subpatterns = new List<SubpatternSyntax>();
-
-        subpatterns.Add(SyntaxFactory.Subpattern(
-            SyntaxFactory.ConstantPattern(
-                SyntaxFactory.ParseExpression($"{kindPrefix}.{variantName}"))));
-
-        if (factory is not null)
-        {
-            foreach (var param in factory.Parameters)
-            {
-                var typeName = param.Type.ToDisplayString(
-                    SymbolDisplayFormat.MinimallyQualifiedFormat);
-                subpatterns.Add(SyntaxFactory.Subpattern(
-                    SyntaxFactory.DeclarationPattern(
-                        SyntaxFactory.ParseTypeName(typeName),
-                        SyntaxFactory.SingleVariableDesignation(
-                            SyntaxFactory.Identifier(param.Name)))));
-            }
-        }
-
-        if (fieldCount == 0)
-        {
-            var hasSharedDeconstruct = subjectType.GetMembers("Deconstruct")
-                .OfType<IMethodSymbol>()
-                .Any(m => m.Parameters.Length == 2);
-            if (hasSharedDeconstruct)
-                subpatterns.Add(SyntaxFactory.Subpattern(SyntaxFactory.DiscardPattern()));
-        }
-
-        var pattern = SyntaxFactory.RecursivePattern()
-            .WithPositionalPatternClause(
-                SyntaxFactory.PositionalPatternClause(
-                    SyntaxFactory.SeparatedList(subpatterns)));
+        var pattern = StructPropertyPatternBuilder.Build(
+            subjectType,
+            variantName,
+            factory,
+            scope,
+            kindPrefix,
+            semanticModel);
 
         return MakeSection(SyntaxFactory.CasePatternSwitchLabel(
             pattern, SyntaxFactory.Token(SyntaxKind.ColonToken)));

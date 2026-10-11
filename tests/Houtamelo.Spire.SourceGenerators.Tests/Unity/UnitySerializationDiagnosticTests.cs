@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.CodeAnalysis;
 using Xunit;
 
 namespace Houtamelo.Spire.SourceGenerators.Tests.Unity;
@@ -15,28 +16,29 @@ public sealed class UnitySerializationDiagnosticTests
         new object[] { "partial record struct UnityRecordStruct" },
     };
 
-    public static IEnumerable<object[]> UnsupportedFieldShapes => new[]
+    public static IEnumerable<object[]> UnityFieldShapes => new[]
     {
         new object[]
         {
             "DecimalDateTimeGuid",
             "decimal decimalValue, DateTime timestamp, Guid id",
+            new[] { "decimalValue", "timestamp", "id" },
         },
-        new object[] { "NullableValue", "int? value" },
-        new object[] { "Tuple", "(int X, int Y) value" },
-        new object[] { "Dictionary", "Dictionary<int, string> value" },
-        new object[] { "MultidimensionalArray", "int[,] value" },
-        new object[] { "JaggedArray", "int[][] value" },
-        new object[] { "NestedContainer", "List<int[]> value" },
-        new object[] { "Object", "object value" },
-        new object[] { "Interface", "IUnsupported value" },
-        new object[] { "AbstractClass", "AbstractUnsupported value" },
-        new object[] { "LongBackedEnum", "LongMode value" },
-        new object[] { "IntPtr", "IntPtr value" },
-        new object[] { "UIntPtr", "UIntPtr value" },
+        new object[] { "NullableValue", "int? value", new[] { "value" } },
+        new object[] { "Tuple", "(int X, int Y) value", new[] { "value" } },
+        new object[] { "Dictionary", "Dictionary<int, string> value", new[] { "value" } },
+        new object[] { "MultidimensionalArray", "int[,] value", new[] { "value" } },
+        new object[] { "JaggedArray", "int[][] value", new[] { "value" } },
+        new object[] { "NestedContainer", "List<int[]> value", new[] { "value" } },
+        new object[] { "Object", "object value", new[] { "value" } },
+        new object[] { "Interface", "IUnityInterfacePayload value", new[] { "value" } },
+        new object[] { "AbstractClass", "AbstractUnityPayload value", new[] { "value" } },
+        new object[] { "LongBackedEnum", "LongMode value", new[] { "value" } },
+        new object[] { "IntPtr", "IntPtr value", new[] { "value" } },
+        new object[] { "UIntPtr", "UIntPtr value", new[] { "value" } },
     };
 
-    public static IEnumerable<object[]> SerializableHelperUnsupportedFieldShapes => new[]
+    public static IEnumerable<object[]> SerializableHelperFieldShapes => new[]
     {
         new object[] { "Dictionary", "Dictionary<int, string>" },
         new object[] { "Nullable", "int?" },
@@ -51,6 +53,63 @@ public sealed class UnitySerializationDiagnosticTests
         new object[] { "ReservedKind", ReservedKindSource() },
         new object[] { "ReservedSerializedPayload", ReservedSerializedPayloadSource() },
         new object[] { "ReservedCallbacks", ReservedCallbacksSource() },
+    };
+
+    public static IEnumerable<object[]> FormerlyAliasDiagnostics => new[]
+    {
+        new object[]
+        {
+            "MalformedName",
+            """
+                [Variant(FormerlySerializedAs = "Old-Name")]
+                public static partial StabilityAliasDiagnostic First();
+                """,
+        },
+        new object[]
+        {
+            "MalformedLeadingDigit",
+            """
+                [Variant(FormerlySerializedAs = "1Old")]
+                public static partial StabilityAliasDiagnostic First();
+                """,
+        },
+        new object[]
+        {
+            "EscapedAtAlias",
+            """
+                [Variant(FormerlySerializedAs = "@First")]
+                public static partial StabilityAliasDiagnostic First();
+                """,
+        },
+        new object[]
+        {
+            "CurrentVariantCollision",
+            """
+                [Variant(FormerlySerializedAs = "Second")]
+                public static partial StabilityAliasDiagnostic First();
+                [Variant] public static partial StabilityAliasDiagnostic Second();
+                """,
+        },
+        new object[]
+        {
+            "AliasCollision",
+            """
+                [Variant(FormerlySerializedAs = "Old")]
+                public static partial StabilityAliasDiagnostic First();
+                [Variant(FormerlySerializedAs = "Old")]
+                public static partial StabilityAliasDiagnostic Second();
+                """,
+        },
+        new object[]
+        {
+            "SanitizedPayloadCollision",
+            """
+                [Variant(FormerlySerializedAs = "Old-Name")]
+                public static partial StabilityAliasDiagnostic First();
+                [Variant(FormerlySerializedAs = "Old.Name")]
+                public static partial StabilityAliasDiagnostic Second();
+                """,
+        },
     };
 
     [Theory]
@@ -94,14 +153,17 @@ public sealed class UnitySerializationDiagnosticTests
     }
 
     [Theory]
-    [MemberData(nameof(UnsupportedFieldShapes))]
-    public void UnsupportedUnityFieldShape_ReportsDU014(string caseName, string parameter)
+    [MemberData(nameof(UnityFieldShapes))]
+    public void UnityFieldShape_GeneratesTypedPayload(
+        string caseName,
+        string parameter,
+        string[] expectedFieldNames)
     {
         var extraTypes = parameter switch
         {
-            "IUnsupported value" => "interface IUnsupported { }",
-            "AbstractUnsupported value" => "abstract class AbstractUnsupported { }",
-            "LongMode value" => "enum LongMode : long { None, Active }",
+            "IUnityInterfacePayload value" => "public interface IUnityInterfacePayload { }",
+            "AbstractUnityPayload value" => "public abstract class AbstractUnityPayload { }",
+            "LongMode value" => "public enum LongMode : long { None, Active }",
             _ => string.Empty,
         };
 
@@ -114,18 +176,22 @@ public sealed class UnitySerializationDiagnosticTests
 
             [Serializable]
             [DiscriminatedUnion]
-            public partial struct UnityUnsupported_{{caseName}}
+            public partial struct UnityFieldShape_{{caseName}}
             {
-                [Variant] public static partial UnityUnsupported_{{caseName}} Bad({{parameter}});
+                [Variant] public static partial UnityFieldShape_{{caseName}} Bad({{parameter}});
             }
             """;
 
-        AssertUnityDiagnostic(source, "SPIRE_DU014");
+        var result = UnityGeneratorTestHarness.Run(source);
+        AssertGeneratedPayloadFields(
+            result,
+            "UnityFieldShape_" + caseName,
+            expectedFieldNames);
     }
 
     [Theory]
-    [MemberData(nameof(SerializableHelperUnsupportedFieldShapes))]
-    public void SerializableHelperUnsupportedField_ReportsDU014(string caseName, string fieldType)
+    [MemberData(nameof(SerializableHelperFieldShapes))]
+    public void SerializableHelperFieldShape_GeneratesTypedPayload(string caseName, string fieldType)
     {
         var source = $$"""
             using System;
@@ -149,11 +215,15 @@ public sealed class UnitySerializationDiagnosticTests
             }
             """;
 
-        AssertUnityDiagnostic(source, "SPIRE_DU014");
+        var result = UnityGeneratorTestHarness.Run(source);
+        AssertGeneratedPayloadFields(
+            result,
+            "UnityHelperUnion_" + caseName,
+            "helper");
     }
 
     [Fact]
-    public void SerializableHelperNonSerializedUnsupportedFields_AreIgnored()
+    public void SerializableHelperNonSerializedFields_AreIgnored()
     {
         const string source = """
             using System;
@@ -182,13 +252,11 @@ public sealed class UnitySerializationDiagnosticTests
             """;
 
         var result = UnityGeneratorTestHarness.Run(source);
-        UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
-        UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
-        Assert.Contains("UnityNonSerializedHelperUnion", result.GeneratedSource);
+        AssertGeneratedPayloadFields(result, "UnityNonSerializedHelperUnion", "helper");
     }
 
     [Fact]
-    public void SerializableCallbackHelperContainingGeneratedUnion_ReportsDU014()
+    public void SerializableCallbackHelperContainingGeneratedUnion_IsAccepted()
     {
         const string source = """
             using System;
@@ -235,9 +303,7 @@ public sealed class UnitySerializationDiagnosticTests
             """;
 
         var result = UnityGeneratorTestHarness.Run(source);
-        Assert.Contains(
-            result.GeneratorDiagnostics,
-            diagnostic => diagnostic.Id == "SPIRE_DU014");
+        AssertGeneratedPayloadFields(result, "UnityCallbackHelperOwner", "helper");
     }
 
     [Fact]
@@ -274,21 +340,22 @@ public sealed class UnitySerializationDiagnosticTests
     }
 
     [Fact]
-    public void GenericClosedObject_ReportsDU014()
+    public void GenericClosedObject_GeneratesTypedPayload()
     {
-        AssertUnityDiagnostic(GenericClosedArgumentSource("object"), "SPIRE_DU014");
+        var result = UnityGeneratorTestHarness.Run(GenericClosedArgumentSource("object"));
+        AssertGeneratedPayloadFields(result, "UnityGenericFieldUnion`1", "value");
     }
 
     [Fact]
-    public void GenericClosedDictionary_ReportsDU014()
+    public void GenericClosedDictionary_GeneratesTypedPayload()
     {
-        AssertUnityDiagnostic(
-            GenericClosedArgumentSource("Dictionary<int, string>"),
-            "SPIRE_DU014");
+        var result = UnityGeneratorTestHarness.Run(
+            GenericClosedArgumentSource("Dictionary<int, string>"));
+        AssertGeneratedPayloadFields(result, "UnityGenericFieldUnion`1", "value");
     }
 
     [Fact]
-    public void SerializableNestedGenericOwnerClosedDictionary_ReportsDU014()
+    public void SerializableNestedGenericOwnerClosedDictionary_GeneratesTypedPayload()
     {
         const string source = """
             using System;
@@ -311,7 +378,243 @@ public sealed class UnitySerializationDiagnosticTests
             }
             """;
 
-        AssertUnityDiagnostic(source, "SPIRE_DU014");
+        var result = UnityGeneratorTestHarness.Run(source);
+        AssertGeneratedPayloadFields(result, "UnityNestedGenericOwnerUnion", "value");
+    }
+
+    [Theory]
+    [MemberData(nameof(FormerlyAliasDiagnostics))]
+    public void FormerlySerializedAs_InvalidOrAmbiguousAlias_ReportsDU017(
+        string _,
+        string variants)
+    {
+        var source = $$"""
+            using System;
+            using Houtamelo.Spire;
+
+            [Serializable]
+            [DiscriminatedUnion]
+            public partial struct StabilityAliasDiagnostic
+            {
+            {{variants}}
+            }
+            """;
+
+        AssertAliasDiagnostic(source, "SPIRE_DU017");
+    }
+
+    [Fact]
+    public void FormerlySerializedAs_UserGeneratedMemberCollision_SPIRE_DU015()
+    {
+        const string source = """
+            using System;
+            using Houtamelo.Spire;
+
+            [Serializable]
+            [DiscriminatedUnion]
+            public partial struct StabilityAliasMemberCollision
+            {
+                private int _kind;
+
+                [Variant(FormerlySerializedAs = "OldValue")]
+                public static partial StabilityAliasMemberCollision Value(int value);
+            }
+            """;
+
+        var result = UnityGeneratorTestHarness.Run(source);
+        var ids = result.GeneratorDiagnostics
+            .Select(diagnostic => diagnostic.Id)
+            .ToArray();
+        Assert.Contains("SPIRE_DU015", ids);
+        Assert.DoesNotContain("SPIRE_DU017", ids);
+    }
+
+    [Fact]
+    public void UnitySerializedVariantName_GeneratesDistinctPayloadTypes()
+    {
+        const string source = """
+            using System;
+            using Houtamelo.Spire;
+
+            [Serializable]
+            [DiscriminatedUnion]
+            public partial struct StabilitySerializedVariantCollision
+            {
+                [Variant]
+                public static partial StabilitySerializedVariantCollision Serialized(int value);
+            }
+            """;
+
+        var result = UnityGeneratorTestHarness.Run(source);
+        UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
+        UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
+        var union = result.OutputCompilation.GetTypeByMetadataName(
+            "StabilitySerializedVariantCollision");
+        Assert.NotNull(union);
+        var payloadTypes = union!.GetTypeMembers()
+            .Where(type => HasAttribute(type, "System.SerializableAttribute"))
+            .ToArray();
+        Assert.Contains(
+            payloadTypes,
+            type => type.IsAbstract && type.Name == "__SpireSerializedPayloadBase");
+        Assert.Contains(
+            payloadTypes,
+            type => !type.IsAbstract && type.Name == "__SpireSerializedPayload");
+    }
+
+    [Fact]
+    public void FormerlySerializedAs_SerializedAliasGeneratesDistinctPayloadTypes()
+    {
+        const string source = """
+            using System;
+            using Houtamelo.Spire;
+
+            [Serializable]
+            [DiscriminatedUnion]
+            public partial struct StabilitySerializedAliasCollision
+            {
+                [Variant(FormerlySerializedAs = "Serialized")]
+                public static partial StabilitySerializedAliasCollision Value(int value);
+            }
+            """;
+
+        var result = UnityGeneratorTestHarness.Run(source);
+        UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
+        UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
+        var union = result.OutputCompilation.GetTypeByMetadataName(
+            "StabilitySerializedAliasCollision");
+        Assert.NotNull(union);
+        var payloadTypes = union!.GetTypeMembers()
+            .Where(type => HasAttribute(type, "System.SerializableAttribute"))
+            .ToArray();
+        Assert.Contains(
+            payloadTypes,
+            type => type.IsAbstract && type.Name == "__SpireSerializedPayloadBase");
+        Assert.Contains(
+            payloadTypes,
+            type => !type.IsAbstract && type.Name == "__SpireSerializedPayload");
+        Assert.Contains(
+            payloadTypes,
+            type => !type.IsAbstract && type.Name == "__SpireValuePayload");
+    }
+
+    [Fact]
+    public void NonUnitySerializedVariantName_RemainsValid()
+    {
+        const string source = """
+            using Houtamelo.Spire;
+
+            [DiscriminatedUnion]
+            public partial struct StabilityNonUnitySerializedVariant
+            {
+                [Variant]
+                public static partial StabilityNonUnitySerializedVariant Serialized();
+            }
+            """;
+
+        var result = UnityGeneratorTestHarness.Run(source);
+        UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
+        UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
+        Assert.DoesNotContain("ISerializationCallbackReceiver", result.GeneratedSource);
+        Assert.DoesNotContain("SerializeField", result.GeneratedSource);
+        Assert.DoesNotContain("SerializeReference", result.GeneratedSource);
+    }
+
+    [Fact]
+    public void UnitySerializedNameSubstrings_RemainValid()
+    {
+        const string source = """
+            using System;
+            using Houtamelo.Spire;
+
+            [Serializable]
+            [DiscriminatedUnion]
+            public partial struct StabilitySerializedNameSubstringControl
+            {
+                [Variant]
+                public static partial StabilitySerializedNameSubstringControl SerializedValue();
+
+                [Variant(FormerlySerializedAs = "OldSerialized")]
+                public static partial StabilitySerializedNameSubstringControl Value(int amount);
+            }
+            """;
+
+        var result = UnityGeneratorTestHarness.Run(source);
+        UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
+        UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
+        var union = result.OutputCompilation.GetTypeByMetadataName(
+            "StabilitySerializedNameSubstringControl");
+        Assert.NotNull(union);
+        var payloadFields = union!.GetTypeMembers()
+            .Where(type => HasAttribute(type, "System.SerializableAttribute"))
+            .SelectMany(type => type.GetMembers().OfType<IFieldSymbol>())
+            .Where(field => !field.IsStatic && field.Name == "amount")
+            .ToArray();
+        Assert.Equal(2, payloadFields.Length);
+        Assert.All(
+            payloadFields,
+            field => Assert.True(HasAttribute(field, "UnityEngine.SerializeField")));
+    }
+
+    [Fact]
+    public void NonSerializableConcretePayloadType_GeneratesTypedPayload()
+    {
+        const string source = """
+            using System;
+            using Houtamelo.Spire;
+
+            public sealed class UnityNonSerializableConcretePayload
+            {
+                public int value;
+            }
+
+            [Serializable]
+            [DiscriminatedUnion]
+            public partial struct UnityNonSerializableConcreteUnion
+            {
+                [Variant]
+                public static partial UnityNonSerializableConcreteUnion Value(
+                    UnityNonSerializableConcretePayload value);
+            }
+            """;
+
+        var result = UnityGeneratorTestHarness.Run(source);
+        AssertGeneratedPayloadFields(
+            result,
+            "UnityNonSerializableConcreteUnion",
+            "value");
+    }
+
+    [Fact]
+    public void CustomNamespacePayloadType_GeneratesTypedPayload()
+    {
+        const string source = """
+            using System;
+            using Houtamelo.Spire;
+
+            namespace UnityCustom.Payloads
+            {
+                public sealed class PayloadValue
+                {
+                    public int value;
+                }
+            }
+
+            [Serializable]
+            [DiscriminatedUnion]
+            public partial struct UnityCustomNamespaceUnion
+            {
+                [Variant]
+                public static partial UnityCustomNamespaceUnion Value(
+                    UnityCustom.Payloads.PayloadValue value);
+            }
+            """;
+
+        var result = UnityGeneratorTestHarness.Run(source);
+        AssertGeneratedPayloadFields(
+            result,
+            "UnityCustomNamespaceUnion",
+            "value");
     }
 
     [Theory]
@@ -385,6 +688,64 @@ public sealed class UnitySerializationDiagnosticTests
         Assert.DoesNotContain("CustomPropertyDrawer", result.GeneratedSource);
     }
 
+    private static void AssertAliasDiagnostic(string source, string expectedId)
+    {
+        var result = UnityGeneratorTestHarness.Run(source);
+        var diagnostics = result.GeneratorDiagnostics
+            .Where(diagnostic => diagnostic.Id == expectedId)
+            .ToArray();
+
+        Assert.NotEmpty(diagnostics);
+        Assert.All(result.GeneratorDiagnostics, diagnostic =>
+            Assert.Equal(expectedId, diagnostic.Id));
+        Assert.All(diagnostics, diagnostic =>
+        {
+            Assert.True(diagnostic.Location.IsInSource);
+            var line = diagnostic.Location.SourceTree!
+                .GetText()
+                .Lines
+                .GetLineFromPosition(diagnostic.Location.SourceSpan.Start)
+                .ToString();
+            Assert.Contains("FormerlySerializedAs", line);
+        });
+    }
+
+    private static void AssertGeneratedPayloadFields(
+        UnityGeneratorRun result,
+        string metadataName,
+        params string[] expectedFieldNames)
+    {
+        UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
+        UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
+
+        var union = result.OutputCompilation.GetTypeByMetadataName(metadataName);
+        Assert.NotNull(union);
+
+        var payloadFields = union!.GetTypeMembers()
+            .Where(type => HasAttribute(type, "System.SerializableAttribute"))
+            .SelectMany(type => type.GetMembers().OfType<IFieldSymbol>())
+            .Where(field => !field.IsStatic)
+            .ToArray();
+
+        Assert.NotEmpty(payloadFields);
+        Assert.All(payloadFields, field =>
+        {
+            Assert.Equal(Accessibility.Public, field.DeclaredAccessibility);
+            Assert.True(
+                HasAttribute(field, "UnityEngine.SerializeField"),
+                $"Payload field '{field.ContainingType.Name}.{field.Name}' must carry " +
+                "UnityEngine.SerializeField.");
+        });
+
+        foreach (var expectedFieldName in expectedFieldNames)
+        {
+            var field = payloadFields.SingleOrDefault(candidate =>
+                candidate.Name == expectedFieldName);
+            Assert.NotNull(
+                field);
+        }
+    }
+
     private static string GenericClosedArgumentSource(string argument)
         => $$"""
             using System;
@@ -393,18 +754,26 @@ public sealed class UnitySerializationDiagnosticTests
 
             [Serializable]
             [DiscriminatedUnion]
-            public partial struct UnityGenericUnsupported<T>
+            public partial struct UnityGenericFieldUnion<T>
             {
-                [Variant] public static partial UnityGenericUnsupported<T> Some(T value);
-                [Variant] public static partial UnityGenericUnsupported<T> None();
+                [Variant] public static partial UnityGenericFieldUnion<T> Some(T value);
+                [Variant] public static partial UnityGenericFieldUnion<T> None();
             }
 
             public static class ClosedUse
             {
-                public static UnityGenericUnsupported<{{argument}}> Value
-                    => UnityGenericUnsupported<{{argument}}>.Some(default!);
+                public static UnityGenericFieldUnion<{{argument}}> Value
+                    => UnityGenericFieldUnion<{{argument}}>.Some(default!);
             }
             """;
+
+    private static bool HasAttribute(ISymbol symbol, string suffix)
+        => symbol.GetAttributes().Any(attribute =>
+        {
+            var name = attribute.AttributeClass?.ToDisplayString();
+            return name is not null &&
+                (name == suffix || name.EndsWith(suffix, StringComparison.Ordinal));
+        });
 
     private static string ReservedPrefixSource()
         => """

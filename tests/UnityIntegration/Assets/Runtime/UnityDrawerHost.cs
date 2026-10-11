@@ -18,6 +18,7 @@ namespace Spire.UnityIntegration
     public sealed class UnityDrawerHost : UnityDrawerBaseHost
     {
         public UnityDrawerUnion single;
+        public StabilityDrawerAliasUnion alias;
         public UnityBoxedFieldsUnion boxedFields;
         public UnityBoxedTupleUnion boxedTuple;
         public UnityBoxedFieldsUnion[] boxedFieldsArray = Array.Empty<UnityBoxedFieldsUnion>();

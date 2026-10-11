@@ -17,9 +17,9 @@ namespace TestNs
         {
             (Cmd.Kind.Start, var d) => 1,
             (Cmd.Kind.Pause, var dur) => 3,
-            (Cmd.Kind.Stop, _) => throw new System.NotImplementedException(),
-            (Cmd.Kind.Resume, _) => throw new System.NotImplementedException(),
-            (Cmd.Kind.Reset, string reason) => throw new System.NotImplementedException()
+            { kind: Cmd.Kind.Stop } => throw new System.NotImplementedException(),
+            { kind: Cmd.Kind.Resume } => throw new System.NotImplementedException(),
+            { kind: Cmd.Kind.Reset, reason: var reason } => throw new System.NotImplementedException()
         };
     }
 }

@@ -1,5 +1,11 @@
 # Code Fix Coverage Matrix — SPIRE009 (AddMissingArms) and SPIRE011 (FixFieldType)
 
+> The approved nullable and struct-union collision contract is documented in
+> [nullable-pattern-coverage.md](nullable-pattern-coverage.md). That matrix
+> supersedes the historical typed-arm examples below: generated struct arms
+> now use property patterns with `property_name: var local`. Record/class
+> behavior remains unchanged.
+
 All 20 existing cases are documented in the task description and already implemented.
 This matrix covers only NEW cases not yet present.
 
@@ -46,8 +52,8 @@ Existing tests use primitive types (int, float, double, string). The fix derives
 
 | Case Name | Description |
 |-----------|-------------|
-| `AddMissingArms_Property_NullableField` | before: union with a variant `Some(string? value)` (nullable reference type), switch missing the Some arm. after: Some arm added with `string? someValue` in property style. Verifies nullable annotation in the generated type annotation. |
-| `AddMissingArms_Deconstruct_NullableField` | before: same nullable-field union, deconstruct switch missing Some arm. after: deconstruct arm `(Union.Kind.Some, string? value)` added. |
+| `AddMissingArms_Property_NullableField` | before: union with a variant `Some(string? value)`, switch missing the Some arm. after: property arm `{ kind: Union.Kind.Some, value: var value }` added. The capture retains `string?` and accepts null. See [nullable regression coverage](nullable-pattern-coverage.md) for compile/runtime checks. |
+| `AddMissingArms_Deconstruct_NullableField` | before: same nullable-field union, deconstruct switch missing Some arm. after: property arm `{ kind: Union.Kind.Some, value: var value }` added to preserve the field type without a forbidden nullable declaration pattern. |
 | `AddMissingArms_Property_ArrayField` | before: union with a variant `Batch(int[] items)`, switch missing Batch. after: Batch arm added with `int[] items` in property style. |
 | `AddMissingArms_Property_EnumField` | before: union where one variant carries an enum field (`Status status`), switch missing that variant. after: arm added using the fully-qualified or minimally-qualified enum type. |
 | `AddMissingArms_Property_StructField` | before: union where one variant carries a custom value-type field (e.g., `Point point`), switch missing that variant. after: arm added with the struct type as the field annotation. |
@@ -103,7 +109,7 @@ Existing tests always use `string` as the wrong type being corrected. Missing: o
 | Case Name | Description |
 |-----------|-------------|
 | `FixFieldType_Deconstruct_IntToFloat` | before: deconstruct arm where a `float` field is annotated as `int`. after: `int bad` replaced with `float bad`. Tests correction to a different primitive (not `string → actual`). |
-| `FixFieldType_Deconstruct_WrongNullable` | before: deconstruct arm where a `string?` field (nullable) is annotated as `string` (non-nullable). after: `string bad` replaced with `string? bad`. Verifies nullable annotation is preserved in the expected type. |
+| `FixFieldType_Deconstruct_WrongNullable` | Nullable annotation alone is not a SPIRE011 type mismatch. Do not expect a fix to emit `string? bad`, which is an invalid declaration pattern. Nullable captures should use property patterns with `var`; malformed positional pattern recovery is outside the nullable generation regression. |
 | `FixFieldType_Property_WrongNullable` | before: property pattern arm where a `string?` field is annotated `string someField` (non-nullable). after: `string someField` replaced with `var someField`. |
 | `FixFieldType_Deconstruct_SecondFieldWrong` | before: multi-field variant where the FIRST field is correctly typed but the SECOND field has the wrong type annotation. after: only the second subpattern's type is corrected. Verifies the fix targets the correct subpattern by FieldIndex, not always the first. |
 | `FixFieldType_Deconstruct_ThirdFieldWrong` | before: 3-field variant where the third field (index 2) has the wrong type. after: third subpattern type corrected. |

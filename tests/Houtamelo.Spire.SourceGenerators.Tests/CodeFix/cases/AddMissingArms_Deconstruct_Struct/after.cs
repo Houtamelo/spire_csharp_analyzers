@@ -15,7 +15,7 @@ namespace TestNs
         {
             (Shape.Kind.Circle, double r) => 1,
             (Shape.Kind.Rectangle, var w, var h) => 2,
-            (Shape.Kind.Square, int sideLength) => throw new System.NotImplementedException()
+            { kind: Shape.Kind.Square, sideLength: var sideLength } => throw new System.NotImplementedException()
         };
     }
 }

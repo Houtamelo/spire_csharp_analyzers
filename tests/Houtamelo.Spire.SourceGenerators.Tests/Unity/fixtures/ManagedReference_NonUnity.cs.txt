@@ -1,0 +1,11 @@
+using Houtamelo.Spire;
+
+[DiscriminatedUnion]
+public partial struct ManagedReferenceNonUnityUnion
+{
+    [Variant]
+    public static partial ManagedReferenceNonUnityUnion Value(
+        [UnitySerializeReference] object value);
+
+    [Variant] public static partial ManagedReferenceNonUnityUnion Empty();
+}

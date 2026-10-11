@@ -15,7 +15,7 @@ namespace TestNs
             int Classify(Signal sig) => sig switch
             {
                 (Signal.Kind.High, var v) => 1,
-                (Signal.Kind.Low, double voltage) => throw new System.NotImplementedException()
+                { kind: Signal.Kind.Low, voltage: var voltage } => throw new System.NotImplementedException()
             };
             return Classify(s);
         }

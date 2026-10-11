@@ -103,9 +103,9 @@ public sealed class UnityUnsafeOverlapGeneratorTests
         var fields = InstanceFields(unionType!);
         var kind = fields.Single(field => field.Name == "_kind");
         var payload = fields.Single(field => field.Name == "_serializedPayload");
-        Assert.True(HasAttribute(kind, "UnityEngine.SerializeField"));
+        Assert.False(HasAttribute(kind, "UnityEngine.SerializeField"));
         Assert.True(HasAttribute(payload, "UnityEngine.SerializeReference"));
-        Assert.False(HasAttribute(kind, "System.NonSerializedAttribute"));
+        Assert.True(HasAttribute(kind, "System.NonSerializedAttribute"));
         Assert.False(HasAttribute(payload, "System.NonSerializedAttribute"));
 
         var rawBuffer = fields.SingleOrDefault(field => field.Name == "_data");
@@ -150,8 +150,7 @@ public sealed class UnityUnsafeOverlapGeneratorTests
                 (HasAttribute(field, "UnityEngine.SerializeField") ||
                     HasAttribute(field, "UnityEngine.SerializeReference")))
             .ToArray();
-        Assert.Equal(2, serializedFields.Length);
-        Assert.Contains(serializedFields, field => field.Name == "_kind");
+        Assert.Single(serializedFields);
         Assert.Contains(serializedFields, field => field.Name == "_serializedPayload");
 
         var payloadFields = union.GetTypeMembers()
@@ -182,7 +181,7 @@ public sealed class UnityUnsafeOverlapGeneratorTests
     }
 
     [Fact]
-    public void GeneratedUnsafeOverlap_CallbacksDetachCacheOnCopyMutationAndResetUnknownKind()
+    public void GeneratedUnsafeOverlap_CallbacksKeepPriorSnapshotUntilSerializeAndPureFallback()
     {
         var result = RunFixture("Serializable_ExplicitUnsafeOverlap");
 
@@ -209,25 +208,22 @@ public sealed class UnityUnsafeOverlapGeneratorTests
         copy = SetGeneratedProperty(copy!, "amount", 2.5f);
         Assert.Equal(1.25f, GetPropertyValue(original!, "amount"));
         Assert.Equal(2.5f, GetPropertyValue(copy, "amount"));
-        Assert.Null(GetFieldValue(copy, "_serializedPayload"));
+        Assert.Same(originalPayload, GetFieldValue(copy, "_serializedPayload"));
         InvokeCallback(copy, "OnBeforeSerialize");
-        Assert.NotNull(GetFieldValue(copy, "_serializedPayload"));
+        var copyPayload = GetFieldValue(copy, "_serializedPayload");
+        Assert.NotNull(copyPayload);
+        Assert.NotSame(originalPayload, copyPayload);
+        Assert.Equal(1.25f, GetFieldValue(originalPayload!, "amount"));
+        Assert.Equal(2.5f, GetFieldValue(copyPayload!, "amount"));
         Assert.Same(originalPayload, GetFieldValue(original!, "_serializedPayload"));
 
-        var invalid = RuntimeHelpers.GetObjectValue(original!);
-        var kindField = unionType.GetField(
-            "_kind",
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-        Assert.NotNull(kindField);
-        kindField!.SetValue(invalid, Enum.ToObject(kindField.FieldType, 255));
-        GetField(unionType, "_serializedPayload").SetValue(invalid, null);
-        var exception = Record.Exception(() => InvokeCallback(invalid, "OnAfterDeserialize"));
-        Assert.Null(exception);
-        Assert.Equal((uint)0, GetPropertyValue(invalid, "raw"));
-        Assert.Equal(0f, GetPropertyValue(invalid, "amount"));
-        Assert.Null(GetPropertyValue(invalid, "label"));
-        Assert.Null(GetPropertyValue(invalid, "icon"));
-        Assert.Equal("255", GetPropertyValue(invalid, "kind")!.ToString());
+        var fallback = InvokeFromSerialized(unionType, null);
+        Assert.Equal("Number", GetPropertyValue(fallback, "kind")!.ToString());
+        Assert.Equal((uint)0, GetPropertyValue(fallback, "value"));
+        Assert.Equal((uint)0, GetPropertyValue(fallback, "raw"));
+        Assert.Equal(0f, GetPropertyValue(fallback, "amount"));
+        Assert.Null(GetPropertyValue(fallback, "label"));
+        Assert.Null(GetPropertyValue(fallback, "icon"));
     }
 
     [Fact]
@@ -371,6 +367,23 @@ public sealed class UnityUnsafeOverlapGeneratorTests
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.NotNull(method);
         method!.Invoke(value, null);
+    }
+
+    private static object InvokeFromSerialized(Type unionType, object? payload)
+    {
+        var methods = unionType
+            .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance)
+            .Where(method => method.Name == "__SpireFromSerialized")
+            .Where(method => method.GetParameters().Length == 1 &&
+                method.GetParameters()[0].ParameterType == typeof(object))
+            .ToArray();
+        Assert.Single(methods);
+        var method = methods[0];
+        var value = method.Invoke(
+            method.IsStatic ? null : Activator.CreateInstance(unionType),
+            new[] { payload });
+        Assert.NotNull(value);
+        return value!;
     }
 
     private static object SetGeneratedProperty(

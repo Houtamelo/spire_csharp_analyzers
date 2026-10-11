@@ -50,14 +50,14 @@ internal static class BoxedTupleEmitter
         // Kind field (backing field + property)
         if (unitySerialization)
         {
-            sb.AppendLine("[global::UnityEngine.SerializeField]");
-            sb.AppendLine("private Kind _kind;");
+            sb.AppendLine("[global::System.NonSerialized]");
+            sb.AppendLine($"private Kind {UnitySerializationEmitter.RuntimeKindFieldName};");
         }
         else
         {
             sb.AppendLine("readonly Kind _kind;");
         }
-        sb.AppendLine("public Kind kind => this._kind;");
+        sb.AppendLine($"public Kind kind => this.{(unitySerialization ? UnitySerializationEmitter.RuntimeKindFieldName : "_kind")};");
 
         // Payload field
         sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
@@ -91,9 +91,12 @@ internal static class BoxedTupleEmitter
             unitySerialization,
             !unitySerialization || union.HasInitProperties);
 
+        if (unitySerialization)
+            EmitUnityRuntimeFieldAccessors(sb, union);
+
         // IsVariant properties
         foreach (var variant in union.Variants)
-            sb.AppendLine($"public bool Is{variant.Name} => this.kind == Kind.{variant.Name};");
+            sb.AppendLine($"public bool Is{variant.Name} => this.kind == Kind.{IdentifierUtility.Escape(variant.Name)};");
 
         if (unitySerialization)
         {
@@ -123,20 +126,15 @@ internal static class BoxedTupleEmitter
         sb.OpenBrace();
         foreach (var variant in union.Variants)
         {
-            sb.AppendLine($"{variant.Name},");
+            sb.AppendLine($"{IdentifierUtility.Escape(variant.Name)},");
         }
         sb.CloseBrace();
     }
 
     private static void EmitUnitySlot(SourceBuilder sb, bool useInitOnly)
     {
-        sb.AppendLine("[global::System.NonSerialized] private object? __s0;");
-        sb.AppendLine("internal object? _s0");
-        sb.OpenBrace();
-        sb.AppendLine("get => this.__s0;");
-        var setter = useInitOnly ? "init" : "set";
-        sb.AppendLine($"{setter} {{ this.__SpireDetachSerializedCache(0); this.__s0 = value; }}");
-        sb.CloseBrace();
+        sb.AppendLine("[global::System.NonSerialized] internal object? __s0;");
+        _ = useInitOnly;
     }
 
     private static void EmitConstructor(
@@ -146,15 +144,12 @@ internal static class BoxedTupleEmitter
     {
         sb.AppendLine($"{typeName}(Kind kind, object? payload)");
         sb.OpenBrace();
-        sb.AppendLine("this._kind = kind;");
+        sb.AppendLine($"this.{(unitySerialization ? UnitySerializationEmitter.RuntimeKindFieldName : "_kind")} = kind;");
         sb.AppendLine(unitySerialization
             ? "this.__s0 = payload;"
             : "this._payload = payload;");
         if (unitySerialization)
-        {
-            sb.AppendLine("this.__SpireSerializationOwner = null;");
             sb.AppendLine("this._serializedPayload = null;");
-        }
         sb.CloseBrace();
     }
 
@@ -163,7 +158,7 @@ internal static class BoxedTupleEmitter
         foreach (var variant in union.Variants)
         {
             var typedParams = string.Join(", ",
-                variant.Fields.Select(f => $"{f.TypeFullName} {f.Name}"));
+                variant.Fields.Select(f => $"{f.TypeFullName} {IdentifierUtility.Escape(f.Name)}"));
 
             string payloadArg;
             if (variant.Fields.Length == 0)
@@ -172,18 +167,18 @@ internal static class BoxedTupleEmitter
             }
             else if (variant.Fields.Length == 1)
             {
-                payloadArg = variant.Fields[0].Name;
+                payloadArg = IdentifierUtility.Escape(variant.Fields[0].Name);
             }
             else
             {
                 // Multi-field: box a ValueTuple
                 var tupleElements = string.Join(", ",
-                    variant.Fields.Select(f => f.Name));
+                    variant.Fields.Select(f => IdentifierUtility.Escape(f.Name)));
                 payloadArg = $"({tupleElements})";
             }
 
-            sb.AppendLine($"public static partial {unionType} {variant.Name}({typedParams})");
-            sb.AppendLine($"    => new {unionType}(Kind.{variant.Name}, {payloadArg});");
+            sb.AppendLine($"public static partial {unionType} {IdentifierUtility.Escape(variant.Name)}({typedParams})");
+            sb.AppendLine($"    => new {unionType}(Kind.{IdentifierUtility.Escape(variant.Name)}, {payloadArg});");
         }
     }
 
@@ -212,8 +207,8 @@ internal static class BoxedTupleEmitter
         {
             foreach (var field in variant.Fields)
             {
-                if (!propertyFields.ContainsKey(field.Name))
-                    propertyFields[field.Name] = field.TypeFullName;
+                if (!propertyFields.ContainsKey(field.ResolvedPropertyName))
+                    propertyFields[field.ResolvedPropertyName] = field.ResolvedPropertyTypeFullName;
             }
         }
 
@@ -229,7 +224,7 @@ internal static class BoxedTupleEmitter
                 int fieldIdx = -1;
                 for (int i = 0; i < variant.Fields.Length; i++)
                 {
-                    if (variant.Fields[i].Name == propName)
+                    if (variant.Fields[i].ResolvedPropertyName == propName)
                     {
                         fieldIdx = i;
                         break;
@@ -241,14 +236,18 @@ internal static class BoxedTupleEmitter
                 if (variant.Fields.Length == 1)
                 {
                     // Single-field variant: payload is the value directly
-                    accessor = $"({propType})this.{RuntimePayload(unitySerialization)}!";
+                    accessor = unitySerialization
+                        ? $"this.{RuntimePayload(unitySerialization)} is null ? default! : ({propType})this.{RuntimePayload(unitySerialization)}"
+                        : $"({propType})this.{RuntimePayload(unitySerialization)}!";
                 }
                 else
                 {
                     // Multi-field variant: payload is a boxed ValueTuple
                     var tupleType = "(" + string.Join(", ",
                         variant.Fields.Select(f => f.TypeFullName)) + ")";
-                    accessor = $"(({tupleType})this.{RuntimePayload(unitySerialization)}!).Item{fieldIdx + 1}";
+                    accessor = unitySerialization
+                        ? $"this.{RuntimePayload(unitySerialization)} is null ? default! : (({tupleType})this.{RuntimePayload(unitySerialization)}).Item{fieldIdx + 1}"
+                        : $"(({tupleType})this.{RuntimePayload(unitySerialization)}!).Item{fieldIdx + 1}";
                 }
 
                 cases.Add(new PropertyCase
@@ -268,8 +267,62 @@ internal static class BoxedTupleEmitter
             }
             else
             {
-                EmitReadonlyProperty(sb, propName, propType, cases);
+                EmitReadonlyProperty(sb, propName, propType, cases, unitySerialization);
             }
+        }
+    }
+
+    private static void EmitUnityRuntimeFieldAccessors(
+        SourceBuilder sb,
+        UnionDeclaration union)
+    {
+        foreach (var field in union.Variants
+                     .SelectMany(variant => variant.Fields)
+                     .GroupBy(field => field.ResolvedPropertyName)
+                     .Select(group => group.First()))
+        {
+            var setterName = new string(IdentifierUtility.SerializedName(field.ResolvedPropertyName)
+                .Select(character => char.IsLetterOrDigit(character) || character == '_' ? character : '_')
+                .ToArray());
+            sb.AppendLine($"private {field.TypeFullName} __SpireGetSerializedField_{setterName}()");
+            sb.OpenBrace();
+            sb.AppendLine("switch (this._kind)");
+            sb.OpenBrace();
+            foreach (var variant in union.Variants)
+            {
+                var fieldIndex = -1;
+                for (var index = 0; index < variant.Fields.Length; index++)
+                {
+                    if (variant.Fields[index].ResolvedPropertyName == field.ResolvedPropertyName)
+                    {
+                        fieldIndex = index;
+                        break;
+                    }
+                }
+
+                if (fieldIndex < 0)
+                    continue;
+
+                sb.AppendLine($"case Kind.{IdentifierUtility.Escape(variant.Name)}:");
+                sb.Indent();
+                sb.AppendLine("if (this.__s0 is null) return default!;");
+                if (variant.Fields.Length == 1)
+                {
+                    sb.AppendLine($"return ({field.TypeFullName})this.__s0;");
+                }
+                else
+                {
+                    var tupleType = "(" + string.Join(", ", variant.Fields.Select(item => item.TypeFullName)) + ")";
+                    sb.AppendLine($"return (({tupleType})this.__s0).Item{fieldIndex + 1};");
+                }
+                sb.Dedent();
+            }
+            sb.AppendLine("default:");
+            sb.Indent();
+            sb.AppendLine("return default!;");
+            sb.Dedent();
+            sb.CloseBrace();
+            sb.CloseBrace();
         }
     }
 
@@ -282,18 +335,25 @@ internal static class BoxedTupleEmitter
     }
 
     private static void EmitReadonlyProperty(
-        SourceBuilder sb, string propName, string propType, List<PropertyCase> cases)
+        SourceBuilder sb,
+        string propName,
+        string propType,
+        List<PropertyCase> cases,
+        bool unitySerialization)
     {
         if (cases.Count == 1)
         {
-            sb.AppendLine($"public {propType} {propName} => {cases[0].Accessor};");
+            var accessor = unitySerialization
+                ? $"this.kind == Kind.{IdentifierUtility.Escape(cases[0].VariantName)} ? {cases[0].Accessor} : default!"
+                : cases[0].Accessor;
+            sb.AppendLine($"public {propType} {IdentifierUtility.Escape(propName)} => {accessor};");
         }
         else
         {
             sb.AppendLine($"public {propType} {propName} => this.kind switch");
             sb.OpenBrace();
             foreach (var c in cases)
-                sb.AppendLine($"Kind.{c.VariantName} => {c.Accessor},");
+                sb.AppendLine($"Kind.{IdentifierUtility.Escape(c.VariantName)} => {c.Accessor},");
             sb.AppendLine($"_ => default!,");
             sb.CloseBrace(";");
         }
@@ -308,17 +368,22 @@ internal static class BoxedTupleEmitter
         bool useInitOnly)
     {
         // Getter
-        sb.AppendLine($"public {propType} {propName}");
+        sb.AppendLine($"public {propType} {IdentifierUtility.Escape(propName)}");
         sb.OpenBrace();
 
         if (cases.Count == 1)
-            sb.AppendLine($"get => {cases[0].Accessor};");
+        {
+            var accessor = unitySerialization
+                ? $"this.kind == Kind.{IdentifierUtility.Escape(cases[0].VariantName)} ? {cases[0].Accessor} : default!"
+                : cases[0].Accessor;
+            sb.AppendLine($"get => {accessor};");
+        }
         else
         {
             sb.AppendLine($"get => this.kind switch");
             sb.OpenBrace();
             foreach (var c in cases)
-                sb.AppendLine($"Kind.{c.VariantName} => {c.Accessor},");
+                sb.AppendLine($"Kind.{IdentifierUtility.Escape(c.VariantName)} => {c.Accessor},");
             sb.AppendLine($"_ => default!,");
             sb.CloseBrace(";");
         }
@@ -340,7 +405,7 @@ internal static class BoxedTupleEmitter
             sb.OpenBrace();
             foreach (var c in cases)
             {
-                sb.AppendLine($"case Kind.{c.VariantName}:");
+                sb.AppendLine($"case Kind.{IdentifierUtility.Escape(c.VariantName)}:");
                 sb.OpenBrace();
                 if (c.Variant.Fields.Length == 1)
                 {
@@ -390,7 +455,7 @@ internal static class BoxedTupleEmitter
     }
 
     private static string RuntimePayload(bool unitySerialization)
-        => unitySerialization ? "_s0" : "_payload";
+        => unitySerialization ? "__s0" : "_payload";
 
     private static string FormatTypeParams(EquatableArray<string> typeParameters)
     {

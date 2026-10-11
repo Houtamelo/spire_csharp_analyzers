@@ -11,6 +11,9 @@ namespace Houtamelo.Spire.Analyzers.SourceGenerators.Parsing;
 
 internal static class UnionParser
 {
+    private const string UnitySerializeReferenceAttributeMetadataName =
+        "Houtamelo.Spire.UnitySerializeReferenceAttribute";
+
     public static UnionDeclaration? Parse(
         GeneratorAttributeSyntaxContext ctx,
         CancellationToken ct)
@@ -24,6 +27,8 @@ internal static class UnionParser
         var rawConfig = ReadAttributeArgs(ctx.Attributes);
         var isGeneric = typeSymbol.TypeParameters.Length > 0;
         var isUnitySerializable = UnitySerializationValidation.HasSerializableAttribute(typeSymbol);
+        var unitySerializeReferenceAttribute = ctx.SemanticModel.Compilation.GetTypeByMetadataName(
+            UnitySerializeReferenceAttributeMetadataName);
 
         if (declKind is null)
         {
@@ -107,9 +112,22 @@ internal static class UnionParser
                 isError: false);
         }
 
+        var parsedVariants = declKind == "record"
+            ? DiscoverNestedTypeVariants(
+                typeSymbol,
+                isUnitySerializable,
+                unitySerializeReferenceAttribute)
+            : DiscoverMethodVariants(
+                typeSymbol,
+                includeNullableReferenceTypeModifiers: true,
+                unitySerializeReferenceAttribute);
+
         var variants = declKind == "record"
-            ? DiscoverNestedTypeVariants(typeSymbol, isUnitySerializable)
-            : DiscoverMethodVariants(typeSymbol, isUnitySerializable);
+            ? parsedVariants
+            : FieldNameResolver.Resolve(
+                new EquatableArray<VariantInfo>(parsedVariants),
+                typeSymbol,
+                ctx.SemanticModel.Compilation).ToImmutableArray();
 
         if (variants.Length == 0)
         {
@@ -390,24 +408,32 @@ internal static class UnionParser
     /// Discovers variants from [Variant] static methods (struct path).
     private static ImmutableArray<VariantInfo> DiscoverMethodVariants(
         INamedTypeSymbol typeSymbol,
-        bool includeNullableReferenceTypeModifiers)
+        bool includeNullableReferenceTypeModifiers,
+        INamedTypeSymbol? unitySerializeReferenceAttribute)
     {
         return typeSymbol.GetMembers()
             .OfType<IMethodSymbol>()
             .Where(m => m.IsStatic && HasVariantAttribute(m))
-            .Select(m => ParseMethodVariant(m, includeNullableReferenceTypeModifiers))
+            .Select(m => ParseMethodVariant(
+                m,
+                includeNullableReferenceTypeModifiers,
+                unitySerializeReferenceAttribute))
             .ToImmutableArray();
     }
 
     /// Discovers variants from nested types that inherit from the parent (record path).
     private static ImmutableArray<VariantInfo> DiscoverNestedTypeVariants(
         INamedTypeSymbol typeSymbol,
-        bool includeNullableReferenceTypeModifiers)
+        bool includeNullableReferenceTypeModifiers,
+        INamedTypeSymbol? unitySerializeReferenceAttribute)
     {
         return typeSymbol.GetTypeMembers()
             .Where(nested => SymbolEqualityComparer.Default.Equals(
                 nested.BaseType?.OriginalDefinition, typeSymbol.OriginalDefinition))
-            .Select(nested => ParseNestedTypeVariant(nested, includeNullableReferenceTypeModifiers))
+            .Select(nested => ParseNestedTypeVariant(
+                nested,
+                includeNullableReferenceTypeModifiers,
+                unitySerializeReferenceAttribute))
             .ToImmutableArray();
     }
 
@@ -428,7 +454,8 @@ internal static class UnionParser
 
     private static VariantInfo ParseMethodVariant(
         IMethodSymbol method,
-        bool includeNullableReferenceTypeModifiers)
+        bool includeNullableReferenceTypeModifiers,
+        INamedTypeSymbol? unitySerializeReferenceAttribute)
     {
         var fields = method.Parameters
             .Select(p => new FieldInfo(
@@ -441,20 +468,25 @@ internal static class UnionParser
                 IsUnityUnion: UnitySerializationValidation.IsUnityUnion(p.Type),
                 IsUnityUnionCollection: UnitySerializationValidation.IsUnityUnionCollection(p.Type),
                 IsUnityComposite: UnitySerializationValidation.IsUnityComposite(p.Type),
-                RequiresUnityRuntimeDispatch: UnitySerializationValidation.ContainsTypeParameter(p.Type)))
+                RequiresUnityRuntimeDispatch: UnitySerializationValidation.ContainsTypeParameter(p.Type),
+                IsUnityManagedReference: HasUnitySerializeReferenceAttribute(
+                    p,
+                    unitySerializeReferenceAttribute)))
             .ToImmutableArray();
 
         return new VariantInfo(
             Name: method.Name,
             Fields: new EquatableArray<FieldInfo>(fields),
             JsonName: GetJsonName(method),
-            AccessibilityKeyword: "public");
+            AccessibilityKeyword: "public",
+            FormerlySerializedAs: GetFormerlySerializedAs(method));
     }
 
     /// Extracts variant info from a nested type's primary constructor parameters.
     private static VariantInfo ParseNestedTypeVariant(
         INamedTypeSymbol nestedType,
-        bool includeNullableReferenceTypeModifiers)
+        bool includeNullableReferenceTypeModifiers,
+        INamedTypeSymbol? unitySerializeReferenceAttribute)
     {
         var primaryCtor = nestedType.Constructors
             .Where(c => !IsCopyConstructor(c, nestedType))
@@ -475,15 +507,49 @@ internal static class UnionParser
                     IsUnityUnion: UnitySerializationValidation.IsUnityUnion(p.Type),
                     IsUnityUnionCollection: UnitySerializationValidation.IsUnityUnionCollection(p.Type),
                     IsUnityComposite: UnitySerializationValidation.IsUnityComposite(p.Type),
-                    RequiresUnityRuntimeDispatch: UnitySerializationValidation.ContainsTypeParameter(p.Type)))
+                    RequiresUnityRuntimeDispatch: UnitySerializationValidation.ContainsTypeParameter(p.Type),
+                    IsUnityManagedReference: HasUnitySerializeReferenceAttribute(
+                        p,
+                        unitySerializeReferenceAttribute)))
             .ToImmutableArray();
 
         return new VariantInfo(
             Name: nestedType.Name,
             Fields: new EquatableArray<FieldInfo>(fields),
             JsonName: GetJsonName(nestedType),
-            AccessibilityKeyword: ExplicitAccessibility(nestedType));
+            AccessibilityKeyword: ExplicitAccessibility(nestedType),
+            FormerlySerializedAs: GetFormerlySerializedAs(nestedType));
     }
+
+    private static string? GetFormerlySerializedAs(ISymbol symbol)
+    {
+        foreach (var attribute in symbol.GetAttributes())
+        {
+            if (attribute.AttributeClass?.Name != "VariantAttribute")
+                continue;
+
+            foreach (var argument in attribute.NamedArguments)
+            {
+                if (argument.Key == "FormerlySerializedAs" &&
+                    argument.Value.Value is string value)
+                {
+                    return value;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static bool HasUnitySerializeReferenceAttribute(
+        IParameterSymbol parameter,
+        INamedTypeSymbol? expectedAttribute)
+        => expectedAttribute is not null &&
+            parameter.GetAttributes().Any(attribute =>
+                attribute.AttributeClass is not null &&
+                SymbolEqualityComparer.Default.Equals(
+                    attribute.AttributeClass,
+                    expectedAttribute));
 
     private static string DisplayFieldType(
         ITypeSymbol type,
@@ -491,6 +557,7 @@ internal static class UnionParser
         => type.ToDisplayString(
             includeNullableReferenceTypeModifiers
                 ? SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+                    SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions |
                     SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier)
                 : SymbolDisplayFormat.FullyQualifiedFormat);
 

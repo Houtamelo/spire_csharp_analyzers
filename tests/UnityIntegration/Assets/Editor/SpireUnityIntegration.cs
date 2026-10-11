@@ -7,6 +7,8 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using Houtamelo.Spire;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Compilation;
@@ -34,12 +36,32 @@ namespace Spire.UnityIntegration
         private static DrawerCallbackRunner? _drawerCallbackRunner;
         private const double DrawerFrameIntervalSeconds = 1.0 / 60.0;
         private const double DrawerWallClockWatchdogSeconds = 3.0;
+        private static readonly string[] ManagedReferenceUnionPaths =
+        {
+            "data.additive",
+            "data.boxedFields",
+            "data.boxedTuple",
+            "data.unsafeOverlap",
+            "data.overlap",
+        };
         private static int _drawerFrames;
         private static double _drawerStartedAt;
         private static double _nextDrawerFrameAt;
         private static bool _drawerBaseProbeFinalized;
         private static bool _lifecycleStartQueued;
         private static bool _lifecyclePollRegistered;
+
+        private enum PlayerFixtureSelection
+        {
+            Full,
+            BaselineOnly,
+            ManagedReferenceOnly,
+            ManagedReferenceNullOnly,
+            ManagedReferenceSharedOnly,
+            ManagedReferenceCycleOnly,
+            MainBaselineAndManaged,
+            StabilityBaselineAndManaged,
+        }
 
         [MenuItem("Spire/Run Unity 6000 integration")]
         public static void Run()
@@ -64,13 +86,24 @@ namespace Spire.UnityIntegration
             AddPendingScenario("PlayModeTransition_PreservesUnionState", "Play Mode transition preserves the fixture state.");
             AddPendingScenario("IMGUI_Drawer_ShowsSelectorAndActiveFields", "An actual editor OnGUI repaint renders the selector and active payload fields.");
             AddPendingScenario("UIToolkit_Drawer_ShowsSelectorAndActiveFields", "An actual UI Toolkit PropertyField renders the selector and active payload fields.");
-            AddPendingScenario("Drawer_InvalidKind_SelectsFirstKnownVariant", "An invalid raw discriminator is shown as invalid and can select the first known variant.");
+            AddPendingScenario("Drawer_MissingPayload_SelectsFirstVariant", "A missing payload selects the first known variant without stale controls.");
             AddPendingScenario("Drawer_SelectionChange_UsesFactoryReplacement", "The generated UI Toolkit selector constructs a default replacement variant.");
             AddPendingScenario("Drawer_ArrayElement_NestedPathWriteback", "An actual array-element selector writes through its containing struct.");
             AddPendingScenario("Drawer_ListElement_NestedPathWriteback", "An actual list-element selector writes through its containing struct.");
             AddPendingScenario("Drawer_UndoRedo_WholeValueAndPayloadEdit", "Undo and Redo restore generated selector changes.");
+            AddPendingScenario("Drawer_SharedPayload_EditUndoRedoIsolated", "Editing one aliased drawer payload isolates it from its sibling and restores through Undo/Redo.");
+            AddPendingScenario("Drawer_NestedInlineHelper_EditUndoRedoIsolated", "Editing a nested ordinary inline helper field isolates an aliased drawer payload and persists through save/Undo/Redo.");
+            AddPendingScenario("Drawer_RenderedFieldHistory_MultiStepUndoRedo", "Consecutive rendered field edits preserve payload history and sibling isolation across multiple Undo/Redo operations.");
+            AddPendingScenario("Drawer_RenderedEdit_PreservesStagedUnrelatedApply", "A rendered union edit preserves a staged unrelated SerializedObject change through Apply, Undo, and Redo.");
+            AddPendingScenario("Drawer_RenderedNumericFields_UndoRedo", "Rendered long, double, and nonordinal enum fields preserve their exact values through Undo and Redo.");
+            AddPendingScenario("Drawer_RenderedInspectorNamedEnum_UndoRedo", "Rendered enum values use InspectorName display labels while preserving nonordinal values and surrounding fields through Undo and Redo.");
+            AddPendingScenario("Drawer_RenderedFlagsEnum_UndoRedo", "Rendered combined nonordinal flags preserve their exact value and surrounding fields through Undo and Redo.");
+            AddPendingScenario("Drawer_RenderedEnum_InvalidChoicePreservesHistory", "An unavailable enum choice leaves runtime state, payload state, and Undo history unchanged before a valid edit.");
+            AddPendingScenario("Drawer_ReadOnlyAliasedPayload_RenderedStable", "Rendering a bound drawer without editing preserves an aliased payload and its managed-reference identities.");
+            AddPendingScenario("Drawer_ReadOnlyAliasedPayload_UnrelatedApplyStable", "An unrelated SerializedObject apply after a rendered read-only drawer preserves payload YAML and IDs.");
+            AddPendingScenario("Drawer_MultiObjectActiveFieldEdit", "An active field edit through a multi-object drawer updates every selected target.");
             AddPendingScenario("Drawer_UndoRedoWhileDetached_ReattachesCurrentTree", "Undo and Redo while detached are reflected when the same visual tree is reattached.");
-            AddPendingScenario("Drawer_UndoBeforeFirstPanelAttach_BindsCurrentState", "Undo before first panel attachment binds the current serialized kind and controls.");
+            AddPendingScenario("Drawer_UndoBeforeFirstPanelAttach_BindsCurrentState", "Undo before first panel attachment binds the current payload and controls.");
             AddPendingScenario("Drawer_MultiObjectEditing", "A multi-object selector preserves each target's untouched data.");
             AddPendingScenario("Drawer_PrefabOverrideApplyRevert", "Prefab selector changes create and revert overrides.");
             AddPendingScenario("Drawer_NestedGenericPayloadSelector", "A nested generic child selector traverses its concrete managed payload.");
@@ -110,6 +143,33 @@ namespace Spire.UnityIntegration
         }
 
         public static void BuildPlayer()
+            => BuildPlayer(ScriptingImplementation.Mono2x, PlayerFixtureSelection.Full);
+
+        public static void BuildIl2CppPlayer()
+            => BuildPlayer(ScriptingImplementation.IL2CPP, PlayerFixtureSelection.Full);
+
+        public static void BuildIl2CppPlayerBaselineOnly()
+            => BuildPlayer(ScriptingImplementation.IL2CPP, PlayerFixtureSelection.BaselineOnly);
+
+        public static void BuildIl2CppPlayerManagedReferenceOnly()
+            => BuildPlayer(ScriptingImplementation.IL2CPP, PlayerFixtureSelection.ManagedReferenceOnly);
+
+        public static void BuildIl2CppPlayerManagedReferenceNullOnly()
+            => BuildPlayer(ScriptingImplementation.IL2CPP, PlayerFixtureSelection.ManagedReferenceNullOnly);
+
+        public static void BuildIl2CppPlayerManagedReferenceSharedOnly()
+            => BuildPlayer(ScriptingImplementation.IL2CPP, PlayerFixtureSelection.ManagedReferenceSharedOnly);
+
+        public static void BuildIl2CppPlayerManagedReferenceCycleOnly()
+            => BuildPlayer(ScriptingImplementation.IL2CPP, PlayerFixtureSelection.ManagedReferenceCycleOnly);
+
+        public static void BuildIl2CppPlayerMainBaselineAndManaged()
+            => BuildPlayer(ScriptingImplementation.IL2CPP, PlayerFixtureSelection.MainBaselineAndManaged);
+
+        public static void BuildIl2CppPlayerStabilityBaselineAndManaged()
+            => BuildPlayer(ScriptingImplementation.IL2CPP, PlayerFixtureSelection.StabilityBaselineAndManaged);
+
+        private static void BuildPlayer(ScriptingImplementation requestedBackend, PlayerFixtureSelection selection)
         {
             var runtimeReportPath = Path.Combine(ProjectRoot, UnityIntegrationPlayerHook.ReportFileName);
             if (File.Exists(runtimeReportPath))
@@ -121,63 +181,249 @@ namespace Spire.UnityIntegration
                 status = "failed",
                 runtimeReportPath = runtimeReportPath,
                 runtimeReportArgument = UnityIntegrationPlayerHook.ReportArgument,
+                cleanBuildCache = true,
+                fixtureSelection = selection.ToString(),
+                profile = selection.ToString(),
             };
 
             try
             {
-                PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
+                PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone, requestedBackend);
                 var backend = PlayerSettings.GetScriptingBackend(NamedBuildTarget.Standalone);
                 result.scriptingBackend = backend.ToString();
-                Require(backend == ScriptingImplementation.Mono2x, "Standalone player backend was not Mono2x.");
+                Require(backend == requestedBackend, "Standalone player backend did not match the requested backend: " + requestedBackend);
+
+                if (requestedBackend == ScriptingImplementation.IL2CPP)
+                {
+                    PlayerSettings.SetManagedStrippingLevel(NamedBuildTarget.Standalone, ManagedStrippingLevel.High);
+                }
+
+                var managedStrippingLevel = PlayerSettings.GetManagedStrippingLevel(NamedBuildTarget.Standalone);
+                result.managedStrippingLevel = managedStrippingLevel.ToString();
+                if (requestedBackend == ScriptingImplementation.IL2CPP)
+                {
+                    Require(
+                        managedStrippingLevel == ManagedStrippingLevel.High,
+                        "Standalone managed stripping level was not High: " + managedStrippingLevel);
+
+                    var fixtureLinkFiles = Directory
+                        .EnumerateFiles(Application.dataPath, "link.xml", SearchOption.AllDirectories)
+                        .ToArray();
+                    Require(
+                        fixtureLinkFiles.Length == 0,
+                        "The IL2CPP integration fixture must not provide link.xml: " + string.Join(", ", fixtureLinkFiles));
+                }
 
                 EnsureAssetFolder();
                 var scenePath = AssetFolder + "/UnityIntegrationPlayer.unity";
                 var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-                var hostObject = new GameObject("UnitySerializationMono");
-                var host = hostObject.AddComponent<UnitySerializationMono>();
-                host.single = UnityShapeSerializable.Label(UnityIntegrationPlayerHook.ExpectedLabel, (Texture2D)null!);
-                host.array = new[] { UnityCollectionUnion.Number(2.5f) };
-                host.list = new List<UnityCollectionUnion> { UnityCollectionUnion.Empty() };
-                host.boxedFields = UnityBoxedFieldsUnion.Text(UnityIntegrationPlayerHook.ExpectedBoxedFieldsLabel, (Texture2D)null!);
-                host.boxedTuple = UnityBoxedTupleUnion.Number(UnityIntegrationPlayerHook.ExpectedBoxedTupleValue);
-                host.boxedFieldsGenericInt = UnityBoxedFieldsGeneric<int>.Some(UnityIntegrationPlayerHook.ExpectedBoxedGenericValue);
-                host.boxedTupleGenericString = UnityBoxedTupleGeneric<string>.Some(UnityIntegrationPlayerHook.ExpectedBoxedGenericLabel);
-                host.unsafeUnion = UnityUnsafeOverlapUnion.Mixed(
-                    UnityIntegrationPlayerHook.ExpectedUnsafeRaw,
-                    UnityIntegrationPlayerHook.ExpectedUnsafeAmount,
-                    UnityIntegrationPlayerHook.ExpectedUnsafeLabel,
-                    (Texture2D)null!);
-                host.unsafeGenericInt = UnityUnsafeOverlapGeneric<int>.Some(
-                    UnityIntegrationPlayerHook.ExpectedUnsafeGenericValue,
-                    UnityIntegrationPlayerHook.ExpectedUnsafeGenericCode,
-                    UnityIntegrationPlayerHook.ExpectedUnsafeGenericWeight);
-                host.unsafeGenericString = UnityUnsafeOverlapGeneric<string>.Some(
-                    UnityIntegrationPlayerHook.ExpectedUnsafeGenericLabel,
-                    UnityIntegrationPlayerHook.ExpectedUnsafeGenericCode,
-                    UnityIntegrationPlayerHook.ExpectedUnsafeGenericWeight);
-                host.overlapUnion = UnityOverlapUnion.Rectangle(
-                    UnityIntegrationPlayerHook.ExpectedOverlapWidth,
-                    UnityIntegrationPlayerHook.ExpectedOverlapHeight);
-                host.overlapReference = UnityOverlapReferenceUnion.Text(
-                    UnityIntegrationPlayerHook.ExpectedOverlapLabel,
-                    (Texture2D)null!);
-                hostObject.AddComponent<UnityIntegrationPlayerHook>();
-                SceneManager.MoveGameObjectToScene(hostObject, scene);
+                var includeMainBaselineFixtures = selection is PlayerFixtureSelection.Full or PlayerFixtureSelection.BaselineOnly or PlayerFixtureSelection.MainBaselineAndManaged;
+                var includeStabilityBaselineFixtures = selection is PlayerFixtureSelection.Full or PlayerFixtureSelection.BaselineOnly or PlayerFixtureSelection.StabilityBaselineAndManaged;
+                var includeAnyBaselineFixtures = includeMainBaselineFixtures || includeStabilityBaselineFixtures;
+                var includeManagedReferenceFixture = selection != PlayerFixtureSelection.BaselineOnly;
+                UnityManagedReferencePlayerHost? managedReferenceHost = null;
+                if (includeMainBaselineFixtures)
+                {
+                    var hostObject = new GameObject("UnitySerializationMono");
+                    var host = hostObject.AddComponent<UnitySerializationMono>();
+                    host.single = UnityShapeSerializable.Label(UnityIntegrationPlayerHook.ExpectedLabel, (Texture2D)null!);
+                    host.array = new[] { UnityCollectionUnion.Number(2.5f) };
+                    host.list = new List<UnityCollectionUnion> { UnityCollectionUnion.Empty() };
+                    host.boxedFields = UnityBoxedFieldsUnion.Text(UnityIntegrationPlayerHook.ExpectedBoxedFieldsLabel, (Texture2D)null!);
+                    host.boxedTuple = UnityBoxedTupleUnion.Number(UnityIntegrationPlayerHook.ExpectedBoxedTupleValue);
+                    host.boxedFieldsGenericInt = UnityBoxedFieldsGeneric<int>.Some(UnityIntegrationPlayerHook.ExpectedBoxedGenericValue);
+                    host.boxedTupleGenericString = UnityBoxedTupleGeneric<string>.Some(UnityIntegrationPlayerHook.ExpectedBoxedGenericLabel);
+                    host.unsafeUnion = UnityUnsafeOverlapUnion.Mixed(
+                        UnityIntegrationPlayerHook.ExpectedUnsafeRaw,
+                        UnityIntegrationPlayerHook.ExpectedUnsafeAmount,
+                        UnityIntegrationPlayerHook.ExpectedUnsafeLabel,
+                        (Texture2D)null!);
+                    host.unsafeGenericInt = UnityUnsafeOverlapGeneric<int>.Some(
+                        UnityIntegrationPlayerHook.ExpectedUnsafeGenericValue,
+                        UnityIntegrationPlayerHook.ExpectedUnsafeGenericCode,
+                        UnityIntegrationPlayerHook.ExpectedUnsafeGenericWeight);
+                    host.unsafeGenericString = UnityUnsafeOverlapGeneric<string>.Some(
+                        UnityIntegrationPlayerHook.ExpectedUnsafeGenericLabel,
+                        UnityIntegrationPlayerHook.ExpectedUnsafeGenericCode,
+                        UnityIntegrationPlayerHook.ExpectedUnsafeGenericWeight);
+                    host.overlapUnion = UnityOverlapUnion.Rectangle(
+                        UnityIntegrationPlayerHook.ExpectedOverlapWidth,
+                        UnityIntegrationPlayerHook.ExpectedOverlapHeight);
+                    host.overlapReference = UnityOverlapReferenceUnion.Text(
+                        UnityIntegrationPlayerHook.ExpectedOverlapLabel,
+                        (Texture2D)null!);
+                    var mainPlayerHook = hostObject.AddComponent<UnityIntegrationPlayerHook>();
+                    ConfigurePlayerHook(mainPlayerHook, requestedBackend, selection);
+                    SceneManager.MoveGameObjectToScene(hostObject, scene);
+                }
+
+                if (includeStabilityBaselineFixtures)
+                {
+                    var stabilityObject = new GameObject("SpireStabilityPlayerHost");
+                    var stabilityHost = stabilityObject.AddComponent<StabilityPlayerHost>();
+                    var stabilityScript = MonoScript.FromMonoBehaviour(stabilityHost);
+                    Require(
+                        stabilityScript != null && AssetDatabase.Contains(stabilityScript) &&
+                        stabilityScript.GetClass() == typeof(StabilityPlayerHost),
+                        "StabilityPlayerHost must resolve to a script asset; an embedded MonoScript can corrupt the IL2CPP scene.");
+                    stabilityHost.additive = StabilityAdditiveUnion.First(11, UnityIntegrationPlayerHook.ExpectedStabilityLabel);
+                    stabilityHost.boxedFields = StabilityBoxedFieldsUnion.First(12, UnityIntegrationPlayerHook.ExpectedStabilityLabel);
+                    stabilityHost.boxedTuple = StabilityBoxedTupleUnion.First(13, UnityIntegrationPlayerHook.ExpectedStabilityLabel);
+                    stabilityHost.unsafeOverlap = StabilityUnsafeOverlapUnion.First(14, UnityIntegrationPlayerHook.ExpectedStabilityLabel);
+                    stabilityHost.overlap = StabilityOverlapUnion.First(15, UnityIntegrationPlayerHook.ExpectedStabilityLabel);
+                    stabilityHost.parent = StabilityNestedParentUnion.Child(
+                        StabilityNestedChildUnion.Text(16, UnityIntegrationPlayerHook.ExpectedStabilityNestedLabel),
+                        UnityIntegrationPlayerHook.ExpectedStabilityMarker);
+                    stabilityHost.parentArray = new[]
+                    {
+                    StabilityNestedParentUnion.Child(
+                        StabilityNestedChildUnion.Text(17, UnityIntegrationPlayerHook.ExpectedStabilityArrayLabel),
+                        UnityIntegrationPlayerHook.ExpectedStabilityMarker + 1),
+                    StabilityNestedParentUnion.Empty(),
+                };
+                    stabilityHost.parentList = new List<StabilityNestedParentUnion>
+                {
+                    StabilityNestedParentUnion.Child(
+                        StabilityNestedChildUnion.Text(18, UnityIntegrationPlayerHook.ExpectedStabilityListLabel),
+                        UnityIntegrationPlayerHook.ExpectedStabilityMarker + 2),
+                    StabilityNestedParentUnion.Text("stability-list-parent"),
+                };
+                    stabilityHost.genericInt = new StabilityGenericOwnerInt
+                    {
+                        value = StabilityGenericUnion<int>.First(UnityIntegrationPlayerHook.ExpectedStabilityGenericInt),
+                    };
+                    stabilityHost.genericString = new StabilityGenericOwnerString
+                    {
+                        value = StabilityGenericUnion<string>.First(UnityIntegrationPlayerHook.ExpectedStabilityGenericString),
+                    };
+                    stabilityHost.genericArray = new[]
+                    {
+                    StabilityGenericUnion<int>.First(UnityIntegrationPlayerHook.ExpectedStabilityGenericInt + 1),
+                    StabilityGenericUnion<int>.Empty(),
+                };
+                    stabilityHost.callbackHelper = new StabilityCallbackChildHelper(
+                        StabilityNestedChildUnion.Text(19, UnityIntegrationPlayerHook.ExpectedStabilityNestedLabel));
+                    var formerMigration = CreateFormerNamePayload(
+                        typeof(StabilityMigrationUnion),
+                        "OldValue",
+                        "value",
+                        71);
+                    var formerGeneric = CreateFormerNamePayload(
+                        typeof(StabilityGenericUnion<int>),
+                        "OldGenericFirst",
+                        "value",
+                        72);
+                    var formerNested = CreateFormerNamePayload(
+                        typeof(StabilityNestedChildUnion),
+                        "OldNestedText",
+                        "count",
+                        73);
+                    SetMemberValue(formerNested, "label", "legacy-nested-player");
+                    var formerBoxedFields = CreateFormerNamePayload(
+                        typeof(StabilityBoxedFieldsUnion),
+                        "OldBoxedFieldsFirst",
+                        "amount",
+                        UnityIntegrationPlayerHook.ExpectedLegacyBoxedFieldsValue);
+                    SetMemberValue(
+                        formerBoxedFields,
+                        "label",
+                        UnityIntegrationPlayerHook.ExpectedLegacyBoxedFieldsLabel);
+                    var formerBoxedTuple = CreateFormerNamePayload(
+                        typeof(StabilityBoxedTupleUnion),
+                        "OldBoxedTupleFirst",
+                        "amount",
+                        UnityIntegrationPlayerHook.ExpectedLegacyBoxedTupleValue);
+                    SetMemberValue(
+                        formerBoxedTuple,
+                        "label",
+                        UnityIntegrationPlayerHook.ExpectedLegacyBoxedTupleLabel);
+                    var formerUnsafeOverlap = CreateFormerNamePayload(
+                        typeof(StabilityUnsafeOverlapUnion),
+                        "OldUnsafeOverlapFirst",
+                        "amount",
+                        UnityIntegrationPlayerHook.ExpectedLegacyUnsafeOverlapValue);
+                    SetMemberValue(
+                        formerUnsafeOverlap,
+                        "label",
+                        UnityIntegrationPlayerHook.ExpectedLegacyUnsafeOverlapLabel);
+                    var formerOverlap = CreateFormerNamePayload(
+                        typeof(StabilityOverlapUnion),
+                        "OldOverlapFirst",
+                        "amount",
+                        UnityIntegrationPlayerHook.ExpectedLegacyOverlapValue);
+                    SetMemberValue(
+                        formerOverlap,
+                        "label",
+                        UnityIntegrationPlayerHook.ExpectedLegacyOverlapLabel);
+                    stabilityHost.opaqueFormerPayloads = new UnitySerializationPayloadBase?[]
+                    {
+                    (UnitySerializationPayloadBase)formerMigration,
+                    (UnitySerializationPayloadBase)formerGeneric,
+                    (UnitySerializationPayloadBase)formerNested,
+                    (UnitySerializationPayloadBase)formerBoxedFields,
+                    (UnitySerializationPayloadBase)formerBoxedTuple,
+                    (UnitySerializationPayloadBase)formerUnsafeOverlap,
+                    (UnitySerializationPayloadBase)formerOverlap,
+                    };
+                    if (!includeMainBaselineFixtures)
+                    {
+                        var stabilityPlayerHook = stabilityObject.AddComponent<UnityIntegrationPlayerHook>();
+                        ConfigurePlayerHook(stabilityPlayerHook, requestedBackend, selection);
+                    }
+                    SceneManager.MoveGameObjectToScene(stabilityObject, scene);
+                }
+
+                if (includeManagedReferenceFixture)
+                {
+                    var managedReferenceObject = new GameObject("SpireManagedReferencePlayerHost");
+                    managedReferenceHost = managedReferenceObject.AddComponent<UnityManagedReferencePlayerHost>();
+                    managedReferenceHost.managedReferenceMetadataAvailable = HasManagedReferenceMetadataForAllLayouts();
+                    managedReferenceHost.probeMode = selection switch
+                    {
+                        PlayerFixtureSelection.ManagedReferenceNullOnly => UnityManagedReferencePlayerHost.NullOnlyProbe,
+                        PlayerFixtureSelection.ManagedReferenceSharedOnly => UnityManagedReferencePlayerHost.SharedOnlyProbe,
+                        PlayerFixtureSelection.ManagedReferenceCycleOnly => UnityManagedReferencePlayerHost.CycleOnlyProbe,
+                        _ => UnityManagedReferencePlayerHost.FullProbe,
+                    };
+                    var managedReferenceShared = CreateManagedReferenceLeaf("player-shared", 61);
+                    var includeCycle = selection is PlayerFixtureSelection.Full or PlayerFixtureSelection.ManagedReferenceOnly or PlayerFixtureSelection.ManagedReferenceCycleOnly or PlayerFixtureSelection.MainBaselineAndManaged or PlayerFixtureSelection.StabilityBaselineAndManaged;
+                    var sharedValue = selection == PlayerFixtureSelection.ManagedReferenceNullOnly ? null : managedReferenceShared;
+                    managedReferenceHost.data = CreateManagedReferenceHostData(sharedValue, includeCycle);
+                    managedReferenceHost.second = CreateManagedReferenceHostData(null, includeCycle: false);
+                    managedReferenceHost.opaqueLegacyRenamed = CreateFormerNamePayload(
+                        typeof(UnityManagedReferenceRenamedUnion),
+                        "OldReference",
+                        "value",
+                        managedReferenceShared);
+                    if (!includeAnyBaselineFixtures)
+                    {
+                        var playerHook = managedReferenceObject.AddComponent<UnityIntegrationPlayerHook>();
+                        playerHook.managedReferenceOnly = true;
+                        ConfigurePlayerHook(playerHook, requestedBackend, selection);
+                    }
+                    SceneManager.MoveGameObjectToScene(managedReferenceObject, scene);
+                }
                 EditorSceneManager.SaveScene(scene, scenePath);
                 EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(scenePath, true) };
 
-                var buildPath = Path.Combine(ProjectRoot, "Builds", "UnityIntegrationPlayer", "SpireUnityIntegration.x86_64");
+                var buildDirectory = requestedBackend == ScriptingImplementation.IL2CPP
+                    ? Path.Combine(ProjectRoot, "Builds", "UnityIntegrationPlayer", selection.ToString())
+                    : Path.Combine(ProjectRoot, "Builds", "UnityIntegrationPlayer");
+                var buildPath = Path.Combine(buildDirectory, "SpireUnityIntegration.x86_64");
+                result.outputPath = buildPath;
+                result.executablePath = buildPath;
                 Directory.CreateDirectory(Path.GetDirectoryName(buildPath)!);
                 var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
                 {
                     scenes = new[] { scenePath },
                     locationPathName = buildPath,
                     target = BuildTarget.StandaloneLinux64,
-                    options = BuildOptions.Development | BuildOptions.AllowDebugging,
+                    options = BuildOptions.Development | BuildOptions.AllowDebugging | BuildOptions.CleanBuildCache,
                 });
 
                 result.status = report.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded ? "pass" : "fail";
                 result.outputPath = buildPath;
+                result.executablePath = buildPath;
                 result.summary = report.summary.result.ToString();
                 result.errors = report.summary.totalErrors;
                 result.warnings = report.summary.totalWarnings;
@@ -191,22 +437,45 @@ namespace Spire.UnityIntegration
             EditorApplication.Exit(result.status == "pass" ? 0 : 1);
         }
 
+        private static void ConfigurePlayerHook(
+            UnityIntegrationPlayerHook hook,
+            ScriptingImplementation requestedBackend,
+            PlayerFixtureSelection selection)
+        {
+            hook.fixtureProfile = selection switch
+            {
+                PlayerFixtureSelection.Full => UnityIntegrationFixtureProfile.Full,
+                PlayerFixtureSelection.BaselineOnly => UnityIntegrationFixtureProfile.BaselineOnly,
+                PlayerFixtureSelection.ManagedReferenceOnly => UnityIntegrationFixtureProfile.ManagedReferenceOnly,
+                PlayerFixtureSelection.ManagedReferenceNullOnly => UnityIntegrationFixtureProfile.ManagedReferenceNullOnly,
+                PlayerFixtureSelection.ManagedReferenceSharedOnly => UnityIntegrationFixtureProfile.ManagedReferenceSharedOnly,
+                PlayerFixtureSelection.ManagedReferenceCycleOnly => UnityIntegrationFixtureProfile.ManagedReferenceCycleOnly,
+                PlayerFixtureSelection.MainBaselineAndManaged => UnityIntegrationFixtureProfile.MainBaselineAndManaged,
+                PlayerFixtureSelection.StabilityBaselineAndManaged => UnityIntegrationFixtureProfile.StabilityBaselineAndManaged,
+                _ => throw new ArgumentOutOfRangeException(nameof(selection), selection, "Unknown player fixture profile."),
+            };
+            hook.expectedBackend = requestedBackend == ScriptingImplementation.IL2CPP ? "IL2CPP" : "Mono";
+        }
+
         private static void RunCoreScenarios()
         {
             RunScenario("Factory_Text_KindAndFields", "Factory construction exposes the active kind and every field.", FactoryTextKindAndFields);
             RunScenario("Factory_Fieldless_KindAndDefaults", "Fieldless construction exposes its kind and inactive defaults.", FactoryFieldlessKindAndDefaults);
+            RunScenario("SerializationFootprint_CustomEqualsAndMarker", "Serialized-field comparison replaces snapshots when a custom Equals implementation reports equality.", SerializationFootprintCustomEqualsAndMarker);
+            RunScenario("SerializationFootprint_FieldCollisions_SaveReload", "Variant-qualified collision properties and nullable reference fields survive Unity save/reload.", SerializationFootprintFieldCollisionsSaveReload);
             RunScenario("OnBeforeSerialize_RefreshesWithoutManualPrepare", "Saving an ordinary owner refreshes the active managed payload.", OnBeforeSerializeRefreshesWithoutManualPrepare);
-            RunScenario("OnBeforeSerialize_RefreshesMatchingPayloadInPlace", "A matching managed payload object is refreshed in place after its scalar fields change.", OnBeforeSerializeRefreshesMatchingPayloadInPlace);
+            RunScenario("OnBeforeSerialize_ReplacesChangedSnapshot", "A changed serialized snapshot is replaced from the authoritative runtime fields.", OnBeforeSerializeReplacesChangedSnapshot);
             RunScenario("OnAfterDeserialize_ReconstructsThroughFactory", "Asset reload reconstructs the active value and clears inactive fields.", OnAfterDeserializeReconstructsThroughFactory);
-            RunScenario("OnAfterDeserialize_KnownKindMissingPayload", "A known kind with no payload is safe and has default fields.", OnAfterDeserializeKnownKindMissingPayload);
-            RunScenario("OnAfterDeserialize_KnownKindMismatchedPayload", "A known kind never reads another variant payload.", OnAfterDeserializeKnownKindMismatchedPayload);
-            RunScenario("OnAfterDeserialize_UnknownKindNoThrow", "An invalid discriminator is safe and remains observable.", OnAfterDeserializeUnknownKindNoThrow);
+            RunScenario("OnAfterDeserialize_MissingPayloadFallsBack", "A missing payload falls back to the first variant with default fields.", OnAfterDeserializeMissingPayloadFallsBack);
+            RunScenario("OnAfterDeserialize_PayloadWinsOverStaleRuntime", "A recognized payload wins over stale runtime variant state.", OnAfterDeserializePayloadWinsOverStaleRuntime);
+            RunScenario("OnAfterDeserialize_UnknownPayloadFallsBack", "An unrecognized payload safely falls back to the first variant.", OnAfterDeserializeUnknownPayloadFallsBack);
             RunScenario("VariantSwitch_DropsStaleInactiveData", "Variant replacement clears stale payload data.", VariantSwitchDropsStaleInactiveData);
             RunScenario("PayloadOnlyEdit_ReconstructsImmediateRuntime", "Editing only a managed payload reconstructs the owner immediately.", PayloadOnlyEditReconstructsImmediateRuntime);
-            RunScenario("GeneratedInitMutation_RefreshesPayload", "Generated init accessors refresh matching payload fields.", GeneratedInitMutationRefreshesPayload);
+            RunScenario("GeneratedRuntimeMutation_ReplacesSnapshot", "Runtime storage changes replace the serialized snapshot during serialization.", GeneratedRuntimeMutationReplacesSnapshot);
             RunScenario("CallbackControl_StructAndClassAreAllowed", "Serializable callback payloads without nested unions preserve their derived runtime state.", CallbackControlStructAndClassAreAllowed);
 
             RunScenario("AssetSaveUnloadReload_SingleAndObjectReference", "An asset round trip retains values and native object references.", AssetSaveUnloadReloadSingleAndObjectReference);
+            RunScenario("DelegatedSerialization_DictionaryUsesUnityPolicy", "Unity applies the same unsupported-dictionary policy to a direct field and a generated union payload.", DelegatedSerializationDictionaryUsesUnityPolicy);
             RunScenario("Array_RoundTrip", "Array union elements retain order and values after reload.", ArrayRoundTrip);
             RunScenario("List_RoundTrip", "List union elements retain order and values after reload.", ListRoundTrip);
             RunScenario("ContainingStruct_RoundTrip", "A union inside an ordinary serializable struct survives reload.", ContainingStructRoundTrip);
@@ -216,15 +485,34 @@ namespace Spire.UnityIntegration
             RunScenario("NestedParent_CopyIsolation", "Copying and mutating a parent does not change the original.", NestedParentCopyIsolation);
             RunScenario("NestedArrayElements_IndependentChildSnapshots", "Nested array elements keep independent child payloads.", NestedArrayElementsIndependentChildSnapshots);
             RunScenario("NestedListElements_IndependentChildSnapshots", "Nested list elements keep independent child payloads.", NestedListElementsIndependentChildSnapshots);
-            RunScenario("NestedCollection_InitMutationDetachesCache", "A nested init mutation detaches its serialized cache from siblings.", NestedCollectionInitMutationDetachesCache);
+            RunScenario("NestedCollection_RuntimeMutationIsolated", "A nested runtime mutation is serialized without changing its sibling snapshot.", NestedCollectionRuntimeMutationIsolated);
             RunScenario("CopiedValue_SharedPayloadMutationDetaches", "An intentional managed-reference alias is detached by a copied-value mutation.", CopiedValueSharedPayloadMutationDetaches);
             RunScenario("CopiedNestedChildPayload_AliasDetachesRepeatedSave", "Aliased nested child payloads detach before a copied child mutation and remain distinct after repeated saves.", CopiedNestedChildPayloadAliasDetachesRepeatedSave);
             RunScenario("CopiedNestedChildReferenceComposite_AliasDetachesWithoutParentReassignment", "Aliased child payloads in ordinary serializable composites detach without reassigning either parent union root.", CopiedNestedChildReferenceCompositeAliasDetachesWithoutParentReassignment);
             RunScenario("CopiedValue_DetachedPayloadRepeatedSaveVariantChange", "A detached copy survives repeated saves and a variant change.", CopiedValueDetachedPayloadRepeatedSaveVariantChange);
             RunScenario("ActivePayloadOnly_NoInactivePayloadOrRuntimeFields", "Only the active payload is serialized.", ActivePayloadOnlyNoInactivePayloadOrRuntimeFields);
+            RunScenario("PayloadOnly_AllFiveLayouts", "All five layouts serialize one active typed payload and no discriminator.", PayloadOnlyAllFiveLayouts);
+            RunScenario("PayloadOnly_RepeatedSave_YamlAndIdsStable", "Canonical nested payload YAML and managed-reference IDs remain stable across saves.", PayloadOnlyRepeatedSaveYamlAndIdsStable);
+            RunScenario("PayloadOnly_MalformedPayload_FallsBackAndOverwrites", "Malformed payload data replaces a valid runtime value with the first variant.", PayloadOnlyMalformedPayloadFallsBackAndOverwrites);
+            RunScenario("PayloadOnly_CallbackHelper_MissingChildDefaults", "A callback-bearing helper replaces a missing child payload with first-variant defaults.", PayloadOnlyCallbackHelperMissingChildDefaults);
+            RunScenario("PayloadOnly_FormerNamePayload_CanonicalizesAndIgnoresStaleKind", "A former-name payload restores through the current factory and canonicalizes on the next save.", PayloadOnlyFormerNamePayloadCanonicalizesAndIgnoresStaleKind);
+            RunScenario("PayloadOnly_FormerNamePayload_AllLayoutsCanonicalize", "Former-name payload aliases for all layouts restore through current factories and canonicalize on save.", PayloadOnlyFormerNamePayloadAllLayoutsCanonicalize);
+            RunScenario("BoxedTuple_MultiFieldNested_SaveReloadIdsStable", "A multi-field BoxedTuple nested payload survives reload with stable managed-reference IDs.", BoxedTupleMultiFieldNestedSaveReloadIdsStable);
+            RunScenario("Drawer_AliasPayloadNameBoundaryInference", "A current and aliased payload whose names overlap infer the current variant by exact type boundaries.", DrawerAliasPayloadNameBoundaryInference);
+            RunScenario("ManagedReference_AllFiveLayouts_NullAndDerivedPersistence", "All five layouts preserve null and derived managed references through asset reload.", ManagedReferenceAllFiveLayoutsNullAndDerivedPersistence);
+            RunScenario("ManagedReference_SharedIdentityPairAndCollections", "Managed-reference pair and collection fields preserve shared identity and null elements.", ManagedReferenceSharedIdentityPairAndCollections);
+            RunScenario("ManagedReference_AllFiveLayouts_ArrayListPersistence", "All five layouts preserve managed-reference array and list elements.", ManagedReferenceAllFiveLayoutsArrayListPersistence);
+            RunScenario("ManagedReference_MixedInlineManagedAlias", "Inline controls remain inline beside managed-reference and renamed fields.", ManagedReferenceMixedInlineManagedAlias);
+            RunScenario("ManagedReference_IndependentNonNullSnapshotIsolation", "Independent non-null union snapshots do not overwrite one another.", ManagedReferenceIndependentNonNullSnapshotIsolation);
+            RunScenario("ManagedReference_HelperPrivateFieldsAndCycles", "Nested helpers preserve private managed references and cyclic graphs.", ManagedReferenceHelperPrivateFieldsAndCycles);
+            RunScenario("ManagedReference_InitialNullSaveStability", "Initial null managed references remain stable across unchanged saves and reloads.", ManagedReferenceInitialNullSaveStability);
+            RunScenario("ManagedReference_ReadOnlyDrawerPreservesAliasedSnapshot", "Opening and binding a drawer without an edit preserves an aliased payload YAML and managed-reference ID.", ManagedReferenceReadOnlyDrawerPreservesAliasedSnapshot);
+            RunScenario("ManagedReference_FormerNameAliasCanonicalization", "Former-name managed-reference payloads restore and canonicalize without losing object identity.", ManagedReferenceFormerNameAliasCanonicalization);
+            RunScenario("ManagedReference_PropertyFieldAssignmentUndoRedo", "SerializedProperty managed-reference assignment supports null, derived values, Undo, and Redo.", ManagedReferencePropertyFieldAssignmentUndoRedo);
+            RunScenario("ManagedReference_VariantReplacementPreservesNestedIdentity", "Variant replacement preserves active nested managed-reference identity and edits.", ManagedReferenceVariantReplacementPreservesNestedIdentity);
             RunScenario("BoxedFields_AssetSaveUnloadReload", "BoxedFields values and object references survive asset reload.", BoxedFieldsAssetSaveUnloadReload);
             RunScenario("BoxedTuple_AssetSaveUnloadReload", "BoxedTuple values and object references survive asset reload.", BoxedTupleAssetSaveUnloadReload);
-            RunScenario("BoxedLayouts_RepeatedSaveRefreshesMatchingPayload", "Matching boxed payloads refresh in place across repeated saves.", BoxedLayoutsRepeatedSaveRefreshesMatchingPayload);
+            RunScenario("BoxedLayouts_RepeatedSaveReplacesChangedSnapshot", "Changed boxed snapshots are replaced and unchanged saves reuse them.", BoxedLayoutsRepeatedSaveRefreshesMatchingPayload);
             RunScenario("BoxedLayouts_VariantSwitchResetsRuntimeStorage", "Boxed variant switches clear inactive runtime storage.", BoxedLayoutsVariantSwitchResetsRuntimeStorage);
             RunScenario("BoxedLayouts_CopyAndNestedAliasIsolation", "Copied boxed parents detach nested payload aliases before mutation.", BoxedLayoutsCopyAndNestedAliasIsolation);
             RunScenario("BoxedLayouts_ArrayListNestedElements", "Boxed union arrays and lists retain independent elements after reload.", BoxedLayoutsArrayListNestedElements);
@@ -235,15 +523,15 @@ namespace Spire.UnityIntegration
             RunScenario("UnsafeOverlap_AssetSaveUnloadReload", "UnsafeOverlap raw and managed values survive asset reload.", UnsafeOverlapAssetSaveUnloadReload);
             RunScenario("UnsafeOverlap_RepeatedSaveAndVariantReset", "UnsafeOverlap repeated saves and variant resets clear stale storage.", UnsafeOverlapRepeatedSaveAndVariantReset);
             RunScenario("UnsafeOverlap_CopyNestedAndCollectionIsolation", "UnsafeOverlap copied nested and collection values remain isolated.", UnsafeOverlapCopyNestedAndCollectionIsolation);
-            RunScenario("UnsafeOverlap_ActivePayloadOnlyYaml", "UnsafeOverlap YAML contains only kind and the active typed payload.", UnsafeOverlapActivePayloadOnlyYaml);
+            RunScenario("UnsafeOverlap_ActivePayloadOnlyYaml", "UnsafeOverlap YAML contains only the active typed payload.", UnsafeOverlapActivePayloadOnlyYaml);
             RunScenario("Overlap_AssetSaveUnloadReload", "Overlap primitive and reference values survive asset reload.", OverlapAssetSaveUnloadReload);
             RunScenario("Overlap_RepeatedSaveAndVariantReset", "Overlap repeated saves and variant resets preserve explicit storage.", OverlapRepeatedSaveAndVariantReset);
             RunScenario("Overlap_CopyNestedAndCollectionIsolation", "Overlap copied nested and collection values remain isolated.", OverlapCopyNestedAndCollectionIsolation);
-            RunScenario("Overlap_ActivePayloadOnlyYaml", "Overlap YAML contains only kind and the active typed payload.", OverlapActivePayloadOnlyYaml);
+            RunScenario("Overlap_ActivePayloadOnlyYaml", "Overlap YAML contains only the active typed payload.", OverlapActivePayloadOnlyYaml);
 
             RunScenario("Drawer_GetPropertyHeight_FieldlessVsFielded", "Drawer height changes between fieldless and fielded variants.", DrawerGetPropertyHeightFieldlessVsFielded);
             RunScenario("Drawer_WholeValue_UsesBoxedValueSetter", "Whole-value boxed assignment applies in the installed editor.", DrawerWholeValueUsesBoxedValueSetter);
-            RunScenario("Drawer_ReadsKindAndManagedReference", "Drawer reads use serialized discriminator and managed payload.", DrawerReadsKindAndManagedReference);
+            RunScenario("Drawer_ReadsPayloadTypeAndManagedReference", "Drawer reads infer the variant from one serialized managed payload.", DrawerReadsPayloadTypeAndManagedReference);
 
             RunScenario("MonoPlayer_DeserializesGeneratedUnion", "A separate Mono player build reads the generated union.", MonoPlayerDeserializesGeneratedUnion);
             RunScenario("EditorReimport_DoesNotDuplicateGeneratedSurface", "Editor reimport discovers one generated drawer and payload surface.", EditorReimportDoesNotDuplicateGeneratedSurface);
@@ -282,6 +570,92 @@ namespace Spire.UnityIntegration
             return value.kind.ToString();
         }
 
+        private static string SerializationFootprintCustomEqualsAndMarker()
+        {
+            var original = UnitySerializationFootprintUnion.Value(
+                new UnitySerializationFootprintEqualsAlways { serializedValue = 10 },
+                1);
+            original = InvokeSerializationCallback(original, "OnBeforeSerialize");
+            var originalSnapshot = GetSerializedPayloadCache(original);
+            Require(originalSnapshot != null, "Initial serialized snapshot was unavailable.");
+
+            var changed = SetInternalSlotForField(
+                original,
+                "value",
+                new UnitySerializationFootprintEqualsAlways { serializedValue = 20 });
+            changed = SetInternalSlotForField(changed, "marker", 2);
+            Require(
+                ReferenceEquals(GetSerializedPayloadCache(changed), originalSnapshot),
+                "Runtime changes altered the shared snapshot before serialization.");
+
+            changed = InvokeSerializationCallback(changed, "OnBeforeSerialize");
+            var changedSnapshot = GetSerializedPayloadCache(changed);
+            Require(
+                changedSnapshot != null && !ReferenceEquals(changedSnapshot, originalSnapshot),
+                "Runtime changes did not replace the serialized snapshot.");
+            RequirePayloadValue(changedSnapshot!, "marker", 2);
+            RequirePayloadValue(
+                (FindMember(changedSnapshot!.GetType(), "value") as FieldInfo)!.GetValue(changedSnapshot)!,
+                "serializedValue",
+                20);
+            RequirePayloadValue(originalSnapshot!, "marker", 1);
+            RequirePayloadValue(
+                (FindMember(originalSnapshot.GetType(), "value") as FieldInfo)!.GetValue(originalSnapshot)!,
+                "serializedValue",
+                10);
+            return "custom-equals=ignored;marker=1->2;snapshot-replaced=true;original=preserved";
+        }
+
+        private static string SerializationFootprintFieldCollisionsSaveReload()
+        {
+            using (var scope = new SerializationFootprintAssetScope("field-collisions"))
+            {
+                var effect = new UnitySerializationFootprintEffect { marker = 17 };
+                scope.Asset.collision = UnitySerializationFootprintCollisionUnion.Count(7);
+                scope.Asset.nullable = UnitySerializationFootprintNullableUnion.Apply(effect);
+                scope.Save();
+
+                Require(
+                    scope.Asset.collision.kind == UnitySerializationFootprintCollisionUnion.Kind.Count &&
+                    scope.Asset.collision.count_value == 7 &&
+                    UnitySerializationFootprintCollisionUnion.Describe(scope.Asset.collision) == "count:7",
+                    "Count collision property or property-pattern arm differed before reload.");
+                Require(
+                    scope.Asset.nullable.kind == UnitySerializationFootprintNullableUnion.Kind.Apply &&
+                    ReferenceEquals(scope.Asset.nullable.effect, effect) &&
+                    UnitySerializationFootprintNullableUnion.ReadEffect(scope.Asset.nullable) == 17,
+                    "Nullable same-name reference variant differed before reload.");
+
+                var serialized = new SerializedObject(scope.Asset);
+                serialized.Update();
+                var collisionPayload = RequirePayloadProperty(serialized, "collision").managedReferenceValue;
+                var nullablePayload = RequirePayloadProperty(serialized, "nullable").managedReferenceValue;
+                RequirePayloadValue(collisionPayload!, "value", 7);
+                RequirePayloadValue(nullablePayload!, "effect", effect);
+                Require(
+                    HasManagedReferencePayloadField(nullablePayload!, "effect"),
+                    "Nullable effect payload field did not retain SerializeReference metadata.");
+
+                scope.Asset.collision = UnitySerializationFootprintCollisionUnion.Text("text");
+                scope.Asset.nullable = UnitySerializationFootprintNullableUnion.Remove(effect);
+                scope.Save();
+                scope.Reload();
+
+                Require(
+                    scope.Asset.collision.kind == UnitySerializationFootprintCollisionUnion.Kind.Text &&
+                    scope.Asset.collision.text_value == "text" &&
+                    UnitySerializationFootprintCollisionUnion.Describe(scope.Asset.collision) == "text:text",
+                    "Text collision property or property-pattern arm differed after reload.");
+                Require(
+                    scope.Asset.nullable.kind == UnitySerializationFootprintNullableUnion.Kind.Remove &&
+                    scope.Asset.nullable.effect.marker == 17 &&
+                    UnitySerializationFootprintNullableUnion.ReadEffect(scope.Asset.nullable) == 17,
+                    "Nullable Remove variant differed after reload.");
+
+                return "collision=count_value/text_value;payload=value;nullable=shared-effect;save-reload=true";
+            }
+        }
+
         private static string OnBeforeSerializeRefreshesWithoutManualPrepare()
         {
             using (var scope = new AssetScope("before-serialize"))
@@ -295,7 +669,7 @@ namespace Spire.UnityIntegration
             }
         }
 
-        private static string OnBeforeSerializeRefreshesMatchingPayloadInPlace()
+        private static string OnBeforeSerializeReplacesChangedSnapshot()
         {
             using (var scope = new AssetScope("before-serialize-in-place"))
             {
@@ -310,13 +684,13 @@ namespace Spire.UnityIntegration
                 AssetDatabase.SaveAssets();
                 serialized.Update();
                 var after = RequirePayload(serialized, "original");
-                Require(ReferenceEquals(before, after), "Matching managed payload was replaced instead of refreshed in place.");
+                Require(!ReferenceEquals(before, after), "Changed managed payload snapshot was reused instead of replaced.");
                 Require(scope.Asset.original.count == 3, "The runtime union was changed while editing its serialized payload.");
                 Require(scope.Asset.original.label == "before", "The runtime union label was changed while editing its serialized payload.");
                 RequirePayloadValue(after, "count", 3);
                 RequirePayloadValue(after, "label", "before");
                 RequirePayloadValue(after, "asset", scope.Texture);
-                return "same-payload=true;count=3;reference=preserved;payload-edit=overwritten";
+                return "same-payload=false;count=3;reference=preserved;payload-edit=overwritten";
             }
         }
 
@@ -335,7 +709,7 @@ namespace Spire.UnityIntegration
             }
         }
 
-        private static string OnAfterDeserializeKnownKindMissingPayload()
+        private static string OnAfterDeserializeMissingPayloadFallsBack()
         {
             using (var scope = new AssetScope("missing-payload"))
             {
@@ -348,16 +722,16 @@ namespace Spire.UnityIntegration
                 scope.Save();
                 scope.Reload();
                 Require(
-                    scope.Asset.single.kind == UnityShapeSerializable.Kind.Label,
-                    "Known kind changed after missing payload; observed kind=" + scope.Asset.single.kind + ".");
+                    scope.Asset.single.kind == UnityShapeSerializable.Kind.Circle,
+                    "Missing payload did not fall back to the first variant; observed kind=" + scope.Asset.single.kind + ".");
                 Require(
-                    string.IsNullOrEmpty(scope.Asset.single.text) && scope.Asset.single.icon == null,
-                    "Missing payload did not produce Unity defaults; observed text='" + scope.Asset.single.text + "', icon=" + scope.Asset.single.icon + ".");
-                return "known-kind=" + scope.Asset.single.kind + ";payload=null;default-text='" + scope.Asset.single.text + "';default-icon=null";
+                    scope.Asset.single.radius == 0f && scope.Asset.single.text == null && scope.Asset.single.icon == null,
+                    "Missing payload did not produce first-variant defaults.");
+                return "payload=null;fallback-kind=Circle;default-radius=0";
             }
         }
 
-        private static string OnAfterDeserializeKnownKindMismatchedPayload()
+        private static string OnAfterDeserializePayloadWinsOverStaleRuntime()
         {
             using (var scope = new AssetScope("mismatched-payload"))
             {
@@ -376,37 +750,30 @@ namespace Spire.UnityIntegration
                 circleSerialized.ApplyModifiedProperties();
                 scope.Save();
                 scope.Reload();
-                Require(scope.Asset.single.kind == UnityShapeSerializable.Kind.Circle, "Mismatched payload changed the known kind.");
-                Require(scope.Asset.single.radius == 0f, "Mismatched payload leaked another variant field.");
-                return "known-kind=Circle;mismatched-payload=ignored";
+                Require(scope.Asset.single.kind == UnityShapeSerializable.Kind.Label, "Mismatched payload did not win over stale runtime kind.");
+                Require(scope.Asset.single.text == "wrong" && scope.Asset.single.icon == scope.Texture, "Mismatched payload fields were not restored.");
+                return "payload-kind=Label;stale-runtime-kind=ignored;payload-text=wrong";
             }
         }
 
-        private static string OnAfterDeserializeUnknownKindNoThrow()
+        private static string OnAfterDeserializeUnknownPayloadFallsBack()
         {
-            using (var scope = new AssetScope("unknown-kind"))
+            using (var scope = new AssetScope("unknown-payload"))
             {
-                scope.Asset.single = UnityShapeSerializable.Point();
+                scope.Asset.single = UnityShapeSerializable.Label("valid", scope.Texture);
                 scope.Save();
                 var serialized = new SerializedObject(scope.Asset);
                 serialized.Update();
-                var kind = RequireKindProperty(serialized, "single");
-                kind.intValue = 255;
-                Require(serialized.ApplyModifiedProperties(), "Invalid discriminator edit was not applied.");
-                scope.Save();
-                scope.Reload();
-                var observedKind = GetKindName(scope.Asset.single);
-                Require(observedKind != "Circle" && observedKind != "Label" && observedKind != "Point", "Invalid discriminator was normalized to a known variant.");
+                RequirePayloadProperty(serialized, "single").managedReferenceValue = null;
+                Require(serialized.ApplyModifiedProperties(), "Unknown payload edit was not applied.");
+                serialized.Update();
                 Require(
+                    scope.Asset.single.kind == UnityShapeSerializable.Kind.Circle &&
                     scope.Asset.single.radius == 0f &&
                     scope.Asset.single.text == null &&
                     scope.Asset.single.icon == null,
-                    "Invalid discriminator reconstructed non-default runtime storage.");
-                var reloaded = new SerializedObject(scope.Asset);
-                reloaded.Update();
-                var persistedKind = RequireKindProperty(reloaded, "single");
-                Require(persistedKind.intValue == 255, "Invalid discriminator storage was normalized during reload.");
-                return "invalid-kind=" + observedKind + ";raw=255;safe-default=true";
+                    "Unknown payload reconstructed non-default runtime storage.");
+                return "payload=unknown;fallback-kind=Circle;safe-default=true";
             }
         }
 
@@ -448,7 +815,7 @@ namespace Spire.UnityIntegration
             }
         }
 
-        private static string GeneratedInitMutationRefreshesPayload()
+        private static string GeneratedRuntimeMutationReplacesSnapshot()
         {
             using (var scope = new AssetScope("init-mutation"))
             {
@@ -464,23 +831,31 @@ namespace Spire.UnityIntegration
                 RequirePayloadValue(fieldSpecificPayload, "label", "init-after");
                 RequirePayloadValue(fieldSpecificPayload, "asset", scope.Texture);
 
-                var internalSlotCount = 0;
-                foreach (var property in scope.Asset.original.GetType()
-                    .GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                    .Where(property => IsInternalSlotName(property.Name)))
-                {
-                    var replacement = InternalSlotValue(property.PropertyType, scope.Texture);
-                    if (replacement is null && property.PropertyType.IsValueType)
-                        throw new InvalidOperationException("Unsupported generated internal slot type: " + property.PropertyType);
-                    var independentCopy = scope.Asset.original;
-                    var mutatedCopy = SetInternalSlot(independentCopy, property.Name, replacement);
-                    Require(
-                        GetSerializedPayloadCache(mutatedCopy) == null,
-                        "Generated init mutation retained the serialized payload cache for slot " + property.Name + ".");
-                    internalSlotCount++;
-                }
+                var originalSnapshot = GetSerializedPayloadCache(scope.Asset.original);
+                Require(originalSnapshot != null, "The original serialized snapshot was unavailable.");
+                var inactiveMutation = SetInternalSlotForField(scope.Asset.original, "value", 17.5f);
+                Require(
+                    ReferenceEquals(GetSerializedPayloadCache(inactiveMutation), originalSnapshot),
+                    "An inactive variant storage mutation changed the snapshot before serialization.");
+                inactiveMutation = InvokeSerializationCallback(inactiveMutation, "OnBeforeSerialize");
+                Require(
+                    ReferenceEquals(GetSerializedPayloadCache(inactiveMutation), originalSnapshot),
+                    "An inactive variant storage mutation replaced the active snapshot.");
 
-                Require(internalSlotCount >= 3, "Generated internal init slots were incomplete.");
+                var activeMutation = SetInternalSlotForField(scope.Asset.original, "label", "active-after");
+                Require(
+                    ReferenceEquals(GetSerializedPayloadCache(activeMutation), originalSnapshot),
+                    "An active runtime mutation changed the snapshot before serialization.");
+                activeMutation = InvokeSerializationCallback(activeMutation, "OnBeforeSerialize");
+                var refreshedSnapshot = GetSerializedPayloadCache(activeMutation);
+                Require(
+                    refreshedSnapshot != null && !ReferenceEquals(refreshedSnapshot, originalSnapshot),
+                    "Changed active runtime storage did not replace the previous snapshot.");
+                RequirePayloadValue(refreshedSnapshot!, "count", 9);
+                RequirePayloadValue(refreshedSnapshot!, "label", "active-after");
+                RequirePayloadValue(refreshedSnapshot!, "asset", scope.Texture);
+                RequirePayloadValue(originalSnapshot!, "count", 9);
+                RequirePayloadValue(originalSnapshot!, "label", "init-after");
                 Require(scope.Asset.original.count == 9, "Independent slot probing changed the original count.");
                 Require(scope.Asset.original.label == "init-after", "Independent slot probing changed the original label.");
                 Require(scope.Asset.original.asset == scope.Texture, "Independent slot probing changed the original object reference.");
@@ -489,7 +864,7 @@ namespace Spire.UnityIntegration
                 RequirePayloadValue(payload, "count", 9);
                 RequirePayloadValue(payload, "label", "init-after");
                 RequirePayloadValue(payload, "asset", scope.Texture);
-                return "internal-slots=" + internalSlotCount + ";cache-detached=true;original=preserved;public-init-profile=separate";
+                return "active-slot-replaced=true;inactive-slot-reused=true;original=preserved;public-init-profile=separate";
             }
         }
 
@@ -536,6 +911,73 @@ namespace Spire.UnityIntegration
                 Require(scope.Asset.single.text == "saved", "Reload text differed.");
                 Require(scope.Asset.single.icon == scope.Texture, "Texture reference differed after reload.");
                 return "kind=Label;text=saved;reference=preserved";
+            }
+        }
+
+        private static string DelegatedSerializationDictionaryUsesUnityPolicy()
+        {
+            var assetPath = AssetFolder + "/delegated-dictionary-" + Guid.NewGuid().ToString("N") + ".asset";
+            var asset = ScriptableObject.CreateInstance<UnityDelegatedSerializationAsset>();
+            try
+            {
+                var controlField = typeof(UnityDelegatedSerializationAsset).GetField(
+                    "control",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Require(controlField != null, "The direct dictionary control field was unavailable.");
+
+                var payloadDictionary = new Dictionary<int, string> { [17] = "payload" };
+                var controlDictionary = new Dictionary<int, string> { [17] = "control" };
+                asset.union = UnityDelegatedSerializationUnion.Value(41, payloadDictionary);
+                controlField!.SetValue(asset, controlDictionary);
+                asset.supportedControl = 23;
+
+                Require(
+                    asset.union.kind == UnityDelegatedSerializationUnion.Kind.Value &&
+                    asset.union.marker == 41 &&
+                    asset.union.unsupported != null &&
+                    asset.union.unsupported.Count == 1,
+                    "The generated union did not retain its dictionary before persistence.");
+                Require(
+                    asset.Control != null && asset.Control.Count == 1,
+                    "The direct dictionary did not exist before persistence.");
+
+                AssetDatabase.CreateAsset(asset, assetPath);
+                EditorUtility.SetDirty(asset);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
+
+                Resources.UnloadAsset(asset);
+                asset = AssetDatabase.LoadAssetAtPath<UnityDelegatedSerializationAsset>(assetPath);
+                Require(asset != null, "Delegated serialization asset reload returned null.");
+                Require(
+                    asset.union.kind == UnityDelegatedSerializationUnion.Kind.Value &&
+                    asset.union.marker == 41,
+                    "The generated union discriminator or supported marker did not survive reload.");
+                Require(asset.supportedControl == 23, "The supported control field did not survive reload.");
+                Require(asset.Control == null, "Unity unexpectedly serialized the direct Dictionary field.");
+                Require(
+                    asset.union.unsupported == null,
+                    "Unity unexpectedly serialized the Dictionary field inside the union payload.");
+
+                var serialized = new SerializedObject(asset);
+                serialized.Update();
+                var payloadProperty = RequirePayloadProperty(serialized, "union");
+                var directDictionaryProperty = serialized.FindProperty("control");
+                var payloadDictionaryProperty = payloadProperty.FindPropertyRelative("unsupported");
+                Require(
+                    directDictionaryProperty == null && payloadDictionaryProperty == null,
+                    "Unity exposed one of the unsupported Dictionary fields as a serialized property.");
+
+                var yaml = File.ReadAllText(Path.Combine(ProjectRoot, assetPath.Replace('/', Path.DirectorySeparatorChar)));
+                Require(
+                    !YamlContainsField(yaml, "control") && !YamlContainsField(yaml, "unsupported"),
+                    "Unity wrote an unsupported Dictionary field to YAML.");
+                return "kind=Value;marker=41;supported-control=23;direct-dictionary=null;payload-dictionary=null;serialized-properties=absent;yaml-fields=absent";
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(assetPath);
+                AssetDatabase.SaveAssets();
             }
         }
 
@@ -745,7 +1187,7 @@ namespace Spire.UnityIntegration
             }
         }
 
-        private static string NestedCollectionInitMutationDetachesCache()
+        private static string NestedCollectionRuntimeMutationIsolated()
         {
             using (var scope = new AssetScope("nested-init"))
             {
@@ -763,7 +1205,7 @@ namespace Spire.UnityIntegration
                 scope.Reload();
                 Require(scope.Asset.array[0].child.label == "after", "Nested init mutation was lost.");
                 Require(scope.Asset.array[1].child.label == "sibling", "Nested init mutation changed a sibling.");
-                return "after=after;sibling=sibling;cache-detached=true";
+                return "after=after;sibling=sibling;snapshot-isolated=true";
             }
         }
 
@@ -785,7 +1227,7 @@ namespace Spire.UnityIntegration
                 scope.Reload();
                 Require(scope.Asset.original.label == "original", "Original shared payload was mutated.");
                 Require(scope.Asset.sharedCopy.label == "mutated", "Detached shared copy did not retain its mutation.");
-                return "original=original;copy=mutated;cache-detached=true";
+                return "original=original;copy=mutated;snapshot-replaced-on-save=true";
             }
         }
 
@@ -963,16 +1405,1147 @@ namespace Spire.UnityIntegration
                 serialized.Update();
                 var union = RequireProperty(serialized, "single");
                 var children = DirectChildren(union);
-                Require(children.Count == 2, "Serialized union did not contain exactly discriminator and payload fields.");
-                Require(children.Any(p => p.propertyType == SerializedPropertyType.Enum), "Serialized discriminator was missing.");
-                Require(children.Any(p => p.propertyType == SerializedPropertyType.ManagedReference), "Serialized managed payload was missing.");
+                Require(children.Count == 1, "Serialized union did not contain exactly one active payload field.");
+                Require(children[0].propertyType == SerializedPropertyType.ManagedReference, "Serialized managed payload was missing.");
+                Require(!children.Any(p => p.propertyType == SerializedPropertyType.Enum), "Serialized discriminator was still present.");
                 Require(!children.Any(p => p.name == "radius" || p.name == "text" || p.name == "icon"), "Runtime union properties leaked into serialized storage.");
                 var yaml = File.ReadAllText(scope.AssetFilePath);
                 var payload = RequirePayloadProperty(serialized, "single").managedReferenceValue;
                 if (payload == null)
                     throw new InvalidOperationException("Active payload was unavailable in serialized state.");
                 Require(yaml.IndexOf(payload.GetType().Name, StringComparison.Ordinal) >= 0, "Active payload type was not present in YAML.");
-                return "children=2;active=" + payload.GetType().Name + ";runtime-fields=absent";
+                return "children=1;active=" + payload.GetType().Name + ";serialized-kind=false;runtime-fields=absent";
+            }
+        }
+
+        private static string PayloadOnlyAllFiveLayouts()
+        {
+            using (var scope = new AssetScope("payload-only-five-layouts"))
+            {
+                scope.Asset.stability = CreateStabilityEditorHost(scope.Texture);
+                scope.Save();
+                var serialized = new SerializedObject(scope.Asset);
+                serialized.Update();
+                foreach (var path in new[]
+                {
+                    "stability.additive",
+                    "stability.boxedFields",
+                    "stability.boxedTuple",
+                    "stability.unsafeOverlap",
+                    "stability.overlap",
+                    "stability.parent",
+                    "stability.parentArray.Array.data[0]",
+                    "stability.parentList.Array.data[0]",
+                    "stability.genericInt.value",
+                    "stability.genericString.value",
+                })
+                {
+                    RequirePayloadOnly(serialized, path);
+                }
+
+                var yaml = File.ReadAllText(scope.AssetFilePath);
+                Require(!YamlContainsField(yaml, "_kind"), "Payload-only YAML still contained a serialized discriminator.");
+                scope.Reload();
+                RequireStabilityEditorValues(scope.Asset.stability, scope.Texture);
+                return "layouts=5;active-payloads=10;serialized-kind=false;round-trip=true";
+            }
+        }
+
+        private static string PayloadOnlyRepeatedSaveYamlAndIdsStable()
+        {
+            using (var scope = new AssetScope("payload-only-stable-yaml"))
+            {
+                scope.Asset.stability = CreateStabilityEditorHost(scope.Texture);
+                scope.Save();
+                var preCanonicalYaml = File.ReadAllText(scope.AssetFilePath);
+                var preCanonicalSerialized = new SerializedObject(scope.Asset);
+                var preCanonicalIds = ManagedReferenceIds(preCanonicalSerialized);
+                WritePayloadStabilityArtifact("payload-only-stable-precanonical.yaml", preCanonicalYaml);
+                WritePayloadStabilityGraphArtifact("payload-only-stable-precanonical-rids.json", preCanonicalSerialized);
+
+                scope.Reload();
+                scope.Save();
+                var firstYaml = File.ReadAllText(scope.AssetFilePath);
+                var firstIds = ManagedReferenceIds(new SerializedObject(scope.Asset));
+                WritePayloadStabilityArtifact("payload-only-stable-first.yaml", firstYaml);
+                WritePayloadStabilityGraphArtifact("payload-only-stable-first-rids.json", new SerializedObject(scope.Asset));
+
+                scope.Save();
+                var secondYaml = File.ReadAllText(scope.AssetFilePath);
+                var secondIds = ManagedReferenceIds(new SerializedObject(scope.Asset));
+                WritePayloadStabilityArtifact("payload-only-stable-second.yaml", secondYaml);
+                WritePayloadStabilityGraphArtifact("payload-only-stable-second-rids.json", new SerializedObject(scope.Asset));
+
+                scope.Reload();
+                scope.Save();
+                var thirdYaml = File.ReadAllText(scope.AssetFilePath);
+                var thirdIds = ManagedReferenceIds(new SerializedObject(scope.Asset));
+                WritePayloadStabilityArtifact("payload-only-stable-third.yaml", thirdYaml);
+                WritePayloadStabilityGraphArtifact("payload-only-stable-third-rids.json", new SerializedObject(scope.Asset));
+                scope.Save();
+                var fourthYaml = File.ReadAllText(scope.AssetFilePath);
+                var fourthIds = ManagedReferenceIds(new SerializedObject(scope.Asset));
+                WritePayloadStabilityArtifact("payload-only-stable-fourth.yaml", fourthYaml);
+                WritePayloadStabilityGraphArtifact("payload-only-stable-fourth-rids.json", new SerializedObject(scope.Asset));
+                Require(thirdYaml == fourthYaml, "Canonical payload YAML changed during a second save after reload.");
+                Require(thirdIds.SequenceEqual(fourthIds), "Canonical managed-reference IDs changed during a second save after reload.");
+                Require(firstYaml == secondYaml, "Canonical payload YAML changed during a repeated save.");
+                Require(firstIds.SequenceEqual(secondIds), "Canonical managed-reference IDs changed during a repeated save.");
+                Require(firstYaml == thirdYaml, "Canonical payload YAML changed after unload/reload/save.");
+                Require(firstIds.SequenceEqual(thirdIds), "Canonical managed-reference IDs changed after unload/reload/save.");
+                return "yaml-stable=true;managed-reference-ids-stable=true;reload-repeat=true;precanonical-captured=true;precanonical-ids=" + preCanonicalIds.Count + ";ids=" + firstIds.Count;
+            }
+        }
+
+        private static string PayloadOnlyMalformedPayloadFallsBackAndOverwrites()
+        {
+            using (var scope = new AssetScope("payload-only-malformed"))
+            {
+                scope.Asset.stability = CreateStabilityEditorHost(scope.Texture);
+                scope.Asset.stability.additive = StabilityAdditiveUnion.First(99, "valid-before-malformed");
+                scope.Save();
+
+                var yaml = ReplaceNestedPayloadRidWithNull(
+                    File.ReadAllText(scope.AssetFilePath),
+                    "additive",
+                    "_serializedPayload");
+                File.WriteAllText(scope.AssetFilePath, yaml);
+
+                var importWarningCount = 0;
+                void OnImportLogThreaded(string message, string stackTrace, LogType type)
+                {
+                    if (type == LogType.Warning &&
+                        message == "invalid union serialization data, defaulting to First")
+                    {
+                        Interlocked.Increment(ref importWarningCount);
+                    }
+                }
+
+                Application.logMessageReceivedThreaded += OnImportLogThreaded;
+                try
+                {
+                    AssetDatabase.ImportAsset(scope.AssetPath, ImportAssetOptions.ForceUpdate);
+                }
+                finally
+                {
+                    Application.logMessageReceivedThreaded -= OnImportLogThreaded;
+                }
+
+                var reloadWarningCount = 0;
+                void OnReloadLogThreaded(string message, string stackTrace, LogType type)
+                {
+                    if (type == LogType.Warning &&
+                        message == "invalid union serialization data, defaulting to First")
+                    {
+                        Interlocked.Increment(ref reloadWarningCount);
+                    }
+                }
+
+                Application.logMessageReceivedThreaded += OnReloadLogThreaded;
+                try
+                {
+                    ReloadWithoutSave(scope);
+                }
+                finally
+                {
+                    Application.logMessageReceivedThreaded -= OnReloadLogThreaded;
+                }
+
+                Require(
+                    scope.Asset.stability.additive.kind == StabilityAdditiveUnion.Kind.First &&
+                    scope.Asset.stability.additive.amount == 0 &&
+                    scope.Asset.stability.additive.label == null,
+                    "Malformed payload did not overwrite the valid runtime value with First defaults.");
+                var observedImportWarnings = Interlocked.CompareExchange(ref importWarningCount, 0, 0);
+                var observedReloadWarnings = Interlocked.CompareExchange(ref reloadWarningCount, 0, 0);
+                Require(observedImportWarnings == 1, "Malformed payload import warning count was " + observedImportWarnings + ", expected exactly one.");
+                Require(observedReloadWarnings == 1, "Malformed payload reload warning count was " + observedReloadWarnings + ", expected exactly one.");
+                return "fallback=First;defaults=true;import-warning-count=" + observedImportWarnings + ";reload-warning-count=" + observedReloadWarnings + ";old-runtime-overwritten=true";
+            }
+        }
+
+        private static string PayloadOnlyCallbackHelperMissingChildDefaults()
+        {
+            using (var scope = new AssetScope("payload-only-callback-helper"))
+            {
+                scope.Asset.stability = CreateStabilityEditorHost(scope.Texture);
+                scope.Asset.stability.callbackHelper = new StabilityCallbackChildHelper(
+                    StabilityNestedChildUnion.Text(77, "constructor-overridden"));
+                scope.Save();
+                Require(
+                    scope.Asset.stability.callbackHelper.child.count == 77 &&
+                    scope.Asset.stability.callbackHelper.callbackMarker == 0,
+                    "Callback helper did not start with its nondefault constructor value.");
+
+                var serialized = new SerializedObject(scope.Asset);
+                serialized.Update();
+                var childPayload = RequirePayloadProperty(serialized, "stability.callbackHelper.child");
+                Require(childPayload.managedReferenceId != 0, "Callback helper child payload was unavailable before corruption.");
+                var yaml = ReplaceNestedPayloadRidWithNull(
+                    File.ReadAllText(scope.AssetFilePath),
+                    "callbackHelper",
+                    "child");
+                File.WriteAllText(scope.AssetFilePath, yaml);
+
+                var warningCount = 0;
+                void OnLog(string message, string stackTrace, LogType type)
+                {
+                    if (type == LogType.Warning &&
+                        message == "invalid union serialization data, defaulting to Text")
+                    {
+                        warningCount++;
+                    }
+                }
+
+                Application.logMessageReceived += OnLog;
+                try
+                {
+                    AssetDatabase.ImportAsset(scope.AssetPath, ImportAssetOptions.ForceUpdate);
+                    ReloadWithoutSave(scope);
+                }
+                finally
+                {
+                    Application.logMessageReceived -= OnLog;
+                }
+
+                Require(scope.Asset.stability.callbackHelper.callbackMarker == 1, "Callback helper marker did not prove OnAfterDeserialize ran.");
+                Require(
+                    scope.Asset.stability.callbackHelper.child.kind == StabilityNestedChildUnion.Kind.Text &&
+                    scope.Asset.stability.callbackHelper.child.count == 0 &&
+                    scope.Asset.stability.callbackHelper.child.label == null,
+                    "Missing child payload retained constructor values instead of Text defaults.");
+                return "helper-marker=1;child=Text(0,null);constructor-value=overwritten;nested-warning-count=" + warningCount;
+            }
+        }
+
+        private static string PayloadOnlyFormerNamePayloadCanonicalizesAndIgnoresStaleKind()
+        {
+            using (var scope = new AssetScope("payload-only-former-name"))
+            {
+                scope.Asset.stability = CreateStabilityEditorHost(scope.Texture);
+                scope.Asset.stability.migration = StabilityMigrationUnion.Renamed(7);
+                scope.Save();
+                var serialized = new SerializedObject(scope.Asset);
+                serialized.Update();
+                var currentPayloadName = RequirePayload(serialized, "stability.migration").GetType().Name;
+                var formerNameType = FindFormerNamePayloadType(typeof(StabilityMigrationUnion), "OldValue");
+                var formerNameYaml = ReplacePayloadTypeAndInjectStaleKind(
+                    File.ReadAllText(scope.AssetFilePath),
+                    typeof(StabilityMigrationUnion),
+                    currentPayloadName,
+                    formerNameType.Name,
+                    "migration");
+                File.WriteAllText(scope.AssetFilePath, formerNameYaml);
+                AssetDatabase.ImportAsset(scope.AssetPath, ImportAssetOptions.ForceUpdate);
+                ReloadWithoutSave(scope);
+                Require(
+                    scope.Asset.stability.migration.kind == StabilityMigrationUnion.Kind.Renamed &&
+                    scope.Asset.stability.migration.value == 7,
+                    "Former-name payload did not restore through the current Renamed factory.");
+
+                scope.Save();
+                var canonicalYaml = File.ReadAllText(scope.AssetFilePath);
+                Require(canonicalYaml.IndexOf(currentPayloadName, StringComparison.Ordinal) >= 0, "Canonical payload type was not written after former-name reload.");
+                Require(canonicalYaml.IndexOf(formerNameType.Name, StringComparison.Ordinal) < 0, "Former-name payload type remained after canonical save.");
+                Require(!YamlContainsField(canonicalYaml, "_kind"), "Stale serialized kind was retained after canonical save.");
+                return "former-name=OldValue;current=Renamed;value=7;stale-kind=ignored;canonicalized=true";
+            }
+        }
+
+        private static string PayloadOnlyFormerNamePayloadAllLayoutsCanonicalize()
+        {
+            using (var scope = new AssetScope("payload-only-former-name-all-layouts"))
+            {
+                scope.Asset.stability = CreateStabilityEditorHost(scope.Texture);
+                scope.Asset.stability.boxedFields = StabilityBoxedFieldsUnion.First(81, "former-name-boxed-fields");
+                scope.Asset.stability.boxedTuple = StabilityBoxedTupleUnion.First(82, "former-name-boxed-tuple");
+                scope.Asset.stability.unsafeOverlap = StabilityUnsafeOverlapUnion.First(83, "former-name-unsafe-overlap");
+                scope.Asset.stability.overlap = StabilityOverlapUnion.First(84, "former-name-overlap");
+                scope.Save();
+
+                var serialized = new SerializedObject(scope.Asset);
+                serialized.Update();
+                var replacements = new[]
+                {
+                    new FormerNamePayloadReplacement(
+                        "stability.boxedFields",
+                        "boxedFields",
+                        typeof(StabilityBoxedFieldsUnion),
+                        "OldBoxedFieldsFirst"),
+                    new FormerNamePayloadReplacement(
+                        "stability.boxedTuple",
+                        "boxedTuple",
+                        typeof(StabilityBoxedTupleUnion),
+                        "OldBoxedTupleFirst"),
+                    new FormerNamePayloadReplacement(
+                        "stability.unsafeOverlap",
+                        "unsafeOverlap",
+                        typeof(StabilityUnsafeOverlapUnion),
+                        "OldUnsafeOverlapFirst"),
+                    new FormerNamePayloadReplacement(
+                        "stability.overlap",
+                        "overlap",
+                        typeof(StabilityOverlapUnion),
+                        "OldOverlapFirst"),
+                };
+                var yaml = File.ReadAllText(scope.AssetFilePath);
+                var currentPayloadNames = new List<string>();
+                var formerNamePayloadNames = new List<string>();
+                foreach (var replacement in replacements)
+                {
+                    var currentPayloadName = RequirePayload(serialized, replacement.propertyPath).GetType().Name;
+                    var formerNameType = FindFormerNamePayloadType(replacement.unionType, replacement.formerName);
+                    yaml = ReplacePayloadTypeAndInjectStaleKind(
+                        yaml,
+                        replacement.unionType,
+                        currentPayloadName,
+                        formerNameType.Name,
+                        replacement.yamlFieldName);
+                    currentPayloadNames.Add(currentPayloadName);
+                    formerNamePayloadNames.Add(formerNameType.Name);
+                }
+
+                File.WriteAllText(scope.AssetFilePath, yaml);
+                AssetDatabase.ImportAsset(scope.AssetPath, ImportAssetOptions.ForceUpdate);
+                ReloadWithoutSave(scope);
+                Require(
+                    scope.Asset.stability.boxedFields.kind == StabilityBoxedFieldsUnion.Kind.First &&
+                    scope.Asset.stability.boxedFields.amount == 81 &&
+                    scope.Asset.stability.boxedFields.label == "former-name-boxed-fields",
+                    "Former-name BoxedFields payload did not restore through First.");
+                Require(
+                    scope.Asset.stability.boxedTuple.kind == StabilityBoxedTupleUnion.Kind.First &&
+                    scope.Asset.stability.boxedTuple.amount == 82 &&
+                    scope.Asset.stability.boxedTuple.label == "former-name-boxed-tuple",
+                    "Former-name BoxedTuple payload did not restore through First.");
+                Require(
+                    scope.Asset.stability.unsafeOverlap.kind == StabilityUnsafeOverlapUnion.Kind.First &&
+                    scope.Asset.stability.unsafeOverlap.amount == 83 &&
+                    scope.Asset.stability.unsafeOverlap.label == "former-name-unsafe-overlap",
+                    "Former-name UnsafeOverlap payload did not restore through First.");
+                Require(
+                    scope.Asset.stability.overlap.kind == StabilityOverlapUnion.Kind.First &&
+                    scope.Asset.stability.overlap.amount == 84 &&
+                    scope.Asset.stability.overlap.label == "former-name-overlap",
+                    "Former-name Overlap payload did not restore through First.");
+
+                scope.Save();
+                var canonicalYaml = File.ReadAllText(scope.AssetFilePath);
+                foreach (var currentPayloadName in currentPayloadNames)
+                    Require(canonicalYaml.IndexOf(currentPayloadName, StringComparison.Ordinal) >= 0, "Canonical payload type was not written: " + currentPayloadName);
+                foreach (var formerNamePayloadName in formerNamePayloadNames)
+                    Require(canonicalYaml.IndexOf(formerNamePayloadName, StringComparison.Ordinal) < 0, "Former-name payload type remained after canonical save: " + formerNamePayloadName);
+                Require(!YamlContainsField(canonicalYaml, "_kind"), "Stale serialized kind was retained after canonical save.");
+                return "former-name=BoxedFields+BoxedTuple+UnsafeOverlap+Overlap;current=First;canonicalized=true;stale-kind=ignored";
+            }
+        }
+
+        private static string BoxedTupleMultiFieldNestedSaveReloadIdsStable()
+        {
+            using (var scope = new AssetScope("boxed-tuple-multifield-nested"))
+            {
+                scope.Asset.stability = CreateStabilityEditorHost(scope.Texture);
+                scope.Asset.stability.tupleComposite = StabilityBoxedTupleCompositeUnion.Composite(
+                    StabilityNestedChildUnion.Text(41, "tuple-child"),
+                    42,
+                    "tuple-label");
+                scope.Save();
+                var preCanonicalYaml = File.ReadAllText(scope.AssetFilePath);
+                var preCanonicalSerialized = new SerializedObject(scope.Asset);
+                var preCanonicalIds = ManagedReferenceIds(preCanonicalSerialized);
+                WritePayloadStabilityArtifact("boxed-tuple-multifield-precanonical.yaml", preCanonicalYaml);
+                WritePayloadStabilityGraphArtifact("boxed-tuple-multifield-precanonical-rids.json", preCanonicalSerialized);
+
+                scope.Reload();
+                scope.Save();
+
+                var serialized = new SerializedObject(scope.Asset);
+                serialized.Update();
+                RequirePayloadOnly(serialized, "stability.tupleComposite");
+                var firstYaml = File.ReadAllText(scope.AssetFilePath);
+                var firstIds = ManagedReferenceIds(serialized);
+
+                scope.Reload();
+                scope.Save();
+                serialized = new SerializedObject(scope.Asset);
+                serialized.Update();
+                var secondYaml = File.ReadAllText(scope.AssetFilePath);
+                var secondIds = ManagedReferenceIds(serialized);
+                Require(
+                    scope.Asset.stability.tupleComposite.kind == StabilityBoxedTupleCompositeUnion.Kind.Composite &&
+                    scope.Asset.stability.tupleComposite.child.kind == StabilityNestedChildUnion.Kind.Text &&
+                    scope.Asset.stability.tupleComposite.child.count == 41 &&
+                    scope.Asset.stability.tupleComposite.child.label == "tuple-child" &&
+                    scope.Asset.stability.tupleComposite.marker == 42 &&
+                    scope.Asset.stability.tupleComposite.label == "tuple-label",
+                    "Multi-field BoxedTuple nested values differed after reload.");
+                Require(firstYaml == secondYaml, "Multi-field BoxedTuple YAML changed after reload/save.");
+                Require(firstIds.SequenceEqual(secondIds), "Multi-field BoxedTuple managed-reference IDs changed after reload/save.");
+                return "nested=Text/tuple-child;marker=42;label=tuple-label;yaml-stable=true;ids-stable=true;precanonical-captured=true;precanonical-ids=" + preCanonicalIds.Count;
+            }
+        }
+
+        private static string DrawerAliasPayloadNameBoundaryInference()
+        {
+            using (var scope = new DrawerHostScope("drawer-alias-boundary"))
+            {
+                scope.Host.alias = StabilityDrawerAliasUnion.Current(17);
+                var serialized = new SerializedObject(scope.Host);
+                serialized.Update();
+                var property = RequireProperty(serialized, "alias");
+                var formerNamePayload = CreateFormerNamePayload(
+                    typeof(StabilityDrawerAliasUnion),
+                    "Old",
+                    "value",
+                    17);
+                RequirePayloadProperty(property).managedReferenceValue = formerNamePayload;
+
+                var drawer = FindDrawer(typeof(StabilityDrawerAliasUnion));
+                Require(drawer != null, "Alias-boundary drawer was not discoverable.");
+                var tree = drawer!.CreatePropertyGUI(property);
+                Require(tree != null, "Alias-boundary drawer did not create a visual tree.");
+                tree!.Bind(serialized);
+                var selectorValue = FindPopupValue(tree);
+                Require(selectorValue == "Current", "Former-name Old payload inferred the wrong drawer variant: " + selectorValue);
+                Require(HasBoundFieldControl(tree, "value"), "Alias-boundary drawer did not bind Current.value.");
+                Require(!HasBoundFieldControl(tree, "label"), "Alias-boundary drawer bound the overlapping OldPayload.label field.");
+                return "payload=Old;current=Current;overlap=OldPayload;inferred=Current;fields=value";
+            }
+        }
+
+        private static string ManagedReferenceAllFiveLayoutsNullAndDerivedPersistence()
+        {
+            using (var scope = new ManagedReferenceAssetScope("managed-reference-null-derived"))
+            {
+                scope.Asset.data = CreateManagedReferenceHostData(null, includeCycle: false);
+                scope.Save();
+                var serialized = new SerializedObject(scope.Asset);
+                serialized.Update();
+                foreach (var path in ManagedReferenceUnionPaths)
+                    RequireManagedReferenceField(serialized, path, "value");
+
+                scope.Reload();
+                RequireManagedReferenceNulls(scope.Asset.data);
+
+                var leaf = CreateManagedReferenceLeaf("derived", 17);
+                scope.Asset.data = CreateManagedReferenceHostData(leaf, includeCycle: false);
+                scope.Save();
+                scope.Reload();
+                var reloadedShared = scope.Asset.data.sharedNode;
+                Require(
+                    reloadedShared is UnityManagedReferenceNodeLeaf reloadedLeaf &&
+                    reloadedLeaf.id == "derived" &&
+                    reloadedLeaf.amount == 17,
+                    "Reloaded derived managed reference values differed.");
+                Require(reloadedShared != null && !ReferenceEquals(reloadedShared, leaf), "Reloaded managed reference unexpectedly reused the pre-reload object.");
+                RequireManagedReferenceValues(scope.Asset.data, reloadedShared);
+                return "layouts=5;null=preserved;derived=" + reloadedShared.GetType().Name + ";root-distinct=true";
+            }
+        }
+
+        private static string ManagedReferenceSharedIdentityPairAndCollections()
+        {
+            using (var scope = new ManagedReferenceAssetScope("managed-reference-shared-collections"))
+            {
+                var shared = CreateManagedReferenceLeaf("shared", 23);
+                var data = CreateManagedReferenceHostData(shared, includeCycle: false);
+                data.additive = UnityManagedReferenceAdditiveUnion.Pair(shared, shared);
+                data.boxedFields = UnityManagedReferenceBoxedFieldsUnion.Array(new UnityManagedReferenceNodeBase?[] { shared, null, shared });
+                data.boxedTuple = UnityManagedReferenceBoxedTupleUnion.List(new List<UnityManagedReferenceNodeBase?> { shared, null, shared });
+                data.unsafeOverlap = UnityManagedReferenceUnsafeOverlapUnion.Pair(shared, shared);
+                data.overlap = UnityManagedReferenceOverlapUnion.Reference(shared);
+                scope.Asset.data = data;
+                scope.Save();
+
+                var serialized = new SerializedObject(scope.Asset);
+                serialized.Update();
+                RequireManagedReferenceField(serialized, "data.additive", "first");
+                RequireManagedReferenceField(serialized, "data.additive", "second");
+                RequireManagedReferenceCollectionField(serialized, "data.boxedFields", "arrayValues");
+                RequireManagedReferenceCollectionField(serialized, "data.boxedTuple", "listValues");
+
+                scope.Reload();
+                var restored = scope.Asset.data;
+                Require(ReferenceEquals(restored.additive.first, restored.additive.second), "Pair fields did not preserve shared identity.");
+                Require(ReferenceEquals(restored.boxedFields.arrayValues[0], restored.boxedFields.arrayValues[2]), "Array elements did not preserve shared identity.");
+                Require(restored.boxedFields.arrayValues[1] == null, "Array null element was not preserved.");
+                Require(ReferenceEquals(restored.boxedTuple.listValues[0], restored.boxedTuple.listValues[2]), "List elements did not preserve shared identity.");
+                Require(restored.boxedTuple.listValues[1] == null, "List null element was not preserved.");
+                Require(ReferenceEquals(restored.unsafeOverlap.first, restored.unsafeOverlap.second), "UnsafeOverlap pair fields did not preserve shared identity.");
+                Require(ReferenceEquals(restored.overlap.value, restored.additive.first), "Different layout fields lost shared identity.");
+                return "pair-shared=true;array-shared=true;list-shared=true;null-elements=true;layouts=5";
+            }
+        }
+
+        private static string ManagedReferenceAllFiveLayoutsArrayListPersistence()
+        {
+            using (var scope = new ManagedReferenceAssetScope("managed-reference-all-layout-collections"))
+            {
+                var first = CreateManagedReferenceLeaf("collection-first", 51);
+                var second = CreateManagedReferenceOther("collection-second", "second");
+                var data = CreateManagedReferenceHostData(first, includeCycle: false);
+                data.additive = UnityManagedReferenceAdditiveUnion.Array(new UnityManagedReferenceNodeBase?[] { first, null, second });
+                data.boxedFields = UnityManagedReferenceBoxedFieldsUnion.List(new List<UnityManagedReferenceNodeBase?> { first, null, second });
+                data.boxedTuple = UnityManagedReferenceBoxedTupleUnion.Array(new UnityManagedReferenceNodeBase?[] { second, null, first });
+                data.unsafeOverlap = UnityManagedReferenceUnsafeOverlapUnion.List(new List<UnityManagedReferenceNodeBase?> { second, null, first });
+                data.overlap = UnityManagedReferenceOverlapUnion.Array(new UnityManagedReferenceNodeBase?[] { first, null, second });
+                scope.Asset.data = data;
+                scope.Save();
+
+                var serialized = new SerializedObject(scope.Asset);
+                serialized.Update();
+                RequireManagedReferenceCollectionField(serialized, "data.additive", "arrayValues");
+                RequireManagedReferenceCollectionField(serialized, "data.boxedFields", "listValues");
+                RequireManagedReferenceCollectionField(serialized, "data.boxedTuple", "arrayValues");
+                RequireManagedReferenceCollectionField(serialized, "data.unsafeOverlap", "listValues");
+                RequireManagedReferenceCollectionField(serialized, "data.overlap", "arrayValues");
+
+                scope.Reload();
+                var restored = scope.Asset.data;
+                Require(restored.additive.arrayValues.Length == 3 && restored.additive.arrayValues[1] == null && restored.additive.arrayValues[0] is UnityManagedReferenceNodeLeaf, "Additive array managed references differed.");
+                Require(restored.boxedFields.listValues.Count == 3 && restored.boxedFields.listValues[1] == null && restored.boxedFields.listValues[2] is UnityManagedReferenceNodeOther, "BoxedFields list managed references differed.");
+                Require(restored.boxedTuple.arrayValues.Length == 3 && restored.boxedTuple.arrayValues[1] == null && restored.boxedTuple.arrayValues[2] is UnityManagedReferenceNodeLeaf, "BoxedTuple array managed references differed.");
+                Require(restored.unsafeOverlap.listValues.Count == 3 && restored.unsafeOverlap.listValues[1] == null && restored.unsafeOverlap.listValues[0] is UnityManagedReferenceNodeOther, "UnsafeOverlap list managed references differed.");
+                Require(restored.overlap.arrayValues.Length == 3 && restored.overlap.arrayValues[1] == null && restored.overlap.arrayValues[0] is UnityManagedReferenceNodeLeaf, "Overlap array managed references differed.");
+                return "layouts=5;arrays=3;lists=2;null-elements=true;derived-types=true";
+            }
+        }
+
+        private static string ManagedReferenceMixedInlineManagedAlias()
+        {
+            using (var scope = new ManagedReferenceAssetScope("managed-reference-mixed-inline-alias"))
+            {
+                var managedNode = new UnityManagedReferenceNodeGeneratedState
+                {
+                    id = "mixed-managed",
+                    state = UnityManagedReferenceNodeStateUnion.Active(707),
+                };
+                managedNode.SetGeneratedState(
+                    UnityManagedReferenceNodeStateUnion.Active(707),
+                    CreateManagedReferenceOther("mixed-opaque", "mixed"),
+                    null);
+                var mixed = new UnityManagedReferenceMixedAliasHelper
+                {
+                    inlineNode = managedNode,
+                };
+                mixed.SetManagedNode(managedNode);
+                Require(ReferenceEquals(mixed.inlineNode, mixed.ManagedNode), "Mixed helper did not start with one shared source object.");
+                var data = CreateManagedReferenceHostData(managedNode, includeCycle: false);
+                data.additive = UnityManagedReferenceAdditiveUnion.Reference(managedNode);
+                data.boxedFields = UnityManagedReferenceBoxedFieldsUnion.MixedAlias(mixed);
+                data.renamed = UnityManagedReferenceRenamedUnion.Reference(managedNode);
+                scope.Asset.data = data;
+                scope.Save();
+
+                var serialized = new SerializedObject(scope.Asset);
+                serialized.Update();
+                RequireManagedReferenceField(serialized, "data.additive", "value");
+                RequireManagedReferenceField(serialized, "data.renamed", "value");
+                var mixedPayload = RequireProperty(RequirePayloadProperty(serialized, "data.boxedFields"), "mixed");
+                RequireInlineField(mixedPayload, "inlineNode");
+                RequireManagedReferenceField(mixedPayload, "managedNode");
+                scope.Reload();
+                Require(
+                    scope.Asset.data.additive.value is UnityManagedReferenceNodeGeneratedState additiveNode && additiveNode.id == "mixed-managed" && additiveNode.state.marker == 707,
+                    "Managed reference beside inline control differed after reload.");
+                Require(
+                    scope.Asset.data.renamed.value is UnityManagedReferenceNodeGeneratedState renamedNode && renamedNode.id == "mixed-managed" && renamedNode.state.marker == 707,
+                    "Renamed managed reference beside inline control differed after reload.");
+                Require(
+                    scope.Asset.data.boxedFields.kind == UnityManagedReferenceBoxedFieldsUnion.Kind.MixedAlias &&
+                    scope.Asset.data.boxedFields.mixed.inlineNode.id == "mixed-managed" &&
+                    scope.Asset.data.boxedFields.mixed.inlineNode.state.marker == 707,
+                    "Concrete inline nested node beside managed reference differed after reload.");
+                Require(
+                    scope.Asset.data.boxedFields.mixed.ManagedNode is UnityManagedReferenceNodeGeneratedState managedRestored &&
+                    ReferenceEquals(managedRestored, scope.Asset.data.renamed.value) &&
+                    !ReferenceEquals(managedRestored, scope.Asset.data.boxedFields.mixed.inlineNode),
+                    "Mixed inline/managed helper did not preserve managed identity and inline separation.");
+                return "managed=private-SerializeReference;inline=concrete;alias=Reference;identity=shared;inline-copy=distinct";
+            }
+        }
+
+        private static string ManagedReferenceIndependentNonNullSnapshotIsolation()
+        {
+            using (var scope = new ManagedReferenceAssetScope("managed-reference-snapshot-isolation"))
+            {
+                var original = CreateManagedReferenceLeaf("snapshot-original", 61);
+                var replacement = CreateManagedReferenceLeaf("snapshot-replacement", 62);
+                var data = CreateManagedReferenceHostData(original, includeCycle: false);
+                data.additive = UnityManagedReferenceAdditiveUnion.Pair(original, original);
+                data.boxedFields = UnityManagedReferenceBoxedFieldsUnion.Reference(original);
+                scope.Asset.data = data;
+                scope.Save();
+
+                scope.Asset.data.additive = UnityManagedReferenceAdditiveUnion.Pair(replacement, replacement);
+                scope.Save();
+                var current = scope.Asset.data.additive.first as UnityManagedReferenceNodeLeaf;
+                var preserved = scope.Asset.data.boxedFields.value as UnityManagedReferenceNodeLeaf;
+                Require(current != null && current.id == "snapshot-replacement", "Replacement snapshot did not apply.");
+                Require(preserved != null && preserved.id == "snapshot-original", "Independent non-null snapshot was overwritten.");
+
+                scope.Reload();
+                var reloadedCurrent = scope.Asset.data.additive.first as UnityManagedReferenceNodeLeaf;
+                var reloadedPreserved = scope.Asset.data.boxedFields.value as UnityManagedReferenceNodeLeaf;
+                Require(reloadedCurrent != null && reloadedCurrent.id == "snapshot-replacement", "Reloaded replacement snapshot differed.");
+                Require(reloadedPreserved != null && reloadedPreserved.id == "snapshot-original", "Reloaded independent snapshot differed.");
+                Require(!ReferenceEquals(reloadedCurrent, reloadedPreserved), "Independent union snapshots shared their generated managed object.");
+                return "original=snapshot-original;replacement=snapshot-replacement;isolated=true;reload=true";
+            }
+        }
+
+        private static string ManagedReferenceHelperPrivateFieldsAndCycles()
+        {
+            using (var scope = new ManagedReferenceAssetScope("managed-reference-helper-cycle"))
+            {
+                Require(
+                    HasManagedReferencePayloadMetadata(typeof(UnityManagedReferenceAdditiveUnion), "Reference", "value"),
+                    "Managed-reference metadata was unavailable before constructing the cyclic graph.");
+                var shared = CreateManagedReferenceLeaf("cycle-node", 31);
+                scope.Asset.data = CreateManagedReferenceHostData(shared, includeCycle: true);
+                scope.Save();
+                scope.Reload();
+
+                var data = scope.Asset.data;
+                Require(data.helper.Node != null, "Private helper managed reference was unavailable after reload.");
+                Require(data.helper.Node!.id == "cycle-helper-node", "Private helper managed reference value differed.");
+                Require(data.helper.Opaque is UnityManagedReferenceNodeOther, "Private opaque managed reference type differed.");
+                Require(data.helper.Next != null && ReferenceEquals(data.helper.Next!.Next, data.helper), "Helper cycle did not close on the same managed object.");
+                Require(data.cycleRoot != null && ReferenceEquals(data.cycleRoot!.next!.next, data.cycleRoot), "Node cycle did not close on the same managed object.");
+                var reloadedShared = data.sharedNode;
+                Require(
+                    reloadedShared is UnityManagedReferenceNodeLeaf reloadedLeaf &&
+                    reloadedLeaf.id == "cycle-node" &&
+                    reloadedLeaf.amount == 31,
+                    "Reloaded cycle graph shared node values differed.");
+                Require(reloadedShared != null && !ReferenceEquals(reloadedShared, shared), "Reloaded cycle graph unexpectedly reused the pre-reload shared node.");
+                RequireManagedReferenceValues(data, reloadedShared);
+                return "private-fields=true;helper-cycle=true;node-cycle=true;nested-union=true";
+            }
+        }
+
+        private static string ManagedReferenceInitialNullSaveStability()
+        {
+            using (var scope = new ManagedReferenceAssetScope("managed-reference-null-stability"))
+            {
+                scope.Asset.data = CreateManagedReferenceHostData(null, includeCycle: false);
+                scope.Asset.second = CreateManagedReferenceHostData(null, includeCycle: false);
+                scope.Save();
+                var firstYaml = File.ReadAllText(scope.AssetFilePath);
+                var firstIds = ManagedReferenceIds(new SerializedObject(scope.Asset));
+                scope.Save();
+                var secondYaml = File.ReadAllText(scope.AssetFilePath);
+                var secondIds = ManagedReferenceIds(new SerializedObject(scope.Asset));
+                scope.Reload();
+                scope.Save();
+                var thirdYaml = File.ReadAllText(scope.AssetFilePath);
+                var thirdIds = ManagedReferenceIds(new SerializedObject(scope.Asset));
+                Require(firstYaml == secondYaml, "Initial null managed-reference YAML changed during an unchanged save.");
+                Require(firstIds.SequenceEqual(secondIds), "Initial null managed-reference IDs changed during an unchanged save.");
+                Require(secondYaml == thirdYaml, "Initial null managed-reference YAML changed after reload/save.");
+                Require(secondIds.SequenceEqual(thirdIds), "Initial null managed-reference IDs changed after reload/save.");
+                return "initial-null=true;yaml-stable=true;ids-stable=true;hosts=2";
+            }
+        }
+
+        private static string ManagedReferenceReadOnlyDrawerPreservesAliasedSnapshot()
+        {
+            using (var scope = new ManagedReferenceAssetScope("managed-reference-readonly-drawer-alias"))
+            {
+                var shared = CreateManagedReferenceLeaf("readonly-alias", 73);
+                var data = CreateManagedReferenceHostData(shared, includeCycle: false);
+                data.additive = UnityManagedReferenceAdditiveUnion.Reference(shared);
+                var second = CreateManagedReferenceHostData(shared, includeCycle: false);
+                second.additive = UnityManagedReferenceAdditiveUnion.Reference(shared);
+                scope.Asset.data = data;
+                scope.Asset.second = second;
+                scope.Asset.aliasFirst = UnityManagedReferenceAdditiveUnion.Reference(shared);
+                scope.Asset.aliasSecond = UnityManagedReferenceAdditiveUnion.Reference(shared);
+                scope.Save();
+
+                var aliasSetup = new SerializedObject(scope.Asset);
+                aliasSetup.Update();
+                var originalProperty = RequirePayloadProperty(aliasSetup, "aliasFirst");
+                var copiedProperty = RequirePayloadProperty(aliasSetup, "aliasSecond");
+                var sharedPayload = originalProperty.managedReferenceValue;
+                Require(sharedPayload != null, "Read-only drawer alias source payload was unavailable.");
+                copiedProperty.managedReferenceValue = sharedPayload;
+                Require(aliasSetup.ApplyModifiedProperties(), "Read-only drawer alias setup was not applied.");
+                scope.Save();
+                scope.Reload();
+
+                var serialized = new SerializedObject(scope.Asset);
+                serialized.Update();
+                originalProperty = RequirePayloadProperty(serialized, "aliasFirst");
+                copiedProperty = RequirePayloadProperty(serialized, "aliasSecond");
+                Require(
+                    originalProperty.managedReferenceId != 0 &&
+                    originalProperty.managedReferenceId == copiedProperty.managedReferenceId,
+                    "Read-only drawer fixture did not reload with one shared payload identity.");
+                var beforeYaml = File.ReadAllText(scope.AssetFilePath);
+                var beforeIds = ManagedReferenceIds(serialized);
+
+                var property = RequireProperty(serialized, "aliasSecond");
+                var drawer = FindDrawer(typeof(UnityManagedReferenceAdditiveUnion));
+                Require(drawer != null, "Generated managed-reference drawer was unavailable.");
+                var tree = drawer!.CreatePropertyGUI(property);
+                Require(tree != null, "Generated managed-reference drawer returned no visual tree.");
+                tree.Bind(serialized);
+                tree.MarkDirtyRepaint();
+                _ = drawer.GetPropertyHeight(property, GUIContent.none);
+
+                scope.Save();
+                var afterYaml = File.ReadAllText(scope.AssetFilePath);
+                var afterIds = ManagedReferenceIds(new SerializedObject(scope.Asset));
+                Require(beforeYaml == afterYaml, "Opening a read-only drawer changed canonical payload YAML.");
+                Require(
+                    beforeIds.SequenceEqual(afterIds),
+                    "Opening a read-only drawer changed canonical managed-reference IDs.");
+                return "alias=shared;drawer=create-bind-repaint;edit=false;yaml-stable=true;ids-stable=true";
+            }
+        }
+
+        private static string ManagedReferenceFormerNameAliasCanonicalization()
+        {
+            using (var scope = new ManagedReferenceAssetScope("managed-reference-former-name-alias"))
+            {
+                var leaf = CreateManagedReferenceLeaf("former-name", 37);
+                scope.Asset.data = CreateManagedReferenceHostData(leaf, includeCycle: false);
+                scope.Asset.data.renamed = UnityManagedReferenceRenamedUnion.Reference(leaf);
+                scope.Save();
+
+                var serialized = new SerializedObject(scope.Asset);
+                serialized.Update();
+                var currentPayloadName = RequirePayload(serialized, "data.renamed").GetType().Name;
+                var formerNameType = FindFormerNamePayloadType(typeof(UnityManagedReferenceRenamedUnion), "OldReference");
+                var formerNameYaml = ReplacePayloadTypeAndInjectStaleKind(
+                    File.ReadAllText(scope.AssetFilePath),
+                    typeof(UnityManagedReferenceRenamedUnion),
+                    currentPayloadName,
+                    formerNameType.Name,
+                    "renamed");
+                File.WriteAllText(scope.AssetFilePath, formerNameYaml);
+                AssetDatabase.ImportAsset(scope.AssetPath, ImportAssetOptions.ForceUpdate);
+                scope.ReloadWithoutSave();
+                Require(
+                    scope.Asset.data.renamed.kind == UnityManagedReferenceRenamedUnion.Kind.Reference &&
+                    scope.Asset.data.renamed.value is UnityManagedReferenceNodeLeaf restoredLeaf &&
+                    restoredLeaf.id == "former-name" &&
+                    restoredLeaf.amount == 37,
+                    "Former-name managed-reference payload did not restore its derived value.");
+
+                scope.Save();
+                var canonicalYaml = File.ReadAllText(scope.AssetFilePath);
+                Require(canonicalYaml.IndexOf(currentPayloadName, StringComparison.Ordinal) >= 0, "Canonical managed-reference payload was not written.");
+                Require(canonicalYaml.IndexOf(formerNameType.Name, StringComparison.Ordinal) < 0, "Former-name managed-reference payload remained after canonical save.");
+                return "former-name=OldReference;current=Reference;derived=NodeLeaf;canonicalized=true";
+            }
+        }
+
+        private static string ManagedReferencePropertyFieldAssignmentUndoRedo()
+        {
+            using (var scope = new ManagedReferenceDrawerScope("managed-reference-property-field"))
+            {
+                scope.Host.value = UnityManagedReferenceAdditiveUnion.Reference(null);
+                var serialized = new SerializedObject(scope.Host);
+                serialized.Update();
+                var valueProperty = RequireProperty(RequirePayloadProperty(serialized, "value"), "value");
+                Require(valueProperty.propertyType == SerializedPropertyType.ManagedReference, "Inspector managed-reference field was not exposed as a managed property.");
+
+                Undo.ClearAll();
+                var leaf = CreateManagedReferenceLeaf("inspector", 43);
+                Undo.IncrementCurrentGroup();
+                Undo.RecordObject(scope.Host, "Assign managed reference");
+                valueProperty.managedReferenceValue = leaf;
+                Require(serialized.ApplyModifiedProperties(), "Derived managed-reference assignment was not applied.");
+                Undo.FlushUndoRecordObjects();
+                Require(scope.Host.value.value is UnityManagedReferenceNodeLeaf assigned && assigned.amount == 43, "Derived managed-reference assignment differed.");
+
+                Undo.IncrementCurrentGroup();
+                Undo.RecordObject(scope.Host, "Clear managed reference");
+                serialized.Update();
+                RequireProperty(RequirePayloadProperty(serialized, "value"), "value").managedReferenceValue = null;
+                Require(serialized.ApplyModifiedProperties(), "Null managed-reference assignment was not applied.");
+                Undo.FlushUndoRecordObjects();
+                Require(scope.Host.value.value == null, "Null managed-reference assignment differed.");
+
+                Undo.PerformUndo();
+                serialized.Update();
+                Require(scope.Host.value.value is UnityManagedReferenceNodeLeaf undoLeaf && undoLeaf.amount == 43, "Undo did not restore the derived managed reference.");
+                Undo.PerformRedo();
+                serialized.Update();
+                Require(scope.Host.value.value == null, "Redo did not restore the null managed reference.");
+                return "derived=assigned;null=assigned;undo=derived;redo=null";
+            }
+        }
+
+        private static string ManagedReferenceVariantReplacementPreservesNestedIdentity()
+        {
+            using (var scope = new ManagedReferenceAssetScope("managed-reference-variant-replacement"))
+            {
+                var shared = CreateManagedReferenceLeaf("nested", 47);
+                var helper = new UnityManagedReferenceHelper(
+                    UnityManagedReferenceAdditiveUnion.Reference(shared),
+                    shared,
+                    new UnityManagedReferenceNodeOther { id = "opaque" },
+                    null);
+                var data = CreateManagedReferenceHostData(shared, includeCycle: false);
+                data.additive = UnityManagedReferenceAdditiveUnion.Nested(helper);
+                scope.Asset.data = data;
+                scope.Save();
+
+                var serialized = new SerializedObject(scope.Asset);
+                serialized.Update();
+                var nestedPayload = RequirePayloadProperty(RequireProperty(serialized, "data.additive"));
+                var helperProperty = RequireProperty(nestedPayload, "helper");
+                var helperNode = RequireProperty(helperProperty, "node");
+                Require(helperNode.propertyType == SerializedPropertyType.ManagedReference, "Nested helper node was not a managed-reference property.");
+                var edited = CreateManagedReferenceLeaf("nested-edited", 48);
+                helperNode.managedReferenceValue = edited;
+                Require(serialized.ApplyModifiedProperties(), "Nested managed-reference edit was not applied.");
+                Require(scope.Asset.data.additive.helper.Node is UnityManagedReferenceNodeLeaf editedNode && editedNode.amount == 48, "Nested managed-reference edit differed.");
+
+                serialized.Update();
+                WriteBoxedValue(
+                    RequireProperty(serialized, "data.additive"),
+                    UnityManagedReferenceAdditiveUnion.Pair(shared, shared));
+                Require(serialized.ApplyModifiedProperties(), "Managed-reference variant replacement was not applied.");
+                Require(
+                    scope.Asset.data.additive.kind == UnityManagedReferenceAdditiveUnion.Kind.Pair &&
+                    ReferenceEquals(scope.Asset.data.additive.first, shared) &&
+                    ReferenceEquals(scope.Asset.data.additive.first, scope.Asset.data.additive.second),
+                    "Variant replacement did not preserve the shared managed reference.");
+                return "nested-edit=48;replacement=Pair;shared-identity=true";
+            }
+        }
+
+        private static string? FindPopupValue(VisualElement root)
+        {
+            string? value = null;
+            root.Query<VisualElement>().ForEach(element =>
+            {
+                if (value != null || !element.GetType().Name.StartsWith("PopupField", StringComparison.Ordinal))
+                    return;
+                var property = element.GetType().GetProperty("value", BindingFlags.Instance | BindingFlags.Public);
+                value = property?.GetValue(element, null)?.ToString();
+            });
+            return value;
+        }
+
+        private static bool HasBoundFieldControl(VisualElement root, string fieldName)
+        {
+            var suffix = "." + fieldName;
+            var found = false;
+            root.Query<VisualElement>().ForEach(element =>
+            {
+                if (found)
+                    return;
+                var path = (element as IBindable)?.bindingPath;
+                if (!string.IsNullOrEmpty(path) &&
+                    (string.Equals(path, fieldName, StringComparison.Ordinal) ||
+                        path.EndsWith(suffix, StringComparison.Ordinal)))
+                {
+                    found = true;
+                }
+            });
+            return found;
+        }
+
+        private static StabilityEditorHost CreateStabilityEditorHost(Texture2D texture)
+        {
+            return new StabilityEditorHost
+            {
+                additive = StabilityAdditiveUnion.First(1, "stability-additive"),
+                boxedFields = StabilityBoxedFieldsUnion.First(2, "stability-boxed-fields"),
+                boxedTuple = StabilityBoxedTupleUnion.First(3, "stability-boxed-tuple"),
+                tupleComposite = StabilityBoxedTupleCompositeUnion.Composite(
+                    StabilityNestedChildUnion.Text(30, "stability-tuple-child"),
+                    31,
+                    "stability-tuple-label"),
+                unsafeOverlap = StabilityUnsafeOverlapUnion.First(4, "stability-unsafe-overlap"),
+                overlap = StabilityOverlapUnion.First(5, "stability-overlap"),
+                parent = StabilityNestedParentUnion.Child(
+                    StabilityNestedChildUnion.Text(6, "stability-parent"),
+                    10),
+                parentArray = new[]
+                {
+                    StabilityNestedParentUnion.Child(StabilityNestedChildUnion.Text(7, "stability-array"), 11),
+                    StabilityNestedParentUnion.Empty(),
+                },
+                parentList = new List<StabilityNestedParentUnion>
+                {
+                    StabilityNestedParentUnion.Child(StabilityNestedChildUnion.Text(8, "stability-list"), 12),
+                    StabilityNestedParentUnion.Text("stability-list-parent"),
+                },
+                genericInt = new StabilityGenericOwnerInt
+                {
+                    value = StabilityGenericUnion<int>.First(42),
+                },
+                genericString = new StabilityGenericOwnerString
+                {
+                    value = StabilityGenericUnion<string>.First("stability-generic"),
+                },
+                genericArray = new[]
+                {
+                    StabilityGenericUnion<int>.First(43),
+                    StabilityGenericUnion<int>.Empty(),
+                },
+                migration = StabilityMigrationUnion.Other("stability-migration"),
+                reference = texture,
+            };
+        }
+
+        private static void RequireStabilityEditorValues(StabilityEditorHost host, Texture2D texture)
+        {
+            Require(host.additive.kind == StabilityAdditiveUnion.Kind.First && host.additive.amount == 1 && host.additive.label == "stability-additive", "Additive stability value differed after reload.");
+            Require(host.boxedFields.kind == StabilityBoxedFieldsUnion.Kind.First && host.boxedFields.amount == 2 && host.boxedFields.label == "stability-boxed-fields", "BoxedFields stability value differed after reload.");
+            Require(host.boxedTuple.kind == StabilityBoxedTupleUnion.Kind.First && host.boxedTuple.amount == 3 && host.boxedTuple.label == "stability-boxed-tuple", "BoxedTuple stability value differed after reload.");
+            Require(
+                host.tupleComposite.kind == StabilityBoxedTupleCompositeUnion.Kind.Composite &&
+                host.tupleComposite.child.kind == StabilityNestedChildUnion.Kind.Text &&
+                host.tupleComposite.child.count == 30 &&
+                host.tupleComposite.child.label == "stability-tuple-child" &&
+                host.tupleComposite.marker == 31 &&
+                host.tupleComposite.label == "stability-tuple-label",
+                "Multi-field BoxedTuple composite differed after reload.");
+            Require(host.unsafeOverlap.kind == StabilityUnsafeOverlapUnion.Kind.First && host.unsafeOverlap.amount == 4 && host.unsafeOverlap.label == "stability-unsafe-overlap", "UnsafeOverlap stability value differed after reload.");
+            Require(host.overlap.kind == StabilityOverlapUnion.Kind.First && host.overlap.amount == 5 && host.overlap.label == "stability-overlap", "Overlap stability value differed after reload.");
+            Require(host.parent.kind == StabilityNestedParentUnion.Kind.Child && host.parent.child.label == "stability-parent" && host.parent.marker == 10, "Nested parent stability value differed after reload.");
+            Require(host.parentArray.Length == 2 && host.parentArray[0].child.label == "stability-array" && host.parentArray[1].kind == StabilityNestedParentUnion.Kind.Empty, "Nested array stability values differed after reload.");
+            Require(host.parentList.Count == 2 && host.parentList[0].child.label == "stability-list" && host.parentList[1].label == "stability-list-parent", "Nested list stability values differed after reload.");
+            Require(host.genericInt.value.kind == StabilityGenericUnion<int>.Kind.First && host.genericInt.value.value == 42, "Generic int stability value differed after reload.");
+            Require(host.genericString.value.kind == StabilityGenericUnion<string>.Kind.First && host.genericString.value.value == "stability-generic", "Generic string stability value differed after reload.");
+            Require(host.genericArray.Length == 2 && host.genericArray[0].value == 43 && host.genericArray[1].kind == StabilityGenericUnion<int>.Kind.Empty, "Generic array stability values differed after reload.");
+            Require(host.callbackHelper.callbackMarker == 1 && host.callbackHelper.child.label == "constructor-child", "Callback helper derived state differed after reload.");
+            Require(host.reference == texture, "Stability Unity object reference differed after reload.");
+        }
+
+        private static void RequirePayloadOnly(SerializedObject serialized, string path)
+        {
+            var direct = DirectChildren(RequireProperty(serialized, path));
+            Require(direct.Count == 1, "Payload-only union exposed more than one direct serialized child: " + path);
+            Require(direct[0].propertyType == SerializedPropertyType.ManagedReference, "Payload-only union did not expose a managed-reference payload: " + path);
+            Require(direct[0].managedReferenceValue != null, "Payload-only union payload was null: " + path);
+        }
+
+        private static List<long> ManagedReferenceIds(SerializedObject serialized)
+        {
+            return CaptureManagedReferenceGraph(serialized)
+                .Select(entry => entry.rid)
+                .ToList();
+        }
+
+        private static void WritePayloadStabilityArtifact(string fileName, string contents)
+        {
+            File.WriteAllText(Path.Combine(ProjectRoot, fileName), contents);
+        }
+
+        private static string AssetFilePath(UnityEngine.Object asset)
+        {
+            var path = AssetDatabase.GetAssetPath(asset);
+            if (string.IsNullOrEmpty(path))
+                throw new InvalidOperationException("The Unity asset path was unavailable.");
+            return Path.Combine(ProjectRoot, path.Replace('/', Path.DirectorySeparatorChar));
+        }
+
+        private static string RemoveYamlField(string yaml, string fieldName)
+        {
+            var lines = yaml.Split(new[] { '\n' });
+            var fieldToken = fieldName + ":";
+            return string.Join(
+                "\n",
+                lines.Where(line => !line.TrimStart().StartsWith(fieldToken, StringComparison.Ordinal)));
+        }
+
+        private static void WritePayloadStabilityGraphArtifact(string fileName, SerializedObject serialized)
+        {
+            var entries = CaptureManagedReferenceGraph(serialized);
+            File.WriteAllText(
+                Path.Combine(ProjectRoot, fileName),
+                JsonUtility.ToJson(new ManagedReferenceGraphArtifact { entries = entries }, prettyPrint: true));
+        }
+
+        private static List<ManagedReferenceGraphEntry> CaptureManagedReferenceGraph(SerializedObject serialized)
+        {
+            serialized.Update();
+            var entries = new List<ManagedReferenceGraphEntry>();
+            var iterator = serialized.GetIterator();
+            var enterChildren = true;
+            while (iterator.NextVisible(enterChildren))
+            {
+                if (iterator.propertyType == SerializedPropertyType.ManagedReference)
+                {
+                    entries.Add(new ManagedReferenceGraphEntry
+                    {
+                        path = iterator.propertyPath,
+                        rid = iterator.managedReferenceId,
+                    });
+                }
+
+                enterChildren = iterator.hasVisibleChildren;
+            }
+
+            return entries;
+        }
+
+        private static Type FindFormerNamePayloadType(Type unionType, string formerName)
+        {
+            var expectedName = "__Spire" + formerName + "Payload";
+            var unionDefinition = unionType.IsGenericType ? unionType.GetGenericTypeDefinition() : unionType;
+            var type = unionType.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic)
+                .FirstOrDefault(candidate =>
+                {
+                    if (!string.Equals(candidate.Name, expectedName, StringComparison.Ordinal))
+                        return false;
+
+                    var declaringType = candidate.DeclaringType;
+                    if (declaringType == null)
+                        return false;
+
+                    var declaringDefinition = declaringType.IsGenericType
+                        ? declaringType.GetGenericTypeDefinition()
+                        : declaringType;
+                    return declaringDefinition == unionDefinition;
+                });
+            if (type == null)
+                throw new InvalidOperationException("Former-name payload type was unavailable for " + formerName + ".");
+
+            if (type.ContainsGenericParameters && unionType.IsGenericType && !unionType.ContainsGenericParameters)
+            {
+                var unionArguments = unionType.GetGenericArguments();
+                var nestedArguments = type.GetGenericArguments();
+                if (nestedArguments.Length != unionArguments.Length)
+                {
+                    throw new InvalidOperationException(
+                        "Former-name payload generic arity did not match its closed union for " + formerName + ".");
+                }
+
+                type = type.MakeGenericType(unionArguments);
+            }
+
+            return type;
+        }
+
+        private static object CreateFormerNamePayload(
+            Type unionType,
+            string formerName,
+            string fieldName,
+            object value)
+        {
+            var type = FindFormerNamePayloadType(unionType, formerName);
+            var payload = Activator.CreateInstance(type, true) ??
+                throw new InvalidOperationException("Could not instantiate former-name payload type " + type.FullName + ".");
+            SetMemberValue(payload, fieldName, value);
+            return payload;
+        }
+
+        private static string ReplacePayloadTypeAndInjectStaleKind(
+            string yaml,
+            Type unionType,
+            string currentPayloadName,
+            string formerNamePayloadName,
+            string unionFieldName)
+        {
+            var unionTypeName = unionType.Name;
+            var currentTypeIdentity = unionTypeName + "/" + currentPayloadName;
+            var formerNameTypeIdentity = unionTypeName + "/" + formerNamePayloadName;
+            Require(
+                yaml.IndexOf(currentTypeIdentity, StringComparison.Ordinal) >= 0,
+                "Current serialized payload type was unavailable: " + currentTypeIdentity);
+            var replaced = yaml.Replace(currentTypeIdentity, formerNameTypeIdentity, StringComparison.Ordinal);
+            var marker = "    " + unionFieldName + ":\n";
+            var markerIndex = replaced.IndexOf(marker, StringComparison.Ordinal);
+            Require(markerIndex >= 0, "Migration union field was unavailable in YAML: " + unionFieldName);
+            return replaced.Insert(markerIndex + marker.Length, "      _kind: 255\n");
+        }
+
+        private static string ReplaceNestedPayloadRidWithNull(
+            string yaml,
+            string helperFieldName,
+            string childFieldName)
+        {
+            var lines = yaml.Split(new[] { '\n' });
+            var helperIndent = -1;
+            var childIndent = -1;
+            var childSeen = false;
+            for (var index = 0; index < lines.Length; index++)
+            {
+                var line = lines[index].TrimEnd('\r');
+                var trimmed = line.TrimStart();
+                var indent = line.Length - trimmed.Length;
+                if (trimmed == helperFieldName + ":")
+                {
+                    helperIndent = indent;
+                    continue;
+                }
+
+                if (helperIndent >= 0 && indent <= helperIndent && trimmed.Length > 0)
+                {
+                    helperIndent = -1;
+                    childIndent = -1;
+                    childSeen = false;
+                    continue;
+                }
+
+                if (helperIndent >= 0 && trimmed == childFieldName + ":")
+                {
+                    childIndent = indent;
+                    childSeen = true;
+                    continue;
+                }
+
+                if (childSeen && indent <= childIndent && trimmed.Length > 0)
+                {
+                    childIndent = -1;
+                    childSeen = false;
+                    continue;
+                }
+
+                if (childSeen && trimmed.StartsWith("rid:", StringComparison.Ordinal))
+                {
+                    lines[index] = new string(' ', indent) + "rid: 0";
+                    return string.Join("\n", lines);
+                }
+            }
+
+            throw new InvalidOperationException(
+                "Could not find nested serialized payload rid for " + helperFieldName + "." + childFieldName + ".");
+        }
+
+        private static void ReloadWithoutSave(AssetScope scope)
+        {
+            var current = scope.Asset;
+            Resources.UnloadAsset(current);
+            scope.Asset = AssetDatabase.LoadAssetAtPath<UnitySerializationAsset>(scope.AssetPath);
+            Require(scope.Asset != null, "ReloadWithoutSave returned a null asset.");
+        }
+
+        [Serializable]
+        private sealed class ManagedReferenceGraphArtifact
+        {
+            public List<ManagedReferenceGraphEntry> entries = new List<ManagedReferenceGraphEntry>();
+        }
+
+        [Serializable]
+        private sealed class ManagedReferenceGraphEntry
+        {
+            public string path = string.Empty;
+            public long rid;
+        }
+
+        private sealed class FormerNamePayloadReplacement
+        {
+            public readonly string propertyPath;
+            public readonly string yamlFieldName;
+            public readonly Type unionType;
+            public readonly string formerName;
+
+            public FormerNamePayloadReplacement(string propertyPath, string yamlFieldName, Type unionType, string formerName)
+            {
+                this.propertyPath = propertyPath;
+                this.yamlFieldName = yamlFieldName;
+                this.unionType = unionType;
+                this.formerName = formerName;
             }
         }
 
@@ -1077,19 +2650,17 @@ namespace Spire.UnityIntegration
                 var tupleBefore = RequirePayloadProperty(serialized, "boxedTuple").managedReferenceValue;
                 Require(fieldsBefore != null && tupleBefore != null, "Initial boxed payloads were unavailable.");
 
-                scope.Asset.boxedFields = SetInternalSlotForField(
-                    scope.Asset.boxedFields,
-                    "label",
-                    "after-fields");
-                scope.Asset.boxedTuple = SetInternalSlotForField(
-                    scope.Asset.boxedTuple,
-                    "label",
-                    ("after-tuple", scope.Texture));
+                scope.Asset.boxedFields = SetSerializedPayloadCache(
+                    UnityBoxedFieldsUnion.Text("after-fields", scope.Texture),
+                    fieldsBefore);
+                scope.Asset.boxedTuple = SetSerializedPayloadCache(
+                    UnityBoxedTupleUnion.Text("after-tuple", scope.Texture),
+                    tupleBefore);
 
                 Require(
-                    GetSerializedPayloadCache(scope.Asset.boxedFields) == null &&
-                    GetSerializedPayloadCache(scope.Asset.boxedTuple) == null,
-                    "A boxed init mutation retained a stale serialized cache.");
+                    ReferenceEquals(GetSerializedPayloadCache(scope.Asset.boxedFields), fieldsBefore) &&
+                    ReferenceEquals(GetSerializedPayloadCache(scope.Asset.boxedTuple), tupleBefore),
+                    "A boxed runtime mutation changed the cached snapshot before serialization.");
 
                 scope.Save();
 
@@ -1115,7 +2686,7 @@ namespace Spire.UnityIntegration
                     ReferenceEquals(fieldsAfterMutation, fieldsAfterRepeat) &&
                     ReferenceEquals(tupleAfterMutation, tupleAfterRepeat),
                     "An unchanged repeated save replaced a matching boxed payload.");
-                return "fields=Text/before-fields->after-fields;tuple=Text/before-tuple->after-tuple;mutation-detached=true;repeat-stable=true;reference=preserved";
+                return "fields=Text/before-fields->after-fields;tuple=Text/before-tuple->after-tuple;mutation-replaced-on-save=true;repeat-stable=true;reference=preserved";
             }
         }
 
@@ -1162,12 +2733,20 @@ namespace Spire.UnityIntegration
                 scope.Asset.boxedParentCopy = scope.Asset.boxedParent;
                 scope.Save();
 
-                var copy = scope.Asset.boxedParentCopy;
-                copy = SetInternalSlotForField(copy, "marker", 2);
-                copy = SetInternalSlotForField(
-                    copy,
-                    "child",
-                    SetInternalSlotForField(copy.child, "label", "copy"));
+                var serialized = new SerializedObject(scope.Asset);
+                serialized.Update();
+                var parentPayload = RequirePayloadProperty(serialized, "boxedParent").managedReferenceValue;
+                var childPayload = RequirePayloadProperty(
+                    RequireProperty(RequirePayloadProperty(serialized, "boxedParent"), "child"))
+                    .managedReferenceValue;
+                Require(parentPayload != null && childPayload != null, "Initial boxed parent snapshots were unavailable.");
+
+                var copiedChildValue = SetSerializedPayloadCache(
+                    UnityBoxedFieldsUnion.Text("copy", scope.Texture),
+                    childPayload);
+                var copy = SetSerializedPayloadCache(
+                    UnityBoxedLayoutParent.Parent(copiedChildValue, 2),
+                    parentPayload);
                 scope.Asset.boxedParentCopy = copy;
                 scope.Save();
                 scope.Save();
@@ -1180,7 +2759,7 @@ namespace Spire.UnityIntegration
                     scope.Asset.boxedParentCopy.child.label == "copy",
                     "Copied BoxedFields parent mutated the original nested runtime value.");
 
-                var serialized = new SerializedObject(scope.Asset);
+                serialized = new SerializedObject(scope.Asset);
                 serialized.Update();
                 var originalChild = RequirePayloadProperty(
                     RequireProperty(RequirePayloadProperty(serialized, "boxedParent"), "child"));
@@ -1285,8 +2864,8 @@ namespace Spire.UnityIntegration
                 scope.Save();
                 var serialized = new SerializedObject(scope.Asset);
                 serialized.Update();
-                Require(DirectChildren(RequireProperty(serialized, "boxedFields")).Count == 2, "BoxedFields exposed extra serialized children.");
-                Require(DirectChildren(RequireProperty(serialized, "boxedTuple")).Count == 2, "BoxedTuple exposed extra serialized children.");
+                RequirePayloadOnly(serialized, "boxedFields");
+                RequirePayloadOnly(serialized, "boxedTuple");
                 var yaml = File.ReadAllText(scope.AssetFilePath);
                 AssertRuntimeFieldsAbsentFromYaml(typeof(UnityBoxedFieldsUnion), yaml);
                 AssertRuntimeFieldsAbsentFromYaml(typeof(UnityBoxedTupleUnion), yaml);
@@ -1295,7 +2874,7 @@ namespace Spire.UnityIntegration
                 Require(fieldsPayload != null && tuplePayload != null, "Boxed active payloads were unavailable.");
                 Require(yaml.IndexOf(fieldsPayload!.GetType().Name, StringComparison.Ordinal) >= 0, "BoxedFields active payload was absent from YAML.");
                 Require(yaml.IndexOf(tuplePayload!.GetType().Name, StringComparison.Ordinal) >= 0, "BoxedTuple active payload was absent from YAML.");
-                return "fields=kind+payload;tuple=kind+payload;runtime-storage=absent;inactive-payloads=absent";
+                return "fields=payload;tuple=payload;serialized-kind=false;runtime-storage=absent;inactive-payloads=absent";
             }
         }
 
@@ -1514,9 +3093,9 @@ namespace Spire.UnityIntegration
                 serialized.Update();
                 var union = RequireProperty(serialized, "unsafeUnion");
                 var children = DirectChildren(union);
-                Require(children.Count == 2, "UnsafeOverlap exposed runtime storage as serialized children.");
-                Require(children.Any(property => property.propertyType == SerializedPropertyType.Enum), "UnsafeOverlap discriminator was missing.");
-                Require(children.Any(property => property.propertyType == SerializedPropertyType.ManagedReference), "UnsafeOverlap payload was missing.");
+                Require(children.Count == 1, "UnsafeOverlap exposed more than its active payload as serialized children.");
+                Require(children[0].propertyType == SerializedPropertyType.ManagedReference, "UnsafeOverlap payload was missing.");
+                Require(!children.Any(property => property.propertyType == SerializedPropertyType.Enum), "UnsafeOverlap discriminator was still serialized.");
                 var payload = RequirePayloadProperty(serialized, "unsafeUnion").managedReferenceValue;
                 Require(payload != null, "UnsafeOverlap active payload was unavailable.");
                 var yaml = File.ReadAllText(scope.AssetFilePath);
@@ -1524,7 +3103,7 @@ namespace Spire.UnityIntegration
                 Require(
                     yaml.IndexOf(payload!.GetType().Name, StringComparison.Ordinal) >= 0,
                     "UnsafeOverlap active payload type was absent from YAML.");
-                return "children=2;active=" + payload.GetType().Name + ";raw-buffer=absent;managed-slots=absent";
+                return "children=1;active=" + payload.GetType().Name + ";serialized-kind=false;raw-buffer=absent;managed-slots=absent";
             }
         }
 
@@ -1646,9 +3225,9 @@ namespace Spire.UnityIntegration
                 serialized.Update();
                 var union = RequireProperty(serialized, "overlapUnion");
                 var children = DirectChildren(union);
-                Require(children.Count == 2, "Overlap exposed explicit runtime storage as serialized children.");
-                Require(children.Any(property => property.propertyType == SerializedPropertyType.Enum), "Overlap discriminator was missing.");
-                Require(children.Any(property => property.propertyType == SerializedPropertyType.ManagedReference), "Overlap payload was missing.");
+                Require(children.Count == 1, "Overlap exposed more than its active payload as serialized children.");
+                Require(children[0].propertyType == SerializedPropertyType.ManagedReference, "Overlap payload was missing.");
+                Require(!children.Any(property => property.propertyType == SerializedPropertyType.Enum), "Overlap discriminator was still serialized.");
                 var payload = RequirePayloadProperty(serialized, "overlapUnion").managedReferenceValue;
                 Require(payload != null, "Overlap active payload was unavailable.");
                 var yaml = File.ReadAllText(scope.AssetFilePath);
@@ -1656,7 +3235,7 @@ namespace Spire.UnityIntegration
                 Require(
                     yaml.IndexOf(payload!.GetType().Name, StringComparison.Ordinal) >= 0,
                     "Overlap active payload type was absent from YAML.");
-                return "children=2;active=" + payload.GetType().Name + ";explicit-runtime-fields=absent";
+                return "children=1;active=" + payload.GetType().Name + ";serialized-kind=false;explicit-runtime-fields=absent";
             }
         }
 
@@ -1671,6 +3250,14 @@ namespace Spire.UnityIntegration
                     yaml.IndexOf("  " + field.Name + ":", StringComparison.Ordinal) < 0,
                     "Runtime boxed field appeared in serialized YAML: " + field.Name);
             }
+        }
+
+        private static bool YamlContainsField(string yaml, string fieldName)
+        {
+            var prefix = fieldName + ":";
+            return yaml
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Any(line => line.TrimStart().StartsWith(prefix, StringComparison.Ordinal));
         }
 
         private static void AssertUnsafeRuntimeStorageIsDefault(UnityUnsafeOverlapUnion value)
@@ -1789,7 +3376,7 @@ namespace Spire.UnityIntegration
             }
         }
 
-        private static string DrawerReadsKindAndManagedReference()
+        private static string DrawerReadsPayloadTypeAndManagedReference()
         {
             using (var scope = new DrawerHostScope("drawer-read"))
             {
@@ -1797,16 +3384,12 @@ namespace Spire.UnityIntegration
                 var serialized = new SerializedObject(scope.Host);
                 serialized.Update();
                 var property = RequireProperty(serialized, "single");
-                var kind = RequireKindProperty(property);
-                var payload = RequirePayloadProperty(property).managedReferenceValue;
-                Require(kind.enumDisplayNames[kind.enumValueIndex] == "Empty" || kind.enumDisplayNames[kind.enumValueIndex] == "Number" || kind.enumDisplayNames[kind.enumValueIndex] == "Text" || kind.enumDisplayNames[kind.enumValueIndex] == "ObjectRef", "Serialized kind was not a known drawer variant.");
+                var direct = DirectChildren(property);
+                Require(direct.Count == 1 && direct[0].propertyType == SerializedPropertyType.ManagedReference, "Drawer target exposed a serialized kind instead of one payload.");
+                var payload = direct[0].managedReferenceValue;
                 Require(payload != null, "Serialized managed payload was unavailable.");
-                var boxed = TryReadBoxedValue(property, out var boxedState);
-                Require(
-                    !boxed || boxedState != "Text",
-                    "The installed Unity boxedValue getter unexpectedly reconstructed the complete Text union.");
                 RequirePayloadValue(payload!, "label", "serialized");
-                return "serialized-kind=Text;payload=present;boxedValue-getter=" + boxedState;
+                return "serialized-kind=false;payload-type=" + payload!.GetType().Name + ";payload=present";
             }
         }
 
@@ -2241,11 +3824,22 @@ namespace Spire.UnityIntegration
 
         private static readonly string[] DrawerCallbackScenarioNames =
         {
-        "Drawer_InvalidKind_SelectsFirstKnownVariant",
+        "Drawer_MissingPayload_SelectsFirstVariant",
         "Drawer_SelectionChange_UsesFactoryReplacement",
         "Drawer_ArrayElement_NestedPathWriteback",
         "Drawer_ListElement_NestedPathWriteback",
         "Drawer_UndoRedo_WholeValueAndPayloadEdit",
+        "Drawer_SharedPayload_EditUndoRedoIsolated",
+        "Drawer_NestedInlineHelper_EditUndoRedoIsolated",
+        "Drawer_RenderedFieldHistory_MultiStepUndoRedo",
+        "Drawer_RenderedEdit_PreservesStagedUnrelatedApply",
+        "Drawer_RenderedNumericFields_UndoRedo",
+        "Drawer_RenderedInspectorNamedEnum_UndoRedo",
+        "Drawer_RenderedFlagsEnum_UndoRedo",
+        "Drawer_RenderedEnum_InvalidChoicePreservesHistory",
+        "Drawer_ReadOnlyAliasedPayload_RenderedStable",
+        "Drawer_ReadOnlyAliasedPayload_UnrelatedApplyStable",
+        "Drawer_MultiObjectActiveFieldEdit",
         "Drawer_UndoRedoWhileDetached_ReattachesCurrentTree",
         "Drawer_UndoBeforeFirstPanelAttach_BindsCurrentState",
         "Drawer_MultiObjectEditing",
@@ -2604,18 +4198,33 @@ namespace Spire.UnityIntegration
             return property.FindPropertyRelative(path) ?? throw new InvalidOperationException("Relative SerializedProperty was unavailable: " + path);
         }
 
-        private static SerializedProperty RequireKindProperty(SerializedObject serialized, string path)
+        private static object? CreateDrawerPayloadForRawKind(int rawKind)
         {
-            return RequireKindProperty(RequireProperty(serialized, path));
-        }
+            if (rawKind == 255)
+                return null;
 
-        private static SerializedProperty RequireKindProperty(SerializedProperty union)
-        {
-            var direct = DirectChildren(union);
-            var kind = direct.FirstOrDefault(property => property.propertyType == SerializedPropertyType.Enum && property.name.IndexOf("kind", StringComparison.OrdinalIgnoreCase) >= 0);
-            if (kind == null)
-                kind = direct.FirstOrDefault(property => property.propertyType == SerializedPropertyType.Enum);
-            return kind ?? throw new InvalidOperationException("Serialized discriminator property was unavailable for " + union.propertyPath + ".");
+            var value = rawKind switch
+            {
+                (int)UnityDrawerUnion.Kind.Empty => UnityDrawerUnion.Empty(),
+                (int)UnityDrawerUnion.Kind.Number => UnityDrawerUnion.Number(0f),
+                (int)UnityDrawerUnion.Kind.Text => UnityDrawerUnion.Text(0, string.Empty),
+                (int)UnityDrawerUnion.Kind.ObjectRef => UnityDrawerUnion.ObjectRef((Texture2D)null!),
+                _ => throw new InvalidOperationException("Unsupported drawer payload selector value: " + rawKind),
+            };
+            var gameObject = new GameObject("SpireUnityIntegration-DrawerPayloadSource");
+            try
+            {
+                var host = gameObject.AddComponent<UnityDrawerHost>();
+                host.single = value;
+                var serialized = new SerializedObject(host);
+                serialized.Update();
+                var payload = RequirePayloadProperty(serialized, "single").managedReferenceValue;
+                return payload ?? throw new InvalidOperationException("Drawer payload source was null.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(gameObject);
+            }
         }
 
         private static SerializedProperty RequirePayloadProperty(SerializedObject serialized, string path)
@@ -2656,6 +4265,171 @@ namespace Spire.UnityIntegration
             return payload ?? throw new InvalidOperationException("Managed payload was null for " + field + ".");
         }
 
+        private static UnityManagedReferenceNodeLeaf CreateManagedReferenceLeaf(string id, int amount)
+            => new UnityManagedReferenceNodeLeaf
+            {
+                id = id,
+                amount = amount,
+            };
+
+        private static UnityManagedReferenceNodeOther CreateManagedReferenceOther(string id, string label)
+            => new UnityManagedReferenceNodeOther
+            {
+                id = id,
+                label = label,
+            };
+
+        private static UnityManagedReferenceHostData CreateManagedReferenceHostData(
+            UnityManagedReferenceNodeBase? shared,
+            bool includeCycle)
+        {
+            var helperNode = CreateManagedReferenceLeaf("cycle-helper-node", 101);
+            var opaqueNode = CreateManagedReferenceOther("helper-opaque", "opaque");
+            var helper = new UnityManagedReferenceHelper(
+                UnityManagedReferenceAdditiveUnion.Reference(helperNode),
+                helperNode,
+                opaqueNode,
+                null);
+            var generatedStateNode = new UnityManagedReferenceNodeGeneratedState
+            {
+                id = "generated-state",
+                state = UnityManagedReferenceNodeStateUnion.Active(303),
+            };
+            generatedStateNode.SetGeneratedState(
+                UnityManagedReferenceNodeStateUnion.Active(303),
+                opaqueNode,
+                shared as IUnityManagedReferenceNode);
+            UnityManagedReferenceNodeBase? cycleRoot = null;
+            if (includeCycle)
+            {
+                var cycleFirst = CreateManagedReferenceLeaf("cycle-first", 201);
+                var cycleSecond = CreateManagedReferenceOther("cycle-second", "cycle");
+                cycleFirst.next = cycleSecond;
+                cycleSecond.next = cycleFirst;
+                cycleRoot = cycleFirst;
+
+                var helperFirst = new UnityManagedReferenceHelper(
+                    UnityManagedReferenceAdditiveUnion.Reference(helperNode),
+                    helperNode,
+                    opaqueNode,
+                    null);
+                var helperSecond = new UnityManagedReferenceHelper(
+                    UnityManagedReferenceAdditiveUnion.Reference(opaqueNode),
+                    opaqueNode,
+                    helperNode,
+                    helperFirst);
+                helperFirst.SetReferences(helperNode, opaqueNode, helperSecond);
+                helper = helperFirst;
+            }
+
+            var data = new UnityManagedReferenceHostData
+            {
+                additive = UnityManagedReferenceAdditiveUnion.Reference(shared),
+                boxedFields = UnityManagedReferenceBoxedFieldsUnion.Reference(shared),
+                boxedTuple = UnityManagedReferenceBoxedTupleUnion.Reference(shared),
+                unsafeOverlap = UnityManagedReferenceUnsafeOverlapUnion.Reference(shared),
+                overlap = UnityManagedReferenceOverlapUnion.Reference(shared),
+                renamed = UnityManagedReferenceRenamedUnion.Reference(shared),
+                genericBase = UnityManagedReferenceGeneric<UnityManagedReferenceNodeBase>.Value(shared!),
+                genericInterface = UnityManagedReferenceGeneric<IUnityManagedReferenceNode>.Value((shared as IUnityManagedReferenceNode)!),
+                genericDerived = UnityManagedReferenceGeneric<UnityManagedReferenceNodeLeaf>.Value((shared as UnityManagedReferenceNodeLeaf)!),
+                baseInterface = UnityManagedReferenceBaseInterfaceUnion.Base(shared),
+                sharedNode = shared,
+                cycleRoot = cycleRoot,
+                generatedStateNode = generatedStateNode,
+                dynamicNode = generatedStateNode,
+                nodeArray = new UnityManagedReferenceNodeBase?[] { shared, null, shared },
+                nodeList = new List<UnityManagedReferenceNodeBase?> { shared, null, shared },
+                helper = helper,
+            };
+            data.SetPrivateReferences(shared, opaqueNode);
+            return data;
+        }
+
+        private static void RequireManagedReferenceNulls(UnityManagedReferenceHostData data)
+        {
+            Require(data.additive.kind == UnityManagedReferenceAdditiveUnion.Kind.Reference && data.additive.value == null, "Additive null managed reference was not preserved.");
+            Require(data.boxedFields.kind == UnityManagedReferenceBoxedFieldsUnion.Kind.Reference && data.boxedFields.value == null, "BoxedFields null managed reference was not preserved.");
+            Require(data.boxedTuple.kind == UnityManagedReferenceBoxedTupleUnion.Kind.Reference && data.boxedTuple.value == null, "BoxedTuple null managed reference was not preserved.");
+            Require(data.unsafeOverlap.kind == UnityManagedReferenceUnsafeOverlapUnion.Kind.Reference && data.unsafeOverlap.value == null, "UnsafeOverlap null managed reference was not preserved.");
+            Require(data.overlap.kind == UnityManagedReferenceOverlapUnion.Kind.Reference && data.overlap.value == null, "Overlap null managed reference was not preserved.");
+        }
+
+        private static void RequireManagedReferenceValues(UnityManagedReferenceHostData data, UnityManagedReferenceNodeBase? expected)
+        {
+            Require(data.additive.kind == UnityManagedReferenceAdditiveUnion.Kind.Reference && ReferenceEquals(data.additive.value, expected), "Additive managed reference differed.");
+            Require(data.boxedFields.kind == UnityManagedReferenceBoxedFieldsUnion.Kind.Reference && ReferenceEquals(data.boxedFields.value, expected), "BoxedFields managed reference differed.");
+            Require(data.boxedTuple.kind == UnityManagedReferenceBoxedTupleUnion.Kind.Reference && ReferenceEquals(data.boxedTuple.value, expected), "BoxedTuple managed reference differed.");
+            Require(data.unsafeOverlap.kind == UnityManagedReferenceUnsafeOverlapUnion.Kind.Reference && ReferenceEquals(data.unsafeOverlap.value, expected), "UnsafeOverlap managed reference differed.");
+            Require(data.overlap.kind == UnityManagedReferenceOverlapUnion.Kind.Reference && ReferenceEquals(data.overlap.value, expected), "Overlap managed reference differed.");
+            Require(data.renamed.kind == UnityManagedReferenceRenamedUnion.Kind.Reference && ReferenceEquals(data.renamed.value, expected), "Renamed managed reference differed.");
+            Require(data.genericBase.kind == UnityManagedReferenceGeneric<UnityManagedReferenceNodeBase>.Kind.Value && ReferenceEquals(data.genericBase.value, expected), "Generic base managed reference differed.");
+            Require(data.genericInterface.kind == UnityManagedReferenceGeneric<IUnityManagedReferenceNode>.Kind.Value && ReferenceEquals(data.genericInterface.value, expected), "Generic interface managed reference differed.");
+            Require(data.genericDerived.kind == UnityManagedReferenceGeneric<UnityManagedReferenceNodeLeaf>.Kind.Value && ReferenceEquals(data.genericDerived.value, expected), "Generic derived managed reference differed.");
+            Require(data.baseInterface.kind == UnityManagedReferenceBaseInterfaceUnion.Kind.Base && ReferenceEquals(data.baseInterface.baseValue, expected), "Base/interface managed reference differed.");
+            Require(ReferenceEquals(data.sharedNode, expected), "Host shared managed reference differed.");
+            Require(
+                data.generatedStateNode != null &&
+                data.generatedStateNode.state.kind == UnityManagedReferenceNodeStateUnion.Kind.Active &&
+                data.generatedStateNode.state.marker == 303 &&
+                data.generatedStateNode.ObjectHolder is UnityManagedReferenceNodeOther other &&
+                other.id == "helper-opaque" &&
+                ReferenceEquals(data.generatedStateNode.InterfaceHolder, expected) &&
+                ReferenceEquals(data.dynamicNode, data.generatedStateNode),
+                "Derived generated-state managed node differed.");
+        }
+
+        private static bool HasManagedReferencePayloadMetadata(Type unionType, string variantName, string fieldName)
+        {
+            var payloadName = "__Spire" + variantName + "Payload";
+            var payload = unionType.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic)
+                .FirstOrDefault(candidate => candidate.Name == payloadName);
+            var field = payload?.GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            return field != null && field.GetCustomAttributes(typeof(SerializeReference), inherit: false).Length > 0;
+        }
+
+        private static bool HasManagedReferenceMetadataForAllLayouts()
+            => HasManagedReferencePayloadMetadata(typeof(UnityManagedReferenceAdditiveUnion), "Reference", "value") &&
+                HasManagedReferencePayloadMetadata(typeof(UnityManagedReferenceBoxedFieldsUnion), "Reference", "value") &&
+                HasManagedReferencePayloadMetadata(typeof(UnityManagedReferenceBoxedTupleUnion), "Reference", "value") &&
+                HasManagedReferencePayloadMetadata(typeof(UnityManagedReferenceUnsafeOverlapUnion), "Reference", "value") &&
+                HasManagedReferencePayloadMetadata(typeof(UnityManagedReferenceOverlapUnion), "Reference", "value");
+
+        private static void RequireManagedReferenceField(SerializedObject serialized, string unionPath, string fieldName)
+        {
+            RequireManagedReferenceField(RequirePayloadProperty(serialized, unionPath), fieldName);
+        }
+
+        private static void RequireManagedReferenceField(SerializedProperty parent, string fieldName)
+        {
+            var field = RequireProperty(parent, fieldName);
+            Require(
+                field.propertyType == SerializedPropertyType.ManagedReference,
+                "Managed-reference field was not exposed as SerializedProperty.ManagedReference: " + parent.propertyPath + "." + fieldName);
+        }
+
+        private static void RequireInlineField(SerializedObject serialized, string unionPath, string fieldName)
+        {
+            RequireInlineField(RequirePayloadProperty(serialized, unionPath), fieldName);
+        }
+
+        private static void RequireInlineField(SerializedProperty parent, string fieldName)
+        {
+            var field = RequireProperty(parent, fieldName);
+            Require(
+                field.propertyType != SerializedPropertyType.ManagedReference,
+                "Inline field unexpectedly acquired managed-reference serialization: " + parent.propertyPath + "." + fieldName);
+        }
+
+        private static void RequireManagedReferenceCollectionField(SerializedObject serialized, string unionPath, string fieldName)
+        {
+            var field = RequireProperty(RequirePayloadProperty(serialized, unionPath), fieldName);
+            Require(field.isArray && field.arraySize >= 3, "Managed-reference collection field was unavailable: " + unionPath + "." + fieldName);
+            Require(
+                field.GetArrayElementAtIndex(0).propertyType == SerializedPropertyType.ManagedReference,
+                "Managed-reference collection elements were not exposed as managed properties: " + unionPath + "." + fieldName);
+        }
+
         private static object RequirePayload(SerializedObject serialized, string field)
         {
             var payload = RequirePayloadProperty(serialized, field).managedReferenceValue;
@@ -2670,6 +4444,121 @@ namespace Spire.UnityIntegration
             var actual = member is FieldInfo field ? field.GetValue(payload) : ((PropertyInfo)member).GetValue(payload, null);
             if (!Equals(actual, expected))
                 throw new InvalidOperationException("Payload member " + memberName + " expected " + expected + " but observed " + actual + ".");
+        }
+
+        private static void RequireDrawerAssetTextState(
+            UnityDrawerAsset asset,
+            int sourceCount,
+            string sourceLabel,
+            int editedCount,
+            string editedLabel)
+        {
+            Require(
+                asset.values.Length == 2 &&
+                asset.values[0].count == sourceCount &&
+                asset.values[0].label == sourceLabel &&
+                asset.values[1].count == editedCount &&
+                asset.values[1].label == editedLabel,
+                "Drawer asset runtime state differed: source=" +
+                asset.values[0].count + "/" + asset.values[0].label +
+                ";edited=" + asset.values[1].count + "/" + asset.values[1].label);
+
+            var serialized = new SerializedObject(asset);
+            serialized.Update();
+            var sourcePayload = RequirePayloadProperty(
+                serialized,
+                "values.Array.data[0]").managedReferenceValue;
+            var editedPayload = RequirePayloadProperty(
+                serialized,
+                "values.Array.data[1]").managedReferenceValue;
+            Require(
+                sourcePayload != null && editedPayload != null,
+                "Drawer asset payload state was unavailable.");
+            RequirePayloadValue(sourcePayload, "count", sourceCount);
+            RequirePayloadValue(sourcePayload, "label", sourceLabel);
+            RequirePayloadValue(editedPayload, "count", editedCount);
+            RequirePayloadValue(editedPayload, "label", editedLabel);
+        }
+
+        private static void RequireDrawerNumericState(
+            UnityDrawerNumericAsset asset,
+            long expectedLong,
+            double expectedDouble,
+            UnityDrawerNonOrdinal expectedEnum)
+        {
+            Require(
+                asset.value.kind == UnityDrawerNumericUnion.Kind.Values &&
+                asset.value.longValue == expectedLong &&
+                asset.value.doubleValue == expectedDouble &&
+                asset.value.enumValue == expectedEnum,
+                "Drawer numeric runtime state differed: long=" +
+                asset.value.longValue + ";double=" + asset.value.doubleValue +
+                ";enum=" + asset.value.enumValue);
+
+            var serialized = new SerializedObject(asset);
+            serialized.Update();
+            var payload = RequirePayloadProperty(serialized, "value").managedReferenceValue;
+            Require(payload != null, "Drawer numeric payload state was unavailable.");
+            RequirePayloadValue(payload, "longValue", expectedLong);
+            RequirePayloadValue(payload, "doubleValue", expectedDouble);
+            RequirePayloadValue(payload, "enumValue", expectedEnum);
+        }
+
+        private static void RequireDrawerInspectorNamedEnumState(
+            UnityDrawerNumericAsset asset,
+            long expectedLong,
+            double expectedDouble,
+            UnityDrawerInspectorNamedEnum expectedEnum)
+        {
+            Require(
+                asset.named.kind == UnityDrawerInspectorNamedEnumUnion.Kind.Values &&
+                asset.named.longValue == expectedLong &&
+                asset.named.doubleValue == expectedDouble &&
+                asset.named.enumValue == expectedEnum,
+                "Drawer inspector-named enum runtime state differed: long=" +
+                asset.named.longValue + ";double=" + asset.named.doubleValue +
+                ";enum=" + asset.named.enumValue);
+
+            var serialized = new SerializedObject(asset);
+            serialized.Update();
+            var payload = RequirePayloadProperty(serialized, "named").managedReferenceValue;
+            Require(payload != null, "Drawer inspector-named enum payload state was unavailable.");
+            RequirePayloadValue(payload, "longValue", expectedLong);
+            RequirePayloadValue(payload, "doubleValue", expectedDouble);
+            RequirePayloadValue(payload, "enumValue", expectedEnum);
+        }
+
+        private static void RequireDrawerFlagsState(
+            UnityDrawerNumericAsset asset,
+            long expectedLong,
+            double expectedDouble,
+            UnityDrawerNonOrdinalFlags expectedFlags)
+        {
+            Require(
+                asset.flags.kind == UnityDrawerFlagsUnion.Kind.Values &&
+                asset.flags.longValue == expectedLong &&
+                asset.flags.doubleValue == expectedDouble &&
+                asset.flags.flagsValue == expectedFlags,
+                "Drawer flags runtime state differed: long=" +
+                asset.flags.longValue + ";double=" + asset.flags.doubleValue +
+                ";flags=" + asset.flags.flagsValue);
+
+            var serialized = new SerializedObject(asset);
+            serialized.Update();
+            var payload = RequirePayloadProperty(serialized, "flags").managedReferenceValue;
+            Require(payload != null, "Drawer flags payload state was unavailable.");
+            RequirePayloadValue(payload, "longValue", expectedLong);
+            RequirePayloadValue(payload, "doubleValue", expectedDouble);
+            RequirePayloadValue(payload, "flagsValue", expectedFlags);
+        }
+
+        private static bool HasManagedReferencePayloadField(object payload, string memberName)
+        {
+            var field = payload.GetType().GetField(
+                memberName,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            return field != null &&
+                field.GetCustomAttributes(typeof(SerializeReference), inherit: false).Length > 0;
         }
 
         private static void SetMemberValue(object instance, string memberName, object? value)
@@ -2700,9 +4589,30 @@ namespace Spire.UnityIntegration
         {
             object boxed = value!;
             var property = boxed.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            if (property == null || property.SetMethod == null)
-                throw new InvalidOperationException("Generated internal init property was unavailable: " + propertyName + ".");
-            property.SetValue(boxed, newValue, null);
+            if (property?.SetMethod != null)
+            {
+                property.SetValue(boxed, newValue, null);
+                return (T)boxed;
+            }
+
+            var field = boxed.GetType().GetField(
+                propertyName,
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (field == null || field.IsStatic)
+                throw new InvalidOperationException("Generated internal storage member was unavailable: " + propertyName + ".");
+            field.SetValue(boxed, newValue);
+            return (T)boxed;
+        }
+
+        private static T InvokeSerializationCallback<T>(T value, string callbackName)
+        {
+            object boxed = value!;
+            var callback = boxed.GetType().GetMethod(
+                callbackName,
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (callback == null)
+                throw new InvalidOperationException("Generated serialization callback was unavailable: " + callbackName + ".");
+            callback.Invoke(boxed, null);
             return (T)boxed;
         }
 
@@ -2712,6 +4622,19 @@ namespace Spire.UnityIntegration
                 "_serializedPayload",
                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             return field?.GetValue(value);
+        }
+
+        private static T SetSerializedPayloadCache<T>(T value, object payload)
+        {
+            object boxed = value!;
+            var field = boxed.GetType().GetField(
+                "_serializedPayload",
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (field == null)
+                throw new InvalidOperationException(
+                    "Generated serialized payload field was unavailable for " + boxed.GetType().FullName + ".");
+            field.SetValue(boxed, payload);
+            return (T)boxed;
         }
 
         private static object? GetBoxedTupleRuntimeStorage<T>(T value)
@@ -2736,6 +4659,15 @@ namespace Spire.UnityIntegration
                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             if (publicProperty?.GetMethod == null)
                 throw new InvalidOperationException("Generated public getter was unavailable: " + fieldName + ".");
+
+            var getterStorageField = ReadGetterMembers(publicProperty.GetMethod)
+                .OfType<FieldInfo>()
+                .FirstOrDefault(field =>
+                    !field.IsStatic &&
+                    IsInternalSlotName(field.Name) &&
+                    (newValue == null || field.FieldType.IsInstanceOfType(newValue)));
+            if (getterStorageField != null)
+                return SetInternalSlot((T)boxed, getterStorageField.Name, newValue);
 
             var ilSlot = ResolveGetterInternalSlot(boxed.GetType(), publicProperty, newValue);
             if (ilSlot != null)
@@ -3087,21 +5019,6 @@ namespace Spire.UnityIntegration
             }
         }
 
-        private static object? InternalSlotValue(Type type, Texture2D texture)
-        {
-            if (type == typeof(int))
-                return 11;
-            if (type == typeof(string))
-                return "internal-slot";
-            if (type == typeof(Texture2D))
-                return texture;
-            if (type == typeof(float))
-                return 17.5f;
-            if (type == typeof(UnityCallbackChild))
-                return UnityCallbackChild.Text(13, "internal-child", texture);
-            return null;
-        }
-
         private static string GetKindName<T>(T value)
         {
             var property = value!.GetType().GetProperty("kind", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
@@ -3273,6 +5190,11 @@ namespace Spire.UnityIntegration
             public string runtimeReportPath = string.Empty;
             public string runtimeReportArgument = string.Empty;
             public string scriptingBackend = string.Empty;
+            public string managedStrippingLevel = string.Empty;
+            public bool cleanBuildCache;
+            public string fixtureSelection = string.Empty;
+            public string profile = string.Empty;
+            public string executablePath = string.Empty;
             public int errors;
             public int warnings;
             public string error = string.Empty;
@@ -3341,6 +5263,99 @@ namespace Spire.UnityIntegration
             }
         }
 
+        private sealed class SerializationFootprintAssetScope : IDisposable
+        {
+            private static int _nextId;
+
+            public readonly string AssetPath;
+            public UnitySerializationFootprintAsset Asset;
+
+            public SerializationFootprintAssetScope(string name)
+            {
+                EnsureAssetFolder();
+                var id = ++_nextId;
+                AssetPath = AssetFolder + "/footprint-" + id + "-" + name + ".asset";
+                Asset = ScriptableObject.CreateInstance<UnitySerializationFootprintAsset>();
+                AssetDatabase.CreateAsset(Asset, AssetPath);
+                AssetDatabase.SaveAssets();
+            }
+
+            public void Save()
+            {
+                EditorUtility.SetDirty(Asset);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.ImportAsset(AssetPath, ImportAssetOptions.ForceUpdate);
+            }
+
+            public void Reload()
+            {
+                Save();
+                var current = Asset;
+                Resources.UnloadAsset(current);
+                Asset = AssetDatabase.LoadAssetAtPath<UnitySerializationFootprintAsset>(AssetPath);
+                if (Asset == null)
+                    throw new InvalidOperationException("Serialization-footprint asset reload returned null: " + AssetPath);
+            }
+
+            public void Dispose()
+            {
+                if (Asset != null)
+                    EditorUtility.SetDirty(Asset);
+                AssetDatabase.DeleteAsset(AssetPath);
+                AssetDatabase.SaveAssets();
+            }
+        }
+
+        private sealed class ManagedReferenceAssetScope : IDisposable
+        {
+            private static int _nextId;
+
+            public readonly string AssetPath;
+            public UnityManagedReferenceAsset Asset;
+
+            public ManagedReferenceAssetScope(string name)
+            {
+                EnsureAssetFolder();
+                var id = ++_nextId;
+                AssetPath = AssetFolder + "/managed-" + id + "-" + name + ".asset";
+                Asset = ScriptableObject.CreateInstance<UnityManagedReferenceAsset>();
+                AssetDatabase.CreateAsset(Asset, AssetPath);
+                AssetDatabase.SaveAssets();
+            }
+
+            public string AssetFilePath => Path.Combine(ProjectRoot, AssetPath.Replace('/', Path.DirectorySeparatorChar));
+
+            public void Save()
+            {
+                EditorUtility.SetDirty(Asset);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.ImportAsset(AssetPath, ImportAssetOptions.ForceUpdate);
+            }
+
+            public void Reload()
+            {
+                Save();
+                ReloadWithoutSave();
+            }
+
+            public void ReloadWithoutSave()
+            {
+                var current = Asset;
+                Resources.UnloadAsset(current);
+                Asset = AssetDatabase.LoadAssetAtPath<UnityManagedReferenceAsset>(AssetPath);
+                if (Asset == null)
+                    throw new InvalidOperationException("Managed-reference asset reload returned null: " + AssetPath);
+            }
+
+            public void Dispose()
+            {
+                if (Asset != null)
+                    EditorUtility.SetDirty(Asset);
+                AssetDatabase.DeleteAsset(AssetPath);
+                AssetDatabase.SaveAssets();
+            }
+        }
+
         private sealed class DrawerHostScope : IDisposable
         {
             public readonly GameObject Object;
@@ -3350,6 +5365,24 @@ namespace Spire.UnityIntegration
             {
                 Object = new GameObject("SpireUnityIntegration-" + name);
                 Host = Object.AddComponent<UnityDrawerHost>();
+            }
+
+            public void Dispose()
+            {
+                if (Object != null)
+                    UnityEngine.Object.DestroyImmediate(Object);
+            }
+        }
+
+        private sealed class ManagedReferenceDrawerScope : IDisposable
+        {
+            public readonly GameObject Object;
+            public readonly UnityManagedReferenceDrawerHost Host;
+
+            public ManagedReferenceDrawerScope(string name)
+            {
+                Object = new GameObject("SpireUnityIntegration-" + name);
+                Host = Object.AddComponent<UnityManagedReferenceDrawerHost>();
             }
 
             public void Dispose()
@@ -3378,11 +5411,22 @@ namespace Spire.UnityIntegration
                 _window = window;
                 _scenarios = new List<DrawerUiScenario>
             {
-                CreateInvalidKindScenario(),
+                CreateMissingPayloadScenario(),
                 CreateDirectSelectorScenario(),
                 CreateArraySelectorScenario(),
                 CreateListSelectorScenario(),
                 CreateUndoRedoScenario(),
+                CreateSharedPayloadIsolationScenario(),
+                CreateNestedInlineHelperSharedPayloadScenario(),
+                CreateRenderedFieldHistoryScenario(),
+                CreateRenderedEditPreservesStagedUnrelatedApplyScenario(),
+                CreateRenderedNumericFieldsScenario(),
+                CreateRenderedInspectorNamedEnumScenario(),
+                CreateRenderedFlagsEnumScenario(),
+                CreateRenderedEnumInvalidChoiceScenario(),
+                CreateReadOnlyAliasedPayloadScenario(),
+                CreateReadOnlyAliasedPayloadApplyScenario(),
+                CreateMultiObjectActiveFieldScenario(),
                 CreateDetachedUndoRedoScenario(),
                 CreateUndoBeforeFirstPanelAttachScenario(),
                 CreateMultiObjectScenario(),
@@ -3472,6 +5516,68 @@ namespace Spire.UnityIntegration
                 return gameObject.AddComponent<UnityDrawerHost>();
             }
 
+            public UnityDrawerAsset CreateAsset(string name)
+            {
+                EnsureAssetFolder();
+                var path = AssetFolder + "/drawer-callback-" +
+                    Guid.NewGuid().ToString("N") + "-" + name + ".asset";
+                var asset = ScriptableObject.CreateInstance<UnityDrawerAsset>();
+                AssetDatabase.CreateAsset(asset, path);
+                AssetDatabase.SaveAssets();
+                _assetPaths.Add(path);
+                return asset;
+            }
+
+            public UnityDrawerInlineHelperAsset CreateInlineHelperAsset(string name)
+            {
+                EnsureAssetFolder();
+                var path = AssetFolder + "/drawer-callback-inline-helper-" +
+                    Guid.NewGuid().ToString("N") + "-" + name + ".asset";
+                var asset = ScriptableObject.CreateInstance<UnityDrawerInlineHelperAsset>();
+                AssetDatabase.CreateAsset(asset, path);
+                AssetDatabase.SaveAssets();
+                _assetPaths.Add(path);
+                return asset;
+            }
+
+            public UnityDrawerAsset ReloadAsset(UnityDrawerAsset asset)
+            {
+                var path = AssetDatabase.GetAssetPath(asset);
+                Require(!string.IsNullOrEmpty(path), "Drawer asset path was unavailable before reload.");
+                EditorUtility.SetDirty(asset);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+                Resources.UnloadAsset(asset);
+                var reloaded = AssetDatabase.LoadAssetAtPath<UnityDrawerAsset>(path);
+                Require(reloaded != null, "Drawer asset reload returned null: " + path);
+                return reloaded;
+            }
+
+            public UnityDrawerNumericAsset CreateNumericAsset(string name)
+            {
+                EnsureAssetFolder();
+                var path = AssetFolder + "/drawer-callback-numeric-" +
+                    Guid.NewGuid().ToString("N") + "-" + name + ".asset";
+                var asset = ScriptableObject.CreateInstance<UnityDrawerNumericAsset>();
+                AssetDatabase.CreateAsset(asset, path);
+                AssetDatabase.SaveAssets();
+                _assetPaths.Add(path);
+                return asset;
+            }
+
+            public UnityDrawerNumericAsset ReloadNumericAsset(UnityDrawerNumericAsset asset)
+            {
+                var path = AssetDatabase.GetAssetPath(asset);
+                Require(!string.IsNullOrEmpty(path), "Numeric drawer asset path was unavailable before reload.");
+                EditorUtility.SetDirty(asset);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+                Resources.UnloadAsset(asset);
+                var reloaded = AssetDatabase.LoadAssetAtPath<UnityDrawerNumericAsset>(path);
+                Require(reloaded != null, "Numeric drawer asset reload returned null: " + path);
+                return reloaded;
+            }
+
             public void TrackObject(GameObject gameObject)
             {
                 _objects.Add(gameObject);
@@ -3494,14 +5600,14 @@ namespace Spire.UnityIntegration
                     AssetDatabase.DeleteAsset(assetPath);
             }
 
-            private static DrawerUiScenario CreateInvalidKindScenario()
+            private static DrawerUiScenario CreateMissingPayloadScenario()
             {
-                var scenario = new DrawerUiScenario("Drawer_InvalidKind_SelectsFirstKnownVariant");
+                var scenario = new DrawerUiScenario("Drawer_MissingPayload_SelectsFirstVariant");
                 UnityDrawerHost? host = null;
                 var phase = 0;
                 scenario.Start = (runner, window) =>
                 {
-                    host = runner.CreateHost("invalid-kind");
+                    host = runner.CreateHost("missing-payload");
                     host.single = UnityDrawerUnion.Text(4, "stale");
                     window.Bind(host, "single");
                     window.SetRawKind("single", 255);
@@ -3514,21 +5620,20 @@ namespace Spire.UnityIntegration
                     {
                         var selectorValue = window.SelectorValue();
                         Require(
-                            selectorValue.IndexOf("invalid", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            selectorValue.IndexOf("255", StringComparison.Ordinal) >= 0,
-                            "Invalid raw kind was not indicated by the generated selector; observed='" + selectorValue + "'.");
-                        Require(window.TryInteractWithSelector("Empty"), "Invalid-kind Empty selector was unavailable.");
+                            selectorValue.IndexOf("Empty", StringComparison.OrdinalIgnoreCase) >= 0,
+                            "Missing payload did not select the first Empty variant; observed='" + selectorValue + "'.");
+                        Require(window.TryInteractWithSelector("Empty"), "Missing-payload Empty selector was unavailable.");
                         return false;
                     }
 
-                    Require(host!.single.kind == UnityDrawerUnion.Kind.Empty, "Invalid-kind selector did not construct Empty.");
+                    Require(host!.single.kind == UnityDrawerUnion.Kind.Empty, "Missing-payload selector did not construct Empty.");
                     Require(
                         !window.HasBoundFieldControl("count") &&
                         !window.HasBoundFieldControl("label") &&
                         !window.HasBoundFieldControl("value") &&
                         !window.HasBoundFieldControl("texture"),
-                        "Invalid-kind Empty selection kept inactive controls.");
-                    scenario.Observed = "raw-kind=255;display=invalid;selected=Empty;inactive-controls=false";
+                        "Missing-payload Empty selection kept inactive controls.");
+                    scenario.Observed = "payload=null;display=Empty;selected=Empty;inactive-controls=false";
                     return true;
                 };
                 return scenario;
@@ -3722,6 +5827,1501 @@ namespace Spire.UnityIntegration
                 return scenario;
             }
 
+            private static DrawerUiScenario CreateSharedPayloadIsolationScenario()
+            {
+                var scenario = new DrawerUiScenario("Drawer_SharedPayload_EditUndoRedoIsolated");
+                UnityDrawerHost? host = null;
+                var phase = 0;
+                var settleFrames = 0;
+                scenario.Start = (runner, window) =>
+                {
+                    Undo.ClearAll();
+                    host = runner.CreateHost("shared-payload");
+                    host.array = new[]
+                    {
+                        UnityDrawerUnion.Text(5, "original"),
+                        UnityDrawerUnion.Text(5, "original"),
+                    };
+
+                    var aliasSerialized = new SerializedObject(host);
+                    aliasSerialized.Update();
+                    var originalPayload = RequirePayloadProperty(
+                        aliasSerialized,
+                        "array.Array.data[0]").managedReferenceValue;
+                    Require(originalPayload != null, "Shared-payload original payload was unavailable.");
+                    RequirePayloadProperty(
+                        aliasSerialized,
+                        "array.Array.data[1]").managedReferenceValue = originalPayload;
+                    Require(
+                        aliasSerialized.ApplyModifiedProperties(),
+                        "Shared-payload alias setup was not applied.");
+                    aliasSerialized.Update();
+                    Require(
+                        ReferenceEquals(
+                            RequirePayloadProperty(aliasSerialized, "array.Array.data[0]").managedReferenceValue,
+                            RequirePayloadProperty(aliasSerialized, "array.Array.data[1]").managedReferenceValue),
+                        "Shared-payload alias setup did not retain one managed payload.");
+                    window.Bind(host, "array.Array.data[1]");
+                };
+                scenario.Tick = (runner, window) =>
+                {
+                    if (phase == 0)
+                    {
+                        phase = 1;
+                        return false;
+                    }
+
+                    if (phase == 1)
+                    {
+                        if (!window.UIToolkitBuilt || !window.HasBoundFieldControl("label"))
+                            return false;
+                        window.UpdateSerialized();
+                        phase = 2;
+                    }
+
+                    if (phase == 2)
+                    {
+                        Require(
+                            window.TryEditStringControl("label", "edited"),
+                            "Shared-payload TextField was unavailable in the rendered drawer.");
+                        phase = 3;
+                        return false;
+                    }
+
+                    if (phase == 3)
+                    {
+                        window.UpdateSerialized();
+                        if (host!.array[0].label != "original" || host.array[1].label != "edited")
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Rendered TextField edit did not synchronize runtime copies; first=" +
+                                    (host.array[0].label ?? "<null>") + ";second=" +
+                                    (host.array[1].label ?? "<null>") +
+                                    ";" + window.DescribeStringControl("label") +
+                                    ";state=" + window.DescribeState());
+                            return false;
+                        }
+                        Require(
+                            host!.array[0].label == "original" &&
+                            host.array[1].label == "edited",
+                            "Editing the shared payload changed the wrong runtime copies: first=" +
+                            (host.array[0].label ?? "<null>") + ";second=" +
+                            (host.array[1].label ?? "<null>"));
+                        var serialized = new SerializedObject(host);
+                        serialized.Update();
+                        var originalPayload = RequirePayloadProperty(
+                            serialized,
+                            "array.Array.data[0]").managedReferenceValue;
+                        var editedPayload = RequirePayloadProperty(
+                            serialized,
+                            "array.Array.data[1]").managedReferenceValue;
+                        Require(
+                            originalPayload != null && editedPayload != null &&
+                            !ReferenceEquals(originalPayload, editedPayload),
+                            "Editing the shared payload did not isolate the managed references.");
+                        RequirePayloadValue(originalPayload, "label", "original");
+                        RequirePayloadValue(editedPayload, "label", "edited");
+                        Undo.PerformUndo();
+                        settleFrames = 0;
+                        phase = 4;
+                        return false;
+                    }
+
+                    if (phase == 4)
+                    {
+                        window.UpdateSerialized();
+                        if (host!.array[0].label != "original" || host.array[1].label != "original")
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Undo did not restore both shared-payload copies; state=" + window.DescribeState());
+                            return false;
+                        }
+
+                        Undo.PerformRedo();
+                        settleFrames = 0;
+                        phase = 5;
+                        return false;
+                    }
+
+                    window.UpdateSerialized();
+                    if (host!.array[0].label != "original" || host.array[1].label != "edited")
+                    {
+                        if (++settleFrames > 60)
+                            throw new TimeoutException(
+                                "Redo did not restore the isolated payload edit; state=" + window.DescribeState());
+                        return false;
+                    }
+
+                    scenario.Observed = "shared-payload=isolated;edit=original->edited;undo=original/original;redo=original/edited";
+                    return true;
+                };
+                return scenario;
+            }
+
+            private static DrawerUiScenario CreateNestedInlineHelperSharedPayloadScenario()
+            {
+                var scenario = new DrawerUiScenario("Drawer_NestedInlineHelper_EditUndoRedoIsolated");
+                UnityDrawerInlineHelperAsset? asset = null;
+                SerializedObject? serialized = null;
+                var phase = 0;
+                var settleFrames = 0;
+
+                scenario.Start = (runner, window) =>
+                {
+                    Undo.ClearAll();
+                    asset = runner.CreateInlineHelperAsset("nested-inline-helper");
+                    asset.values = new[]
+                    {
+                        UnityDrawerInlineHelperUnion.Helper(new UnityDrawerInlineHelper { label = "before" }),
+                        UnityDrawerInlineHelperUnion.Helper(new UnityDrawerInlineHelper { label = "before" }),
+                    };
+                    AssetDatabase.SaveAssets();
+
+                    serialized = new SerializedObject(asset);
+                    serialized.Update();
+                    var sourcePayload = RequirePayloadProperty(
+                        serialized,
+                        "values.Array.data[0]");
+                    var copiedPayload = RequirePayloadProperty(
+                        serialized,
+                        "values.Array.data[1]");
+                    Require(
+                        sourcePayload.managedReferenceValue != null,
+                        "Nested inline-helper alias source payload was unavailable.");
+                    copiedPayload.managedReferenceValue = sourcePayload.managedReferenceValue;
+                    Require(
+                        serialized.ApplyModifiedProperties(),
+                        "Nested inline-helper alias setup was not applied.");
+                    AssetDatabase.SaveAssets();
+                    serialized.Update();
+                    sourcePayload = RequirePayloadProperty(serialized, "values.Array.data[0]");
+                    copiedPayload = RequirePayloadProperty(serialized, "values.Array.data[1]");
+                    Require(
+                        ReferenceEquals(
+                            sourcePayload.managedReferenceValue,
+                            copiedPayload.managedReferenceValue),
+                        "Nested inline-helper alias setup did not retain one managed payload.");
+
+                    var assetPath = AssetDatabase.GetAssetPath(asset);
+                    Require(
+                        !string.IsNullOrEmpty(assetPath),
+                        "Nested inline-helper asset path was unavailable before reload.");
+                    EditorUtility.SetDirty(asset);
+                    AssetDatabase.SaveAssets();
+                    AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
+                    var currentAsset = asset!;
+                    Resources.UnloadAsset(currentAsset);
+                    asset = AssetDatabase.LoadAssetAtPath<UnityDrawerInlineHelperAsset>(assetPath);
+                    Require(
+                        asset != null,
+                        "Nested inline-helper asset reload returned null: " + assetPath);
+                    serialized = new SerializedObject(asset!);
+                    serialized.Update();
+                    sourcePayload = RequirePayloadProperty(serialized, "values.Array.data[0]");
+                    copiedPayload = RequirePayloadProperty(serialized, "values.Array.data[1]");
+                    Require(
+                        ReferenceEquals(
+                            sourcePayload.managedReferenceValue,
+                            copiedPayload.managedReferenceValue),
+                        "Nested inline-helper alias was not preserved across save and reload.");
+
+                    var sourceHelper = RequireProperty(sourcePayload, "helper");
+                    Require(
+                        sourceHelper.propertyType != SerializedPropertyType.ManagedReference,
+                        "Nested inline-helper field unexpectedly used managed-reference serialization.");
+                    window.BindDrawer(
+                        serialized,
+                        asset,
+                        "values.Array.data[1]",
+                        typeof(UnityDrawerInlineHelperUnion),
+                        imguiProbe: false);
+                };
+
+                scenario.Tick = (runner, window) =>
+                {
+                    if (phase == 0)
+                    {
+                        phase = 1;
+                        return false;
+                    }
+
+                    if (phase == 1)
+                    {
+                        if (!window.UIToolkitBuilt || !window.BoundTreeIsAttached)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Nested inline-helper drawer did not attach before expanding the helper Foldout; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+
+                        if (!window.HasBoundFieldControl("label"))
+                        {
+                            window.TryExpandFoldout("helper");
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Nested inline-helper label control remained unavailable after expanding the helper Foldout; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+
+                        window.UpdateSerialized();
+                        settleFrames = 0;
+                        phase = 2;
+                    }
+
+                    if (phase == 2)
+                    {
+                        Require(
+                            window.TryEditStringControl("label", "edited"),
+                            "Nested inline-helper label TextField was unavailable in the rendered drawer.");
+                        phase = 3;
+                        return false;
+                    }
+
+                    if (phase == 3)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.values[0].helper.label != "before" ||
+                            asset.values[1].helper.label != "edited")
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Nested inline-helper TextField edit did not isolate the aliased payload; first=" +
+                                    asset.values[0].helper.label + ";second=" +
+                                    asset.values[1].helper.label + ";" +
+                                    window.DescribeStringControl("label") +
+                                    ";state=" + window.DescribeState());
+                            return false;
+                        }
+
+                        serialized!.Update();
+                        var sourcePayload = RequirePayloadProperty(
+                            serialized,
+                            "values.Array.data[0]");
+                        var editedPayload = RequirePayloadProperty(
+                            serialized,
+                            "values.Array.data[1]");
+                        Require(
+                            sourcePayload.managedReferenceId != 0 &&
+                            editedPayload.managedReferenceId != 0 &&
+                            sourcePayload.managedReferenceId != editedPayload.managedReferenceId,
+                            "Nested inline-helper edit did not isolate managed-reference identities.");
+                        Require(
+                            RequireProperty(RequireProperty(sourcePayload, "helper"), "label").stringValue == "before" &&
+                            RequireProperty(RequireProperty(editedPayload, "helper"), "label").stringValue == "edited",
+                            "Nested inline-helper payload fields did not retain source/edited values.");
+
+                        AssetDatabase.SaveAssets();
+                        var savedYaml = File.ReadAllText(AssetFilePath(asset));
+                        Require(
+                            savedYaml.IndexOf("edited", StringComparison.Ordinal) >= 0,
+                            "Nested inline-helper edited value was not persisted by AssetDatabase.SaveAssets.");
+                        Undo.PerformUndo();
+                        settleFrames = 0;
+                        phase = 4;
+                        return false;
+                    }
+
+                    if (phase == 4)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.values[0].helper.label != "before" ||
+                            asset.values[1].helper.label != "before")
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Undo did not restore both nested inline-helper copies; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+
+                        Undo.PerformRedo();
+                        settleFrames = 0;
+                        phase = 5;
+                        return false;
+                    }
+
+                    window.UpdateSerialized();
+                    if (asset!.values[0].helper.label != "before" ||
+                        asset.values[1].helper.label != "edited")
+                    {
+                        if (++settleFrames > 60)
+                            throw new TimeoutException(
+                                "Redo did not restore the nested inline-helper edit; state=" +
+                                window.DescribeState());
+                        return false;
+                    }
+
+                    AssetDatabase.SaveAssets();
+                    scenario.Observed = "nested-helper=inline;alias=isolated;edit=before->edited;save=edited;undo=before/before;redo=before/edited";
+                    return true;
+                };
+                return scenario;
+            }
+
+            private static DrawerUiScenario CreateRenderedFieldHistoryScenario()
+            {
+                var scenario = new DrawerUiScenario("Drawer_RenderedFieldHistory_MultiStepUndoRedo");
+                UnityDrawerAsset? asset = null;
+                SerializedObject? serialized = null;
+                var phase = 0;
+                var settleFrames = 0;
+
+                scenario.Start = (runner, window) =>
+                {
+                    Undo.ClearAll();
+                    asset = runner.CreateAsset("rendered-field-history");
+                    asset.values = new[]
+                    {
+                        UnityDrawerUnion.Text(5, "original"),
+                        UnityDrawerUnion.Text(5, "original"),
+                    };
+                    AssetDatabase.SaveAssets();
+
+                    serialized = new SerializedObject(asset);
+                    serialized.Update();
+                    var sourcePayload = RequirePayloadProperty(serialized, "values.Array.data[0]");
+                    var copiedPayload = RequirePayloadProperty(serialized, "values.Array.data[1]");
+                    Require(
+                        sourcePayload.managedReferenceValue != null,
+                        "Rendered history alias source payload was unavailable.");
+                    copiedPayload.managedReferenceValue = sourcePayload.managedReferenceValue;
+                    Require(
+                        serialized.ApplyModifiedProperties(),
+                        "Rendered history alias setup was not applied.");
+                    AssetDatabase.SaveAssets();
+                    asset = runner.ReloadAsset(asset);
+                    serialized = new SerializedObject(asset);
+                    serialized.Update();
+                    sourcePayload = RequirePayloadProperty(serialized, "values.Array.data[0]");
+                    copiedPayload = RequirePayloadProperty(serialized, "values.Array.data[1]");
+                    Require(
+                        ReferenceEquals(
+                            sourcePayload.managedReferenceValue,
+                            copiedPayload.managedReferenceValue),
+                        "Rendered history alias was not preserved across save and reload.");
+                    window.BindDrawer(
+                        serialized,
+                        asset,
+                        "values.Array.data[1]",
+                        typeof(UnityDrawerUnion),
+                        imguiProbe: false);
+                };
+
+                scenario.Tick = (runner, window) =>
+                {
+                    if (phase == 0)
+                    {
+                        phase = 1;
+                        return false;
+                    }
+
+                    if (phase == 1)
+                    {
+                        if (!window.UIToolkitBuilt || !window.BoundTreeIsAttached ||
+                            !window.HasBoundFieldControl("count") ||
+                            !window.HasBoundFieldControl("label"))
+                            return false;
+                        Require(
+                            window.TryEditIntegerControl("count", 7),
+                            "Rendered history count IntegerField was unavailable.");
+                        phase = 2;
+                        return false;
+                    }
+
+                    if (phase == 2)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.values[0].count != 5 ||
+                            asset.values[0].label != "original" ||
+                            asset.values[1].count != 7 ||
+                            asset.values[1].label != "original")
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Rendered history count edit did not isolate the aliased payload; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerAssetTextState(asset, 5, "original", 7, "original");
+                        Require(
+                            window.TryEditStringControl("label", "one"),
+                            "Rendered history first label TextField was unavailable.");
+                        phase = 3;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 3)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.values[0].count != 5 ||
+                            asset.values[0].label != "original" ||
+                            asset.values[1].count != 7 ||
+                            asset.values[1].label != "one")
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Rendered history first label edit did not preserve prior count state; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerAssetTextState(asset, 5, "original", 7, "one");
+                        Require(
+                            window.TryEditStringControl("label", "two"),
+                            "Rendered history second label TextField was unavailable.");
+                        phase = 4;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 4)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.values[0].count != 5 ||
+                            asset.values[0].label != "original" ||
+                            asset.values[1].count != 7 ||
+                            asset.values[1].label != "two")
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Rendered history second label edit did not retain the first edit; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerAssetTextState(asset, 5, "original", 7, "two");
+                        Undo.PerformUndo();
+                        phase = 5;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 5)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.values[0].count != 5 ||
+                            asset.values[0].label != "original" ||
+                            asset.values[1].count != 7 ||
+                            asset.values[1].label != "one")
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "First rendered history Undo did not restore label=one; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerAssetTextState(asset, 5, "original", 7, "one");
+                        Undo.PerformUndo();
+                        phase = 6;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 6)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.values[0].count != 5 ||
+                            asset.values[0].label != "original" ||
+                            asset.values[1].count != 7 ||
+                            asset.values[1].label != "original")
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Second rendered history Undo did not restore label=original; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerAssetTextState(asset, 5, "original", 7, "original");
+                        Undo.PerformRedo();
+                        phase = 7;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 7)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.values[0].count != 5 ||
+                            asset.values[0].label != "original" ||
+                            asset.values[1].count != 7 ||
+                            asset.values[1].label != "one")
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "First rendered history Redo did not restore label=one; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerAssetTextState(asset, 5, "original", 7, "one");
+                        Undo.PerformRedo();
+                        phase = 8;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    window.UpdateSerialized();
+                    if (asset!.values[0].count != 5 ||
+                        asset.values[0].label != "original" ||
+                        asset.values[1].count != 7 ||
+                        asset.values[1].label != "two")
+                    {
+                        if (++settleFrames > 60)
+                            throw new TimeoutException(
+                                "Second rendered history Redo did not restore label=two; state=" +
+                                window.DescribeState());
+                        return false;
+                    }
+                    RequireDrawerAssetTextState(asset, 5, "original", 7, "two");
+                    scenario.Observed = "saved-reloaded=true;count=5->7;label=original->one->two;undo=one/original;redo=one/two;sibling-isolated=true";
+                    return true;
+                };
+                return scenario;
+            }
+
+            private static DrawerUiScenario CreateRenderedEditPreservesStagedUnrelatedApplyScenario()
+            {
+                var scenario = new DrawerUiScenario("Drawer_RenderedEdit_PreservesStagedUnrelatedApply");
+                UnityDrawerAsset? asset = null;
+                SerializedObject? serialized = null;
+                var phase = 0;
+                var settleFrames = 0;
+
+                scenario.Start = (runner, window) =>
+                {
+                    Undo.ClearAll();
+                    asset = runner.CreateAsset("rendered-edit-unrelated-apply");
+                    asset.values = new[]
+                    {
+                        UnityDrawerUnion.Text(5, "original"),
+                        UnityDrawerUnion.Text(5, "original"),
+                    };
+                    asset.unrelated = 1;
+                    AssetDatabase.SaveAssets();
+
+                    serialized = new SerializedObject(asset);
+                    serialized.Update();
+                    var sourcePayload = RequirePayloadProperty(serialized, "values.Array.data[0]");
+                    var copiedPayload = RequirePayloadProperty(serialized, "values.Array.data[1]");
+                    Require(
+                        sourcePayload.managedReferenceValue != null,
+                        "Staged unrelated-apply alias source payload was unavailable.");
+                    copiedPayload.managedReferenceValue = sourcePayload.managedReferenceValue;
+                    Require(
+                        serialized.ApplyModifiedProperties(),
+                        "Staged unrelated-apply alias setup was not applied.");
+                    AssetDatabase.SaveAssets();
+                    asset = runner.ReloadAsset(asset);
+                    serialized = new SerializedObject(asset);
+                    serialized.Update();
+                    sourcePayload = RequirePayloadProperty(serialized, "values.Array.data[0]");
+                    copiedPayload = RequirePayloadProperty(serialized, "values.Array.data[1]");
+                    Require(
+                        ReferenceEquals(
+                            sourcePayload.managedReferenceValue,
+                            copiedPayload.managedReferenceValue),
+                        "Staged unrelated-apply alias was not preserved across save and reload.");
+                    window.BindDrawer(
+                        serialized,
+                        asset,
+                        "values.Array.data[1]",
+                        typeof(UnityDrawerUnion),
+                        imguiProbe: false);
+                };
+
+                scenario.Tick = (runner, window) =>
+                {
+                    if (phase == 0)
+                    {
+                        phase = 1;
+                        return false;
+                    }
+
+                    if (phase == 1)
+                    {
+                        if (!window.UIToolkitBuilt || !window.BoundTreeIsAttached ||
+                            !window.HasBoundFieldControl("label"))
+                            return false;
+                        window.UpdateSerialized();
+                        var unrelated = serialized!.FindProperty("unrelated");
+                        Require(unrelated != null, "Staged unrelated SerializedProperty was unavailable.");
+                        unrelated!.intValue = 2;
+                        Require(
+                            asset!.unrelated == 1,
+                            "Staging the unrelated SerializedProperty applied before the rendered union edit.");
+                        Require(
+                            window.TryEditStringControl("label", "edited"),
+                            "Staged unrelated-apply label TextField was unavailable.");
+                        phase = 2;
+                        return false;
+                    }
+
+                    if (phase == 2)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.unrelated != 2 ||
+                            asset.values[0].label != "original" ||
+                            asset.values[1].label != "edited")
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Rendered union edit did not preserve the staged unrelated apply; unrelated=" +
+                                    asset.unrelated + ";first=" + asset.values[0].label + ";second=" +
+                                    asset.values[1].label + ";state=" + window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerAssetTextState(asset, 5, "original", 5, "edited");
+                        AssetDatabase.SaveAssets();
+                        Undo.PerformUndo();
+                        phase = 3;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 3)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.unrelated != 1 ||
+                            asset.values[0].label != "original" ||
+                            asset.values[1].label != "original")
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Undo did not restore the staged unrelated field and rendered union edit; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerAssetTextState(asset, 5, "original", 5, "original");
+                        Undo.PerformRedo();
+                        phase = 4;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    window.UpdateSerialized();
+                    if (asset!.unrelated != 2 ||
+                        asset.values[0].label != "original" ||
+                        asset.values[1].label != "edited")
+                    {
+                        if (++settleFrames > 60)
+                            throw new TimeoutException(
+                                "Redo did not restore the staged unrelated field and rendered union edit; state=" +
+                                window.DescribeState());
+                        return false;
+                    }
+                    RequireDrawerAssetTextState(asset, 5, "original", 5, "edited");
+                    AssetDatabase.SaveAssets();
+                    scenario.Observed = "saved-reloaded=true;staged-unrelated=1->2;union=original->edited;undo=both-restored;redo=both-restored";
+                    return true;
+                };
+                return scenario;
+            }
+
+            private static DrawerUiScenario CreateRenderedNumericFieldsScenario()
+            {
+                var scenario = new DrawerUiScenario("Drawer_RenderedNumericFields_UndoRedo");
+                UnityDrawerNumericAsset? asset = null;
+                SerializedObject? serialized = null;
+                var phase = 0;
+                var settleFrames = 0;
+                const long initialLong = 4294967297L;
+                const long editedLong = 9007199254740993L;
+                const double initialDouble = 1234567890123.125;
+                const double editedDouble = 9876543210987.875;
+                const UnityDrawerNonOrdinal initialEnum = UnityDrawerNonOrdinal.Small;
+                const UnityDrawerNonOrdinal editedEnum = UnityDrawerNonOrdinal.Large;
+
+                scenario.Start = (runner, window) =>
+                {
+                    Undo.ClearAll();
+                    asset = runner.CreateNumericAsset("rendered-numeric-fields");
+                    asset.value = UnityDrawerNumericUnion.Values(initialLong, initialDouble, initialEnum);
+                    asset.unrelated = 1;
+                    AssetDatabase.SaveAssets();
+
+                    serialized = new SerializedObject(asset);
+                    serialized.Update();
+                    asset = runner.ReloadNumericAsset(asset);
+                    serialized = new SerializedObject(asset);
+                    serialized.Update();
+                    window.BindDrawer(
+                        serialized,
+                        asset,
+                        "value",
+                        typeof(UnityDrawerNumericUnion),
+                        imguiProbe: false);
+                };
+
+                scenario.Tick = (runner, window) =>
+                {
+                    if (phase == 0)
+                    {
+                        phase = 1;
+                        return false;
+                    }
+
+                    if (phase == 1)
+                    {
+                        if (!window.UIToolkitBuilt || !window.BoundTreeIsAttached ||
+                            !window.HasBoundFieldControl("longValue") ||
+                            !window.HasBoundFieldControl("doubleValue") ||
+                            !window.HasBoundFieldControl("enumValue"))
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Rendered numeric controls did not attach; state=" + window.DescribeState());
+                            return false;
+                        }
+
+                        Require(
+                            window.TryEditLongControl("longValue", editedLong),
+                            "Rendered long field was unavailable.");
+                        phase = 2;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 2)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.value.longValue != editedLong ||
+                            asset.value.doubleValue != initialDouble ||
+                            asset.value.enumValue != initialEnum)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Rendered long edit did not preserve exact numeric values; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerNumericState(asset, editedLong, initialDouble, initialEnum);
+                        Undo.PerformUndo();
+                        phase = 3;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 3)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.value.longValue != initialLong ||
+                            asset.value.doubleValue != initialDouble ||
+                            asset.value.enumValue != initialEnum)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Long Undo did not restore the exact initial value; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerNumericState(asset, initialLong, initialDouble, initialEnum);
+                        Undo.PerformRedo();
+                        phase = 4;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 4)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.value.longValue != editedLong ||
+                            asset.value.doubleValue != initialDouble ||
+                            asset.value.enumValue != initialEnum)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Long Redo did not restore the exact edited value; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerNumericState(asset, editedLong, initialDouble, initialEnum);
+                        Require(
+                            window.TryEditDoubleControl("doubleValue", editedDouble),
+                            "Rendered double field was unavailable.");
+                        phase = 5;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 5)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.value.longValue != editedLong ||
+                            asset.value.doubleValue != editedDouble ||
+                            asset.value.enumValue != initialEnum)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Rendered double edit did not preserve the long value; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerNumericState(asset, editedLong, editedDouble, initialEnum);
+                        Undo.PerformUndo();
+                        phase = 6;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 6)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.value.longValue != editedLong ||
+                            asset.value.doubleValue != initialDouble ||
+                            asset.value.enumValue != initialEnum)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Double Undo did not restore the initial double while retaining long; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerNumericState(asset, editedLong, initialDouble, initialEnum);
+                        Undo.PerformRedo();
+                        phase = 7;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 7)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.value.longValue != editedLong ||
+                            asset.value.doubleValue != editedDouble ||
+                            asset.value.enumValue != initialEnum)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Double Redo did not restore the exact edited value; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerNumericState(asset, editedLong, editedDouble, initialEnum);
+                        Require(
+                            window.TryEditEnumControl("enumValue", editedEnum),
+                            "Rendered enum field was unavailable.");
+                        phase = 8;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 8)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.value.longValue != editedLong ||
+                            asset.value.doubleValue != editedDouble ||
+                            asset.value.enumValue != editedEnum)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Rendered enum edit did not preserve long/double values; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerNumericState(asset, editedLong, editedDouble, editedEnum);
+                        Undo.PerformUndo();
+                        phase = 9;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 9)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.value.longValue != editedLong ||
+                            asset.value.doubleValue != editedDouble ||
+                            asset.value.enumValue != initialEnum)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Enum Undo did not restore the nonordinal initial value; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerNumericState(asset, editedLong, editedDouble, initialEnum);
+                        Undo.PerformRedo();
+                        phase = 10;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 10)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.value.longValue != editedLong ||
+                            asset.value.doubleValue != editedDouble ||
+                            asset.value.enumValue != editedEnum)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Enum Redo did not restore the nonordinal edited value; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerNumericState(asset, editedLong, editedDouble, editedEnum);
+
+                        serialized!.Update();
+                        var unrelated = serialized.FindProperty("unrelated");
+                        Require(unrelated != null, "Numeric unrelated SerializedProperty was unavailable.");
+                        Undo.IncrementCurrentGroup();
+                        Undo.RecordObject(asset, "Numeric unrelated field edit");
+                        unrelated!.intValue = 2;
+                        Require(
+                            serialized.ApplyModifiedProperties(),
+                            "Numeric unrelated field edit was not applied.");
+                        Undo.FlushUndoRecordObjects();
+                        phase = 11;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 11)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.unrelated != 2 ||
+                            asset.value.longValue != editedLong ||
+                            asset.value.doubleValue != editedDouble ||
+                            asset.value.enumValue != editedEnum)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Numeric unrelated edit changed the composite union; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerNumericState(asset, editedLong, editedDouble, editedEnum);
+                        Undo.PerformUndo();
+                        phase = 12;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 12)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.unrelated != 1 ||
+                            asset.value.longValue != editedLong ||
+                            asset.value.doubleValue != editedDouble ||
+                            asset.value.enumValue != editedEnum)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Unrelated Undo reset the composite union history; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+                        RequireDrawerNumericState(asset, editedLong, editedDouble, editedEnum);
+                        Undo.PerformRedo();
+                        phase = 13;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    window.UpdateSerialized();
+                    if (asset!.unrelated != 2 ||
+                        asset.value.longValue != editedLong ||
+                        asset.value.doubleValue != editedDouble ||
+                        asset.value.enumValue != editedEnum)
+                    {
+                        if (++settleFrames > 60)
+                            throw new TimeoutException(
+                                "Unrelated Redo replayed the wrong composite union state; state=" +
+                                window.DescribeState());
+                        return false;
+                    }
+                    RequireDrawerNumericState(asset, editedLong, editedDouble, editedEnum);
+                    AssetDatabase.SaveAssets();
+                    scenario.Observed = "saved-reloaded=true;long=exact;double=exact;enum=nonordinal;each=undo/redo;unrelated-undo-preserves-composite=true";
+                    return true;
+                };
+                return scenario;
+            }
+
+            private static DrawerUiScenario CreateRenderedInspectorNamedEnumScenario()
+            {
+                var scenario = new DrawerUiScenario("Drawer_RenderedInspectorNamedEnum_UndoRedo");
+                UnityDrawerNumericAsset? asset = null;
+                var phase = 0;
+                var settleFrames = 0;
+                const long initialLong = 4294967297L;
+                const double initialDouble = 1234567890123.125;
+                const UnityDrawerInspectorNamedEnum initialEnum = UnityDrawerInspectorNamedEnum.Small;
+                const UnityDrawerInspectorNamedEnum editedEnum = UnityDrawerInspectorNamedEnum.Large;
+
+                scenario.Start = (runner, window) =>
+                {
+                    Undo.ClearAll();
+                    asset = runner.CreateNumericAsset("rendered-inspector-named-enum");
+                    asset.named = UnityDrawerInspectorNamedEnumUnion.Values(
+                        initialLong,
+                        initialDouble,
+                        initialEnum);
+                    asset.flags = UnityDrawerFlagsUnion.Values(
+                        11L,
+                        22.5,
+                        UnityDrawerNonOrdinalFlags.First | UnityDrawerNonOrdinalFlags.Third);
+                    asset.unrelated = 1;
+                    AssetDatabase.SaveAssets();
+                    asset = runner.ReloadNumericAsset(asset);
+                    window.BindDrawer(
+                        asset,
+                        "named",
+                        typeof(UnityDrawerInspectorNamedEnumUnion),
+                        imguiProbe: false);
+                };
+
+                scenario.Tick = (runner, window) =>
+                {
+                    if (phase == 0)
+                    {
+                        phase = 1;
+                        return false;
+                    }
+
+                    if (phase == 1)
+                    {
+                        if (!window.UIToolkitBuilt || !window.BoundTreeIsAttached ||
+                            !window.HasBoundFieldControl("longValue") ||
+                            !window.HasBoundFieldControl("doubleValue") ||
+                            !window.HasBoundFieldControl("enumValue"))
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Inspector-named enum controls did not attach; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+
+                        Require(
+                            window.TryEditEnumControl("enumValue", editedEnum),
+                            "Inspector-named enum field was unavailable or its display label could not be resolved.");
+                        phase = 2;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 2)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.named.longValue != initialLong ||
+                            asset.named.doubleValue != initialDouble ||
+                            asset.named.enumValue != editedEnum)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Inspector-named enum edit did not preserve surrounding fields; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+
+                        RequireDrawerInspectorNamedEnumState(asset, initialLong, initialDouble, editedEnum);
+                        Undo.PerformUndo();
+                        phase = 3;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 3)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.named.longValue != initialLong ||
+                            asset.named.doubleValue != initialDouble ||
+                            asset.named.enumValue != initialEnum)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Inspector-named enum Undo did not restore the nonordinal initial value; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+
+                        RequireDrawerInspectorNamedEnumState(asset, initialLong, initialDouble, initialEnum);
+                        Undo.PerformRedo();
+                        phase = 4;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    window.UpdateSerialized();
+                    if (asset!.named.longValue != initialLong ||
+                        asset.named.doubleValue != initialDouble ||
+                        asset.named.enumValue != editedEnum)
+                    {
+                        if (++settleFrames > 60)
+                            throw new TimeoutException(
+                                "Inspector-named enum Redo did not restore the nonordinal edited value; state=" +
+                                window.DescribeState());
+                        return false;
+                    }
+
+                    RequireDrawerInspectorNamedEnumState(asset, initialLong, initialDouble, editedEnum);
+                    AssetDatabase.SaveAssets();
+                    scenario.Observed = "display-labels=InspectorName;enum=nonordinal;surrounding=preserved;undo/redo=true";
+                    return true;
+                };
+                return scenario;
+            }
+
+            private static DrawerUiScenario CreateRenderedFlagsEnumScenario()
+            {
+                var scenario = new DrawerUiScenario("Drawer_RenderedFlagsEnum_UndoRedo");
+                UnityDrawerNumericAsset? asset = null;
+                var phase = 0;
+                var settleFrames = 0;
+                const long initialLong = 9007199254740993L;
+                const double initialDouble = 9876543210987.875;
+                const UnityDrawerNonOrdinalFlags initialFlags =
+                    UnityDrawerNonOrdinalFlags.First | UnityDrawerNonOrdinalFlags.Third;
+                const UnityDrawerNonOrdinalFlags editedFlags =
+                    UnityDrawerNonOrdinalFlags.Second | UnityDrawerNonOrdinalFlags.Third;
+
+                scenario.Start = (runner, window) =>
+                {
+                    Undo.ClearAll();
+                    asset = runner.CreateNumericAsset("rendered-flags-enum");
+                    asset.named = UnityDrawerInspectorNamedEnumUnion.Values(
+                        17L,
+                        18.5,
+                        UnityDrawerInspectorNamedEnum.Small);
+                    asset.flags = UnityDrawerFlagsUnion.Values(
+                        initialLong,
+                        initialDouble,
+                        initialFlags);
+                    asset.unrelated = 1;
+                    AssetDatabase.SaveAssets();
+                    asset = runner.ReloadNumericAsset(asset);
+                    window.BindDrawer(
+                        asset,
+                        "flags",
+                        typeof(UnityDrawerFlagsUnion),
+                        imguiProbe: false);
+                };
+
+                scenario.Tick = (runner, window) =>
+                {
+                    if (phase == 0)
+                    {
+                        phase = 1;
+                        return false;
+                    }
+
+                    if (phase == 1)
+                    {
+                        if (!window.UIToolkitBuilt || !window.BoundTreeIsAttached ||
+                            !window.HasBoundFieldControl("longValue") ||
+                            !window.HasBoundFieldControl("doubleValue") ||
+                            !window.HasNativeEnumControl("flagsValue"))
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Flags enum controls did not attach; state=" + window.DescribeState());
+                            return false;
+                        }
+
+                        Require(
+                            window.TryEditEnumControl("flagsValue", editedFlags),
+                            "Flags enum field was unavailable or its combined value could not be resolved.");
+                        phase = 2;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 2)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.flags.longValue != initialLong ||
+                            asset.flags.doubleValue != initialDouble ||
+                            asset.flags.flagsValue != editedFlags)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Flags enum edit did not preserve surrounding fields; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+
+                        RequireDrawerFlagsState(asset, initialLong, initialDouble, editedFlags);
+                        Undo.PerformUndo();
+                        phase = 3;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 3)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.flags.longValue != initialLong ||
+                            asset.flags.doubleValue != initialDouble ||
+                            asset.flags.flagsValue != initialFlags)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Flags enum Undo did not restore the combined nonordinal initial value; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+
+                        RequireDrawerFlagsState(asset, initialLong, initialDouble, initialFlags);
+                        Undo.PerformRedo();
+                        phase = 4;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    window.UpdateSerialized();
+                    if (asset!.flags.longValue != initialLong ||
+                        asset.flags.doubleValue != initialDouble ||
+                        asset.flags.flagsValue != editedFlags)
+                    {
+                        if (++settleFrames > 60)
+                            throw new TimeoutException(
+                                "Flags enum Redo did not restore the combined nonordinal edited value; state=" +
+                                window.DescribeState());
+                        return false;
+                    }
+
+                    RequireDrawerFlagsState(asset, initialLong, initialDouble, editedFlags);
+                    AssetDatabase.SaveAssets();
+                    scenario.Observed = "control=EnumFlagsField-or-EnumField;flags=combined-nonordinal;surrounding=preserved;undo/redo=true";
+                    return true;
+                };
+                return scenario;
+            }
+
+            private static DrawerUiScenario CreateRenderedEnumInvalidChoiceScenario()
+            {
+                var scenario = new DrawerUiScenario("Drawer_RenderedEnum_InvalidChoicePreservesHistory");
+                UnityDrawerNumericAsset? asset = null;
+                var phase = 0;
+                var settleFrames = 0;
+                const long initialLong = 71L;
+                const double initialDouble = 72.5;
+                const UnityDrawerInspectorNamedEnum initialEnum = UnityDrawerInspectorNamedEnum.Small;
+                const UnityDrawerInspectorNamedEnum editedEnum = UnityDrawerInspectorNamedEnum.Large;
+                var invalidEnum = (UnityDrawerInspectorNamedEnum)99;
+
+                scenario.Start = (runner, window) =>
+                {
+                    Undo.ClearAll();
+                    asset = runner.CreateNumericAsset("rendered-enum-invalid-choice");
+                    asset.named = UnityDrawerInspectorNamedEnumUnion.Values(
+                        initialLong,
+                        initialDouble,
+                        initialEnum);
+                    asset.flags = UnityDrawerFlagsUnion.Values(
+                        73L,
+                        74.5,
+                        UnityDrawerNonOrdinalFlags.First);
+                    asset.unrelated = 1;
+                    AssetDatabase.SaveAssets();
+                    asset = runner.ReloadNumericAsset(asset);
+                    window.BindDrawer(
+                        asset,
+                        "named",
+                        typeof(UnityDrawerInspectorNamedEnumUnion),
+                        imguiProbe: false);
+                };
+
+                scenario.Tick = (runner, window) =>
+                {
+                    if (phase == 0)
+                    {
+                        phase = 1;
+                        return false;
+                    }
+
+                    if (phase == 1)
+                    {
+                        if (!window.UIToolkitBuilt || !window.BoundTreeIsAttached ||
+                            !window.HasBoundFieldControl("enumValue"))
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Invalid-choice enum control did not attach; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+
+                        Require(
+                            !window.TryEditEnumControl("enumValue", invalidEnum),
+                            "An unavailable enum choice was reported as editable.");
+                        window.UpdateSerialized();
+                        RequireDrawerInspectorNamedEnumState(asset!, initialLong, initialDouble, initialEnum);
+                        Undo.PerformUndo();
+                        phase = 2;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 2)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.named.longValue != initialLong ||
+                            asset.named.doubleValue != initialDouble ||
+                            asset.named.enumValue != initialEnum)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Invalid enum choice changed runtime state or history; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+
+                        RequireDrawerInspectorNamedEnumState(asset, initialLong, initialDouble, initialEnum);
+                        Require(
+                            window.TryEditEnumControl("enumValue", editedEnum),
+                            "Valid enum choice was unavailable after rejecting the invalid choice.");
+                        phase = 3;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 3)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.named.enumValue != editedEnum)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Valid enum choice did not apply after the invalid choice; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+
+                        RequireDrawerInspectorNamedEnumState(asset, initialLong, initialDouble, editedEnum);
+                        Undo.PerformUndo();
+                        phase = 4;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    if (phase == 4)
+                    {
+                        window.UpdateSerialized();
+                        if (asset!.named.longValue != initialLong ||
+                            asset.named.doubleValue != initialDouble ||
+                            asset.named.enumValue != initialEnum)
+                        {
+                            if (++settleFrames > 60)
+                                throw new TimeoutException(
+                                    "Undo after a valid edit did not restore the pre-edit state; state=" +
+                                    window.DescribeState());
+                            return false;
+                        }
+
+                        RequireDrawerInspectorNamedEnumState(asset, initialLong, initialDouble, initialEnum);
+                        Undo.PerformRedo();
+                        phase = 5;
+                        settleFrames = 0;
+                        return false;
+                    }
+
+                    window.UpdateSerialized();
+                    if (asset!.named.longValue != initialLong ||
+                        asset.named.doubleValue != initialDouble ||
+                        asset.named.enumValue != editedEnum)
+                    {
+                        if (++settleFrames > 60)
+                            throw new TimeoutException(
+                                "Redo after a valid edit did not restore the edited state; state=" +
+                                window.DescribeState());
+                        return false;
+                    }
+
+                    RequireDrawerInspectorNamedEnumState(asset, initialLong, initialDouble, editedEnum);
+                    AssetDatabase.SaveAssets();
+                    scenario.Observed = "invalid=unchanged;valid=applied;history=undo/redo-preserved";
+                    return true;
+                };
+                return scenario;
+            }
+
+            private static DrawerUiScenario CreateReadOnlyAliasedPayloadScenario()
+            {
+                var scenario = new DrawerUiScenario("Drawer_ReadOnlyAliasedPayload_RenderedStable");
+                UnityDrawerHost? host = null;
+                long[]? payloadIds = null;
+                var phase = 0;
+                scenario.Start = (runner, window) =>
+                {
+                    Undo.ClearAll();
+                    host = runner.CreateHost("readonly-aliased-payload");
+                    host.array = new[]
+                    {
+                        UnityDrawerUnion.Text(5, "original"),
+                        UnityDrawerUnion.Text(5, "original"),
+                    };
+
+                    var serialized = new SerializedObject(host);
+                    serialized.Update();
+                    var sourcePayload = RequirePayloadProperty(
+                        serialized,
+                        "array.Array.data[0]");
+                    var targetPayload = RequirePayloadProperty(
+                        serialized,
+                        "array.Array.data[1]");
+                    Require(
+                        sourcePayload.managedReferenceValue != null,
+                        "Read-only rendered alias source payload was unavailable.");
+                    targetPayload.managedReferenceValue = sourcePayload.managedReferenceValue;
+                    Require(
+                        serialized.ApplyModifiedProperties(),
+                        "Read-only rendered alias setup was not applied.");
+                    serialized.Update();
+                    sourcePayload = RequirePayloadProperty(serialized, "array.Array.data[0]");
+                    targetPayload = RequirePayloadProperty(serialized, "array.Array.data[1]");
+                    Require(
+                        ReferenceEquals(
+                            sourcePayload.managedReferenceValue,
+                            targetPayload.managedReferenceValue),
+                        "Read-only rendered alias setup did not retain one managed payload.");
+                    payloadIds = new[]
+                    {
+                        sourcePayload.managedReferenceId,
+                        targetPayload.managedReferenceId,
+                    };
+                    window.Bind(host, "array.Array.data[1]");
+                };
+                scenario.Tick = (runner, window) =>
+                {
+                    if (phase == 0)
+                    {
+                        phase = 1;
+                        return false;
+                    }
+
+                    if (!window.UIToolkitBuilt || !window.BoundTreeIsAttached ||
+                        !window.HasBoundFieldControl("label"))
+                        return false;
+
+                    var serialized = new SerializedObject(host!);
+                    serialized.Update();
+                    var sourcePayload = RequirePayloadProperty(
+                        serialized,
+                        "array.Array.data[0]");
+                    var targetPayload = RequirePayloadProperty(
+                        serialized,
+                        "array.Array.data[1]");
+                    Require(
+                        payloadIds![0] == sourcePayload.managedReferenceId &&
+                        payloadIds[1] == targetPayload.managedReferenceId &&
+                        sourcePayload.managedReferenceId == targetPayload.managedReferenceId,
+                        "Read-only rendered drawer changed aliased managed-reference identities: before=" +
+                        payloadIds[0] + "," + payloadIds[1] + ";after=" +
+                        sourcePayload.managedReferenceId + "," + targetPayload.managedReferenceId);
+                    Require(
+                        host!.array[0].label == "original" &&
+                        host.array[1].label == "original",
+                        "Read-only rendered drawer changed runtime values.");
+                    scenario.Observed = "alias=shared;rendered=true;edit=false;runtime=unchanged;ids-stable=true";
+                    return true;
+                };
+                return scenario;
+            }
+
             private static DrawerUiScenario CreateDetachedUndoRedoScenario()
             {
                 var scenario = new DrawerUiScenario("Drawer_UndoRedoWhileDetached_ReattachesCurrentTree");
@@ -3816,6 +7416,187 @@ namespace Spire.UnityIntegration
                     }
 
                     return false;
+                };
+                return scenario;
+            }
+
+            private static DrawerUiScenario CreateReadOnlyAliasedPayloadApplyScenario()
+            {
+                var scenario = new DrawerUiScenario("Drawer_ReadOnlyAliasedPayload_UnrelatedApplyStable");
+                UnityDrawerAsset? asset = null;
+                SerializedObject? serialized = null;
+                long[]? payloadIds = null;
+                string? beforeYaml = null;
+                var phase = 0;
+                scenario.Start = (runner, window) =>
+                {
+                    var beforeArtifactPath = Path.Combine(ProjectRoot, "readonly-aliased-before.yaml");
+                    var afterArtifactPath = Path.Combine(ProjectRoot, "readonly-aliased-after.yaml");
+                    if (File.Exists(beforeArtifactPath))
+                        File.Delete(beforeArtifactPath);
+                    if (File.Exists(afterArtifactPath))
+                        File.Delete(afterArtifactPath);
+                    Undo.ClearAll();
+                    asset = runner.CreateAsset("readonly-aliased-apply");
+                    asset.values = new[]
+                    {
+                        UnityDrawerUnion.Text(5, "original"),
+                        UnityDrawerUnion.Text(5, "original"),
+                    };
+                    asset.unrelated = 1;
+                    AssetDatabase.SaveAssets();
+
+                    serialized = new SerializedObject(asset);
+                    serialized.Update();
+                    var sourcePayload = RequirePayloadProperty(
+                        serialized,
+                        "values.Array.data[0]");
+                    var copiedPayload = RequirePayloadProperty(
+                        serialized,
+                        "values.Array.data[1]");
+                    Require(
+                        sourcePayload.managedReferenceValue != null,
+                        "Read-only apply alias source payload was unavailable.");
+                    copiedPayload.managedReferenceValue = sourcePayload.managedReferenceValue;
+                    Require(
+                        serialized.ApplyModifiedProperties(),
+                        "Read-only apply alias setup was not applied.");
+                    AssetDatabase.SaveAssets();
+                    serialized.Update();
+                    sourcePayload = RequirePayloadProperty(serialized, "values.Array.data[0]");
+                    copiedPayload = RequirePayloadProperty(serialized, "values.Array.data[1]");
+                    Require(
+                        ReferenceEquals(
+                            sourcePayload.managedReferenceValue,
+                            copiedPayload.managedReferenceValue),
+                        "Read-only apply alias setup did not retain one managed payload.");
+                    payloadIds = new[]
+                    {
+                        sourcePayload.managedReferenceId,
+                        copiedPayload.managedReferenceId,
+                    };
+                    beforeYaml = File.ReadAllText(AssetFilePath(asset));
+                    window.BindDrawer(
+                        serialized,
+                        asset,
+                        "values.Array.data[1]",
+                        typeof(UnityDrawerUnion),
+                        imguiProbe: false);
+                };
+                scenario.Tick = (runner, window) =>
+                {
+                    if (phase == 0)
+                    {
+                        phase = 1;
+                        return false;
+                    }
+
+                    if (phase == 1)
+                    {
+                        if (!window.UIToolkitBuilt || !window.BoundTreeIsAttached ||
+                            !window.HasBoundFieldControl("label"))
+                            return false;
+                        Require(
+                            ReferenceEquals(serialized, window.BoundSerializedObject),
+                            "Read-only apply drawer replaced the bound SerializedObject.");
+                        window.RepaintBoundDrawer();
+                        phase = 2;
+                        return false;
+                    }
+
+                    serialized!.Update();
+                    var unrelated = serialized.FindProperty("unrelated");
+                    Require(unrelated != null, "Read-only apply unrelated property was unavailable.");
+                    unrelated!.intValue = 2;
+                    Require(
+                        serialized.ApplyModifiedProperties(),
+                        "Read-only apply unrelated property was not applied.");
+                    AssetDatabase.SaveAssets();
+
+                    var sourcePayload = RequirePayloadProperty(serialized, "values.Array.data[0]");
+                    var copiedPayload = RequirePayloadProperty(serialized, "values.Array.data[1]");
+                    Require(
+                        payloadIds![0] == sourcePayload.managedReferenceId &&
+                        payloadIds[1] == copiedPayload.managedReferenceId &&
+                        sourcePayload.managedReferenceId == copiedPayload.managedReferenceId,
+                        "Read-only apply changed aliased managed-reference identities.");
+                    var afterYaml = File.ReadAllText(AssetFilePath(asset!));
+                    var normalizedBeforeYaml = RemoveYamlField(beforeYaml!, "unrelated");
+                    var normalizedAfterYaml = RemoveYamlField(afterYaml, "unrelated");
+                    if (!string.Equals(normalizedBeforeYaml, normalizedAfterYaml, StringComparison.Ordinal))
+                    {
+                        File.WriteAllText(
+                            Path.Combine(ProjectRoot, "readonly-aliased-before.yaml"),
+                            beforeYaml!);
+                        File.WriteAllText(
+                            Path.Combine(ProjectRoot, "readonly-aliased-after.yaml"),
+                            afterYaml);
+                    }
+                    Require(
+                        normalizedBeforeYaml == normalizedAfterYaml,
+                        "Read-only apply changed payload YAML beyond the unrelated field.");
+                    Require(
+                        asset!.values[0].label == "original" &&
+                        asset.values[1].label == "original",
+                        "Read-only apply changed runtime values.");
+                    scenario.Observed = "same-serialized-object=true;rendered=true;repaint=true;unrelated-apply=true;yaml-stable=true;ids-stable=true";
+                    return true;
+                };
+                return scenario;
+            }
+
+            private static DrawerUiScenario CreateMultiObjectActiveFieldScenario()
+            {
+                var scenario = new DrawerUiScenario("Drawer_MultiObjectActiveFieldEdit");
+                UnityDrawerHost? first = null;
+                UnityDrawerHost? second = null;
+                var phase = 0;
+                var settleFrames = 0;
+                scenario.Start = (runner, window) =>
+                {
+                    Undo.ClearAll();
+                    first = runner.CreateHost("multi-active-first");
+                    second = runner.CreateHost("multi-active-second");
+                    first.single = UnityDrawerUnion.Text(5, "before");
+                    second.single = UnityDrawerUnion.Text(5, "before");
+                    window.Bind(
+                        new UnityEngine.Object[] { first, second },
+                        "single");
+                };
+                scenario.Tick = (runner, window) =>
+                {
+                    if (phase == 0)
+                    {
+                        phase = 1;
+                        return false;
+                    }
+
+                    if (phase == 1)
+                    {
+                        if (!window.UIToolkitBuilt || !window.BoundTreeIsAttached ||
+                            !window.HasBoundFieldControl("label"))
+                            return false;
+                        Require(
+                            window.TryEditStringControl("label", "edited"),
+                            "Multi-object TextField was unavailable in the rendered drawer.");
+                        phase = 2;
+                        return false;
+                    }
+
+                    window.UpdateSerialized();
+                    if (first!.single.label != "edited" || second!.single.label != "edited")
+                    {
+                        if (++settleFrames > 60)
+                            throw new TimeoutException(
+                                "Multi-object TextField edit did not synchronize all targets; first=" +
+                                (first.single.label ?? "<null>") + ";second=" +
+                                (second.single.label ?? "<null>") +
+                                ";state=" + window.DescribeState());
+                        return false;
+                    }
+
+                    scenario.Observed = "targets=2;active-field=label;edit=before->edited;all-runtime-values-updated=true";
+                    return true;
                 };
                 return scenario;
             }
@@ -3919,7 +7700,7 @@ namespace Spire.UnityIntegration
                     first = runner.CreateHost("multi-first");
                     second = runner.CreateHost("multi-second");
                     first.single = UnityDrawerUnion.Text(1, "one");
-                    second.single = UnityDrawerUnion.Text(2, "two");
+                    second.single = UnityDrawerUnion.Empty();
                     first.nested = new UnityNestedOwnerData { value = UnityShapeSerializable.Circle(11f), array = Array.Empty<UnityCollectionUnion>(), list = new List<UnityCollectionUnion>() };
                     second.nested = new UnityNestedOwnerData { value = UnityShapeSerializable.Circle(22f), array = Array.Empty<UnityCollectionUnion>(), list = new List<UnityCollectionUnion>() };
                     window.Bind(new UnityEngine.Object[] { first, second }, "single");
@@ -3930,14 +7711,14 @@ namespace Spire.UnityIntegration
                         return false;
                     if (phase == 2)
                     {
-                        Require(window.TryInteractWithSelector("Number"), "Multi-object Number selector was unavailable.");
+                        Require(window.TryInteractWithSelector("Text"), "Multi-object Text selector was unavailable for mixed variants.");
                         return false;
                     }
 
-                    Require(first!.single.kind == UnityDrawerUnion.Kind.Number && second!.single.kind == UnityDrawerUnion.Kind.Number, "Multi-object selector did not apply to both targets.");
+                    Require(first!.single.kind == UnityDrawerUnion.Kind.Text && second!.single.kind == UnityDrawerUnion.Kind.Text, "Multi-object selector did not apply Text to both mixed targets.");
                     Require(first.nested.value.radius == 11f && second.nested.value.radius == 22f, "Multi-object selector changed untouched per-target data.");
-                    Require(window.HasBoundFieldControl("value") && !window.HasBoundFieldControl("count") && !window.HasBoundFieldControl("label"), "Multi-object selector controls did not follow the active variant.");
-                    scenario.Observed = "objects=2;selector=Number;untouched-radii=11/22;preserved=true";
+                    Require(window.HasBoundFieldControl("count") && window.HasBoundFieldControl("label") && !window.HasBoundFieldControl("value"), "Multi-object selector controls did not follow the active Text variant.");
+                    scenario.Observed = "objects=2;mixed=Text+Empty;selector=Text;untouched-radii=11/22;preserved=true";
                     return true;
                 };
                 return scenario;
@@ -4660,6 +8441,8 @@ namespace Spire.UnityIntegration
             public VisualElement BoundTree
                 => _trackedTree ?? (rootVisualElement.childCount == 0 ? rootVisualElement : rootVisualElement[0]);
 
+            public SerializedObject? BoundSerializedObject => _serialized;
+
             public VisualElement? InnerDrawerTree
             {
                 get
@@ -4717,6 +8500,26 @@ namespace Spire.UnityIntegration
                 BindSerialized(propertyPath);
             }
 
+            public void BindDrawer(
+                SerializedObject serialized,
+                UnityEngine.Object target,
+                string propertyPath,
+                Type drawerTargetType,
+                bool imguiProbe)
+            {
+                _target = target;
+                _drawerTargetType = drawerTargetType;
+                _imguiProbe = imguiProbe;
+                _deferredPropertyPath = null;
+                _deferredTree = null;
+                _trackedTree = null;
+                _trackedInnerTree = null;
+                rootVisualElement.Unbind();
+                rootVisualElement.Clear();
+                _serialized = serialized;
+                BindSerialized(propertyPath);
+            }
+
             public void UpdateSerialized()
             {
                 _serializedUpdateCount++;
@@ -4762,6 +8565,12 @@ namespace Spire.UnityIntegration
                 UIToolkitBuilt = rootVisualElement.childCount > 0;
             }
 
+            public void RepaintBoundDrawer()
+            {
+                rootVisualElement.MarkDirtyRepaint();
+                Repaint();
+            }
+
             public void BindBeforeFirstPanelAttach(UnityEngine.Object target, string propertyPath)
             {
                 _target = target;
@@ -4792,10 +8601,10 @@ namespace Spire.UnityIntegration
                 if (_serialized == null || _deferredPropertyPath == null || _target == null)
                     throw new InvalidOperationException("The deferred drawer window is not bound to a target.");
 
-                Undo.RecordObject(_target, "Spire deferred drawer discriminator change");
-                var kind = RequireKindProperty(_serialized, _deferredPropertyPath);
-                kind.intValue = rawKind;
-                Require(_serialized.ApplyModifiedProperties(), "Deferred raw discriminator edit was not applied.");
+                Undo.RecordObject(_target, "Spire deferred drawer payload change");
+                var payload = RequirePayloadProperty(_serialized, _deferredPropertyPath);
+                payload.managedReferenceValue = CreateDrawerPayloadForRawKind(rawKind);
+                Require(_serialized.ApplyModifiedProperties(), "Deferred raw payload edit was not applied.");
                 Undo.FlushUndoRecordObjects();
             }
 
@@ -4958,9 +8767,9 @@ namespace Spire.UnityIntegration
                 if (_serialized == null)
                     throw new InvalidOperationException("The drawer window is not bound to a SerializedObject.");
 
-                var kind = RequireKindProperty(_serialized, propertyPath);
-                kind.intValue = rawKind;
-                Require(_serialized.ApplyModifiedProperties(), "Raw discriminator edit was not applied.");
+                var payload = RequirePayloadProperty(_serialized, propertyPath);
+                payload.managedReferenceValue = CreateDrawerPayloadForRawKind(rawKind);
+                Require(_serialized.ApplyModifiedProperties(), "Raw payload edit was not applied.");
                 BindSerialized(propertyPath);
             }
 
@@ -4999,6 +8808,68 @@ namespace Spire.UnityIntegration
                     }
                 });
                 return found;
+            }
+
+            public bool HasNativeEnumControl(string fieldName)
+            {
+                var suffix = "." + fieldName;
+                var found = false;
+                rootVisualElement.Query<EnumFlagsField>().ForEach(field =>
+                {
+                    if (found)
+                        return;
+
+                    var bindingPath = (field as IBindable)?.bindingPath;
+                    if (string.Equals(bindingPath, fieldName, StringComparison.Ordinal) ||
+                        (!string.IsNullOrEmpty(bindingPath) &&
+                            bindingPath.EndsWith(suffix, StringComparison.Ordinal)))
+                    {
+                        found = true;
+                    }
+                });
+                rootVisualElement.Query<EnumField>().ForEach(field =>
+                {
+                    if (found)
+                        return;
+
+                    var bindingPath = (field as IBindable)?.bindingPath;
+                    if (string.Equals(bindingPath, fieldName, StringComparison.Ordinal) ||
+                        (!string.IsNullOrEmpty(bindingPath) &&
+                            bindingPath.EndsWith(suffix, StringComparison.Ordinal)))
+                    {
+                        found = true;
+                    }
+                });
+                return found;
+            }
+
+            public bool TryExpandFoldout(string fieldName)
+            {
+                Foldout? target = null;
+                var suffix = "." + fieldName;
+                rootVisualElement.Query<Foldout>().ForEach(foldout =>
+                {
+                    if (target != null)
+                        return;
+
+                    var bindingPath = (foldout as IBindable)?.bindingPath;
+                    var textMatches = string.Equals(
+                        foldout.text,
+                        fieldName,
+                        StringComparison.OrdinalIgnoreCase);
+                    var pathMatches = string.Equals(bindingPath, fieldName, StringComparison.Ordinal) ||
+                        (!string.IsNullOrEmpty(bindingPath) &&
+                            bindingPath.EndsWith(suffix, StringComparison.Ordinal));
+                    if (textMatches || pathMatches)
+                        target = foldout;
+                });
+
+                if (target == null)
+                    return false;
+
+                if (!target.value)
+                    target.value = true;
+                return true;
             }
 
             public int PopupCount
@@ -5067,18 +8938,9 @@ namespace Spire.UnityIntegration
                         : _property;
                     if (property != null)
                     {
-                        var kind = RequireKindProperty(property);
-                        rootKind = kind.intValue.ToString();
-                        var enumDisplayNames = kind.enumDisplayNames;
-                        if (enumDisplayNames != null &&
-                            kind.enumValueIndex >= 0 &&
-                            kind.enumValueIndex < enumDisplayNames.Length)
-                        {
-                            rootKind += ":" + enumDisplayNames[kind.enumValueIndex];
-                        }
-
                         var managedPayload = RequirePayloadProperty(property);
                         var payloadValue = managedPayload.managedReferenceValue;
+                        rootKind = payloadValue?.GetType().Name ?? "<null>";
                         payload = (payloadValue?.GetType().FullName ?? "<null>") +
                             "#" + managedPayload.managedReferenceId;
                     }
@@ -5092,6 +8954,9 @@ namespace Spire.UnityIntegration
                     ";payload=" + payload +
                     ";controls=count=" + HasBoundFieldControl("count") +
                     ",label=" + HasBoundFieldControl("label") +
+                    ",longValue=" + HasBoundFieldControl("longValue") +
+                    ",doubleValue=" + HasBoundFieldControl("doubleValue") +
+                    ",enumValue=" + HasBoundFieldControl("enumValue") +
                     ",value=" + HasBoundFieldControl("value") +
                     ",texture=" + HasBoundFieldControl("texture") +
                     ";popup-count=" + PopupCount +
@@ -5173,6 +9038,287 @@ namespace Spire.UnityIntegration
                 }
 
                 return false;
+            }
+
+            public bool TryEditStringControl(string fieldName, string value)
+            {
+                TextField? target = null;
+                var suffix = "." + fieldName;
+                rootVisualElement.Query<TextField>().ForEach(field =>
+                {
+                    if (target != null)
+                        return;
+
+                    var bindingPath = (field as IBindable)?.bindingPath;
+                    if (string.Equals(bindingPath, fieldName, StringComparison.Ordinal) ||
+                        (!string.IsNullOrEmpty(bindingPath) &&
+                            bindingPath.EndsWith(suffix, StringComparison.Ordinal)))
+                    {
+                        target = field;
+                    }
+                });
+
+                if (target == null)
+                    return false;
+
+                target.value = value;
+                _serialized?.ApplyModifiedProperties();
+                return true;
+            }
+
+            public bool TryEditIntegerControl(string fieldName, int value)
+            {
+                IntegerField? target = null;
+                var suffix = "." + fieldName;
+                rootVisualElement.Query<IntegerField>().ForEach(field =>
+                {
+                    if (target != null)
+                        return;
+
+                    var bindingPath = (field as IBindable)?.bindingPath;
+                    if (string.Equals(bindingPath, fieldName, StringComparison.Ordinal) ||
+                        (!string.IsNullOrEmpty(bindingPath) &&
+                            bindingPath.EndsWith(suffix, StringComparison.Ordinal)))
+                    {
+                        target = field;
+                    }
+                });
+
+                if (target == null)
+                    return false;
+
+                target.value = value;
+                _serialized?.ApplyModifiedProperties();
+                return true;
+            }
+
+            public bool TryEditLongControl(string fieldName, long value)
+            {
+                LongField? target = null;
+                var suffix = "." + fieldName;
+                rootVisualElement.Query<LongField>().ForEach(field =>
+                {
+                    if (target != null)
+                        return;
+
+                    var bindingPath = (field as IBindable)?.bindingPath;
+                    if (string.Equals(bindingPath, fieldName, StringComparison.Ordinal) ||
+                        (!string.IsNullOrEmpty(bindingPath) &&
+                            bindingPath.EndsWith(suffix, StringComparison.Ordinal)))
+                    {
+                        target = field;
+                    }
+                });
+
+                if (target == null)
+                    return false;
+
+                target.value = value;
+                _serialized?.ApplyModifiedProperties();
+                return true;
+            }
+
+            public bool TryEditDoubleControl(string fieldName, double value)
+            {
+                DoubleField? target = null;
+                var suffix = "." + fieldName;
+                rootVisualElement.Query<DoubleField>().ForEach(field =>
+                {
+                    if (target != null)
+                        return;
+
+                    var bindingPath = (field as IBindable)?.bindingPath;
+                    if (string.Equals(bindingPath, fieldName, StringComparison.Ordinal) ||
+                        (!string.IsNullOrEmpty(bindingPath) &&
+                            bindingPath.EndsWith(suffix, StringComparison.Ordinal)))
+                    {
+                        target = field;
+                    }
+                });
+
+                if (target == null)
+                    return false;
+
+                target.value = value;
+                _serialized?.ApplyModifiedProperties();
+                return true;
+            }
+
+            public bool TryEditEnumControl(string fieldName, Enum value)
+            {
+                if (!IsAvailableEnumValue(value))
+                    return false;
+
+                var suffix = "." + fieldName;
+                EnumFlagsField? flagsTarget = null;
+                rootVisualElement.Query<EnumFlagsField>().ForEach(field =>
+                {
+                    if (flagsTarget != null)
+                        return;
+
+                    var bindingPath = (field as IBindable)?.bindingPath;
+                    if (string.Equals(bindingPath, fieldName, StringComparison.Ordinal) ||
+                        (!string.IsNullOrEmpty(bindingPath) &&
+                            bindingPath.EndsWith(suffix, StringComparison.Ordinal)))
+                    {
+                        flagsTarget = field;
+                    }
+                });
+
+                if (flagsTarget != null)
+                {
+                    if (flagsTarget.value != null && flagsTarget.value.GetType() != value.GetType())
+                        return false;
+
+                    flagsTarget.value = value;
+                    _serialized?.ApplyModifiedProperties();
+                    return true;
+                }
+
+                EnumField? target = null;
+                rootVisualElement.Query<EnumField>().ForEach(field =>
+                {
+                    if (target != null)
+                        return;
+
+                    var bindingPath = (field as IBindable)?.bindingPath;
+                    if (string.Equals(bindingPath, fieldName, StringComparison.Ordinal) ||
+                        (!string.IsNullOrEmpty(bindingPath) &&
+                            bindingPath.EndsWith(suffix, StringComparison.Ordinal)))
+                    {
+                        target = field;
+                    }
+                });
+
+                if (target != null)
+                {
+                    if (target.value != null && target.value.GetType() != value.GetType())
+                        return false;
+
+                    target.value = value;
+                    _serialized?.ApplyModifiedProperties();
+                    return true;
+                }
+
+                PopupField<string>? popupTarget = null;
+                rootVisualElement.Query<PopupField<string>>().ForEach(popup =>
+                {
+                    if (popupTarget != null)
+                        return;
+
+                    var bindingPath = (popup as IBindable)?.bindingPath;
+                    if (string.Equals(bindingPath, fieldName, StringComparison.Ordinal) ||
+                        (!string.IsNullOrEmpty(bindingPath) &&
+                            bindingPath.EndsWith(suffix, StringComparison.Ordinal)))
+                    {
+                        popupTarget = popup;
+                    }
+                });
+
+                if (popupTarget == null)
+                    return false;
+
+                var desiredChoice = FindEnumDisplayChoice(popupTarget.choices, value);
+                if (desiredChoice == null)
+                    return false;
+
+                popupTarget.value = desiredChoice;
+                _serialized?.ApplyModifiedProperties();
+                return true;
+            }
+
+            private static bool IsAvailableEnumValue(Enum value)
+            {
+                if (value == null)
+                    return false;
+
+                var enumType = value.GetType();
+                if (Enum.IsDefined(enumType, value))
+                    return true;
+
+                if (!enumType.IsDefined(typeof(FlagsAttribute), inherit: false))
+                    return false;
+
+                ulong requested = Convert.ToUInt64(value);
+                ulong definedMask = 0;
+                foreach (var declared in Enum.GetValues(enumType))
+                    definedMask |= Convert.ToUInt64(declared);
+                return (requested & ~definedMask) == 0;
+            }
+
+            private static string? FindEnumDisplayChoice(IEnumerable<string> choices, Enum value)
+            {
+                var enumType = value.GetType();
+                var candidates = new List<string>();
+                var memberName = Enum.GetName(enumType, value);
+                if (memberName != null)
+                {
+                    var member = enumType.GetField(
+                        memberName,
+                        BindingFlags.Public | BindingFlags.Static);
+                    var inspectorName = member?.GetCustomAttributes(
+                            typeof(InspectorNameAttribute), inherit: false)
+                        .OfType<InspectorNameAttribute>()
+                        .Select(attribute => attribute.displayName)
+                        .FirstOrDefault();
+                    if (!string.IsNullOrEmpty(inspectorName))
+                        candidates.Add(inspectorName);
+                    candidates.Add(memberName);
+                }
+
+                candidates.Add(value.ToString());
+                foreach (var choice in choices)
+                {
+                    if (choice == null)
+                        continue;
+
+                    foreach (var candidate in candidates)
+                    {
+                        if (string.Equals(choice, candidate, StringComparison.Ordinal) ||
+                            choice.StartsWith(candidate + " ", StringComparison.Ordinal) ||
+                            choice.StartsWith(candidate + "(", StringComparison.Ordinal))
+                        {
+                            return choice;
+                        }
+                    }
+                }
+
+                return null;
+            }
+
+            public string DescribeStringControl(string fieldName)
+            {
+                TextField? target = null;
+                var suffix = "." + fieldName;
+                rootVisualElement.Query<TextField>().ForEach(field =>
+                {
+                    if (target != null)
+                        return;
+
+                    var bindingPath = (field as IBindable)?.bindingPath;
+                    if (string.Equals(bindingPath, fieldName, StringComparison.Ordinal) ||
+                        (!string.IsNullOrEmpty(bindingPath) &&
+                            bindingPath.EndsWith(suffix, StringComparison.Ordinal)))
+                    {
+                        target = field;
+                    }
+                });
+
+                var serializedValue = "<unavailable>";
+                try
+                {
+                    var property = _serialized != null && _property != null
+                        ? _serialized.FindProperty(_property.propertyPath) ?? _property
+                        : null;
+                    var payload = property == null ? null : RequirePayloadProperty(property);
+                    serializedValue = payload?.FindPropertyRelative(fieldName)?.stringValue ?? "<null>";
+                }
+                catch (Exception exception)
+                {
+                    serializedValue = "<error:" + exception.GetType().Name + ">";
+                }
+
+                return "control=" + (target?.value ?? "<null>") + ";serialized=" + serializedValue;
             }
 
             public void SetPendingPayloadFloat(string propertyPath, float value)

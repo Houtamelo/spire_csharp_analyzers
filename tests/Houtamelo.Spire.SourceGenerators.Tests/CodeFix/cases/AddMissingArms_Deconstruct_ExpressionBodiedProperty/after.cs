@@ -14,7 +14,7 @@ namespace TestNs
         int Value => _switch switch
         {
             (Switch.Kind.Enabled, var p) => p,
-            (Switch.Kind.Disabled, string cause) => throw new System.NotImplementedException()
+            { kind: Switch.Kind.Disabled, cause: var cause } => throw new System.NotImplementedException()
         };
     }
 }

@@ -18,7 +18,7 @@ namespace TestNs
             return m switch
             {
                 { kind: Msg.Kind.Ping, seq: var s } => s,
-                { kind: Msg.Kind.Pong, seq: int seq } => throw new System.NotImplementedException(),
+                { kind: Msg.Kind.Pong, seq: var seq } => throw new System.NotImplementedException(),
                 { kind: Msg.Kind.Close } => throw new System.NotImplementedException()
             };
         }

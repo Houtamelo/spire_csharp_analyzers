@@ -14,8 +14,8 @@ namespace TestNs
         int Test(Shape s) => s switch
         {
             { kind: Shape.Kind.Circle, radius: var r } => 1,
-            { kind: Shape.Kind.Rectangle, width: float width, height: float height } => throw new System.NotImplementedException(),
-            { kind: Shape.Kind.Square, sideLength: int sideLength } => throw new System.NotImplementedException()
+            { kind: Shape.Kind.Rectangle, width: var width, height: var height } => throw new System.NotImplementedException(),
+            { kind: Shape.Kind.Square, sideLength: var sideLength } => throw new System.NotImplementedException()
         };
     }
 }

@@ -1,0 +1,267 @@
+#nullable enable
+
+using System.IO;
+using Houtamelo.Spire.Showcase;
+using NUnit.Framework;
+using UnityEditor;
+using UnityEngine;
+
+namespace Houtamelo.Spire.Showcase.Tests
+{
+    internal static class ShowcaseTestSupport
+    {
+        public const string TemporaryFolder = "Assets/Tests/TemporaryTest";
+        public const string PresetPath = TemporaryFolder + "/ShowcasePreset.asset";
+        public const string FirstHostPath = TemporaryFolder + "/FirstHost.asset";
+        public const string SecondHostPath = TemporaryFolder + "/SecondHost.asset";
+
+        public static void EnsureTemporaryFolder()
+        {
+            if (!AssetDatabase.IsValidFolder(TemporaryFolder))
+                AssetDatabase.CreateFolder("Assets/Tests", "TemporaryTest");
+        }
+
+        public static ShowcasePreset CreatePreset(string path)
+        {
+            EnsureTemporaryFolder();
+
+            var preset = ScriptableObject.CreateInstance<ShowcasePreset>();
+            AssetDatabase.CreateAsset(preset, path);
+            return preset;
+        }
+
+        public static ShowcasePreset SaveAndReload(ShowcasePreset preset, string path)
+        {
+            EditorUtility.SetDirty(preset);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+
+            Resources.UnloadAsset(preset);
+            var reloaded = AssetDatabase.LoadAssetAtPath<ShowcasePreset>(path);
+            return reloaded ?? throw new AssertionException("Showcase preset reload returned null: " + path);
+        }
+
+        public static void DeleteTemporaryFolder()
+        {
+            if (AssetDatabase.IsValidFolder(TemporaryFolder))
+            {
+                AssetDatabase.DeleteAsset(TemporaryFolder);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+            }
+        }
+
+        public static string ReadProjectFile(string assetPath)
+        {
+            var projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            var filePath = Path.Combine(projectRoot, assetPath.Replace('/', Path.DirectorySeparatorChar));
+            return File.ReadAllText(filePath);
+        }
+
+        public static void AssertResetPreset(ShowcasePreset preset)
+        {
+            AssertMoveCommand(preset.selectedCommand, new Vector2(3f, 4f), 2f);
+
+            Assert.That(preset.commands, Has.Count.EqualTo(6));
+            AssertIdleCommand(preset.commands[0]);
+            AssertMoveCommand(preset.commands[1], new Vector2(3f, 4f), 2f);
+            AssertSpeakCommand(preset.commands[2], "Hello from Spire");
+
+            var firstEffect = GetEffect(preset.commands[3]);
+            var secondEffect = GetEffect(preset.commands[4]);
+            Assert.That(firstEffect, Is.TypeOf<DamageEffect>());
+            Assert.That(secondEffect, Is.SameAs(firstEffect));
+            Assert.That(((DamageEffect)firstEffect!).amount, Is.EqualTo(10));
+            Assert.That(GetEffect(preset.commands[5]), Is.Null);
+
+            AssertRectangle(preset.shape, 3f, 4f);
+
+            AssertSuccess(preset.result, 42);
+
+            AssertStats(preset.boxedTuple, 7, "tuple");
+
+            AssertSamples(preset.unsafeOverlap, 123u, 1.5f);
+
+            AssertCircle(preset.overlap, 2f);
+        }
+
+        public static Effect? GetEffect(GameplayCommand command)
+        {
+            switch (command)
+            {
+                case { kind: GameplayCommand.Kind.ApplyEffect, effect: var effect }:
+                    return effect;
+                default:
+                    throw new AssertionException("Expected an ApplyEffect command.");
+            }
+        }
+
+        public static void AssertIdleCommand(GameplayCommand command)
+        {
+            switch (command)
+            {
+                case { kind: GameplayCommand.Kind.Idle }:
+                    break;
+                default:
+                    Assert.Fail("Expected an Idle command.");
+                    break;
+            }
+        }
+
+        public static void AssertMoveCommand(GameplayCommand command, Vector2 expectedDestination, float expectedSpeed)
+        {
+            switch (command)
+            {
+                case { kind: GameplayCommand.Kind.Move, destination: var destination, speed: var speed }:
+                    Assert.That(destination, Is.EqualTo(expectedDestination));
+                    Assert.That(speed, Is.EqualTo(expectedSpeed));
+                    break;
+                default:
+                    Assert.Fail("Expected a Move command.");
+                    break;
+            }
+        }
+
+        public static void AssertSpeakCommand(GameplayCommand command, string expectedSpeech)
+        {
+            switch (command)
+            {
+                case { kind: GameplayCommand.Kind.Speak, speech: var speech }:
+                    Assert.That(speech, Is.EqualTo(expectedSpeech));
+                    break;
+                default:
+                    Assert.Fail("Expected a Speak command.");
+                    break;
+            }
+        }
+
+        private static void AssertRectangle(Shape shape, float expectedWidth, float expectedHeight)
+        {
+            switch (shape)
+            {
+                case { kind: Shape.Kind.Rectangle, width: var width, height: var height }:
+                    Assert.That(width, Is.EqualTo(expectedWidth));
+                    Assert.That(height, Is.EqualTo(expectedHeight));
+                    break;
+                default:
+                    Assert.Fail("Expected a Rectangle shape.");
+                    break;
+            }
+        }
+
+        public static void AssertPoint(Shape shape)
+        {
+            switch (shape)
+            {
+                case { kind: Shape.Kind.Point }:
+                    break;
+                default:
+                    Assert.Fail("Expected a Point shape.");
+                    break;
+            }
+        }
+
+        private static void AssertSuccess(OperationResult<int> result, int expectedValue)
+        {
+            switch (result)
+            {
+                case { kind: OperationResult<int>.Kind.Success, value: var value }:
+                    Assert.That(value, Is.EqualTo(expectedValue));
+                    break;
+                default:
+                    Assert.Fail("Expected a successful operation result.");
+                    break;
+            }
+        }
+
+        public static void AssertFailure(OperationResult<int> result, string expectedError)
+        {
+            switch (result)
+            {
+                case { kind: OperationResult<int>.Kind.Failure, error: var error }:
+                    Assert.That(error, Is.EqualTo(expectedError));
+                    break;
+                default:
+                    Assert.Fail("Expected a failed operation result.");
+                    break;
+            }
+        }
+
+        private static void AssertStats(BoxedTupleStats stats, int expectedScore, string expectedLabel)
+        {
+            switch (stats)
+            {
+                case { kind: BoxedTupleStats.Kind.Stats, score: var score, label: var label }:
+                    Assert.That(score, Is.EqualTo(expectedScore));
+                    Assert.That(label, Is.EqualTo(expectedLabel));
+                    break;
+                default:
+                    Assert.Fail("Expected Stats.");
+                    break;
+            }
+        }
+
+        private static void AssertSamples(UnsafeStats stats, uint expectedRaw, float expectedWeight)
+        {
+            switch (stats)
+            {
+                case { kind: UnsafeStats.Kind.Samples, raw: var raw, weight: var weight }:
+                    Assert.That(raw, Is.EqualTo(expectedRaw));
+                    Assert.That(weight, Is.EqualTo(expectedWeight));
+                    break;
+                default:
+                    Assert.Fail("Expected Samples.");
+                    break;
+            }
+        }
+
+        public static void AssertEmpty(UnsafeStats stats)
+        {
+            switch (stats)
+            {
+                case { kind: UnsafeStats.Kind.Empty }:
+                    break;
+                default:
+                    Assert.Fail("Expected Empty unsafe stats.");
+                    break;
+            }
+        }
+
+        private static void AssertCircle(OverlapShape shape, float expectedRadius)
+        {
+            switch (shape)
+            {
+                case { kind: OverlapShape.Kind.Circle, radius: var radius }:
+                    Assert.That(radius, Is.EqualTo(expectedRadius));
+                    break;
+                default:
+                    Assert.Fail("Expected a Circle shape.");
+                    break;
+            }
+        }
+
+        public static void AssertPoint(OverlapShape shape)
+        {
+            switch (shape)
+            {
+                case { kind: OverlapShape.Kind.Point }:
+                    break;
+                default:
+                    Assert.Fail("Expected a Point overlap shape.");
+                    break;
+            }
+        }
+
+        public static void AssertEmpty(BoxedTupleStats stats)
+        {
+            switch (stats)
+            {
+                case { kind: BoxedTupleStats.Kind.Empty }:
+                    break;
+                default:
+                    Assert.Fail("Expected Empty boxed tuple stats.");
+                    break;
+            }
+        }
+    }
+}

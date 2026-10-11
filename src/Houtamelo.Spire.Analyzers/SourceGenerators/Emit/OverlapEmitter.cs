@@ -54,14 +54,14 @@ internal static class OverlapEmitter
         sb.AppendLine("[FieldOffset(0)]");
         if (unitySerialization)
         {
-            sb.AppendLine("[global::UnityEngine.SerializeField]");
-            sb.AppendLine("private Kind _kind;");
+            sb.AppendLine("[global::System.NonSerialized]");
+            sb.AppendLine($"private Kind {UnitySerializationEmitter.RuntimeKindFieldName};");
         }
         else
         {
             sb.AppendLine("readonly Kind _kind;");
         }
-        sb.AppendLine("public Kind kind => this._kind;");
+        sb.AppendLine($"public Kind kind => this.{(unitySerialization ? UnitySerializationEmitter.RuntimeKindFieldName : "_kind")};");
         sb.AppendLine();
 
         EmitGlobalFields(sb, layout, unitySerialization);
@@ -76,7 +76,7 @@ internal static class OverlapEmitter
 
         // IsVariant properties
         foreach (var variant in union.Variants)
-            sb.AppendLine($"public bool Is{variant.Name} => this.kind == Kind.{variant.Name};");
+            sb.AppendLine($"public bool Is{variant.Name} => this.kind == Kind.{IdentifierUtility.Escape(variant.Name)};");
 
         if (unitySerialization)
         {
@@ -113,7 +113,7 @@ internal static class OverlapEmitter
         sb.AppendLine($"public enum Kind : {kindType}");
         sb.OpenBrace();
         foreach (var variant in union.Variants)
-            sb.AppendLine($"{variant.Name},");
+            sb.AppendLine($"{IdentifierUtility.Escape(variant.Name)},");
         sb.CloseBrace();
     }
 
@@ -170,12 +170,9 @@ internal static class OverlapEmitter
     {
         sb.AppendLine($"{typeName}(Kind kind) : this()");
         sb.OpenBrace();
-        sb.AppendLine("this._kind = kind;");
+        sb.AppendLine($"this.{(unitySerialization ? UnitySerializationEmitter.RuntimeKindFieldName : "_kind")} = kind;");
         if (unitySerialization)
-        {
-            sb.AppendLine("this.__SpireSerializationOwner = null;");
             sb.AppendLine("this._serializedPayload = null;");
-        }
         sb.CloseBrace();
     }
 
@@ -189,35 +186,35 @@ internal static class OverlapEmitter
         {
             var vl = layout.Variants[variant.Name];
             var typedParams = string.Join(", ",
-                variant.Fields.Select(f => $"{f.TypeFullName} {f.Name}"));
+                variant.Fields.Select(f => $"{f.TypeFullName} {IdentifierUtility.Escape(f.Name)}"));
 
             bool hasFields = variant.Fields.Length > 0;
 
             if (!hasFields)
             {
-                sb.AppendLine($"public static partial {union.TypeName} {variant.Name}()");
-                sb.AppendLine($"    => new {union.TypeName}(Kind.{variant.Name});");
+                sb.AppendLine($"public static partial {union.TypeName} {IdentifierUtility.Escape(variant.Name)}()");
+                sb.AppendLine($"    => new {union.TypeName}(Kind.{IdentifierUtility.Escape(variant.Name)});");
                 continue;
             }
 
-            sb.AppendLine($"public static partial {union.TypeName} {variant.Name}({typedParams})");
+            sb.AppendLine($"public static partial {union.TypeName} {IdentifierUtility.Escape(variant.Name)}({typedParams})");
             sb.OpenBrace();
-            sb.AppendLine($"var s = new {union.TypeName}(Kind.{variant.Name});");
+            sb.AppendLine($"var s = new {union.TypeName}(Kind.{IdentifierUtility.Escape(variant.Name)});");
 
             foreach (var fp in vl.R1Fields)
                 sb.AppendLine(unitySerialization
-                    ? $"s._{fp.Field.Name} = {fp.Field.Name};"
-                    : $"Unsafe.AsRef(in s._{fp.Field.Name}) = {fp.Field.Name};");
+                    ? $"s._{fp.Field.ResolvedPropertyName} = {IdentifierUtility.Escape(fp.Field.Name)};"
+                    : $"Unsafe.AsRef(in s._{fp.Field.ResolvedPropertyName}) = {IdentifierUtility.Escape(fp.Field.Name)};");
 
             foreach (var fp in vl.R2Fields)
                 sb.AppendLine(unitySerialization
-                    ? $"s._{fp.Field.Name} = {fp.Field.Name};"
-                    : $"Unsafe.AsRef(in s._{fp.Field.Name}) = {fp.Field.Name};");
+                    ? $"s._{fp.Field.ResolvedPropertyName} = {IdentifierUtility.Escape(fp.Field.Name)};"
+                    : $"Unsafe.AsRef(in s._{fp.Field.ResolvedPropertyName}) = {IdentifierUtility.Escape(fp.Field.Name)};");
 
             foreach (var fp in vl.R3Fields)
                 sb.AppendLine(unitySerialization
-                    ? $"s._obj_{fp.Field.Name} = {fp.Field.Name};"
-                    : $"Unsafe.AsRef(in s._obj_{fp.Field.Name}) = {fp.Field.Name};");
+                    ? $"s._obj_{fp.Field.ResolvedPropertyName} = {IdentifierUtility.Escape(fp.Field.Name)};"
+                    : $"Unsafe.AsRef(in s._obj_{fp.Field.ResolvedPropertyName}) = {IdentifierUtility.Escape(fp.Field.Name)};");
 
             sb.AppendLine("return s;");
             sb.CloseBrace();
@@ -235,63 +232,54 @@ internal static class OverlapEmitter
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
             if (hasInitProperties)
             {
-                sb.AppendLine($"public {gf.TypeFullName} {gf.Name}");
+                sb.AppendLine($"public {gf.TypeFullName} {IdentifierUtility.Escape(gf.Name)}");
                 sb.OpenBrace();
                 sb.AppendLine($"get => this._{gf.Name};");
-                if (unitySerialization)
-                    sb.AppendLine($"init {{ this.__SpireDetachSerializedCache({gf.Offset}); this._{gf.Name} = value; }}");
-                else
-                    sb.AppendLine($"init => this._{gf.Name} = value;");
+                sb.AppendLine($"init => this._{gf.Name} = value;");
                 sb.CloseBrace();
             }
             else
-                sb.AppendLine($"public {gf.TypeFullName} {gf.Name} => this._{gf.Name};");
+                sb.AppendLine($"public {gf.TypeFullName} {IdentifierUtility.Escape(gf.Name)} => this._{gf.Name};");
         }
         foreach (var gf in layout.GlobalR2)
         {
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
             if (hasInitProperties)
             {
-                sb.AppendLine($"public {gf.TypeFullName} {gf.Name}");
+                sb.AppendLine($"public {gf.TypeFullName} {IdentifierUtility.Escape(gf.Name)}");
                 sb.OpenBrace();
                 sb.AppendLine($"get => this._{gf.Name}!;");
-                if (unitySerialization)
-                    sb.AppendLine($"init {{ this.__SpireDetachSerializedCache({gf.Offset}); this._{gf.Name} = value; }}");
-                else
-                    sb.AppendLine($"init => this._{gf.Name} = value;");
+                sb.AppendLine($"init => this._{gf.Name} = value;");
                 sb.CloseBrace();
             }
             else
-                sb.AppendLine($"public {gf.TypeFullName} {gf.Name} => this._{gf.Name}!;");
+                sb.AppendLine($"public {gf.TypeFullName} {IdentifierUtility.Escape(gf.Name)} => this._{gf.Name}!;");
         }
         foreach (var gf in layout.GlobalR3)
         {
             sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
             if (hasInitProperties)
             {
-                sb.AppendLine($"public {gf.TypeFullName} {gf.Name}");
+                sb.AppendLine($"public {gf.TypeFullName} {IdentifierUtility.Escape(gf.Name)}");
                 sb.OpenBrace();
-                sb.AppendLine($"get => ({gf.TypeFullName})this._obj_{gf.Name}!;");
-                if (unitySerialization)
-                    sb.AppendLine($"init {{ this.__SpireDetachSerializedCache({gf.Offset}); this._obj_{gf.Name} = value; }}");
-                else
-                    sb.AppendLine($"init => this._obj_{gf.Name} = value;");
+                sb.AppendLine(unitySerialization
+                    ? $"get => this._obj_{gf.Name} is null ? default! : ({gf.TypeFullName})this._obj_{gf.Name};"
+                    : $"get => ({gf.TypeFullName})this._obj_{gf.Name}!;");
+                sb.AppendLine($"init => this._obj_{gf.Name} = value;");
                 sb.CloseBrace();
             }
             else
-                sb.AppendLine($"public {gf.TypeFullName} {gf.Name} => ({gf.TypeFullName})this._obj_{gf.Name}!;");
+                sb.AppendLine(unitySerialization
+                    ? $"public {gf.TypeFullName} {IdentifierUtility.Escape(gf.Name)} => this._obj_{gf.Name} is null ? default! : ({gf.TypeFullName})this._obj_{gf.Name};"
+                    : $"public {gf.TypeFullName} {IdentifierUtility.Escape(gf.Name)} => ({gf.TypeFullName})this._obj_{gf.Name}!;");
         }
     }
 
     private static void EmitSerializedStorage(SourceBuilder sb, OverlapLayoutInfo layout)
     {
-        sb.AppendLine("private sealed class __SpireSerializationOwnerToken { }");
         sb.AppendLine("[global::UnityEngine.SerializeReference]");
         sb.AppendLine($"[FieldOffset({layout.SerializedPayloadOffset})]");
-        sb.AppendLine("private __SpireSerializedPayload? _serializedPayload;");
-        sb.AppendLine("[global::System.NonSerialized]");
-        sb.AppendLine($"[FieldOffset({layout.SerializationOwnerOffset})]");
-        sb.AppendLine("private __SpireSerializationOwnerToken? __SpireSerializationOwner;");
+        sb.AppendLine("private __SpireSerializedPayloadBase? _serializedPayload;");
         sb.AppendLine();
     }
 
@@ -360,13 +348,13 @@ internal static class OverlapEmitter
             switch (region)
             {
                 case FieldRegion.Unmanaged:
-                    sb.AppendLine($"{field.Name} = this._{field.Name};");
+                    sb.AppendLine($"{IdentifierUtility.Escape(field.Name)} = this._{field.ResolvedPropertyName};");
                     break;
                 case FieldRegion.Reference:
-                    sb.AppendLine($"{field.Name} = this._{field.Name}!;");
+                    sb.AppendLine($"{IdentifierUtility.Escape(field.Name)} = this._{field.ResolvedPropertyName}!;");
                     break;
                 case FieldRegion.Boxed:
-                    sb.AppendLine($"{field.Name} = ({field.TypeFullName})this._obj_{field.Name}!;");
+                    sb.AppendLine($"{IdentifierUtility.Escape(field.Name)} = ({field.TypeFullName})this._obj_{field.ResolvedPropertyName}!;");
                     break;
             }
         }
@@ -392,7 +380,7 @@ internal static class OverlapEmitter
         {
             if (variant.Fields.Length == 0) continue;
 
-            sb.AppendLine($"case Kind.{variant.Name}:");
+            sb.AppendLine($"case Kind.{IdentifierUtility.Escape(variant.Name)}:");
             sb.Indent();
 
             int fieldIdx = 0;
@@ -402,13 +390,13 @@ internal static class OverlapEmitter
                 switch (region)
                 {
                     case FieldRegion.Unmanaged:
-                        sb.AppendLine($"f{fieldIdx} = this._{field.Name};");
+                        sb.AppendLine($"f{fieldIdx} = this._{field.ResolvedPropertyName};");
                         break;
                     case FieldRegion.Reference:
-                        sb.AppendLine($"f{fieldIdx} = this._{field.Name};");
+                        sb.AppendLine($"f{fieldIdx} = this._{field.ResolvedPropertyName};");
                         break;
                     case FieldRegion.Boxed:
-                        sb.AppendLine($"f{fieldIdx} = this._obj_{field.Name};");
+                        sb.AppendLine($"f{fieldIdx} = this._obj_{field.ResolvedPropertyName};");
                         break;
                 }
                 fieldIdx++;

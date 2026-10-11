@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "command": "bug",
+  "data": {
+    "submittedAt": "2026-10-11T07:22:07.483Z",
+    "logsAttached": true
+  },
+  "errors": [],
+  "warnings": []
+}

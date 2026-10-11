@@ -11,11 +11,17 @@
 
 Switch expressions and statements on discriminated union types must handle every variant explicitly. A missing variant arm means the switch silently falls through or throws at runtime — defeating the purpose of exhaustive matching.
 
-Applies to struct unions (positional patterns via `Deconstruct`), record unions, and class unions (type patterns).
+Applies to struct unions (property patterns or positional patterns via `Deconstruct`), record unions, and class unions (type patterns).
 
 ### Code fix
 
-"Add missing variant arms" — generates typed arms for each uncovered variant with `throw new NotImplementedException()` as the body.
+"Add missing variant arms" — generates arms for each uncovered variant with `throw new NotImplementedException()` as the body.
+
+New struct arms always use property patterns, even when existing arms are
+positional. Every field uses `property: var local`, preserving the property's
+static type and matching null. Incompatible field names use their variant-qualified
+property name while captures retain the original parameter name. Local captures
+are uniquified against the enclosing scope. Record/class generation is unchanged.
 
 ## Examples
 
@@ -45,7 +51,7 @@ int Area(Shape s) => s switch
 {
     (Shape.Kind.Circle, double r) => (int)(Math.PI * r * r),
     (Shape.Kind.Square, int x) => x * x,
-    (Shape.Kind.Rectangle, float w, float h) => (int)(w * h),
+    { kind: Shape.Kind.Rectangle, width: var width, height: var height } => (int)(width * height),
 };
 ```
 

@@ -127,8 +127,10 @@ public sealed class ExpandWildcardRefactoring : CodeRefactoringProvider
                 {
                     foreach (var prop in recursive.PropertySubpatterns)
                     {
-                        if (prop.Member is IFieldReferenceOperation fieldRef &&
-                            fieldRef.Field.Name == "kind")
+                        if ((prop.Member is IFieldReferenceOperation fieldRef &&
+                             fieldRef.Field.Name == "kind") ||
+                            (prop.Member is IPropertyReferenceOperation propertyRef &&
+                             propertyRef.Property.Name == "kind"))
                         {
                             CollectCoveredVariants(prop.Pattern, unionType, isStruct, covered);
                         }
@@ -191,7 +193,7 @@ public sealed class ExpandWildcardRefactoring : CodeRefactoringProvider
         if (wildcardArm is null) return document;
 
         var bodyExpr = wildcardArm.Expression;
-        var kindPrefix = $"{subjectType.Name}.Kind";
+        var kindPrefix = StructPropertyPatternBuilder.GetKindPrefix(subjectType);
 
         var newArms = new List<SwitchExpressionArmSyntax>();
         foreach (var variant in missingVariants)
@@ -200,42 +202,21 @@ public sealed class ExpandWildcardRefactoring : CodeRefactoringProvider
 
             if (isStruct)
             {
-                // First element: Kind constant
-                subpatterns.Add(SyntaxFactory.Subpattern(
-                    SyntaxFactory.ConstantPattern(
-                        SyntaxFactory.ParseExpression($"{kindPrefix}.{variant}"))));
-
-                // Remaining: typed declarations from factory method
-                var factory = subjectType.GetMembers(variant)
+                var factory = subjectType.GetMembers(
+                        StructPropertyPatternBuilder.NormalizeIdentifier(variant))
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m.IsStatic);
 
-                if (factory is not null)
-                {
-                    foreach (var param in factory.Parameters)
-                    {
-                        var typeName = param.Type.ToDisplayString(
-                            SymbolDisplayFormat.MinimallyQualifiedFormat);
-                        subpatterns.Add(SyntaxFactory.Subpattern(
-                            SyntaxFactory.DeclarationPattern(
-                                SyntaxFactory.ParseTypeName(typeName),
-                                SyntaxFactory.SingleVariableDesignation(
-                                    SyntaxFactory.Identifier(param.Name)))));
-                    }
-                }
-
-                // Fieldless variant with shared Deconstruct needs one discard
-                if ((factory?.Parameters.Length ?? 0) == 0)
-                {
-                    var hasShared = subjectType.GetMembers("Deconstruct")
-                        .OfType<IMethodSymbol>()
-                        .Any(m => m.Parameters.Length == 2);
-                    if (hasShared)
-                    {
-                        subpatterns.Add(SyntaxFactory.Subpattern(
-                            SyntaxFactory.DiscardPattern()));
-                    }
-                }
+                var propertyPattern = StructPropertyPatternBuilder.Build(
+                    subjectType,
+                    variant,
+                    factory,
+                    switchExpr,
+                    kindPrefix,
+                    model);
+                var propertyArm = SyntaxFactory.SwitchExpressionArm(propertyPattern, bodyExpr);
+                newArms.Add(propertyArm);
+                continue;
             }
             else
             {

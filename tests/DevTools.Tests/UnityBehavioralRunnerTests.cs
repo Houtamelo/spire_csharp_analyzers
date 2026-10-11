@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using Spire.Tool;
 using Xunit;
 
@@ -14,6 +15,12 @@ namespace DevTools.Tests;
 public sealed class UnityBehavioralRunnerTests
 {
     private static readonly TimeSpan ProcessTimeout = TimeSpan.FromMinutes(2);
+    private static readonly HashSet<string> GeneratedDirectoryNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "bin",
+        "obj",
+        "TestResults",
+    };
 
     private static readonly string[] RequiredTestDependencies =
     [
@@ -74,6 +81,132 @@ public sealed class UnityBehavioralRunnerTests
                 Path.Combine(fixture.ProjectPath, "TestResults"),
                 "behavioral-inputs.json",
                 SearchOption.AllDirectories));
+    }
+
+    [Fact]
+    public async Task PrepareProject_Il2Cpp_CopiesPlayerSourcesDependenciesAndPreservesProvenance()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var configuration = BuildConfiguration();
+        AssertBuildArtifactsPresent(repositoryRoot, configuration);
+
+        using var fixture = PreparationFixture.Create(repositoryRoot);
+        var editorPath = fixture.CreateIsolatedEditor();
+        var sourceRoot = Path.Combine(repositoryRoot, "tests", "Houtamelo.Spire.BehavioralTests");
+        var sourceBefore = CaptureFileDigests(sourceRoot);
+        var result = await RunPrepareProjectAsync(
+            repositoryRoot,
+            fixture.ProjectPath,
+            configuration,
+            rootOverride: null,
+            editorPath,
+            backend: "IL2CPP");
+
+        Assert.True(result.ExitCode == 0, CombinedOutput(result));
+        AssertCopiedBehavioralSources(repositoryRoot, fixture.ProjectPath);
+        AssertIl2CppPreparedManifest(fixture.ProjectPath);
+        Assert.Equal(sourceBefore, CaptureFileDigests(sourceRoot));
+    }
+
+    [Fact]
+    public void CaptureFileDigests_IgnoresGeneratedOutputsButDetectsAuthoredMutation()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        using var fixture = PreparationFixture.Create(repositoryRoot);
+        var authoredRoot = Path.Combine(fixture.Root, "project", "Assets", "Fixtures");
+        var authoredSource = Path.Combine(authoredRoot, "DigestFixture.cs");
+        var authoredProject = Path.Combine(fixture.Root, "project", "DigestFixture.csproj");
+        Directory.CreateDirectory(authoredRoot);
+        File.WriteAllText(authoredSource, "public sealed class DigestFixture { }");
+        File.WriteAllText(authoredProject, "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+
+        foreach (var generatedDirectory in new[] { "bin", "obj", "TestResults" })
+        {
+            var path = Path.Combine(fixture.Root, "project", generatedDirectory, "generated.txt");
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, "initial");
+        }
+
+        var beforeGeneratedMutation = CaptureFileDigests(fixture.Root);
+        File.WriteAllText(Path.Combine(fixture.Root, "project", "bin", "generated.txt"), "changed");
+        File.WriteAllText(Path.Combine(fixture.Root, "project", "obj", "new-generated.txt"), "added");
+        File.WriteAllText(Path.Combine(fixture.Root, "project", "TestResults", "generated.txt"), "changed again");
+        var afterGeneratedMutation = CaptureFileDigests(fixture.Root);
+        Assert.Equal(beforeGeneratedMutation, afterGeneratedMutation);
+
+        File.WriteAllText(authoredSource, "public sealed class DigestFixture { public int Value => 1; }");
+        var afterAuthoredMutation = CaptureFileDigests(fixture.Root);
+        Assert.NotEqual(
+            beforeGeneratedMutation[RelativePath(fixture.Root, authoredSource)],
+            afterAuthoredMutation[RelativePath(fixture.Root, authoredSource)]);
+        Assert.Equal(
+            beforeGeneratedMutation[RelativePath(fixture.Root, authoredProject)],
+            afterAuthoredMutation[RelativePath(fixture.Root, authoredProject)]);
+    }
+
+    [Fact]
+    public async Task PrepareProject_MonoAfterIl2CppRemovesPlayerFilesAndRestoresEditorOnlyConfiguration()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var configuration = BuildConfiguration();
+        AssertBuildArtifactsPresent(repositoryRoot, configuration);
+
+        using var fixture = PreparationFixture.Create(repositoryRoot);
+        var editorPath = fixture.CreateIsolatedEditor();
+        var il2Cpp = await RunPrepareProjectAsync(
+            repositoryRoot,
+            fixture.ProjectPath,
+            configuration,
+            rootOverride: null,
+            editorPath,
+            backend: "IL2CPP");
+        Assert.True(il2Cpp.ExitCode == 0, CombinedOutput(il2Cpp));
+        Assert.True(File.Exists(Path.Combine(fixture.ProjectPath, "il2cpp-test-settings.json")));
+        Assert.NotEmpty(Directory.EnumerateFiles(fixture.ProjectPath, "link.xml", SearchOption.AllDirectories));
+
+        var mono = await RunPrepareProjectAsync(
+            repositoryRoot,
+            fixture.ProjectPath,
+            configuration,
+            rootOverride: null,
+            editorPath);
+
+        Assert.True(mono.ExitCode == 0, CombinedOutput(mono));
+        AssertPreparedManifest(fixture.ProjectPath, editorPath);
+        AssertEditorOnlyDependencies(fixture.ProjectPath);
+        Assert.False(File.Exists(Path.Combine(fixture.ProjectPath, "il2cpp-test-settings.json")));
+        Assert.Empty(Directory.EnumerateFiles(fixture.ProjectPath, "link.xml", SearchOption.AllDirectories));
+    }
+
+    [Fact]
+    public async Task PrepareProject_InvalidBackendReturnsArgumentErrorBeforeDestructivePreparation()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var configuration = BuildConfiguration();
+        AssertBuildArtifactsPresent(repositoryRoot, configuration);
+
+        using var fixture = PreparationFixture.Create(repositoryRoot);
+        var editorPath = fixture.CreateIsolatedEditor();
+        var initial = await RunPrepareProjectAsync(
+            repositoryRoot,
+            fixture.ProjectPath,
+            configuration,
+            rootOverride: null,
+            editorPath);
+        Assert.True(initial.ExitCode == 0, CombinedOutput(initial));
+        var before = CaptureFileDigests(fixture.ProjectPath);
+
+        var invalid = await RunPrepareProjectAsync(
+            repositoryRoot,
+            fixture.ProjectPath,
+            configuration,
+            rootOverride: null,
+            editorPath,
+            backend: "Vulkan");
+
+        Assert.True(invalid.ExitCode == 2, CombinedOutput(invalid));
+        Assert.Contains("backend", CombinedOutput(invalid), StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(before, CaptureFileDigests(fixture.ProjectPath));
     }
 
     [Fact]
@@ -253,6 +386,8 @@ public sealed class UnityBehavioralRunnerTests
         Assert.False(
             Directory.Exists(Path.Combine(projectPath, "Assets", "CompilerProbe")),
             "Standalone behavioral preparation must not include the compiler probe fixture.");
+        Assert.False(File.Exists(Path.Combine(projectPath, "il2cpp-test-settings.json")));
+        Assert.Empty(Directory.EnumerateFiles(projectPath, "link.xml", SearchOption.AllDirectories));
 
         var asmdefPath = Path.Combine(
             projectPath,
@@ -317,6 +452,60 @@ public sealed class UnityBehavioralRunnerTests
                 File.ReadAllBytes(source),
                 File.ReadAllBytes(Path.Combine(dependencyRoot, "Newtonsoft.Json.dll")));
         }
+    }
+
+    private static void AssertIl2CppPreparedManifest(string projectPath)
+    {
+        using var inputs = JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(projectPath, "behavioral-inputs.json")));
+        var root = inputs.RootElement;
+        Assert.Equal("IL2CPP", root.GetProperty("backend").GetString());
+        Assert.Equal("Player", root.GetProperty("platform").GetString());
+        Assert.Equal(129, root.GetProperty("expectedFacts").GetInt32());
+        Assert.Equal(129, root.GetProperty("expectedFactNames").GetArrayLength());
+        Assert.False(Directory.Exists(Path.Combine(projectPath, "Assets", "CompilerProbe")));
+
+        var asmdefPath = Path.Combine(
+            projectPath,
+            "Assets",
+            "Tests",
+            "Spire.UnityBehavioralTests.asmdef");
+        using var asmdef = JsonDocument.Parse(File.ReadAllText(asmdefPath));
+        var definition = asmdef.RootElement;
+        Assert.Empty(definition.GetProperty("includePlatforms").EnumerateArray());
+
+        var dependencyRoot = Path.Combine(projectPath, "Assets", "Tests", "Dependencies");
+        var dependencies = root.GetProperty("testDependencies")
+            .EnumerateArray()
+            .Select(value => value.GetString()!)
+            .OrderBy(value => value, StringComparer.Ordinal)
+            .ToArray();
+        var actualDependencies = Directory.EnumerateFiles(dependencyRoot, "*.dll")
+            .Select(Path.GetFileName)
+            .OrderBy(value => value, StringComparer.Ordinal)
+            .ToArray();
+        Assert.Equal(dependencies, actualDependencies);
+        Assert.All(actualDependencies, dependency =>
+        {
+            var metadata = File.ReadAllText(Path.Combine(dependencyRoot, dependency + ".meta"));
+            Assert.Contains("      '': Any\n    second:\n      enabled: 1", metadata, StringComparison.Ordinal);
+            Assert.DoesNotContain("      '': Any\n    second:\n      enabled: 0", metadata, StringComparison.Ordinal);
+        });
+
+        var settingsPath = Path.Combine(projectPath, "il2cpp-test-settings.json");
+        using var settings = JsonDocument.Parse(File.ReadAllText(settingsPath));
+        Assert.Equal("IL2CPP", settings.RootElement.GetProperty("scriptingBackend").GetString());
+
+        var linkFiles = Directory.EnumerateFiles(projectPath, "link.xml", SearchOption.AllDirectories).ToArray();
+        Assert.NotEmpty(linkFiles);
+        var linkedAssemblies = linkFiles
+            .SelectMany(path => XDocument.Load(path).Descendants("assembly"))
+            .Select(element => (string?)element.Attribute("fullname"))
+            .Where(name => name is not null)
+            .Cast<string>()
+            .ToArray();
+        Assert.Contains("Spire.UnityBehavioralTests", linkedAssemblies);
+        Assert.Contains("Newtonsoft.Json", linkedAssemblies);
     }
 
     private static void AssertEditorOnlyDependencies(string projectPath)
@@ -455,7 +644,8 @@ public sealed class UnityBehavioralRunnerTests
         string projectPath,
         string configuration,
         string? rootOverride,
-        string? editorPath = null)
+        string? editorPath = null,
+        string? backend = null)
     {
         var cliPath = Path.Combine(
             repositoryRoot,
@@ -486,6 +676,11 @@ public sealed class UnityBehavioralRunnerTests
             arguments.Add("--editor");
             arguments.Add(editorPath);
         }
+        if (backend is not null)
+        {
+            arguments.Add("--backend");
+            arguments.Add(backend);
+        }
 
         return await ProcessRunner.RunAsync(
             new ToolContext(repositoryRoot).Dotnet,
@@ -501,6 +696,20 @@ public sealed class UnityBehavioralRunnerTests
 
     private static string CombinedOutput(ProcessResult result)
         => $"{result.StandardOutput}\n{result.StandardError}";
+
+    private static Dictionary<string, string> CaptureFileDigests(string root)
+        => Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
+            .Where(path => !IsGeneratedOutput(root, path))
+            .ToDictionary(
+                path => RelativePath(root, path),
+                path => DevTools.ProcessCompatibility.ToHexString(
+                    DevTools.ProcessCompatibility.HashData(File.ReadAllBytes(path))),
+                StringComparer.Ordinal);
+
+    private static bool IsGeneratedOutput(string root, string path)
+        => RelativePath(root, path)
+            .Split('/')
+            .Any(segment => GeneratedDirectoryNames.Contains(segment));
 
     private static string BuildConfiguration()
 #if SPIRE_UNITY_TEST_HOST

@@ -357,7 +357,8 @@ public sealed class UnityHarnessRunnerTests
         string repositoryRoot,
         string configuration,
         string projectPath,
-        string editorPath)
+        string editorPath,
+        bool build = false)
     {
         var cliPath = Path.Combine(
             repositoryRoot,
@@ -368,22 +369,23 @@ public sealed class UnityHarnessRunnerTests
             "net10.0",
             "Spire.Tool.dll");
         Assert.True(File.Exists(cliPath), $"Missing Spire.Tool CLI: {cliPath}");
+        var arguments = new List<string>
+        {
+            cliPath,
+            "unity-harness",
+            "--editor",
+            editorPath,
+            "--project",
+            projectPath,
+            "--configuration",
+            configuration,
+        };
+        if (!build) arguments.Add("--no-build");
+        arguments.Add("--prepare-only");
 
         return await ProcessRunner.RunAsync(
             new ToolContext(repositoryRoot).Dotnet,
-            new[]
-            {
-                cliPath,
-                "unity-harness",
-                "--editor",
-                editorPath,
-                "--project",
-                projectPath,
-                "--configuration",
-                configuration,
-                "--no-build",
-                "--prepare-only",
-            },
+            arguments,
             repositoryRoot,
             ProcessTimeout,
             new Dictionary<string, string?>
@@ -456,7 +458,8 @@ public sealed class UnityHarnessRunnerTests
                 repositoryRoot,
                 BuildConfiguration(),
                 fixture.ProjectPath,
-                fixture.CreateIsolatedEditor());
+                fixture.CreateIsolatedEditor(),
+                build: true);
 
             Assert.True(result.ExitCode == 0, CombinedOutput(result));
             AssertPreparedHarness(fixture.ProjectPath);

@@ -91,6 +91,35 @@ public sealed class ProcessCompatibilityTests
     }
 
     [Fact]
+    public async Task WaitForChildPidAsync_WaitsForValidPidAfterEmptyFilePublication()
+    {
+        using var fixture = ProcessFixture.Create();
+        var childPidFile = Path.Combine(fixture.Root, "delayed-child.pid");
+        using var process = StartShell(
+            fixture.Root,
+            ": > \"$1\"; sleep 30 & child=$!; sleep 0.2; printf '%s' \"$child\" > \"$1\"; wait \"$child\"",
+            "delayed-spawn-child",
+            childPidFile);
+        try
+        {
+            var childPid = await WaitForChildPidAsync(childPidFile);
+            Assert.True(IsProcessRunning(childPid), $"Child process {childPid} exited before the tree was killed.");
+
+            DevTools.ProcessCompatibility.KillTree(process);
+            await DevTools.ProcessCompatibility.WaitForExitAsync(process);
+            Assert.True(process.HasExited);
+            Assert.True(
+                await WaitUntilAsync(() => !IsProcessRunning(childPid), TimeSpan.FromSeconds(5)),
+                $"Child process {childPid} survived KillTree.");
+        }
+        finally
+        {
+            if (!process.HasExited)
+                DevTools.ProcessCompatibility.KillTree(process);
+        }
+    }
+
+    [Fact]
     public void HashData_HashesARepositoryFileWithSha256()
     {
         var repositoryRoot = FindRepositoryRoot();
@@ -147,11 +176,49 @@ public sealed class ProcessCompatibilityTests
 
     private static async Task<int> WaitForChildPidAsync(string path)
     {
-        var found = await WaitUntilAsync(() => File.Exists(path), TimeSpan.FromSeconds(5));
-        Assert.True(found, "The child process did not publish its PID.");
-        var value = File.ReadAllText(path);
-        Assert.True(int.TryParse(value, out var pid), value);
+        var pid = 0;
+        var found = await WaitUntilAsync(
+            () => TryReadPositivePid(path, out pid),
+            TimeSpan.FromSeconds(5));
+        Assert.True(
+            found,
+            $"The child process did not publish a valid positive PID within the timeout. Last contents: '{ReadContents(path)}'.");
         return pid;
+    }
+
+    private static bool TryReadPositivePid(string path, out int pid)
+    {
+        pid = 0;
+        try
+        {
+            return File.Exists(path) &&
+                int.TryParse(File.ReadAllText(path).Trim(), out pid) &&
+                pid > 0;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    private static string ReadContents(string path)
+    {
+        try
+        {
+            return File.Exists(path) ? File.ReadAllText(path) : "<missing>";
+        }
+        catch (IOException exception)
+        {
+            return "<unreadable: " + exception.Message + ">";
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return "<unreadable: " + exception.Message + ">";
+        }
     }
 
     private static async Task<bool> WaitUntilAsync(Func<bool> condition, TimeSpan timeout)

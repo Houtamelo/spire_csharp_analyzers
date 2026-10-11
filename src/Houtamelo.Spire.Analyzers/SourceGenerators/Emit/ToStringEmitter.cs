@@ -25,7 +25,7 @@ internal static class ToStringEmitter
             }
             else
             {
-                var fieldList = string.Join(", ", variant.Fields.Select(f => $"{{this.{IdentifierUtility.Escape(f.Name)}}}"));
+                var fieldList = string.Join(", ", variant.Fields.Select(f => $"{{this.{IdentifierUtility.Escape(f.ResolvedPropertyName)}}}"));
                 sb.AppendLine($"Kind.{IdentifierUtility.Escape(variant.Name)} => $\"{IdentifierUtility.SerializedName(variant.Name)}({fieldList})\",");
             }
         }

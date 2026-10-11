@@ -1,0 +1,26 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+using SpireManagedReference = Houtamelo.Spire.UnitySerializeReferenceAttribute;
+
+namespace ManagedReferenceForeign
+{
+    [AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
+    public sealed class UnitySerializeReferenceAttribute : Attribute
+    {
+    }
+}
+
+[Serializable]
+[DiscriminatedUnion(Layout.Additive)]
+public partial struct ManagedReferenceBindingUnion
+{
+    [Variant]
+    public static partial ManagedReferenceBindingUnion Value(
+        [global::Houtamelo.Spire.UnitySerializeReference] object qualified,
+        [SpireManagedReference] object aliased,
+        [ManagedReferenceForeign.UnitySerializeReference] object foreign,
+        object inline);
+
+    [Variant] public static partial ManagedReferenceBindingUnion Empty();
+}

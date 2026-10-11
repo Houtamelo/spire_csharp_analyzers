@@ -57,14 +57,14 @@ internal static class AdditiveEmitter
         // Kind field (backing field + property)
         if (unitySerialization)
         {
-            sb.AppendLine("[global::UnityEngine.SerializeField]");
-            sb.AppendLine("private Kind _kind;");
+            sb.AppendLine("[global::System.NonSerialized]");
+            sb.AppendLine($"private Kind {UnitySerializationEmitter.RuntimeKindFieldName};");
         }
         else
         {
             sb.AppendLine("readonly Kind _kind;");
         }
-        sb.AppendLine("public Kind kind => this._kind;");
+        sb.AppendLine($"public Kind kind => this.{(unitySerialization ? UnitySerializationEmitter.RuntimeKindFieldName : "_kind")};");
 
         // Slot fields
         foreach (var slot in layout.Slots)
@@ -92,7 +92,7 @@ internal static class AdditiveEmitter
 
         // Deconstruct overloads
         if (union.GenerateDeconstruct)
-            EmitDeconstructs(sb, union.Variants, layout);
+            EmitDeconstructs(sb, union.Variants, layout, unitySerialization);
 
         // Public properties for pattern matching
         EmitProperties(
@@ -165,16 +165,16 @@ internal static class AdditiveEmitter
     {
         var layout = new AdditiveLayout();
 
-        // Collect unique (fieldName → typeKey). Name conflicts (same name, different type)
-        // are rejected by the generator diagnostic — not expected here.
+        // Collect unique resolved property names. Incompatible original field
+        // names have already been qualified by FieldNameResolver.
         var fieldTypeKeys = new Dictionary<string, string>();
         foreach (var variant in variantList)
         {
             foreach (var field in variant.Fields)
             {
                 var key = SlotTypeKey(field);
-                if (!fieldTypeKeys.ContainsKey(field.Name))
-                    fieldTypeKeys[field.Name] = key;
+                if (!fieldTypeKeys.ContainsKey(field.ResolvedPropertyName))
+                    fieldTypeKeys[field.ResolvedPropertyName] = key;
             }
         }
 
@@ -199,7 +199,7 @@ internal static class AdditiveEmitter
         {
             var mapping = new VariantMapping();
             foreach (var field in variant.Fields)
-                mapping.FieldToSlot.Add(nameToSlot[field.Name]);
+                mapping.FieldToSlot.Add(nameToSlot[field.ResolvedPropertyName]);
 
             layout.Variants[variant.Name] = mapping;
         }
@@ -217,13 +217,8 @@ internal static class AdditiveEmitter
         int index,
         bool useInitOnly)
     {
-        sb.AppendLine($"[global::System.NonSerialized] private {slotType} __s{index};");
-        sb.AppendLine($"internal {slotType} _s{index}");
-        sb.OpenBrace();
-        sb.AppendLine($"get => this.__s{index};");
-        var setter = useInitOnly ? "init" : "set";
-        sb.AppendLine($"{setter} {{ this.__SpireDetachSerializedCache({index}); this.__s{index} = value; }}");
-        sb.CloseBrace();
+        sb.AppendLine($"[global::System.NonSerialized] internal {slotType} __s{index};");
+        _ = useInitOnly;
     }
 
     private static void EmitConstructor(
@@ -241,16 +236,13 @@ internal static class AdditiveEmitter
 
         sb.AppendLine($"{typeName}({paramList})");
         sb.OpenBrace();
-        sb.AppendLine("this._kind = kind;");
+        sb.AppendLine($"this.{(unitySerialization ? UnitySerializationEmitter.RuntimeKindFieldName : "_kind")} = kind;");
         foreach (var slot in slots)
             sb.AppendLine(unitySerialization
                 ? $"this.__s{slot.Index} = s{slot.Index};"
                 : $"this._s{slot.Index} = s{slot.Index};");
         if (unitySerialization)
-        {
-            sb.AppendLine("this.__SpireSerializationOwner = null;");
             sb.AppendLine("this._serializedPayload = null;");
-        }
         sb.CloseBrace();
     }
 
@@ -306,7 +298,7 @@ internal static class AdditiveEmitter
             for (int i = 0; i < variant.Fields.Length; i++)
             {
                 var field = variant.Fields[i];
-                if (!emitted.Add(field.Name)) continue;
+                if (!emitted.Add(field.ResolvedPropertyName)) continue;
 
                 int slot = mapping.FieldToSlot[i];
                 var slotInfo = layout.Slots[slot];
@@ -314,30 +306,31 @@ internal static class AdditiveEmitter
                 sb.AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
                 if (hasInitProperties)
                 {
-                    sb.AppendLine($"public {field.TypeFullName} {IdentifierUtility.Escape(field.Name)}");
+                    sb.AppendLine($"public {field.ResolvedPropertyTypeFullName} {IdentifierUtility.Escape(field.ResolvedPropertyName)}");
                     sb.OpenBrace();
                     if (slotInfo.IsRefSlot)
-                        sb.AppendLine($"get => ({field.TypeFullName})this._s{slot}!;");
+                        sb.AppendLine($"get => ({field.ResolvedPropertyTypeFullName})this.{RuntimeSlot(slot, unitySerialization)}!;");
                     else
-                        sb.AppendLine($"get => this._s{slot};");
+                        sb.AppendLine($"get => this.{RuntimeSlot(slot, unitySerialization)};");
                     sb.AppendLine(unitySerialization
-                        ? $"{(useInitOnly ? "init" : "set")} {{ this._s{slot} = value; }}"
-                        : $"init => this._s{slot} = value;");
+                        ? $"{(useInitOnly ? "init" : "set")} {{ this.{RuntimeSlot(slot, true)} = value; }}"
+                        : $"init => this.{RuntimeSlot(slot, false)} = value;");
                     sb.CloseBrace();
                 }
                 else
                 {
                     if (slotInfo.IsRefSlot)
-                        sb.AppendLine($"public {field.TypeFullName} {IdentifierUtility.Escape(field.Name)} => ({field.TypeFullName})this._s{slot}!;");
+                        sb.AppendLine($"public {field.ResolvedPropertyTypeFullName} {IdentifierUtility.Escape(field.ResolvedPropertyName)} => ({field.ResolvedPropertyTypeFullName})this.{RuntimeSlot(slot, unitySerialization)}!;");
                     else
-                        sb.AppendLine($"public {field.TypeFullName} {IdentifierUtility.Escape(field.Name)} => this._s{slot};");
+                        sb.AppendLine($"public {field.ResolvedPropertyTypeFullName} {IdentifierUtility.Escape(field.ResolvedPropertyName)} => this.{RuntimeSlot(slot, unitySerialization)};");
                 }
             }
         }
     }
 
     private static void EmitDeconstructs(
-        SourceBuilder sb, IEnumerable<VariantInfo> variants, AdditiveLayout layout)
+        SourceBuilder sb, IEnumerable<VariantInfo> variants, AdditiveLayout layout,
+        bool unitySerialization)
     {
         var variantList = variants.ToList();
         if (variantList.Count == 0) return;
@@ -374,14 +367,15 @@ internal static class AdditiveEmitter
             sb.AppendLine();
 
             if (groupVariants.Count == 1)
-                EmitTypedDeconstruct(sb, groupVariants[0], layout);
+                EmitTypedDeconstruct(sb, groupVariants[0], layout, unitySerialization);
             else
-                EmitObjectDeconstruct(sb, group.Key, groupVariants, layout);
+                EmitObjectDeconstruct(sb, group.Key, groupVariants, layout, unitySerialization);
         }
     }
 
     private static void EmitTypedDeconstruct(
-        SourceBuilder sb, VariantInfo variant, AdditiveLayout layout)
+        SourceBuilder sb, VariantInfo variant, AdditiveLayout layout,
+        bool unitySerialization)
     {
         var mapping = layout.Variants[variant.Name];
 
@@ -400,16 +394,17 @@ internal static class AdditiveEmitter
             var slotInfo = layout.Slots[slot];
 
             if (slotInfo.IsRefSlot)
-                sb.AppendLine($"{IdentifierUtility.Escape(field.Name)} = ({field.TypeFullName})this._s{slot}!;");
+                sb.AppendLine($"{IdentifierUtility.Escape(field.Name)} = ({field.TypeFullName})this.{RuntimeSlot(slot, unitySerialization)}!;");
             else
-                sb.AppendLine($"{IdentifierUtility.Escape(field.Name)} = this._s{slot};");
+                sb.AppendLine($"{IdentifierUtility.Escape(field.Name)} = this.{RuntimeSlot(slot, unitySerialization)};");
         }
 
         sb.CloseBrace();
     }
 
     private static void EmitObjectDeconstruct(
-        SourceBuilder sb, int fieldCount, List<VariantInfo> variants, AdditiveLayout layout)
+        SourceBuilder sb, int fieldCount, List<VariantInfo> variants, AdditiveLayout layout,
+        bool unitySerialization)
     {
         var paramList = "out Kind kind";
         for (int i = 0; i < fieldCount; i++)
@@ -436,9 +431,9 @@ internal static class AdditiveEmitter
                 var slotInfo = layout.Slots[slot];
 
                 if (slotInfo.IsRefSlot)
-                    sb.AppendLine($"f{i} = this._s{slot};");
+                    sb.AppendLine($"f{i} = this.{RuntimeSlot(slot, unitySerialization)};");
                 else
-                    sb.AppendLine($"f{i} = this._s{slot};");
+                    sb.AppendLine($"f{i} = this.{RuntimeSlot(slot, unitySerialization)};");
             }
             sb.AppendLine("break;");
             sb.Dedent();
@@ -476,6 +471,9 @@ internal static class AdditiveEmitter
         if (typeParameters.Length == 0) return "";
         return "<" + string.Join(", ", typeParameters) + ">";
     }
+
+    private static string RuntimeSlot(int slot, bool unitySerialization)
+        => unitySerialization ? $"__s{slot}" : $"_s{slot}";
 
     #endregion
 }

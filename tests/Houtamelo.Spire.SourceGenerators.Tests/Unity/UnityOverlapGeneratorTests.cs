@@ -87,8 +87,7 @@ public sealed class UnityOverlapGeneratorTests
                 (HasAttribute(field, "UnityEngine.SerializeField") ||
                     HasAttribute(field, "UnityEngine.SerializeReference")))
             .ToArray();
-        Assert.Equal(2, serializedFields.Length);
-        Assert.Contains(serializedFields, field => field.Name == "_kind");
+        Assert.Single(serializedFields);
         Assert.Contains(serializedFields, field => field.Name == "_serializedPayload");
 
         var payloadFields = union.GetTypeMembers()
@@ -112,10 +111,14 @@ public sealed class UnityOverlapGeneratorTests
             field => Assert.True(
                 HasAttribute(field, "System.NonSerializedAttribute"),
                 "Overlap runtime field was serializer-visible: " + field.Name));
+        Assert.True(
+            HasAttribute(
+                union.GetMembers("_kind").OfType<IFieldSymbol>().Single(),
+                "System.NonSerializedAttribute"));
     }
 
     [Fact]
-    public void GeneratedOverlap_CallbacksDetachCopyCacheAndResetUnknownKind()
+    public void GeneratedOverlap_CallbacksKeepPriorSnapshotUntilSerializeAndPureFallback()
     {
         var result = RunFixture("Serializable_ExplicitOverlap");
 
@@ -143,24 +146,23 @@ public sealed class UnityOverlapGeneratorTests
             "after");
         Assert.Equal("before", GetPropertyValue(original!, "label"));
         Assert.Equal("after", GetPropertyValue(copy, "label"));
-        Assert.Null(GetFieldValue(copy, "_serializedPayload"));
+        Assert.Same(originalPayload, GetFieldValue(copy, "_serializedPayload"));
         InvokeCallback(copy, "OnBeforeSerialize");
-        Assert.NotNull(GetFieldValue(copy, "_serializedPayload"));
+        var copyPayload = GetFieldValue(copy, "_serializedPayload");
+        Assert.NotNull(copyPayload);
+        Assert.NotSame(originalPayload, copyPayload);
+        Assert.Equal("before", GetFieldValue(originalPayload!, "label"));
+        Assert.Equal("after", GetFieldValue(copyPayload!, "label"));
         Assert.Same(originalPayload, GetFieldValue(original!, "_serializedPayload"));
         Assert.Same(data, GetPropertyValue(original!, "data"));
 
-        var invalid = RuntimeHelpers.GetObjectValue(original!);
-        var kindField = GetField(unionType, "_kind");
-        kindField.SetValue(invalid, Enum.ToObject(kindField.FieldType, 255));
-        GetField(unionType, "_serializedPayload").SetValue(invalid, null);
-        var exception = Record.Exception(() => InvokeCallback(invalid, "OnAfterDeserialize"));
-        Assert.Null(exception);
-        Assert.Equal(0, GetPropertyValue(invalid, "value"));
-        Assert.Equal(0f, GetPropertyValue(invalid, "amount"));
-        Assert.Null(GetPropertyValue(invalid, "data"));
-        Assert.Null(GetPropertyValue(invalid, "label"));
-        Assert.Null(GetPropertyValue(invalid, "icon"));
-        Assert.Equal("255", GetPropertyValue(invalid, "kind")!.ToString());
+        var fallback = InvokeFromSerialized(unionType, null);
+        Assert.Equal("Number", GetPropertyValue(fallback, "kind")!.ToString());
+        Assert.Equal(0, GetPropertyValue(fallback, "value"));
+        Assert.Equal(0f, GetPropertyValue(fallback, "amount"));
+        Assert.Null(GetPropertyValue(fallback, "data"));
+        Assert.Null(GetPropertyValue(fallback, "label"));
+        Assert.Null(GetPropertyValue(fallback, "icon"));
     }
 
     [Fact]
@@ -362,11 +364,10 @@ public sealed class UnityOverlapGeneratorTests
         var serialized = fields.Where(field =>
             HasAttribute(field, "UnityEngine.SerializeField") ||
             HasAttribute(field, "UnityEngine.SerializeReference")).ToArray();
-        Assert.Equal(2, serialized.Length);
-        Assert.Contains(serialized, field => field.Name == "_kind");
+        Assert.Single(serialized);
         Assert.Contains(serialized, field => field.Name == "_serializedPayload");
         Assert.All(
-            fields.Where(field => field.Name != "_kind" && field.Name != "_serializedPayload"),
+            fields.Where(field => field.Name != "_serializedPayload"),
             field => Assert.True(
                 HasAttribute(field, "System.NonSerializedAttribute"),
                 "Overlap runtime field was not explicitly non-serialized: " + field.Name));
@@ -391,6 +392,23 @@ public sealed class UnityOverlapGeneratorTests
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.NotNull(method);
         method!.Invoke(value, null);
+    }
+
+    private static object InvokeFromSerialized(Type unionType, object? payload)
+    {
+        var methods = unionType
+            .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance)
+            .Where(method => method.Name == "__SpireFromSerialized")
+            .Where(method => method.GetParameters().Length == 1 &&
+                method.GetParameters()[0].ParameterType == typeof(object))
+            .ToArray();
+        Assert.Single(methods);
+        var method = methods[0];
+        var value = method.Invoke(
+            method.IsStatic ? null : Activator.CreateInstance(unionType),
+            new[] { payload });
+        Assert.NotNull(value);
+        return value!;
     }
 
     private static object SetGeneratedProperty(object value, string name, object newValue)

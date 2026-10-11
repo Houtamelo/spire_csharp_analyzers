@@ -35,6 +35,45 @@ public sealed class ToolCliTests
         {
             Assert.Contains(command, result.CombinedOutput, StringComparison.Ordinal);
         }
+
+        Assert.Contains("--backend", result.CombinedOutput, StringComparison.Ordinal);
+        Assert.Contains("Mono", result.CombinedOutput, StringComparison.Ordinal);
+        Assert.Contains("IL2CPP", result.CombinedOutput, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task UnityBehavioral_InvalidBackendReturnsArgumentErrorBeforeEditorValidation()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var missingEditor = Path.Combine(repositoryRoot, "tmp", "missing-editor-for-backend-test");
+        var missingProject = Path.Combine(repositoryRoot, "tmp", "missing-project-for-backend-test");
+
+        var result = await RunCliAsync(
+            repositoryRoot,
+            "unity-behavioral",
+            "--backend",
+            "Vulkan",
+            "--editor",
+            missingEditor,
+            "--project",
+            missingProject);
+
+        Assert.False(result.TimedOut, result.CombinedOutput);
+        Assert.True(result.ExitCode == 2, result.CombinedOutput);
+        Assert.Contains("backend", result.CombinedOutput, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("editor executable", result.CombinedOutput, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Package_BackendOptionIsRejectedAsAnInappropriateCommandOption()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+
+        var result = await RunCliAsync(repositoryRoot, "package", "--backend", "Mono");
+
+        Assert.False(result.TimedOut, result.CombinedOutput);
+        Assert.True(result.ExitCode == 2, result.CombinedOutput);
+        Assert.Contains("backend", result.CombinedOutput, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

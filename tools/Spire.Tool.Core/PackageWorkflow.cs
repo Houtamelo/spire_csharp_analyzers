@@ -49,18 +49,26 @@ public static class PackageWorkflow
         File.Copy(context.PathOf("LICENSE"), Path.Combine(output, "LICENSE"), true);
         FileOps.WriteJson(Path.Combine(output, "package.json"), new JsonObject
         {
-            ["name"] = "com.houtamelo.spire", ["version"] = versions[0], ["displayName"] = "Houtamelo.Spire",
-            ["description"] = "Spire analyzers and discriminated unions for Unity 6000.5 with Mono.", ["unity"] = "6000.5",
+            ["name"] = "com.houtamelo.spire",
+            ["version"] = versions[0],
+            ["displayName"] = "Houtamelo.Spire",
+            ["description"] = "Spire analyzers and discriminated unions for Unity 6000.5 with Mono and IL2CPP.",
+            ["unity"] = "6000.5",
             ["dependencies"] = new JsonObject { ["com.unity.modules.imgui"] = "1.0.0", ["com.unity.modules.uielements"] = "1.0.0" },
-            ["author"] = new JsonObject { ["name"] = "Houtamelo" }, ["license"] = "MIT",
+            ["author"] = new JsonObject { ["name"] = "Houtamelo" },
+            ["license"] = "MIT",
         });
         FileOps.Write(Path.Combine(output, "README.md"), "# Houtamelo.Spire for Unity\n\n" +
-            "Built from the unity-6000 branch for Unity 6000.5 and Mono.\n" +
+            "Built from the unity-6000 branch; validated on Unity 6000.5.6f1, Linux, with Mono and IL2CPP.\n" +
             "Copy this folder into Packages/com.houtamelo.spire or add it as a local package using package.json.\n" +
             "Apply System.Serializable to a mutable struct union to enable Unity serialization.\n" +
             "Serialization defaults to Additive; explicit BoxedFields, BoxedTuple, UnsafeOverlap, and Overlap are supported.\n" +
             "Variant fields must use native Unity-supported serialization types.\n" +
+            "Use [UnitySerializeReference] on a variant parameter to preserve nulls, derived types, and shared references.\n" +
+            "Changing a field between inline and managed-reference serialization requires handling existing data separately.\n" +
             "UnsafeOverlap requires unsafe code; Overlap cannot be generic or nested in a generic type.\n" +
+            "IL2CPP serialization is tested with High managed stripping; Spire preserves Unity's required type-resolution method.\n" +
+            "Other Unity versions and player platforms require separate validation.\n" +
             "Rider is the supported IDE; compiler-host DLLs are supplied by the host.\n");
         foreach (var name in new[] { "package.json", "README.md", "LICENSE" })
             FileOps.Write(Path.Combine(output, name + ".meta"), "fileFormatVersion: 2\nguid: " + Guid(name) +
@@ -79,9 +87,9 @@ public static class PackageWorkflow
             "  userData:\n  assetBundleName:\n  assetBundleVariant:\n";
     }
 
-    internal static string TestPluginMetadata(string guid) => "fileFormatVersion: 2\nguid: " + guid + "\nPluginImporter:\n" +
+    internal static string TestPluginMetadata(string guid, bool player = false) => "fileFormatVersion: 2\nguid: " + guid + "\nPluginImporter:\n" +
         "  externalObjects: {}\n  serializedVersion: 2\n  isPreloaded: 0\n  isOverridable: 0\n  isExplicitlyReferenced: 1\n  validateReferences: 1\n" +
-        "  platformData:\n  - first:\n      '': Any\n    second:\n      enabled: 0\n      settings: {}\n" +
+        "  platformData:\n  - first:\n      '': Any\n    second:\n      enabled: " + (player ? 1 : 0) + "\n      settings: {}\n" +
         "  - first:\n      Editor: Editor\n    second:\n      enabled: 1\n      settings:\n        DefaultValueInitialized: true\n" +
         "  userData:\n  assetBundleName:\n  assetBundleVariant:\n";
 }

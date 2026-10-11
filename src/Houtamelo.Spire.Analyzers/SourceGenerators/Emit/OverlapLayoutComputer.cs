@@ -13,8 +13,6 @@ internal sealed class OverlapLayoutInfo
     public int R3Slots;
     /// Offset of the generated Unity managed-reference payload, when emitted.
     public int SerializedPayloadOffset;
-    /// Offset of the generated Unity runtime ownership token, when emitted.
-    public int SerializationOwnerOffset;
 
     /// Per-variant field placements
     public Dictionary<string, VariantLayoutInfo> Variants = new Dictionary<string, VariantLayoutInfo>();
@@ -84,7 +82,7 @@ internal static class OverlapLayoutComputer
     {
         var layout = new OverlapLayoutInfo();
 
-        // Collect unique fields by region, keyed by name (ambiguity already rejected)
+        // Collect unique fields by region, keyed by resolved property name.
         var r1Fields = new Dictionary<string, FieldInfo>();
         var r2Fields = new Dictionary<string, FieldInfo>();
         var r3Fields = new Dictionary<string, FieldInfo>();
@@ -97,16 +95,16 @@ internal static class OverlapLayoutComputer
                 switch (region)
                 {
                     case FieldRegion.Unmanaged:
-                        if (!r1Fields.ContainsKey(field.Name))
-                            r1Fields[field.Name] = field;
+                        if (!r1Fields.ContainsKey(field.ResolvedPropertyName))
+                            r1Fields[field.ResolvedPropertyName] = field;
                         break;
                     case FieldRegion.Reference:
-                        if (!r2Fields.ContainsKey(field.Name))
-                            r2Fields[field.Name] = field;
+                        if (!r2Fields.ContainsKey(field.ResolvedPropertyName))
+                            r2Fields[field.ResolvedPropertyName] = field;
                         break;
                     case FieldRegion.Boxed:
-                        if (!r3Fields.ContainsKey(field.Name))
-                            r3Fields[field.Name] = field;
+                        if (!r3Fields.ContainsKey(field.ResolvedPropertyName))
+                            r3Fields[field.ResolvedPropertyName] = field;
                         break;
                 }
             }
@@ -119,7 +117,7 @@ internal static class OverlapLayoutComputer
             layout.GlobalR1.Add(new GlobalFieldInfo
             {
                 Name = kv.Key,
-                TypeFullName = kv.Value.TypeFullName,
+                TypeFullName = kv.Value.ResolvedPropertyTypeFullName,
                 Offset = r1Offset,
                 Size = kv.Value.KnownSize!.Value,
             });
@@ -135,7 +133,7 @@ internal static class OverlapLayoutComputer
             layout.GlobalR2.Add(new GlobalFieldInfo
             {
                 Name = kv.Key,
-                TypeFullName = kv.Value.TypeFullName,
+                TypeFullName = kv.Value.ResolvedPropertyTypeFullName,
                 Offset = r2Slot,
             });
             r2Slot++;
@@ -150,7 +148,7 @@ internal static class OverlapLayoutComputer
             layout.GlobalR3.Add(new GlobalFieldInfo
             {
                 Name = kv.Key,
-                TypeFullName = kv.Value.TypeFullName,
+                TypeFullName = kv.Value.ResolvedPropertyTypeFullName,
                 Offset = r3Slot,
             });
             r3Slot++;
@@ -159,7 +157,6 @@ internal static class OverlapLayoutComputer
 
         var runtimeEnd = layout.R3Offset + r3Slot * 8;
         layout.SerializedPayloadOffset = AlignUp(runtimeEnd, 8);
-        layout.SerializationOwnerOffset = layout.SerializedPayloadOffset + 8;
 
         // Build per-variant mappings referencing global fields
         foreach (var variant in variantList)
@@ -175,11 +172,11 @@ internal static class OverlapLayoutComputer
                         vl.R1Fields.Add(new FieldPlacement { Field = field });
                         break;
                     case FieldRegion.Reference:
-                        var r2Global = layout.GlobalR2.First(g => g.Name == field.Name);
+                        var r2Global = layout.GlobalR2.First(g => g.Name == field.ResolvedPropertyName);
                         vl.R2Fields.Add(new FieldPlacement { Field = field, SlotIndex = r2Global.Offset });
                         break;
                     case FieldRegion.Boxed:
-                        var r3Global = layout.GlobalR3.First(g => g.Name == field.Name);
+                        var r3Global = layout.GlobalR3.First(g => g.Name == field.ResolvedPropertyName);
                         vl.R3Fields.Add(new FieldPlacement { Field = field, SlotIndex = r3Global.Offset });
                         break;
                 }
@@ -197,8 +194,5 @@ internal static class OverlapLayoutComputer
     }
 
     public static string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name.Substring(1);
-    }
+        => FieldNameResolver.CamelCase(name);
 }
