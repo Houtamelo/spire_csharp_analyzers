@@ -6,6 +6,10 @@ serialization and stripping coverage are detailed below. The normal NuGet build
 remains on `main`. Other Unity versions and player platforms require separate
 validation. Rider is the supported IDE.
 
+Unity now marks [6.5 end of life](https://discussions.unity.com/t/unity-6-5-is-now-available/1723176).
+This guide records compatibility evidence; a maintained release baseline still
+needs validation. See the [commercial review](reviews/2026-10-11-commercial-readiness.md).
+
 All build and acceptance workflows use the C# CLI in `tools/Spire.Tool`. It
 requires the .NET 10 SDK for preparation; using the built package requires only
 Unity. Run `dotnet run -c Release --project tools/Spire.Tool -- --help` for commands
@@ -28,6 +32,11 @@ dotnet run -c Release --project tools/Spire.Tool -- package
 In Unity's Package Manager, choose **Add package from disk** and select
 `tmp/unity-package/com.houtamelo.spire/package.json`.
 
+The manifest declares `6000.5.6f1` as its minimum version. This is not an upper
+compatibility bound: native serialization on `6000.6.5f1` is blocked by a
+[reported Unity generic-struct callback crash](issues/unity-6.6-generic-struct-serialization-callback.md).
+Use the validated Editor version for serialization-dependent projects.
+
 The package contains the runtime DLL and compiler-only Spire analyzer,
 PatternAnalysis, and CodeFixes DLLs. Compiler-only assets have the
 `RoslynAnalyzer` label and all plugin platforms disabled. Unity and Rider supply
@@ -39,6 +48,11 @@ must include `Houtamelo.Spire.dll` explicitly. Analyzer scope is separate from
 runtime DLL references; verify that every intended consuming asmdef receives
 the analyzer. Code fixes execute in Rider, while Unity executes analyzers and
 source generators.
+
+The DLL package does not import the NuGet MSBuild `.props` into Unity's compiler.
+Use explicit attribute arguments for union settings; editing Unity-generated
+`.csproj` files does not configure Unity's compilation. The MSBuild defaults in
+the repository README apply to SDK projects.
 
 The assembly-definition acceptance fixture covers predefined assemblies,
 runtime/editor asmdefs, explicit DLL references, disabled auto references, and

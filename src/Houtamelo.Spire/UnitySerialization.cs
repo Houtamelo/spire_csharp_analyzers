@@ -358,7 +358,9 @@ public static class UnitySerializationBridge
         }
 
         if (IsUnityNativeReference(currentType) || IsUnityNativeReference(snapshot.GetType()))
-            return ReferenceEquals(current, snapshot);
+            return currentType.IsValueType && currentType == snapshot.GetType()
+                ? current.Equals(snapshot)
+                : ReferenceEquals(current, snapshot);
         if (IsSimple(currentType))
             return current.Equals(snapshot);
         if (currentType != snapshot.GetType())

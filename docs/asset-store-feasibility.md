@@ -4,6 +4,8 @@ Updated October 11, 2026. Market comparisons remain the October 8 research
 snapshot. The October 10 review covered implementation, saved test reports,
 package contents, and publishing requirements; this update incorporates the
 Unity 6.5 script-registration reduction and corrected player validation.
+The [October 11 commercial readiness review](reviews/2026-10-11-commercial-readiness.md)
+adds a clean URP showcase roundtrip, delivery gaps, and follow-up repairs.
 
 Spire is a plausible paid specialist tool: generated unions, compiler enforcement,
 Unity serialization, and Inspector authoring form a distinct offering. Technical
@@ -113,8 +115,8 @@ behavior:
 
 | Environment | Latest verified result |
 |---|---|
-| .NET repository suite | 2,242 passed on October 11, 2026: 824 analyzer, 893 generator, 339 PatternAnalysis, 129 behavioral, and 57 tooling checks. |
-| Complete Unity Editor Mono harness | 2,266 passed on both 6000.5.6f1 and 6000.6.5f1, with all 2,127 portable identities matched and all 129 original behavioral assertions executed. |
+| .NET repository suite | 2,255 passed on October 11, 2026: 826 analyzer, 904 generator, 339 PatternAnalysis, 129 behavioral, and 57 tooling checks. |
+| Complete Unity Editor Mono harness | October 11 recheck on 6000.5.6f1: 2,279 passed, with all 2,140 portable identities matched and all 129 original behavioral assertions executed. The earlier 2,266-case harness also passed on 6000.6.5f1. |
 | Native Editor integration | October 11 on 6000.5.6f1: 120 assertions passed with three observations, including custom enum display labels, flags, unavailable choices, and exact numeric Undo/Redo. On 6000.6.5f1, the Editor crashes before its final report. |
 | Linux IL2CPP behavioral runner | 137 checks passed on both Editors: 129 original assertions, six adapter checks, and two backend capability probes. This runner uses test-specific linker roots. |
 | Standalone Linux Mono and High-stripping IL2CPP serialization | On 6000.5.6f1, Mono Full, both isolated IL2CPP profiles, and the corrected combined IL2CPP Full fixture pass. On 6000.6.5f1, every attempted serialization profile crashes in the Editor before a player is produced. The production fixture has no consumer linker descriptor. |
@@ -178,7 +180,8 @@ Claude Code and Codex contributions are relevant here.
 
 Section 1.1.g lists unsafe code among rejection grounds. `UnsafeOverlap` works in
 the tested players, but store acceptance still requires clarification with Unity.
-Section 5.2.e requires `unityRelease`; the local manifest still lacks it.
+Section 5.2.e requires `unityRelease`; the local manifest now declares `6f1`
+alongside `unity: "6000.5"`, matching the validated 6000.5.6f1 baseline.
 Section 2.5.d concerns customer-readable/modifiable scripts: confirm the intended
 compiled-DLL distribution and accompanying source materials with Unity rather
 than assuming review acceptance.
@@ -199,7 +202,11 @@ Priorities for a commercial release:
 
 1. Choose the advertised Unity-version support boundary. Native serialization is
    validated on 6000.5.6f1; the reported 6.6 generic-struct callback crash still
-   prevents extending that claim to 6000.6.5f1.
+   prevents extending that claim to 6000.6.5f1. Unity now marks
+   [6.5 end of life](https://discussions.unity.com/t/unity-6-5-is-now-available/1723176);
+   investigate a maintained baseline, such as the
+   [current 6.3 LTS](https://unity.com/releases/unity-6/support), before promising
+   production support.
 2. Choose the advertised support matrix. Validate Windows/macOS Editors and
    additional IL2CPP player targets before advertising them; Linux results alone
    do not establish those combinations.

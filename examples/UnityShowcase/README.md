@@ -83,9 +83,10 @@ Use an available display or Xvfb on Linux for the Play Mode rendering smoke test
 Unity exits when the test run finishes. The project consumes the current local
 package; building it requires the SDK, while running its Unity tests uses the Editor.
 
-Before the URP migration, validation on Unity 6000.5.6f1, Linux, under Xvfb passed
-all 13 tests, including
-Play Mode execution, native persistence for all layouts, reference sharing/nulls,
-variant rename migration, and stable unchanged saves. The test run leaves the
-authored scene and preset byte-identical. Tests were updated for URP but were not
-rerun during this migration.
+Validation on October 11, 2026, with Unity 6000.5.6f1, Linux, under Xvfb passed
+all 13 tests after the URP migration, including a real camera render, Play Mode
+execution, native persistence for all layouts, reference sharing/nulls, variant
+rename migration, and stable unchanged saves. The test run leaves the authored
+scene and preset byte-identical. The review repaired Unity value-type snapshot
+comparison and made the batch rendering probe explicit; see the
+[commercial review](../../docs/reviews/2026-10-11-commercial-readiness.md).

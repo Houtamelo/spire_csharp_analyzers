@@ -52,14 +52,17 @@ public static class PackageWorkflow
             ["name"] = "com.houtamelo.spire",
             ["version"] = versions[0],
             ["displayName"] = "Houtamelo.Spire",
-            ["description"] = "Spire analyzers and discriminated unions for Unity 6000.5 with Mono and IL2CPP.",
+            ["description"] = "Spire analyzers and discriminated unions for Unity 6000.5.6f1; validated with Mono and IL2CPP on Linux x64.",
             ["unity"] = "6000.5",
+            ["unityRelease"] = "6f1",
             ["dependencies"] = new JsonObject { ["com.unity.modules.imgui"] = "1.0.0", ["com.unity.modules.uielements"] = "1.0.0" },
             ["author"] = new JsonObject { ["name"] = "Houtamelo" },
             ["license"] = "MIT",
         });
         FileOps.Write(Path.Combine(output, "README.md"), "# Houtamelo.Spire for Unity\n\n" +
             "Built from the unity-6000 branch; validated on Unity 6000.5.6f1, Linux, with Mono and IL2CPP.\n" +
+            "Rider is the supported IDE; enable Roslyn Analyzers in its inspection settings for generators and code fixes.\n" +
+            "Unity 6000.6.5f1 has a reported engine crash in generic struct serialization callbacks, reproduced without Spire; native serialization on that version is not supported.\n" +
             "Copy this folder into Packages/com.houtamelo.spire or add it as a local package using package.json.\n" +
             "Apply System.Serializable to a mutable struct union to enable Unity serialization.\n" +
             "Serialization defaults to Additive; explicit BoxedFields, BoxedTuple, UnsafeOverlap, and Overlap are supported.\n" +
@@ -69,7 +72,7 @@ public static class PackageWorkflow
             "UnsafeOverlap requires unsafe code; Overlap cannot be generic or nested in a generic type.\n" +
             "IL2CPP serialization is tested with High managed stripping; Spire preserves Unity's required type-resolution method.\n" +
             "Other Unity versions and player platforms require separate validation.\n" +
-            "Rider is the supported IDE; compiler-host DLLs are supplied by the host.\n");
+            "Compiler-host DLLs are supplied by the host.\n");
         foreach (var name in new[] { "package.json", "README.md", "LICENSE" })
             FileOps.Write(Path.Combine(output, name + ".meta"), "fileFormatVersion: 2\nguid: " + Guid(name) +
                 "\nTextScriptImporter:\n  externalObjects: {}\n  userData:\n  assetBundleName:\n  assetBundleVariant:\n");

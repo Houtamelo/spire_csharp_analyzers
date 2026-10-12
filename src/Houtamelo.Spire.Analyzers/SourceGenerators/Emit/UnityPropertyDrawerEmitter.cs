@@ -504,7 +504,7 @@ internal static class UnityPropertyDrawerEmitter
         builder.AppendLine();
 
         AppendIndented(builder, indent,
-            "private static bool TryResolveChangeProperty(VisualTreeBinding binding, VisualElement element, string path, out SerializedProperty? changedProperty, out string propertyPath, out string relativePath)");
+            "private static bool TryResolveChangeProperty(VisualTreeBinding binding, VisualElement? element, string path, out SerializedProperty? changedProperty, out string propertyPath, out string relativePath)");
         AppendIndented(builder, indent, "{");
         AppendIndented(builder, indent + 1,
             "if (TryResolveChangeProperty(binding, path, out changedProperty, out propertyPath, out relativePath))");
@@ -1312,7 +1312,7 @@ internal static class UnityPropertyDrawerEmitter
         builder.AppendLine();
 
         AppendIndented(builder, indent,
-            "private static void RebuildVisualTreeIfChanged(VisualTreeBinding binding, SerializedProperty changed)");
+            "private static void RebuildVisualTreeIfChanged(VisualTreeBinding binding, SerializedProperty? changed)");
         AppendIndented(builder, indent, "{");
         AppendIndented(builder, indent + 1, "if (binding == null || binding.Property == null || changed == null)");
         AppendIndented(builder, indent + 1, "    return;");
@@ -1440,7 +1440,11 @@ internal static class UnityPropertyDrawerEmitter
         AppendIndented(builder, indent + 3, "try");
         AppendIndented(builder, indent + 3, "{");
         AppendIndented(builder, indent + 4,
-            "ReplaceWithVariant(previewProperty, selected - 2, false, ResolveUnionType(FindActualProperty(binding)));");
+            "var actualProperty = FindActualProperty(binding);");
+        AppendIndented(builder, indent + 4, "if (actualProperty == null)");
+        AppendIndented(builder, indent + 4, "    return;");
+        AppendIndented(builder, indent + 4,
+            "ReplaceWithVariant(previewProperty, selected - 2, false, ResolveUnionType(actualProperty));");
         AppendIndented(builder, indent + 4,
             "binding.Property = binding.PreviewSerializedObject.FindProperty(binding.PropertyPath) ?? previewProperty;");
         AppendIndented(builder, indent + 4, "CommitPreviewValue(binding);");
@@ -1543,6 +1547,8 @@ internal static class UnityPropertyDrawerEmitter
         AppendIndented(builder, indent + 1, "    return;");
         AppendIndented(builder, indent + 1,
             "if (!TryResolveChangeProperty(binding, element, bindable.bindingPath, out var resolvedProperty, out _, out _))");
+        AppendIndented(builder, indent + 1, "    return;");
+        AppendIndented(builder, indent + 1, "if (resolvedProperty == null)");
         AppendIndented(builder, indent + 1, "    return;");
         AppendIndented(builder, indent + 1,
             "if (!IsSupportedChangeProperty(resolvedProperty, valueProperty.PropertyType))");
@@ -1713,11 +1719,16 @@ internal static class UnityPropertyDrawerEmitter
         AppendIndented(builder, indent + 1, "if (binding.ApplyingUserChange)");
         AppendIndented(builder, indent + 1, "{");
         AppendIndented(builder, indent + 2, "changed.StopImmediatePropagation();");
-        AppendIndented(builder, indent + 2, "changed.PreventDefault();");
+        AppendIndented(builder, indent + 2,
+            "(changed.target as VisualElement)?.focusController?.IgnoreEvent(changed);");
         AppendIndented(builder, indent + 2, "return;");
         AppendIndented(builder, indent + 1, "}");
         AppendIndented(builder, indent + 1,
             "if (!TryResolveChangeProperty(binding, changed.target as VisualElement, bindable.bindingPath, out var resolvedProperty, out var resolvedPath, out _))");
+        AppendIndented(builder, indent + 1, "{");
+        AppendIndented(builder, indent + 2, "return;");
+        AppendIndented(builder, indent + 1, "}");
+        AppendIndented(builder, indent + 1, "if (resolvedProperty == null)");
         AppendIndented(builder, indent + 1, "{");
         AppendIndented(builder, indent + 2, "return;");
         AppendIndented(builder, indent + 1, "}");
@@ -1732,11 +1743,13 @@ internal static class UnityPropertyDrawerEmitter
             "if (!isUserChange)");
         AppendIndented(builder, indent + 1, "{");
         AppendIndented(builder, indent + 2, "changed.StopImmediatePropagation();");
-        AppendIndented(builder, indent + 2, "changed.PreventDefault();");
+        AppendIndented(builder, indent + 2,
+            "(changed.target as VisualElement)?.focusController?.IgnoreEvent(changed);");
         AppendIndented(builder, indent + 2, "return;");
         AppendIndented(builder, indent + 1, "}");
         AppendIndented(builder, indent + 1, "changed.StopImmediatePropagation();");
-        AppendIndented(builder, indent + 1, "changed.PreventDefault();");
+        AppendIndented(builder, indent + 1,
+            "(changed.target as VisualElement)?.focusController?.IgnoreEvent(changed);");
         AppendIndented(builder, indent + 1, "binding.ApplyingUserChange = true;");
         AppendIndented(builder, indent + 1, "try");
         AppendIndented(builder, indent + 1, "{");
@@ -1765,7 +1778,7 @@ internal static class UnityPropertyDrawerEmitter
             "payload = currentPayload == null ? null : currentPayload.managedReferenceValue;");
         AppendIndented(builder, indent + 1, "}");
         AppendIndented(builder, indent + 1,
-            "if (payload != null && !TryConvertUserValue(property, payload, relativePath, value, out comparableValue))");
+            "if (property != null && payload != null && !TryConvertUserValue(property, payload, relativePath, value, out comparableValue))");
         AppendIndented(builder, indent + 1, "    return true;");
         AppendIndented(builder, indent + 1,
             "if (binding.PayloadSnapshot != null && TryGetRuntimePathValue(binding.PayloadSnapshot, relativePath, out var snapshotValue))");
@@ -1838,7 +1851,7 @@ internal static class UnityPropertyDrawerEmitter
         builder.AppendLine();
 
         AppendIndented(builder, indent,
-            "private static void SynchronizeRuntimeValue(VisualTreeBinding binding, SerializedProperty changed)");
+            "private static void SynchronizeRuntimeValue(VisualTreeBinding binding, SerializedProperty? changed)");
         AppendIndented(builder, indent, "{");
         AppendIndented(builder, indent + 1,
             "if (binding == null || binding.SynchronizingRuntimeValue || changed == null)");

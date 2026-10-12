@@ -31,17 +31,34 @@ SPIRE009 (error) fires if any variant arm is missing. The "Add missing variant a
 
 ## Layout Strategies
 
-All layouts produce identical external APIs. The difference is how variant data is stored in memory. For most use cases, omit the parameter — `Auto` picks Additive.
+All layouts expose the same factories, Kind, and variant field properties;
+Deconstruct overloads and storage costs differ. Explicit `Layout.Additive` is a
+useful starting point.
+For Unity-serializable unions, omitted/Auto layout selects Additive. Otherwise
+Auto selects Overlap for non-generic structs and BoxedFields for generic structs.
 
-**Additive** — each variant's fields are stored independently (no aliasing). Size = sum of all variant sizes. Safe for generics, value types, and managed types. Best general-purpose choice. Zero undefined behavior.
+**Additive** — typed fields stored side by side, with compatible same-name fields
+sharing a slot across variants. Value types remain inline; reference fields use
+reference slots. Supports generics without explicit CLR layout.
 
-**Overlap** — all variants share the same memory region. Size = largest variant. Requires all fields to be unmanaged types. Uses `[FieldOffset]`. Fastest match; smallest footprint for wide unions with value-type fields. Not usable with generic structs (SPIRE_DU005).
+**Overlap** — explicit `[FieldOffset]` storage with a slot for each resolved field
+name. Compatible same-name fields share storage; differently named fields retain
+separate offsets. Unmanaged fields, references, and boxed composite values occupy
+separate regions. Size depends on the distinct fields and alignment, rather than
+only the largest variant. Generic unions and generic containing types are not
+supported (SPIRE_DU005).
 
 **UnsafeOverlap** — stores unmanaged fields in a raw buffer accessed through `Unsafe.ReadUnaligned` and `Unsafe.WriteUnaligned`, with managed fields in separate slots. Uses `InlineArrayAttribute` when available and fallback storage otherwise. Requires `<AllowUnsafeBlocks>true</AllowUnsafeBlocks>` (SPIRE_DU009) and a reference providing `System.Runtime.CompilerServices.Unsafe`.
 
-**BoxedFields** — wraps each variant's fields in a heap-allocated object. Size = one object reference per variant. Useful when field types prevent all inline layouts (e.g., ref structs as fields). Allocates on construction.
+**BoxedFields** — one object slot per resolved field name. Value-type fields are
+boxed individually; reference fields retain their references. Unity-serializable
+unions also use slot wrappers for reconstruction. Fieldless variants need no
+field allocation. Ref structs cannot be boxed and are not supported as fields.
 
-**BoxedTuple** — like BoxedFields, but packs all fields into a single `ValueTuple` object per variant. Slightly fewer fields on the union struct at the cost of an extra indirection. Rarely preferable to BoxedFields.
+**BoxedTuple** — one object slot for the active variant. Multiple fields are
+packed into a boxed `ValueTuple`; a single field uses the slot directly, boxing
+value types as needed. Fieldless variants use null. This reduces struct storage
+at the cost of heap allocation and indirection for populated value variants.
 
 Benchmark comparisons are in [docs/benchmark-results/](benchmark-results/).
 
@@ -72,7 +89,8 @@ double area = s switch
 };
 ```
 
-Record unions box on every construction. Use struct unions when allocation matters.
+Record variants allocate class instances. Use inline struct layouts when
+construction allocation matters.
 
 ## Pattern Matching
 
@@ -229,4 +247,5 @@ See [docs/benchmark-results/](benchmark-results/) for measured throughput compar
 - **No generic Overlap** — generic structs cannot use `Layout.Overlap` (SPIRE_DU005). Use `Layout.Additive` or `Layout.BoxedFields` instead.
 - **No ref struct support** — `ref struct` types cannot be decorated with `[DiscriminatedUnion]` (SPIRE_DU002).
 - **No ref struct JSON** — `ref struct` unions cannot use JSON serialization (SPIRE_DU008).
-- **No generic UnsafeOverlap** — same restriction as Overlap (SPIRE_DU005).
+- **UnsafeOverlap supports generics** — only unmanaged fields use the raw buffer;
+  generic and managed fields use separate typed/reference slots.

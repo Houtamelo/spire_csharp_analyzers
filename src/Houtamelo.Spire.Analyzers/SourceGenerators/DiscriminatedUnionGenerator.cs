@@ -101,13 +101,7 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
                 : union.Strategy == EmitStrategy.UnsafeOverlap
                 ? UnsafeOverlapEmitter.Emit(union, compInfo.HasInlineArray)
                 : Emit(union);
-            // Include arity to avoid collisions: Option vs Option<T>
-            var arity = union.TypeParameters.Length > 0
-                ? $"`{union.TypeParameters.Length}"
-                : "";
-            var hintPrefix = union.IsUnitySerializable
-                ? UnityHintPrefix(union, arity)
-                : $"{union.TypeName}{arity}";
+            var hintPrefix = SourceHintPrefix(union);
             ctx.AddSource($"{hintPrefix}.g.cs", source);
 
             if (union.IsUnitySerializable)
@@ -259,18 +253,34 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
         _ => "// Unknown strategy",
     };
 
-    private static string UnityHintPrefix(UnionDeclaration union, string arity)
+    private static string SourceHintPrefix(UnionDeclaration union)
     {
         var parts = new List<string>();
         if (!string.IsNullOrEmpty(union.Namespace))
-            parts.Add(union.Namespace);
-        parts.AddRange(union.ContainingTypes.Select(type => type.Name));
-        parts.Add(union.TypeName + arity);
+        {
+            parts.AddRange(union.Namespace
+                .Split(new[] { '.' }, System.StringSplitOptions.RemoveEmptyEntries)
+                .Select(EncodeHintSegment));
+        }
 
-        var text = string.Join(".", parts);
-        return new string(text.Select(character =>
-            char.IsLetterOrDigit(character) || character is '.' or '_' or '`'
-                ? character
-                : '_').ToArray());
+        parts.AddRange(union.ContainingTypes.Select(type =>
+            EncodeHintSegment(type.Name + FormatHintArity(type.TypeParameters.Length))));
+        parts.Add(EncodeHintSegment(
+            union.TypeName + FormatHintArity(union.TypeParameters.Length)));
+
+        return string.Join(".", parts);
+    }
+
+    private static string FormatHintArity(int arity)
+    {
+        return arity > 0 ? "`" + arity : string.Empty;
+    }
+
+    private static string EncodeHintSegment(string segment)
+    {
+        return string.Concat(segment.Select(character =>
+            SyntaxFacts.IsIdentifierPartCharacter(character) || character is '`' or '@'
+                ? character.ToString()
+                : "~u" + ((int)character).ToString("X4") + "~"));
     }
 }

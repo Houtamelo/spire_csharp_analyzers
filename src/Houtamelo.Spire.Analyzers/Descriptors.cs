@@ -15,7 +15,7 @@ internal static class Descriptors
         description: "Creating a non-empty array of a type marked with [EnforceInitialization] fills all elements with default(T), "
                    + "bypassing any required initialization. For structs this is a zeroed instance; for classes this is null. "
                    + "Use an empty array or provide an explicit initializer.",
-        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE001.md"
+        helpLinkUri: "https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/docs/rules/SPIRE001.md"
     );
 
     public static readonly DiagnosticDescriptor SPIRE002_EnforceInitializationOnFieldlessType = new(
@@ -28,7 +28,7 @@ internal static class Descriptors
         description: "The [EnforceInitialization] attribute marks types whose default value is considered uninitialized. "
                    + "A type with no instance fields has only one possible value (the default), so the attribute serves no purpose. "
                    + "Note that auto-properties generate backing fields and do count; non-auto (computed) properties do not.",
-        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE002.md"
+        helpLinkUri: "https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/docs/rules/SPIRE002.md"
     );
 
     public static readonly DiagnosticDescriptor SPIRE003_DefaultOfEnforceInitializationStruct = new(
@@ -40,7 +40,7 @@ internal static class Descriptors
         isEnabledByDefault: true,
         description: "Types marked with [EnforceInitialization] require explicit initialization. Using default(T) or the default "
                    + "literal produces an uninitialized value (zeroed struct or null reference), defeating the purpose of the attribute.",
-        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE003.md"
+        helpLinkUri: "https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/docs/rules/SPIRE003.md"
     );
 
     public static readonly DiagnosticDescriptor SPIRE004_NewOfEnforceInitializationStructWithoutCtor = new(
@@ -54,7 +54,7 @@ internal static class Descriptors
                    + "default (zeroed) instance as 'default(T)'. When the struct is marked with [EnforceInitialization], "
                    + "this bypasses required initialization. Use a constructor with parameters or add a parameterless "
                    + "constructor that initializes the struct's fields.",
-        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE004.md"
+        helpLinkUri: "https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/docs/rules/SPIRE004.md"
     );
 
     public static readonly DiagnosticDescriptor SPIRE005_ActivatorCreateInstanceOfEnforceInitializationStruct = new(
@@ -67,7 +67,7 @@ internal static class Descriptors
         description: "Activator.CreateInstance<T>() and Activator.CreateInstance(typeof(T)) produce default (zeroed) "
                    + "instances of value types, bypassing any required initialization. When T is a struct marked with "
                    + "[EnforceInitialization], this defeats the purpose of the attribute.",
-        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE005.md"
+        helpLinkUri: "https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/docs/rules/SPIRE005.md"
     );
 
     public static readonly DiagnosticDescriptor SPIRE006_ClearOfEnforceInitializationElements = new(
@@ -80,7 +80,7 @@ internal static class Descriptors
         description: "Array.Clear and Span<T>.Clear() reset elements to default(T). When T is a type marked with "
                    + "[EnforceInitialization], this produces uninitialized elements (zeroed structs or null references), "
                    + "defeating the purpose of the attribute.",
-        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE006.md"
+        helpLinkUri: "https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/docs/rules/SPIRE006.md"
     );
 
     public static readonly DiagnosticDescriptor SPIRE007_UnsafeSkipInitOfEnforceInitializationStruct = new(
@@ -93,7 +93,7 @@ internal static class Descriptors
         description: "Unsafe.SkipInit<T>(out T) bypasses zero-initialization entirely, leaving the value as "
                    + "whatever was previously in that memory location. When T is a struct marked with [EnforceInitialization], "
                    + "this is worse than default — the instance contains garbage data.",
-        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE007.md"
+        helpLinkUri: "https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/docs/rules/SPIRE007.md"
     );
 
     public static readonly DiagnosticDescriptor SPIRE008_GetUninitializedObjectOfEnforceInitializationStruct = new(
@@ -106,7 +106,7 @@ internal static class Descriptors
         description: "RuntimeHelpers.GetUninitializedObject(Type) bypasses all constructors and field initializers, "
                    + "producing a completely uninitialized instance. When the type is a struct marked with [EnforceInitialization], "
                    + "this defeats the purpose of the attribute.",
-        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE008.md"
+        helpLinkUri: "https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/docs/rules/SPIRE008.md"
     );
 
     public static readonly DiagnosticDescriptor SPIRE015_ExhaustiveEnumSwitch = new(
@@ -119,7 +119,7 @@ internal static class Descriptors
         description: "Switch statements and expressions on enum types marked with [EnforceExhaustiveness] must "
                    + "explicitly handle every named member. An unguarded catch-all (default:, _, or var x) "
                    + "opts out of the check — the developer has chosen to handle any unmatched value.",
-        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE015.md"
+        helpLinkUri: "https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/docs/rules/SPIRE015.md"
     );
 
     public static readonly DiagnosticDescriptor SPIRE016_InvalidEnforceInitializationEnumValue = new(
@@ -133,7 +133,7 @@ internal static class Descriptors
                    + "This rule flags operations that may produce unnamed values: default expressions (when no "
                    + "zero-valued member exists), integer-to-enum casts with unknown or invalid values, and "
                    + "unsafe operations that bypass zero-initialization entirely.",
-        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE016.md"
+        helpLinkUri: "https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/docs/rules/SPIRE016.md"
     );
 
     public static readonly DiagnosticDescriptor SPIRE016_InvalidEnforceInitializationEnumConstantValue = new(
@@ -145,6 +145,6 @@ internal static class Descriptors
         isEnabledByDefault: true,
         description: "A constant integer value is cast to an [EnforceInitialization] enum but does not correspond "
                    + "to any named member (or valid flags combination).",
-        helpLinkUri: "https://github.com/TODO/docs/rules/SPIRE016.md"
+        helpLinkUri: "https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/docs/rules/SPIRE016.md"
     );
 }

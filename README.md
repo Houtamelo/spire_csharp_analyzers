@@ -133,6 +133,10 @@ Set project-wide defaults via MSBuild properties in your `.csproj` (or `Director
 
 Per-attribute values override global defaults. Omitting an attribute parameter (or using `ReadGlobalCfg`) falls through to the global config.
 
+These MSBuild settings apply to SDK projects. Unity regenerates its `.csproj`
+files and does not import the NuGet `.props` file from this DLL package; use
+explicit attribute arguments in Unity.
+
 ## EnforceExhaustiveness
 
 The analyzer provides:
@@ -172,7 +176,7 @@ N=1000, .NET 11.0, AMD Ryzen 9 9900X. Full results in [docs/benchmark-results/](
 |--------------------|------------|------------|-------------|---------------|-------------|--------------|----------|
 | **Additive**       | Fast       | Moderate   | Fastest     | Slow (boxing) | Yes         | Slow (large) | Yes      |
 | **Overlap**        | Fast       | Moderate   | Fastest     | Slow (boxing) | Yes         | Slow (large) | No       |
-| **UnsafeOverlap**  | Moderate   | Moderate   | Fastest     | Slow (boxing) | Yes         | Slow (large) | No       |
+| **UnsafeOverlap**  | Moderate   | Moderate   | Fastest     | Slow (boxing) | Yes         | Slow (large) | Yes      |
 | **BoxedTuple**     | Fast       | Low        | Slow (cast) | Fast          | None        | Fast (16B)   | Yes      |
 | **BoxedFields**    | Slow       | High       | Slowest     | Fast          | None        | Slowest      | Yes      |
 | **Record**         | Fastest    | Low        | Fast        | Fastest       | None        | Fastest (8B) | Yes      |
@@ -183,7 +187,7 @@ N=1000, .NET 11.0, AMD Ryzen 9 9900X. Full results in [docs/benchmark-results/](
 - **Default choice**: `Layout.Additive` — fastest struct match, zero-alloc property access, works with generics.
 - **Reference semantics or JSON**: `record` — fastest construction, best JSON deserialization, natural C# pattern matching. Trades GC pressure for
   speed.
-- **No generics, unmanaged-heavy**: `Layout.Overlap` — true field overlap for minimal struct size. Cannot handle generic type parameters.
+- **Explicit offsets, no generics**: `Layout.Overlap` — compatible same-name fields share storage. Distinct fields retain separate offsets; compare actual struct sizes for your data.
 - **Skewed variant distribution** (80%+ one variant): `Layout.BoxedTuple` — fieldless fast-path is sub-nanosecond. Poor uniform performance.
 - **C# 15 native unions**: comparable to Additive/Record depending on usage; avoids source generator overhead.
 - **Avoid**: `Layout.BoxedFields` — outperformed by Additive in most categories. Only advantage: zero-alloc Deconstruct (fields already boxed).

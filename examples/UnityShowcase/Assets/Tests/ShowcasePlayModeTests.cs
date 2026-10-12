@@ -40,6 +40,24 @@ namespace Houtamelo.Spire.Showcase.Tests
             yield return null;
             yield return null;
 
+            var camera = Camera.main;
+            Assert.That(camera, Is.Not.Null, "The tracked showcase scene has no Main Camera.");
+
+            var renderTexture = RenderTexture.GetTemporary(16, 16, 0, RenderTextureFormat.ARGB32);
+            try
+            {
+                var renderRequest = new UniversalRenderPipeline.SingleCameraRequest
+                {
+                    destination = renderTexture
+                };
+
+                RenderPipeline.SubmitRenderRequest(camera!, renderRequest);
+            }
+            finally
+            {
+                RenderTexture.ReleaseTemporary(renderTexture);
+            }
+
             Assert.That(RenderPipelineManager.currentPipeline, Is.TypeOf<UniversalRenderPipeline>());
             Assert.That(controller.Health, Is.EqualTo(80));
             Assert.That(controller.Position, Is.EqualTo(new Vector2(3f, 4f)));

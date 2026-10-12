@@ -33,6 +33,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="4.10.0" />
   </ItemGroup>
   <ItemGroup Condition="'$(SpireUnityTestHost)' == 'true'">
+    <None Include="../../docs/rules/*.md" Link="docs/rules/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="../Shared/UnityTestHost.cs" Link="Hosting/UnityTestHost.cs" />
     <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all" />
   </ItemGroup>

@@ -35,6 +35,7 @@ public sealed class UnityPackagingTests
         Assert.Equal(0, result.ExitCode);
         AssertDllWhitelist(fixture.OutputPath);
         AssertManifest(fixture.OutputPath, ReadCoreVersion(repositoryRoot));
+        AssertPackageReadme(fixture.OutputPath);
         AssertPluginMetadata(fixture.OutputPath, "Runtime/Houtamelo.Spire.dll", analyzer: false);
         AssertPluginMetadata(
             fixture.OutputPath,
@@ -211,6 +212,7 @@ public sealed class UnityPackagingTests
         Assert.Equal("com.houtamelo.spire", manifest.GetProperty("name").GetString());
         Assert.Equal(expectedVersion, manifest.GetProperty("version").GetString());
         Assert.Equal("6000.5", manifest.GetProperty("unity").GetString());
+        Assert.Equal("6f1", manifest.GetProperty("unityRelease").GetString());
 
         var dependencies = manifest.GetProperty("dependencies");
         Assert.Equal(
@@ -218,6 +220,15 @@ public sealed class UnityPackagingTests
             dependencies.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal));
         Assert.Equal("1.0.0", dependencies.GetProperty("com.unity.modules.imgui").GetString());
         Assert.Equal("1.0.0", dependencies.GetProperty("com.unity.modules.uielements").GetString());
+    }
+
+    private static void AssertPackageReadme(string outputPath)
+    {
+        var readme = File.ReadAllText(Path.Combine(outputPath, "README.md"));
+
+        Assert.Contains("Rider is the supported IDE", readme, StringComparison.Ordinal);
+        Assert.Contains("Unity 6000.6.5f1", readme, StringComparison.Ordinal);
+        Assert.Contains("generic struct serialization callbacks", readme, StringComparison.Ordinal);
     }
 
     private static void AssertPluginMetadata(string outputPath, string relativeDll, bool analyzer)
