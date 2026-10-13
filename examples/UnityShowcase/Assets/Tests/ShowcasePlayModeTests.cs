@@ -2,6 +2,7 @@
 
 using System.Collections;
 using Houtamelo.Spire.Showcase;
+using Houtamelo.Spire.Showcase.Editor;
 using NUnit.Framework;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -14,21 +15,20 @@ namespace Houtamelo.Spire.Showcase.Tests
 {
     public sealed class ShowcasePlayModeTests
     {
-        private const string ScenePath = "Assets/Scenes/Showcase.unity";
         private string? previousScenePath;
 
         [UnityTest]
         public IEnumerator ShowcaseScene_ExecutesAuthoredQueueInPlayMode()
         {
             previousScenePath = SceneManager.GetActiveScene().path;
-            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            Assert.That(scene.IsValid, Is.True, "The tracked showcase scene could not be opened.");
+            var scene = EditorSceneManager.OpenScene(ShowcasePaths.Scene, OpenSceneMode.Single);
+            Assert.That(scene.IsValid, Is.True, "The showcase scene could not be opened.");
 
             yield return new EnterPlayMode();
             yield return null;
 
             var controller = UnityEngine.Object.FindAnyObjectByType<ShowcaseController>();
-            Assert.That(controller, Is.Not.Null, "The tracked showcase scene has no ShowcaseController.");
+            Assert.That(controller, Is.Not.Null, "The showcase scene has no ShowcaseController.");
             Assert.That(controller!.Preset, Is.Not.Null, "The ShowcaseController has no bound preset.");
 
             var preset = controller.Preset!;
@@ -41,7 +41,7 @@ namespace Houtamelo.Spire.Showcase.Tests
             yield return null;
 
             var camera = Camera.main;
-            Assert.That(camera, Is.Not.Null, "The tracked showcase scene has no Main Camera.");
+            Assert.That(camera, Is.Not.Null, "The showcase scene has no Main Camera.");
 
             var renderTexture = RenderTexture.GetTemporary(16, 16, 0, RenderTextureFormat.ARGB32);
             try

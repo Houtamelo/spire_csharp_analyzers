@@ -8,15 +8,17 @@ using System.Runtime.CompilerServices;
 
 namespace Houtamelo.Spire;
 
-/// Base type for payload objects emitted for Unity-serializable unions.
+/// <summary>Base type for payload objects emitted for Unity-serializable unions.</summary>
 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
 [Serializable]
 public abstract class UnitySerializationPayloadBase
 {
 }
 
-/// Managed-only support for preparing and hydrating generated unions nested in
-/// ordinary serializable structs, classes, arrays, and lists.
+/// <summary>
+/// Infrastructure for preparing and restoring generated unions nested in serializable values.
+/// Generated code calls this bridge; consumers should use the union factories and accessors.
+/// </summary>
 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
 public static class UnitySerializationBridge
 {
@@ -35,22 +37,27 @@ public static class UnitySerializationBridge
     [ThreadStatic]
     private static EqualityState? ActiveEqualityState;
 
+    /// <summary>Prepares an isolated inline serialization snapshot, including nested unions.</summary>
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static object? Prepare(object? value)
         => ExecuteTransform(value, restore: false, prior: null, preserveManagedRoot: false);
 
+    /// <summary>Prepares an inline snapshot, reusing an unchanged prior snapshot.</summary>
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static object? Prepare(object? value, object? prior)
         => ExecuteTransform(value, restore: false, prior, preserveManagedRoot: false);
 
+    /// <summary>Prepares a dynamically typed inline snapshot with optional prior reuse.</summary>
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static object? PrepareDynamic(object? value, object? prior)
         => ExecuteTransform(value, restore: false, prior, preserveManagedRoot: false);
 
+    /// <summary>Prepares nested unions while preserving managed-reference identity.</summary>
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static object? PrepareManagedReference(object? value, object? prior)
         => ExecuteTransform(value, restore: false, prior, preserveManagedRoot: true);
 
+    /// <summary>Prepares a typed inline snapshot, including nested unions.</summary>
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static T Prepare<T>(T value)
     {
@@ -61,6 +68,7 @@ public static class UnitySerializationBridge
         return prepared is null ? default! : (T)prepared;
     }
 
+    /// <summary>Prepares a typed inline snapshot with optional prior reuse.</summary>
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static T Prepare<T>(T value, T prior)
     {
@@ -71,18 +79,22 @@ public static class UnitySerializationBridge
         return prepared is null ? default! : (T)prepared;
     }
 
+    /// <summary>Restores runtime union fields from an inline serialization snapshot.</summary>
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static object? Restore(object? value)
         => ExecuteTransform(value, restore: true, prior: null, preserveManagedRoot: false);
 
+    /// <summary>Restores runtime union fields in a dynamically typed inline value.</summary>
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static object? RestoreDynamic(object? value)
         => ExecuteTransform(value, restore: true, prior: null, preserveManagedRoot: false);
 
+    /// <summary>Restores nested unions while preserving managed-reference identity.</summary>
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static object? RestoreManagedReference(object? value)
         => ExecuteTransform(value, restore: true, prior: null, preserveManagedRoot: true);
 
+    /// <summary>Restores runtime union fields in a typed inline value.</summary>
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static T Restore<T>(T value)
     {
@@ -93,18 +105,19 @@ public static class UnitySerializationBridge
         return restored is null ? default! : (T)restored;
     }
 
-    /// Compares values according to the fields Unity serializes. This deliberately
-    /// avoids user-defined Equals implementations for serializable composites.
+    /// <summary>Compares values according to the fields Unity serializes. This deliberately
+    /// avoids user-defined Equals implementations for serializable composites.</summary>
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static bool __SpireSerializedValuesEqual(object? current, object? snapshot)
         => ExecuteEquality(current, snapshot, requireReferenceIdentity: false);
 
+    /// <summary>Compares serialized values while requiring managed-reference root identity.</summary>
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static bool __SpireSerializedManagedReferenceValuesEqual(object? current, object? snapshot)
         => ExecuteEquality(current, snapshot, requireReferenceIdentity: true);
 
-    /// Creates an isolated inline snapshot for an Inspector edit while keeping
-    /// Unity managed-reference fields shared by identity.
+    /// <summary>Creates an isolated inline snapshot for an Inspector edit while keeping
+    /// Unity managed-reference fields shared by identity.</summary>
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static object? __SpireCloneSerializedSnapshot(object? value)
         => CloneSerializedSnapshot(value, new CloneState(), preserveManagedReference: false);

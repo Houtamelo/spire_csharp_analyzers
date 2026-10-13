@@ -2,6 +2,7 @@
 
 using System.IO;
 using Houtamelo.Spire.Showcase;
+using Houtamelo.Spire.Showcase.Editor;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -10,15 +11,19 @@ namespace Houtamelo.Spire.Showcase.Tests
 {
     internal static class ShowcaseTestSupport
     {
-        public const string TemporaryFolder = "Assets/Tests/TemporaryTest";
-        public const string PresetPath = TemporaryFolder + "/ShowcasePreset.asset";
-        public const string FirstHostPath = TemporaryFolder + "/FirstHost.asset";
-        public const string SecondHostPath = TemporaryFolder + "/SecondHost.asset";
+        public static string TemporaryFolder => ShowcasePaths.Root + "/Tests/TemporaryTest";
+        public static string PresetPath => TemporaryFolder + "/ShowcasePreset.asset";
+        public static string FirstHostPath => TemporaryFolder + "/FirstHost.asset";
+        public static string SecondHostPath => TemporaryFolder + "/SecondHost.asset";
 
         public static void EnsureTemporaryFolder()
         {
+            var testsFolder = ShowcasePaths.Root + "/Tests";
+            if (!AssetDatabase.IsValidFolder(testsFolder))
+                AssetDatabase.CreateFolder(ShowcasePaths.Root, "Tests");
+
             if (!AssetDatabase.IsValidFolder(TemporaryFolder))
-                AssetDatabase.CreateFolder("Assets/Tests", "TemporaryTest");
+                AssetDatabase.CreateFolder(testsFolder, "TemporaryTest");
         }
 
         public static ShowcasePreset CreatePreset(string path)

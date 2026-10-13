@@ -6,10 +6,11 @@ try
     var options = Options.Parse(args);
     if (options.Help)
     {
-        Console.WriteLine("Spire.Tool: package | unity-integration | unity-behavioral | unity-harness | unity-asmdefs | jetbrains | hook");
+        Console.WriteLine("Spire.Tool: package | unity-customer | unity-integration | unity-behavioral | unity-harness | unity-asmdefs | jetbrains | hook");
         Console.WriteLine("Usage: dotnet run --project tools/Spire.Tool -- <command> [options]");
         Console.WriteLine("Common options: --root PATH --configuration Debug|Release --no-build --help");
         Console.WriteLine("package: --output PATH");
+        Console.WriteLine("unity-customer: --package PATH [--baseline PATH] [--prepare-only] (real Package Manager/sample acceptance)");
         Console.WriteLine("Unity tests: --editor PATH --project PATH --timeout SECONDS");
         Console.WriteLine("unity-integration: --graphics --method NAME");
         Console.WriteLine("unity-behavioral, unity-harness, unity-asmdefs: --prepare-only");
@@ -44,6 +45,10 @@ try
         case "unity-integration":
             return await IntegrationWorkflow.RunAsync(context, Project("unity-integration"), editor, configuration, build, options.Flag("graphics"),
                 options.Value("method", "Spire.UnityIntegration.SpireUnityIntegration.Run"), timeout);
+        case "unity-customer":
+            return await CustomerWorkflow.RunAsync(context, Project("unity-customer"), editor,
+                options.Value("package", context.PathOf("tmp/unity-package/com.houtamelo.spire")),
+                options.Flag("baseline") ? options.Value("baseline", "") : null, prepare, timeout);
         case "unity-behavioral":
             return await BehavioralWorkflow.RunAsync(context, Project(backend == "IL2CPP" ? "unity-il2cpp-behavioral" : "unity-behavioral"), editor, configuration, build, prepare, timeout, backend);
         case "unity-harness":
@@ -94,7 +99,7 @@ internal sealed class Options
     {
         var options = new Options();
         var flags = new HashSet<string>(new[] { "help", "no-build", "prepare-only", "graphics", "probe" }, StringComparer.Ordinal);
-        var values = new HashSet<string>(new[] { "root", "configuration", "editor", "project", "output", "timeout", "rider", "cli", "stage", "method", "backend" }, StringComparer.Ordinal);
+        var values = new HashSet<string>(new[] { "root", "configuration", "editor", "project", "output", "timeout", "rider", "cli", "stage", "method", "backend", "package", "baseline" }, StringComparer.Ordinal);
         for (var index = 0; index < args.Length; index++)
         {
             var argument = args[index];

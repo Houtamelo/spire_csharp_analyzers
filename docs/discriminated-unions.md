@@ -47,6 +47,8 @@ separate offsets. Unmanaged fields, references, and boxed composite values occup
 separate regions. Size depends on the distinct fields and alignment, rather than
 only the largest variant. Generic unions and generic containing types are not
 supported (SPIRE_DU005).
+Factories initialize readonly storage inside generated constructors. This layout
+does not require `System.Runtime.CompilerServices.Unsafe`.
 
 **UnsafeOverlap** — stores unmanaged fields in a raw buffer accessed through `Unsafe.ReadUnaligned` and `Unsafe.WriteUnaligned`, with managed fields in separate slots. Uses `InlineArrayAttribute` when available and fallback storage otherwise. Requires `<AllowUnsafeBlocks>true</AllowUnsafeBlocks>` (SPIRE_DU009) and a reference providing `System.Runtime.CompilerServices.Unsafe`.
 

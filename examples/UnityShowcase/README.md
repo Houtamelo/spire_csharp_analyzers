@@ -5,6 +5,12 @@ preset, editable union drawers, runtime examples, and Unity Test Framework tests
 Assets, their metadata, package configuration, and project settings belong in Git.
 Unity caches, machine-specific settings, generated IDE files, and builds are ignored.
 
+The packager also delivers `Assets` as the optional **Unity Showcase (URP)** UPM
+sample. Customer imports use its authored GUIDs and resolve the imported asset
+location. See [the distributable sample instructions](../../docs/unity-package/Showcase.md).
+`sample-files.txt` lists required authored files; update it when adding/removing
+sample assets. Export validates that inventory before writing any destination.
+
 ## Open and run
 
 Build the Unity package from the repository root:

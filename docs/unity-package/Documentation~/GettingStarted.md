@@ -1,0 +1,42 @@
+# Getting started
+
+Install Spire using Package Manager's **Install package from disk** action and
+select the bundle's `package.json`. Keep all four DLLs and their `.meta` files
+together: the runtime belongs to player builds, while the three compiler DLLs
+are labeled `RoslynAnalyzer` and excluded from runtime plugin imports.
+
+In Rider, enable **Settings → Editor → Inspection Settings → Roslyn Analyzers**.
+Allow Unity to compile and Rider to refresh its project model. Rebuilding the
+package is not part of normal consumer installation; the .NET SDK is needed only
+for repository development tools.
+
+Add this to your Unity assembly:
+
+```cs
+using System;
+using Houtamelo.Spire;
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct Result
+{
+    [Variant] public static partial Result Success(int value);
+    [Variant] public static partial Result Failure(string message);
+}
+```
+
+`Result.Success(42)` constructs a union. A serialized field such as
+`[UnityEngine.SerializeField] private Result result;` gets a variant picker and
+fields for the selected variant. The union and every containing type must be
+`partial`. Mutable serializable structs opt into Unity serialization with
+`[Serializable]`; the default storage is Additive.
+
+Use [Usage](Usage.md) for matching and storage choices,
+[Serialization](Serialization.md) for persistence, or
+[Troubleshooting](Troubleshooting.md) if generation does not appear.
+
+To try the supplied scene, install URP **17.5.0** and Unity Test Framework **1.7.0**
+in your project, then import **Unity Showcase (URP)** from this package's Samples
+tab. Its assembly enables unsafe code for the UnsafeOverlap example. The sample
+is optional and does not change your render pipeline until you invoke its setup
+menu. Follow its README before doing that.

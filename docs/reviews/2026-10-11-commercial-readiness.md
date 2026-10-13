@@ -2,6 +2,12 @@
 
 Reviewed October 11, 2026, on `unity-6000`, starting at `8717f62`.
 
+October 12 follow-up: customer guides, notices, XML tooltips, sample delivery,
+and prerelease upgrade acceptance are now implemented. The maintained-LTS probe
+found a Roslyn host mismatch. See [the follow-up](2026-10-12-customer-delivery.md)
+for current results and remaining decisions; the original review evidence below
+is retained.
+
 Spire has a credible technical foundation for a paid Unity tool, but the current
 installation bundle is not ready for store submission. The main remaining work
 is customer delivery, support scope, and release acceptance. This review also
@@ -22,14 +28,14 @@ now cover namespaces, nesting, generic arities, and Unicode names.
 
 | Priority | Finding | Evidence and next action |
 |---|---|---|
-| Before submission | The customer bundle omits the demonstration and full guides. | `PackageWorkflow.BuildAsync` exports four DLLs, metadata, LICENSE, and a short README. `examples/UnityShowcase` and `docs/unity.md` remain repository-only. Build a self-contained customer distribution with offline setup, troubleshooting, migration limits, and importable examples. |
-| Before submission | Source distribution and notices need a deliberate release decision. | The package contains no C# source or Third-Party Notices file. Build projects use PolySharp, whose generated contributions need review along with the shipped DLLs. Determine source delivery and audit the actual included third-party material; the MIT license is unchanged. |
+| Completed October 12 | Customer documentation and examples. | Offline guides, rule references, and a real Package Manager showcase are shipped. Native clean import passes 15 tests. |
+| Before submission | Library source distribution needs a deliberate release decision. | Runtime/analyzer library source is not shipped; sample C# source is included. Third Party Notices now include pinned PolySharp licensing and the shipped compatibility metadata inventory. The MIT license is unchanged. |
 | Before submission | Unity and platform claims need a bounded support policy. | Native serialization is validated on Linux x64, Unity 6000.5.6f1. The separately reported 6000.6.5f1 generic-struct callback crash reproduces without Spire. The manifest cannot express a maximum Editor version. Keep this exception visible and validate Windows/macOS and other player targets before advertising them. |
-| Before submission | Customer upgrade acceptance is missing. | Package tests verify deterministic repeated export and protect unrelated files; native runners install fresh fixtures. They do not exercise an older released bundle upgrading through Package Manager while preserving authored assets. Add that acceptance case against the eventual release bundle. |
+| Prerelease acceptance completed | Customer upgrade workflow. | Real Package Manager replacement from the preserved `b1ceada` bundle retains scene/preset GUIDs, bytes, runtime values, and references; 15 tests pass. Both bundles are prerelease 4.7.1. Future published-version acceptance still requires preserving the actual release artifacts. |
 | Before submission | The inherited NuGet tag workflow has no branch separation. | `.github/workflows/publish.yml` runs for every `v*` tag; `check-tag-version.sh` checks only numeric versions. Both branches still use 4.7.1. Choose Unity release tags/versioning and prevent a Unity tag from publishing the separate NuGet product. |
 | Product improvement | Managed-reference serialization does not provide subtype authoring. | The drawer supplies a union-variant picker and delegates variant fields to ordinary Unity `PropertyField`s. The showcase creates Effect subclasses in code. Users cannot rely on Spire to construct or replace arbitrary managed-reference subtypes in the Inspector. Decide whether to add that workflow or disclose the C# authoring requirement. |
 | Product improvement | Performance evidence is primarily desktop .NET evidence. | BenchmarkDotNet measurements in README are explicitly .NET 11 results. The Unity suites establish correctness, not comparative allocation/time results for player serialization, cloning, or Inspector editing. Measure representative Mono/IL2CPP workloads before making Unity performance comparisons. |
-| Product improvement | Public API documentation is not available as DLL tooltips. | The packager exports no XML documentation, and the runtime project does not enable documentation output. Complete the public API docs and ship their XML alongside the runtime DLL. |
+| Completed October 12 | Public API tooltips. | The runtime emits and ships XML documentation. Compiler warnings-as-errors and reflection/XML checks cover its public API and inheritance. |
 | Needs focused reproduction | Numeric fallback coverage is narrower than the UI type checks. | `ReadSerializedPropertyValue` reads integers/floats through `intValue`/`floatValue`; its setter accepts only int/long for integer properties, while `IsSupportedChangeProperty` also accepts unsigned types. Rendered long/double tests pass, but unsigned and fallback/multi-object paths need a native probe. These helper limitations are established by code; a customer-facing failure was not reproduced in this review. |
 
 Unity's current [submission guidelines](https://assetstore.unity.com/publishing/submission-guidelines)
@@ -45,8 +51,12 @@ The support boundary is a commercial concern as well as a test-matrix gap.
 Unity's [6.5 announcement](https://discussions.unity.com/t/unity-6-5-is-now-available/1723176)
 now marks that release end of life. Its
 [release support page](https://unity.com/releases/unity-6/support) lists 6.3 as the
-current LTS, supported through December 2027. Spire has not been validated there.
-Prioritize a maintained Editor baseline: investigate 6.3 compatibility or verify
+current LTS, supported through December 2027. The October 12
+[6.3 evaluation](../issues/unity-6.3-roslyn-host-compatibility.md) resolves the
+Roslyn mismatch and passes native Inspector and IL2CPP/High serialization with
+a separately supplied runtime Unsafe DLL. The shipping minimum and URP showcase
+prerequisites remain 6.5; runtime dependency and sample decisions are still open.
+Prioritize a maintained Editor baseline: complete 6.3 release acceptance or verify
 a fixed 6.6 patch before advertising maintained native serialization support.
 The engine-only reproduction explains the fault, but customers still experience
 the compatibility limit.

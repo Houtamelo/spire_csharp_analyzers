@@ -16,5 +16,7 @@ public sealed class JsonNameAttribute : Attribute
     /// <summary>The custom JSON name.</summary>
     public string Name { get; }
 
+    /// <summary>Overrides the generated JSON name.</summary>
+    /// <param name="name">The name written to and read from JSON.</param>
     public JsonNameAttribute(string name) => Name = name;
 }

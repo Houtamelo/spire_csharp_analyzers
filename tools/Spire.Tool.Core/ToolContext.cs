@@ -23,7 +23,11 @@ public sealed class ToolContext
     {
         var result = await ProcessRunner.RunAsync(Dotnet,
             new[] { "build", PathOf(project), "-c", configuration, "--nologo" }.Concat(extra), Root,
-            TimeSpan.FromMinutes(10)).ConfigureAwait(false);
+            TimeSpan.FromMinutes(10), environment: new Dictionary<string, string?>
+            {
+                // Shared MSBuild nodes can outlive test hosts and leave nested CLI builds waiting.
+                ["MSBUILDDISABLENODEREUSE"] = "1",
+            }).ConfigureAwait(false);
         Console.Write(result.StandardOutput);
         Console.Error.Write(result.StandardError);
         result.EnsureSuccess("Build " + project);

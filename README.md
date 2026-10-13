@@ -21,6 +21,8 @@ to preserve null, derived types, or shared references through Unity serializatio
 
 Open the tracked [Unity showcase project](examples/UnityShowcase/README.md) for
 Inspector-editable presets, a runnable scene, and real Unity tests of the examples.
+The exported package includes the same showcase as an optional Package Manager
+sample, offline guides, runtime API tooltips, and third-party notices.
 
 The normal NuGet build is maintained on `main`.
 

@@ -30,7 +30,7 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
                 .OfType<CSharpParseOptions>()
                 .FirstOrDefault();
             var supportsInlineArraySyntax = parseOptions is not null &&
-                parseOptions.LanguageVersion >= LanguageVersion.CSharp12;
+                RoslynCompatibility.IsAtLeastCSharp12(parseOptions.LanguageVersion);
 
             return new CompilationInfo(
                 HasSystemTextJson: comp.GetTypeByMetadataName(

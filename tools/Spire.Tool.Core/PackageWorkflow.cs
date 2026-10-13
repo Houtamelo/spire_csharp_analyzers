@@ -20,7 +20,10 @@ public static class PackageWorkflow
         if (versions.Length != 1 || string.IsNullOrEmpty(versions[0]))
             throw new InvalidOperationException("The three Spire package versions must match.");
         if (build) await context.BuildAsync("src/Houtamelo.Spire/Houtamelo.Spire.csproj", configuration).ConfigureAwait(false);
-        var expected = new HashSet<string>(new[] { "package.json", "package.json.meta", "README.md", "README.md.meta", "LICENSE", "LICENSE.meta" }, StringComparer.Ordinal);
+        var content = CustomerContent(context, configuration);
+        var textFiles = new[] { "package.json", "README.md", "LICENSE", "Third Party Notices.md", "Runtime/Houtamelo.Spire.xml", "Samples~/Showcase/README.md" };
+        var expected = new HashSet<string>(content.Keys, StringComparer.Ordinal);
+        expected.UnionWith(textFiles.SelectMany(path => new[] { path, path + ".meta" }));
         foreach (var item in Assemblies)
         {
             FileOps.RequireFile(context.PathOf("src/" + item.Name + "/bin/" + configuration + "/netstandard2.0/" + item.Name + ".dll"));
@@ -46,7 +49,12 @@ public static class PackageWorkflow
         foreach (var folder in Assemblies.Select(item => item.Folder).Distinct())
             FileOps.Write(Path.Combine(output, folder + ".meta"), "fileFormatVersion: 2\nguid: " + Guid(folder) +
                 "\nfolderAsset: yes\nDefaultImporter:\n  externalObjects: {}\n  userData:\n  assetBundleName:\n  assetBundleVariant:\n");
-        File.Copy(context.PathOf("LICENSE"), Path.Combine(output, "LICENSE"), true);
+        foreach (var item in content)
+        {
+            var target = Path.Combine(output, item.Key);
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(item.Value, target, true);
+        }
         FileOps.WriteJson(Path.Combine(output, "package.json"), new JsonObject
         {
             ["name"] = "com.houtamelo.spire",
@@ -56,27 +64,63 @@ public static class PackageWorkflow
             ["unity"] = "6000.5",
             ["unityRelease"] = "6f1",
             ["dependencies"] = new JsonObject { ["com.unity.modules.imgui"] = "1.0.0", ["com.unity.modules.uielements"] = "1.0.0" },
+            ["samples"] = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["displayName"] = "Unity Showcase (URP)",
+                    ["description"] = "Inspector, serialization, matching, and runtime examples. Requires URP 17.5.0 and Unity Test Framework 1.7.0 before import.",
+                    ["path"] = "Samples~/Showcase",
+                },
+            },
             ["author"] = new JsonObject { ["name"] = "Houtamelo" },
             ["license"] = "MIT",
         });
-        FileOps.Write(Path.Combine(output, "README.md"), "# Houtamelo.Spire for Unity\n\n" +
-            "Built from the unity-6000 branch; validated on Unity 6000.5.6f1, Linux, with Mono and IL2CPP.\n" +
-            "Rider is the supported IDE; enable Roslyn Analyzers in its inspection settings for generators and code fixes.\n" +
-            "Unity 6000.6.5f1 has a reported engine crash in generic struct serialization callbacks, reproduced without Spire; native serialization on that version is not supported.\n" +
-            "Copy this folder into Packages/com.houtamelo.spire or add it as a local package using package.json.\n" +
-            "Apply System.Serializable to a mutable struct union to enable Unity serialization.\n" +
-            "Serialization defaults to Additive; explicit BoxedFields, BoxedTuple, UnsafeOverlap, and Overlap are supported.\n" +
-            "Variant fields must use native Unity-supported serialization types.\n" +
-            "Use [UnitySerializeReference] on a variant parameter to preserve nulls, derived types, and shared references.\n" +
-            "Changing a field between inline and managed-reference serialization requires handling existing data separately.\n" +
-            "UnsafeOverlap requires unsafe code; Overlap cannot be generic or nested in a generic type.\n" +
-            "IL2CPP serialization is tested with High managed stripping; Spire preserves Unity's required type-resolution method.\n" +
-            "Other Unity versions and player platforms require separate validation.\n" +
-            "Compiler-host DLLs are supplied by the host.\n");
-        foreach (var name in new[] { "package.json", "README.md", "LICENSE" })
+        foreach (var name in textFiles)
             FileOps.Write(Path.Combine(output, name + ".meta"), "fileFormatVersion: 2\nguid: " + Guid(name) +
                 "\nTextScriptImporter:\n  externalObjects: {}\n  userData:\n  assetBundleName:\n  assetBundleVariant:\n");
         return output;
+    }
+
+    private static Dictionary<string, string> CustomerContent(ToolContext context, string configuration)
+    {
+        var content = new Dictionary<string, string>(StringComparer.Ordinal);
+        void Add(string relative, string source)
+        {
+            var path = context.PathOf(source);
+            FileOps.RequireFile(path);
+            content.Add(relative, path);
+        }
+
+        Add("LICENSE", "LICENSE");
+        Add("README.md", "docs/unity-package/README.md");
+        Add("Third Party Notices.md", "docs/unity-package/Third Party Notices.md");
+        Add("Runtime/Houtamelo.Spire.xml", "src/Houtamelo.Spire/bin/" + configuration + "/netstandard2.0/Houtamelo.Spire.xml");
+        var documents = context.PathOf("docs/unity-package/documentation-files.txt");
+        FileOps.RequireFile(documents);
+        foreach (var relative in ReadInventory(documents))
+            Add("Documentation~/" + relative, relative.StartsWith("Reference/rules/", StringComparison.Ordinal)
+                ? "docs/rules/" + Path.GetFileName(relative)
+                : "docs/unity-package/Documentation~/" + relative);
+
+        const string sampleRoot = "examples/UnityShowcase/Assets/";
+        var inventory = context.PathOf("examples/UnityShowcase/sample-files.txt");
+        FileOps.RequireFile(inventory);
+        foreach (var relative in ReadInventory(inventory))
+            Add("Samples~/Showcase/" + relative, sampleRoot + relative);
+        Add("Samples~/Showcase/README.md", "docs/unity-package/Showcase.md");
+        return content;
+    }
+
+    private static string[] ReadInventory(string path)
+    {
+        var files = File.ReadAllLines(path).Where(line => !string.IsNullOrWhiteSpace(line)).ToArray();
+        if (files.Length == 0)
+            throw new InvalidDataException("The package input inventory is empty: " + path);
+        foreach (var relative in files)
+            if (Path.IsPathRooted(relative) || relative.Split('/').Any(part => part is ".." or ".") || relative.Contains('\\'))
+                throw new InvalidDataException("Invalid package inventory path: " + relative);
+        return files;
     }
 
     internal static string PluginMetadata(string relative, bool analyzer)

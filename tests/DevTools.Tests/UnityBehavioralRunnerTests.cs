@@ -601,6 +601,23 @@ public sealed class UnityBehavioralRunnerTests
             Path.Combine(repositoryRoot, "tests", "Houtamelo.Spire.BehavioralTests", "Tests"),
             Path.Combine(isolatedRoot, "tests", "Houtamelo.Spire.BehavioralTests", "Tests"));
         CopyFile(repositoryRoot, isolatedRoot, "LICENSE");
+        CopyFile(
+            repositoryRoot,
+            isolatedRoot,
+            $"src/Houtamelo.Spire/bin/{configuration}/netstandard2.0/Houtamelo.Spire.xml");
+        CopyDirectory(
+            Path.Combine(repositoryRoot, "docs", "unity-package"),
+            Path.Combine(isolatedRoot, "docs", "unity-package"));
+        CopyDirectory(
+            Path.Combine(repositoryRoot, "docs", "rules"),
+            Path.Combine(isolatedRoot, "docs", "rules"));
+        CopyDirectory(
+            Path.Combine(repositoryRoot, "examples", "UnityShowcase", "Assets"),
+            Path.Combine(isolatedRoot, "examples", "UnityShowcase", "Assets"));
+        CopyFile(
+            repositoryRoot,
+            isolatedRoot,
+            "examples/UnityShowcase/sample-files.txt");
         foreach (var name in new[]
                  {
                      "Houtamelo.Spire",

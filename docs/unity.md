@@ -1,14 +1,19 @@
 # Unity 6000
 
-The `unity-6000` branch targets Unity 6000.5 with Roslyn 4.10. Native validation
+The `unity-6000` compiler extensions target the Roslyn 4.3 API baseline. Native validation
 covers Editor Mono and Linux IL2CPP runtime tests on 6000.5.6f1; player
 serialization and stripping coverage are detailed below. The normal NuGet build
 remains on `main`. Other Unity versions and player platforms require separate
 validation. Rider is the supported IDE.
 
 Unity now marks [6.5 end of life](https://discussions.unity.com/t/unity-6-5-is-now-available/1723176).
-This guide records compatibility evidence; a maintained release baseline still
-needs validation. See the [commercial review](reviews/2026-10-11-commercial-readiness.md).
+This guide records compatibility evidence; a maintained release baseline remains
+unresolved. The Roslyn 4.3.1 downgrade resolves the initial 6000.3.26f1 LTS
+compiler rejection. Its native Inspector fixture passes with an additional
+runtime Unsafe DLL for `UnsafeOverlap`; that DLL is not shipped in the package.
+The shipping minimum and showcase requirements have not been lowered. See the
+[LTS evaluation](issues/unity-6.3-roslyn-host-compatibility.md) and
+[commercial review](reviews/2026-10-11-commercial-readiness.md).
 
 All build and acceptance workflows use the C# CLI in `tools/Spire.Tool`. It
 requires the .NET 10 SDK for preparation; using the built package requires only
@@ -42,6 +47,14 @@ PatternAnalysis, and CodeFixes DLLs. Compiler-only assets have the
 `RoslynAnalyzer` label and all plugin platforms disabled. Unity and Rider supply
 their compiler assemblies; the package does not contain Roslyn, Workspaces, or
 System.Collections.Immutable DLLs.
+
+The bundle also includes runtime XML documentation, Third Party Notices,
+offline guides under `Documentation~`, and an optional `Samples~/Showcase`.
+Install URP 17.5.0 and Unity Test Framework 1.7.0 before importing the sample
+from Package Manager. Its authored asset GUIDs are preserved, and its menus
+resolve the imported location instead of assuming a project-root folder.
+Importing the sample does not change render settings; its explicit configuration
+menu does. See the [customer getting-started guide](unity-package/Documentation~/GettingStarted.md).
 
 The runtime DLL uses Auto Reference. Assemblies with Override References enabled
 must include `Houtamelo.Spire.dll` explicitly. Analyzer scope is separate from

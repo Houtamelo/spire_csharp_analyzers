@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using Houtamelo.Spire.Analyzers.SourceGenerators;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Performance.Model;
 using Microsoft.CodeAnalysis;
@@ -230,7 +231,7 @@ internal static class InlinableParser
                 RefKind.Ref => "ref",
                 RefKind.Out => "out",
                 RefKind.In => "in",
-                RefKind.RefReadOnlyParameter => "ref readonly",
+                _ when RoslynCompatibility.IsRefReadOnlyParameter(p.RefKind) => "ref readonly",
                 _ => null,
             };
 

@@ -13,9 +13,10 @@ namespace Houtamelo.Spire.Showcase.Editor
         {
             if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
 
-            if (!AssetDatabase.IsValidFolder("Assets/Examples")) AssetDatabase.CreateFolder("Assets", "Examples");
-            if (!AssetDatabase.IsValidFolder("Assets/Scenes")) AssetDatabase.CreateFolder("Assets", "Scenes");
-            const string presetPath = "Assets/Examples/ShowcasePreset.asset";
+            var sampleRoot = ShowcasePaths.Root;
+            if (!AssetDatabase.IsValidFolder(sampleRoot + "/Examples")) AssetDatabase.CreateFolder(sampleRoot, "Examples");
+            if (!AssetDatabase.IsValidFolder(sampleRoot + "/Scenes")) AssetDatabase.CreateFolder(sampleRoot, "Scenes");
+            var presetPath = ShowcasePaths.Preset;
             var preset = AssetDatabase.LoadAssetAtPath<ShowcasePreset>(presetPath);
             if (preset == null)
             {
@@ -38,7 +39,7 @@ namespace Houtamelo.Spire.Showcase.Editor
             var controller = new GameObject("Spire Showcase").AddComponent<ShowcaseController>();
             controller.Preset = preset;
             EditorUtility.SetDirty(controller);
-            const string scenePath = "Assets/Scenes/Showcase.unity";
+            var scenePath = ShowcasePaths.Scene;
             EditorSceneManager.SaveScene(scene, scenePath);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(scenePath, true) };
             Selection.activeObject = preset;
@@ -49,7 +50,7 @@ namespace Houtamelo.Spire.Showcase.Editor
         {
             if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
 
-            const string rendererPath = "Assets/URP_RendererData.asset";
+            var rendererPath = ShowcasePaths.Renderer;
             var renderer = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(rendererPath);
             if (renderer == null)
             {
@@ -57,7 +58,7 @@ namespace Houtamelo.Spire.Showcase.Editor
                 AssetDatabase.CreateAsset(renderer, rendererPath);
             }
 
-            const string pipelinePath = "Assets/ShowcaseURP.asset";
+            var pipelinePath = ShowcasePaths.Pipeline;
             var pipeline = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(pipelinePath);
             if (pipeline == null)
             {
@@ -81,7 +82,7 @@ namespace Houtamelo.Spire.Showcase.Editor
             }
             PlayerSettings.colorSpace = ColorSpace.Linear;
 
-            const string scenePath = "Assets/Scenes/Showcase.unity";
+            var scenePath = ShowcasePaths.Scene;
             var scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
             foreach (var root in scene.GetRootGameObjects())
                 foreach (var camera in root.GetComponentsInChildren<Camera>(true))

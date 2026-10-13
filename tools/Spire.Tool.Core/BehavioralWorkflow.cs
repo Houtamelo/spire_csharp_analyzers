@@ -149,6 +149,13 @@ public static class BehavioralWorkflow
 
 internal static class UnityRunner
 {
+    internal static Task<ProcessResult> TestsWithGraphicsAsync(ToolContext context, string project, string editor,
+        string assemblies, string report, string log, TimeSpan timeout)
+        => RunWithDisplayAsync(project, FileOps.FullPath(editor), new[]
+        {
+            "-batchmode", "-projectPath", project, "-runTests", "-testPlatform", "EditMode",
+            "-assemblyNames", assemblies, "-testResults", report, "-logFile", log,
+        }, context.Root, timeout, displayLog: log + ".xvfb.log");
     internal static Task<ProcessResult> PlayerTestsAsync(ToolContext context, string project, string editor, string assemblies, string report, string log, TimeSpan timeout)
         => RunWithDisplayAsync(project, FileOps.FullPath(editor), new[]
         {
@@ -173,6 +180,9 @@ internal static class UnityRunner
     private static async Task<ProcessResult> RunWithDisplayAsync(string project, string executable, IEnumerable<string> arguments, string workingDirectory,
         TimeSpan timeout, IReadOnlyDictionary<string, string?>? environment = null, string? displayLog = null)
     {
+        var giCache = Path.Combine(Path.GetFullPath(project), "Library/GiCache");
+        Directory.CreateDirectory(giCache);
+        arguments = arguments.Concat(new[] { "-giCustomCacheLocation", giCache });
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             return await ProcessRunner.RunAsync(executable, arguments, workingDirectory, timeout, environment, ownProcessGroup: true).ConfigureAwait(false);
 

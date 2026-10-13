@@ -248,8 +248,9 @@ public sealed class UnityAsmdefAcceptanceRunnerTests
 
         var ruleset = Path.Combine(projectPath, "Assets", "Default.ruleset");
         Assert.True(File.Exists(ruleset), ruleset);
-        var rspDirectories = new[] { Path.Combine(projectPath, "Assets") }
-            .Concat(Directory.EnumerateFiles(projectPath, "*.asmdef", SearchOption.AllDirectories)
+        var compiledAssetsRoot = Path.Combine(projectPath, "Assets");
+        var rspDirectories = new[] { compiledAssetsRoot }
+            .Concat(Directory.EnumerateFiles(compiledAssetsRoot, "*.asmdef", SearchOption.AllDirectories)
                 .Select(Path.GetDirectoryName).Where(path => path is not null).Cast<string>())
             .Distinct(StringComparer.Ordinal);
         foreach (var directory in rspDirectories)
@@ -259,6 +260,16 @@ public sealed class UnityAsmdefAcceptanceRunnerTests
             Assert.Contains("-langversion:9", File.ReadAllText(rsp));
             Assert.Contains("-ruleset:\"" + ruleset + "\"", File.ReadAllText(rsp));
         }
+
+        var sampleRoot = Path.Combine(projectPath, "Packages", "com.houtamelo.spire", "Samples~", "Showcase");
+        Assert.True(Directory.Exists(sampleRoot), sampleRoot);
+        var sampleAsmdefs = Directory.EnumerateFiles(sampleRoot, "*.asmdef", SearchOption.AllDirectories).ToArray();
+        Assert.NotEmpty(sampleAsmdefs);
+        Assert.All(sampleAsmdefs, asmdef =>
+        {
+            var rsp = Path.Combine(Path.GetDirectoryName(asmdef)!, "csc.rsp");
+            Assert.False(File.Exists(rsp), "Hidden sample asmdef was treated as a compiled project input: " + asmdef);
+        });
     }
 
     private static void AssertInputProvenance(string repositoryRoot, string projectPath)

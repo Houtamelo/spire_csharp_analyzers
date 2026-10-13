@@ -15,7 +15,7 @@ public sealed class UnityPackagingTests
 {
     private static readonly TimeSpan ProcessTimeout = TimeSpan.FromMinutes(2);
 
-    private static readonly string[] ExpectedDlls =
+    internal static readonly string[] ExpectedDlls =
     [
         "Runtime/Houtamelo.Spire.dll",
         "Analyzers/Houtamelo.Spire.Analyzers.dll",
@@ -36,6 +36,15 @@ public sealed class UnityPackagingTests
         AssertDllWhitelist(fixture.OutputPath);
         AssertManifest(fixture.OutputPath, ReadCoreVersion(repositoryRoot));
         AssertPackageReadme(fixture.OutputPath);
+        UnityCustomerDeliveryTestSupport.AssertOnlyAllowlistedCustomerFiles(
+            repositoryRoot,
+            fixture.OutputPath);
+        UnityCustomerDeliveryTestSupport.AssertGeneratedMetaGuids(
+            repositoryRoot,
+            fixture.OutputPath);
+        UnityCustomerDeliveryTestSupport.AssertAuthoredShowcaseMetaGuids(
+            repositoryRoot,
+            fixture.OutputPath);
         AssertPluginMetadata(fixture.OutputPath, "Runtime/Houtamelo.Spire.dll", analyzer: false);
         AssertPluginMetadata(
             fixture.OutputPath,
@@ -49,7 +58,7 @@ public sealed class UnityPackagingTests
             fixture.OutputPath,
             "Analyzers/Houtamelo.Spire.CodeFixes.dll",
             analyzer: true);
-        AssertDeterministicMetaGuids(fixture.OutputPath);
+        AssertDeterministicMetaGuids(repositoryRoot, fixture.OutputPath);
     }
 
     [Fact]
@@ -68,6 +77,15 @@ public sealed class UnityPackagingTests
 
         Assert.Equal(before, CaptureFileDigests(fixture.OutputPath));
         AssertDllWhitelist(fixture.OutputPath);
+        UnityCustomerDeliveryTestSupport.AssertOnlyAllowlistedCustomerFiles(
+            repositoryRoot,
+            fixture.OutputPath);
+        UnityCustomerDeliveryTestSupport.AssertGeneratedMetaGuids(
+            repositoryRoot,
+            fixture.OutputPath);
+        UnityCustomerDeliveryTestSupport.AssertAuthoredShowcaseMetaGuids(
+            repositoryRoot,
+            fixture.OutputPath);
     }
 
     [Fact]
@@ -80,13 +98,21 @@ public sealed class UnityPackagingTests
         Directory.CreateDirectory(fixture.OutputPath);
         var sentinelPath = Path.Combine(fixture.OutputPath, "unrelated-sentinel.txt");
         File.WriteAllText(sentinelPath, "preserve this sentinel");
+        var nestedSentinelPath = Path.Combine(fixture.OutputPath, "nested", "unrelated-sentinel.txt");
+        Directory.CreateDirectory(Path.GetDirectoryName(nestedSentinelPath)!);
+        File.WriteAllText(nestedSentinelPath, "preserve nested sentinel");
 
         var result = await RunPackageBuilderAsync(repositoryRoot, fixture.OutputPath);
 
         Assert.NotEqual(0, result.ExitCode);
         Assert.Contains("unrelated", CombinedOutput(result), StringComparison.OrdinalIgnoreCase);
         Assert.Equal("preserve this sentinel", File.ReadAllText(sentinelPath));
-        Assert.Empty(Directory.EnumerateFiles(fixture.OutputPath, "*.dll", SearchOption.AllDirectories));
+        Assert.Equal("preserve nested sentinel", File.ReadAllText(nestedSentinelPath));
+        Assert.Equal(
+            new[] { "nested/unrelated-sentinel.txt", "unrelated-sentinel.txt" },
+            Directory.EnumerateFiles(fixture.OutputPath, "*", SearchOption.AllDirectories)
+                .Select(path => RelativePath(fixture.OutputPath, path))
+                .OrderBy(path => path, StringComparer.Ordinal));
     }
 
     [Fact]
@@ -166,6 +192,7 @@ public sealed class UnityPackagingTests
 
     private static void AssertDebugArtifactsPresent(string repositoryRoot)
     {
+        var configuration = BuildConfiguration();
         foreach (var relativePath in ExpectedDlls)
         {
             var sourceName = Path.GetFileName(relativePath);
@@ -174,23 +201,35 @@ public sealed class UnityPackagingTests
                 : sourceName.StartsWith("Houtamelo.Spire.Analyzers", StringComparison.Ordinal)
                     ? "Houtamelo.Spire.Analyzers"
                     : sourceName.StartsWith("Houtamelo.Spire.PatternAnalysis", StringComparison.Ordinal)
-                        ? "Houtamelo.Spire.Analyzers"
+                        ? "Houtamelo.Spire.PatternAnalysis"
                         : "Houtamelo.Spire.CodeFixes";
             var sourcePath = Path.Combine(
                 repositoryRoot,
                 "src",
                 sourceDirectory,
                 "bin",
-                "Debug",
+                configuration,
                 "netstandard2.0",
                 sourceName);
             Assert.True(
                 File.Exists(sourcePath),
-                $"Debug artifact is missing; build the core projects before running this --no-build test: {sourcePath}");
+                $"{configuration} artifact is missing; build the core projects before running this --no-build test: {sourcePath}");
         }
+
+        var xmlPath = Path.Combine(
+            repositoryRoot,
+            "src",
+            "Houtamelo.Spire",
+            "bin",
+            configuration,
+            "netstandard2.0",
+            "Houtamelo.Spire.xml");
+        Assert.True(
+            File.Exists(xmlPath),
+            $"Runtime XML artifact is missing; build the core project before running this --no-build test: {xmlPath}");
     }
 
-    private static void AssertDllWhitelist(string outputPath)
+    internal static void AssertDllWhitelist(string outputPath)
     {
         var actual = Directory.EnumerateFiles(outputPath, "*.dll", SearchOption.AllDirectories)
             .Select(path => RelativePath(outputPath, path))
@@ -220,6 +259,18 @@ public sealed class UnityPackagingTests
             dependencies.EnumerateObject().Select(property => property.Name).OrderBy(name => name, StringComparer.Ordinal));
         Assert.Equal("1.0.0", dependencies.GetProperty("com.unity.modules.imgui").GetString());
         Assert.Equal("1.0.0", dependencies.GetProperty("com.unity.modules.uielements").GetString());
+        Assert.False(dependencies.TryGetProperty("com.unity.render-pipelines.universal", out _));
+        Assert.False(dependencies.TryGetProperty("com.unity.test-framework", out _));
+
+        var sample = manifest.GetProperty("samples").EnumerateArray().Single();
+        Assert.Equal("Unity Showcase (URP)", sample.GetProperty("displayName").GetString());
+        Assert.Equal("Samples~/Showcase", sample.GetProperty("path").GetString());
+        var sampleDescription = sample.GetProperty("description").GetString()!;
+        Assert.Contains("17.5.0", sampleDescription, StringComparison.Ordinal);
+        Assert.Contains("1.7.0", sampleDescription, StringComparison.Ordinal);
+        Assert.Contains("URP", sampleDescription, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("test framework", sampleDescription, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("file:", document.RootElement.GetRawText(), StringComparison.OrdinalIgnoreCase);
     }
 
     private static void AssertPackageReadme(string outputPath)
@@ -252,11 +303,18 @@ public sealed class UnityPackagingTests
             StringComparison.Ordinal);
     }
 
-    private static void AssertDeterministicMetaGuids(string outputPath)
+    private static void AssertDeterministicMetaGuids(string repositoryRoot, string outputPath)
     {
         foreach (var metaPath in Directory.EnumerateFiles(outputPath, "*.meta", SearchOption.AllDirectories))
         {
             var relativeMeta = RelativePath(outputPath, metaPath);
+            if (UnityCustomerDeliveryTestSupport.IsAuthoredShowcaseMeta(
+                    relativeMeta,
+                    repositoryRoot))
+            {
+                continue;
+            }
+
             var logicalPath = relativeMeta[..^".meta".Length];
             var expected = DevTools.ProcessCompatibility.ToHexString(
                     DevTools.ProcessCompatibility.HashData(Encoding.UTF8.GetBytes("Houtamelo.Spire.Unity/" + logicalPath)))

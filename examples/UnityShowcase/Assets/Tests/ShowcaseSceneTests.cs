@@ -1,6 +1,8 @@
 #nullable enable
 
+using System;
 using Houtamelo.Spire.Showcase;
+using Houtamelo.Spire.Showcase.Editor;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -13,26 +15,24 @@ namespace Houtamelo.Spire.Showcase.Tests
 {
     public sealed class ShowcaseSceneTests
     {
-        private const string ScenePath = "Assets/Scenes/Showcase.unity";
-        private const string PresetPath = "Assets/Examples/ShowcasePreset.asset";
-        private const string PipelineAssetPath = "Assets/ShowcaseURP.asset";
-        private const string RendererDataPath = "Assets/URP_RendererData.asset";
+        private const string RuntimeAssemblyGuid = "de1fa9429c4a323daa60cd365f1c7de3";
+        private const string MissingAssemblyGuid = "00000000000000000000000000000000";
 
         [Test]
-        public void TrackedShowcaseScene_LoadsControllerWithAuthoredPreset()
+        public void ShowcaseScene_LoadsControllerWithAuthoredPreset()
         {
             var previousScenePath = SceneManager.GetActiveScene().path;
             try
             {
-                var authoredPreset = AssetDatabase.LoadAssetAtPath<ShowcasePreset>(PresetPath);
-                Assert.That(authoredPreset, Is.Not.Null, "The tracked showcase preset is missing.");
+                var authoredPreset = AssetDatabase.LoadAssetAtPath<ShowcasePreset>(ShowcasePaths.Preset);
+                Assert.That(authoredPreset, Is.Not.Null, "The showcase preset is missing.");
 
-                var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-                Assert.That(scene.IsValid, Is.True, "The tracked showcase scene could not be opened.");
+                var scene = EditorSceneManager.OpenScene(ShowcasePaths.Scene, OpenSceneMode.Single);
+                Assert.That(scene.IsValid, Is.True, "The showcase scene could not be opened.");
                 Assert.That(scene.isLoaded, Is.True);
 
                 var controller = UnityEngine.Object.FindAnyObjectByType<ShowcaseController>();
-                Assert.That(controller, Is.Not.Null, "The tracked showcase scene has no ShowcaseController.");
+                Assert.That(controller, Is.Not.Null, "The showcase scene has no ShowcaseController.");
                 Assert.That(controller!.Preset, Is.SameAs(authoredPreset));
 
                 ShowcaseTestSupport.AssertResetPreset(controller.Preset!);
@@ -53,13 +53,41 @@ namespace Houtamelo.Spire.Showcase.Tests
             }
         }
 
+        [Test]
+        public void ShowcasePaths_ResolveRelocatedSampleAssetsFromRuntimeAssembly()
+        {
+            var resolvedRoot = ShowcasePaths.ResolveRoot(RuntimeAssemblyGuid);
+
+            Assert.That(resolvedRoot, Is.EqualTo(ShowcasePaths.Root));
+            Assert.That(AssetDatabase.IsValidFolder(resolvedRoot), Is.True);
+            Assert.That(ShowcasePaths.Scene, Does.StartWith(resolvedRoot + "/"));
+            Assert.That(ShowcasePaths.Preset, Does.StartWith(resolvedRoot + "/"));
+            Assert.That(ShowcasePaths.Pipeline, Does.StartWith(resolvedRoot + "/"));
+            Assert.That(ShowcasePaths.Renderer, Does.StartWith(resolvedRoot + "/"));
+
+            Assert.That(AssetDatabase.LoadAssetAtPath<SceneAsset>(ShowcasePaths.Scene), Is.Not.Null);
+            Assert.That(AssetDatabase.LoadAssetAtPath<ShowcasePreset>(ShowcasePaths.Preset), Is.Not.Null);
+            Assert.That(
+                AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(ShowcasePaths.Pipeline),
+                Is.Not.Null);
+            Assert.That(
+                AssetDatabase.LoadAssetAtPath<UniversalRendererData>(ShowcasePaths.Renderer),
+                Is.Not.Null);
+        }
+
+        [Test]
+        public void ShowcasePaths_ResolveRoot_ThrowsWhenRuntimeAssemblyGuidIsMissing()
+        {
+            Assert.Throws<InvalidOperationException>(() => ShowcasePaths.ResolveRoot(MissingAssemblyGuid));
+        }
+
         private static void AssertUrpProjectConfiguration()
         {
-            var pipelineAsset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(PipelineAssetPath);
-            Assert.That(pipelineAsset, Is.Not.Null, "The tracked URP pipeline asset is missing.");
+            var pipelineAsset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(ShowcasePaths.Pipeline);
+            Assert.That(pipelineAsset, Is.Not.Null, "The URP pipeline asset is missing.");
 
-            var rendererData = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(RendererDataPath);
-            Assert.That(rendererData, Is.Not.Null, "The tracked URP renderer data asset is missing.");
+            var rendererData = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(ShowcasePaths.Renderer);
+            Assert.That(rendererData, Is.Not.Null, "The URP renderer data asset is missing.");
             Assert.That(GraphicsSettings.defaultRenderPipeline, Is.SameAs(pipelineAsset));
 
             var pipelineSerialized = new SerializedObject(pipelineAsset);

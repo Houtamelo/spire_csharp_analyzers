@@ -93,7 +93,8 @@ the store's usual seat licensing creates exclusivity over MIT-covered components
 ## Implemented and verified
 
 The Unity build remains on `unity-6000`, separate from the normal NuGet build on
-`main`. Current support targets Unity 6000.5, Roslyn 4.10, and Rider. Native evidence
+`main`. The compiler extensions now use a Roslyn 4.3 baseline; the shipping
+manifest still targets Unity 6000.5, with Rider as the supported IDE. Native evidence
 is from Unity 6000.5.6f1 on Linux x64. A 6000.6.5f1 recheck passes the complete
 Editor Mono harness and IL2CPP behavioral suite, but native serialization crashes
 in the Editor before player builds finish. Other platforms are not covered.
@@ -115,8 +116,8 @@ behavior:
 
 | Environment | Latest verified result |
 |---|---|
-| .NET repository suite | 2,255 passed on October 11, 2026: 826 analyzer, 904 generator, 339 PatternAnalysis, 129 behavioral, and 57 tooling checks. |
-| Complete Unity Editor Mono harness | October 11 recheck on 6000.5.6f1: 2,279 passed, with all 2,140 portable identities matched and all 129 original behavioral assertions executed. The earlier 2,266-case harness also passed on 6000.6.5f1. |
+| .NET repository suite | 2,304 passed on October 13, 2026: 826 analyzer, 918 generator, 339 PatternAnalysis, 129 behavioral, and 92 tooling checks. |
+| Complete Unity Editor Mono harness | October 13 recheck on 6000.5.6f1: 2,328 passed, with all 2,189 portable identities matched and all 129 original behavioral assertions executed. The earlier 2,266-case harness also passed on 6000.6.5f1. |
 | Native Editor integration | October 11 on 6000.5.6f1: 120 assertions passed with three observations, including custom enum display labels, flags, unavailable choices, and exact numeric Undo/Redo. On 6000.6.5f1, the Editor crashes before its final report. |
 | Linux IL2CPP behavioral runner | 137 checks passed on both Editors: 129 original assertions, six adapter checks, and two backend capability probes. This runner uses test-specific linker roots. |
 | Standalone Linux Mono and High-stripping IL2CPP serialization | On 6000.5.6f1, Mono Full, both isolated IL2CPP profiles, and the corrected combined IL2CPP Full fixture pass. On 6000.6.5f1, every attempted serialization profile crashes in the Editor before a player is produced. The production fixture has no consumer linker descriptor. |
@@ -125,6 +126,11 @@ The compiler/analyzer harness runs in Editor Mono. Consumer-generated code runs
 under IL2CPP; dynamic compilation/emission and SDK subprocess tests do not execute
 unchanged in an AOT player. SDK preparation uses the C# tooling; there is no Python
 requirement. Installing the built package does not require the .NET SDK.
+
+Ordinary `Overlap` now initializes readonly storage in constructors. Its focused
+Unity 6.3 Mono and IL2CPP/High fixtures pass without an added Unsafe DLL or consumer
+`link.xml`; see [the validation report](reviews/2026-10-13-overlap-constructor-results.md).
+`UnsafeOverlap` retains its separate runtime dependency.
 
 The Unity 6.5 native loading failure has a small Unity-only MRP involving an
 embedded `MonoScript` and one null managed-reference field. The fixture component
@@ -187,11 +193,13 @@ compiled-DLL distribution and accompanying source materials with Unity rather
 than assuming review acceptance.
 
 The current [packager](../tools/Spire.Tool.Core/PackageWorkflow.cs) ships four Spire
-DLLs, metadata, MIT licensing, and a short README. It declares Unity module
+DLLs, metadata, runtime XML documentation, MIT licensing, Third Party Notices,
+offline customer guides, and an optional Package Manager showcase. It declares Unity module
 dependencies and keeps compiler extensions out of player plugin imports;
-compiler-host DLLs are not bundled. It still omits detailed offline guides,
-customer examples, troubleshooting/support information, and a Third-Party
-Notices file. The repository's test fixtures are not shipped product samples.
+compiler-host DLLs are not bundled. The sample preserves authored GUIDs and
+requires URP/Test Framework packages installed separately. Clean import and
+prerelease bundle replacement both pass native Package Manager acceptance and
+15 showcase tests; see [customer delivery](reviews/2026-10-12-customer-delivery.md).
 
 Unity [offers UPM publishing for tools and SDKs](https://assetstore.unity.com/publishing/upm-publishing),
 including individual enrollment. Identity verification is required, with
@@ -206,14 +214,18 @@ Priorities for a commercial release:
    [6.5 end of life](https://discussions.unity.com/t/unity-6-5-is-now-available/1723176);
    investigate a maintained baseline, such as the
    [current 6.3 LTS](https://unity.com/releases/unity-6/support), before promising
-   production support.
+   production support. The [6000.3.26f1 evaluation](issues/unity-6.3-roslyn-host-compatibility.md)
+   now resolves the Roslyn mismatch and passes the native Inspector fixture
+   and complete IL2CPP/High serialization player with an additional runtime
+   Unsafe DLL. Runtime dependency and sample
+   compatibility work remain before lowering the advertised minimum.
 2. Choose the advertised support matrix. Validate Windows/macOS Editors and
    additional IL2CPP player targets before advertising them; Linux results alone
    do not establish those combinations.
-3. Bundle offline documentation and working gameplay/data-authoring examples,
+3. Review the delivered offline guides and showcase as customer materials,
    including the implemented rename workflow and the schema limits above.
 4. Resolve the unsafe-code and DLL/source review questions; complete store
-   manifest metadata, licensing notices, AI disclosure, and publisher/support
+   manifest metadata, AI disclosure, and publisher/support
    information.
 5. Repeat acceptance checks against the final customer bundle in clean projects
    and prepare the store demonstration. Confirm pricing and support economics
@@ -224,4 +236,5 @@ workflow and variant-order/rename stability are implemented and tested for the
 stated environment. IL2CPP behavioral execution and the complete High-stripping
 serialization fixture pass on 6000.5.6f1 after correcting script registration.
 The reported 6.6 callback crash remains an engine-version boundary. The
-installation bundle still needs customer materials and submission preparation.
+installation bundle now includes customer materials and verified delivery
+workflows. Maintained-version support and submission preparation remain.

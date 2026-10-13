@@ -34,7 +34,13 @@ internal sealed record FieldInfo(
     string? PropertyName = null,
     /// Null for fields whose property keeps the declared type. Compatible
     /// reference-nullability collisions use the merged nullable type here.
-    string? PropertyTypeFullName = null
+    string? PropertyTypeFullName = null,
+    /// Constructor-only CLR-equivalent type identity used for grouping.
+    /// This omits reference nullability and tuple element names.
+    string? ConstructorTypeKey = null,
+    /// Common type spelling for a generated private constructor parameter.
+    /// It is computed per ordered CLR-equivalent variant signature.
+    string? ConstructorTypeFullName = null
 ) : IEquatable<FieldInfo>
 {
     public string ResolvedPropertyName => PropertyName ?? Name;

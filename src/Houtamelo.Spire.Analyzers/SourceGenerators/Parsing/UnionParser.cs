@@ -461,6 +461,7 @@ internal static class UnionParser
             .Select(p => new FieldInfo(
                 Name: p.Name,
                 TypeFullName: DisplayFieldType(p.Type, includeNullableReferenceTypeModifiers),
+                ConstructorTypeKey: FieldNameResolver.ConstructorTypeName(p.Type),
                 IsUnmanaged: p.Type.IsUnmanagedType,
                 IsReferenceType: p.Type.IsReferenceType,
                 KnownSize: ComputeKnownSize(p.Type),
@@ -500,6 +501,7 @@ internal static class UnionParser
                 .Select(p => new FieldInfo(
                     Name: p.Name,
                     TypeFullName: DisplayFieldType(p.Type, includeNullableReferenceTypeModifiers),
+                    ConstructorTypeKey: FieldNameResolver.ConstructorTypeName(p.Type),
                     IsUnmanaged: p.Type.IsUnmanagedType,
                     IsReferenceType: p.Type.IsReferenceType,
                     KnownSize: ComputeKnownSize(p.Type),

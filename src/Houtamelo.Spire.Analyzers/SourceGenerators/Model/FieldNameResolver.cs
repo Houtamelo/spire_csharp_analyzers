@@ -15,6 +15,12 @@ internal static class FieldNameResolver
             SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions |
             SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
 
+    /// Returns a string-only CLR identity for grouping generated constructor
+    /// parameters. Reference nullability and tuple element names are removed;
+    /// assembly identity and constructed containing type arguments are retained.
+    public static string ConstructorTypeName(ITypeSymbol type)
+        => ConstructorTypeNameCore(type);
+
     public static EquatableArray<VariantInfo> Resolve(
         EquatableArray<VariantInfo> variants,
         INamedTypeSymbol unionType,
@@ -76,6 +82,37 @@ internal static class FieldNameResolver
             }
         }
 
+        var fieldEntries = entries.ToDictionary(
+            entry => (entry.Variant.Name, entry.Index));
+        var constructorTypes = new Dictionary<(string Variant, int Index), string>();
+        foreach (var variantGroup in variantList.GroupBy(variant => string.Join(
+            "\u001f",
+            variant.Fields.Select(field => field.ConstructorTypeKey ?? field.TypeFullName))))
+        {
+            var firstVariant = variantGroup.First();
+            for (var index = 0; index < firstVariant.Fields.Length; index++)
+            {
+                var types = variantGroup
+                    .Select(variant => fieldEntries[(variant.Name, index)].Type)
+                    .Where(type => type is not null)
+                    .Cast<ITypeSymbol>()
+                    .ToList();
+                if (types.Count == 0)
+                    continue;
+
+                var firstType = types[0];
+                var commonType = types.Any(type =>
+                        type.TypeKind == TypeKind.Dynamic ||
+                        type.SpecialType == SpecialType.System_Object)
+                    ? "object"
+                    : MergeType(firstType, types, compilation, constructorMerge: true)
+                        ?.ToDisplayString(TypeDisplayFormat)
+                        ?? firstVariant.Fields[index].TypeFullName;
+                foreach (var variant in variantGroup)
+                    constructorTypes[(variant.Name, index)] = commonType;
+            }
+        }
+
         var result = variantList
             .Select(variant => variant with
             {
@@ -89,6 +126,11 @@ internal static class FieldNameResolver
                         {
                             PropertyName = value.Name == field.Name ? null : value.Name,
                             PropertyTypeFullName = value.Type == field.TypeFullName ? null : value.Type,
+                            ConstructorTypeFullName = constructorTypes.TryGetValue(
+                                (variant.Name, index),
+                                out var constructorType)
+                                ? constructorType
+                                : null,
                         };
                     })
                     .ToImmutableArray())
@@ -144,17 +186,78 @@ internal static class FieldNameResolver
             : canonical;
     }
 
+    /// Produces a constructor-only CLR identity while keeping type and
+    /// assembly identity in nested generic arguments.
+    private static string ConstructorTypeNameCore(ITypeSymbol type)
+    {
+        if (type.TypeKind == TypeKind.Dynamic ||
+            type.SpecialType == SpecialType.System_Object)
+            return "object";
+
+        if (type is IArrayTypeSymbol array)
+            return ConstructorTypeNameCore(array.ElementType) + ArraySuffix(array.Rank);
+
+        if (type is IPointerTypeSymbol pointer)
+            return ConstructorTypeNameCore(pointer.PointedAtType) + "*";
+
+        if (type is INamedTypeSymbol named)
+        {
+            var constructorType = named.IsTupleType && named.TupleUnderlyingType is { } underlying
+                ? underlying
+                : named;
+            var arguments = ConstructedTypeArguments(constructorType)
+                .Select(ConstructorTypeNameCore)
+                .ToArray();
+            var name = NamedDefinitionName(constructorType.OriginalDefinition);
+            var assembly = constructorType.ContainingAssembly?.Identity.ToString() ?? "";
+            return assembly + "|" + name +
+                (arguments.Length == 0
+                    ? ""
+                    : "<" + string.Join(",", arguments) + ">");
+        }
+
+        return type.ToDisplayString(TypeDisplayFormat);
+    }
+
+    private static string ArraySuffix(int rank)
+        => rank == 1 ? "[]" : "[" + new string(',', rank - 1) + "]";
+
+    private static IEnumerable<ITypeSymbol> ConstructedTypeArguments(INamedTypeSymbol type)
+    {
+        if (type.ContainingType is { } containing)
+        {
+            foreach (var argument in ConstructedTypeArguments(containing))
+                yield return argument;
+        }
+
+        foreach (var argument in type.TypeArguments)
+            yield return argument;
+    }
+
+    private static string NamedDefinitionName(INamedTypeSymbol type)
+    {
+        var name = type.Name + (type.Arity == 0 ? "" : "`" + type.Arity);
+        if (type.ContainingType is { } containing)
+            return NamedDefinitionName(containing) + "." + name;
+
+        var ns = type.ContainingNamespace;
+        return ns.IsGlobalNamespace
+            ? "global::" + name
+            : "global::" + ns.ToDisplayString() + "." + name;
+    }
+
     private static ITypeSymbol? MergeType(
         ITypeSymbol? first,
         IEnumerable<ITypeSymbol> types,
-        Compilation compilation)
+        Compilation compilation,
+        bool constructorMerge = false)
     {
         if (first is null)
             return null;
 
         var result = first;
         foreach (var type in types.Skip(1))
-            result = MergeTwo(result, type, compilation);
+            result = MergeTwo(result, type, compilation, constructorMerge);
         return result;
     }
 
@@ -163,7 +266,8 @@ internal static class FieldNameResolver
     private static ITypeSymbol MergeTwo(
         ITypeSymbol left,
         ITypeSymbol right,
-        Compilation compilation)
+        Compilation compilation,
+        bool constructorMerge = false)
     {
         var mergedAnnotation = MergeAnnotation(left.NullableAnnotation, right.NullableAnnotation);
         ITypeSymbol merged = left;
@@ -171,13 +275,21 @@ internal static class FieldNameResolver
         if (left is IArrayTypeSymbol leftArray && right is IArrayTypeSymbol rightArray &&
             leftArray.Rank == rightArray.Rank)
         {
-            var element = MergeTwo(leftArray.ElementType, rightArray.ElementType, compilation);
+            var element = MergeTwo(
+                leftArray.ElementType,
+                rightArray.ElementType,
+                compilation,
+                constructorMerge);
             merged = compilation.CreateArrayTypeSymbol(element, leftArray.Rank);
         }
         else if (left is IPointerTypeSymbol leftPointer && right is IPointerTypeSymbol rightPointer)
         {
             merged = compilation.CreatePointerTypeSymbol(
-                MergeTwo(leftPointer.PointedAtType, rightPointer.PointedAtType, compilation));
+                MergeTwo(
+                    leftPointer.PointedAtType,
+                    rightPointer.PointedAtType,
+                    compilation,
+                    constructorMerge));
         }
         else if (left is INamedTypeSymbol leftNamed && right is INamedTypeSymbol rightNamed &&
                  SymbolEqualityComparer.Default.Equals(
@@ -185,11 +297,25 @@ internal static class FieldNameResolver
                      rightNamed.OriginalDefinition) &&
                  leftNamed.TypeArguments.Length == rightNamed.TypeArguments.Length)
         {
-            var arguments = leftNamed.TypeArguments
-                .Zip(rightNamed.TypeArguments, (a, b) => MergeTwo(a, b, compilation))
+            var useFlattenedTupleElements = constructorMerge &&
+                leftNamed.IsTupleType &&
+                rightNamed.IsTupleType &&
+                leftNamed.TupleElements.Length >= 2 &&
+                rightNamed.TupleElements.Length >= 2;
+            var arguments = (useFlattenedTupleElements
+                    ? leftNamed.TupleElements.Select(element => element.Type)
+                    : leftNamed.TypeArguments)
+                .Zip(
+                    useFlattenedTupleElements
+                        ? rightNamed.TupleElements.Select(element => element.Type)
+                        : rightNamed.TypeArguments,
+                    (a, b) => MergeTwo(a, b, compilation, constructorMerge))
                 .ToImmutableArray();
 
-            if (leftNamed.IsTupleType && rightNamed.IsTupleType)
+            if (leftNamed.IsTupleType && rightNamed.IsTupleType &&
+                (!constructorMerge ||
+                 (leftNamed.TupleElements.Length >= 2 &&
+                  rightNamed.TupleElements.Length >= 2)))
             {
                 var names = leftNamed.TupleElements
                     .Select(element => (string?)element.Name)

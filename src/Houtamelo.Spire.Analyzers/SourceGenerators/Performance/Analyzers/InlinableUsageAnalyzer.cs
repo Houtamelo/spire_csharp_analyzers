@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Houtamelo.Spire.Analyzers.SourceGenerators;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -104,7 +105,7 @@ public sealed class InlinableUsageAnalyzer : DiagnosticAnalyzer
             if (param.RefKind == RefKind.Ref
                 || param.RefKind == RefKind.In
                 || param.RefKind == RefKind.Out
-                || param.RefKind == RefKind.RefReadOnlyParameter)
+                || RoslynCompatibility.IsRefReadOnlyParameter(param.RefKind))
             {
                 context.ReportDiagnostic(Diagnostic.Create(
                     InlinerDescriptors.SPIRE025_UnsupportedRefKind,
