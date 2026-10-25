@@ -29,9 +29,12 @@ Read-only review completed before implementation. The findings below refer to
 the baseline, including its line numbers. Implementation decisions are explicit;
 the validation log records the subsequent batches separately.
 
-All six accepted cleanup batches are implemented and committed. The final SDK
-gate passes 2,115 tests with zero skipped; 77 fixed generated files remain
-byte-identical. Behavior-changing defects below remain report-only, as required.
+Review complete: **36 findings**. All six accepted cleanup batches and three
+native test-host correction batches are implemented and committed. Every batch
+passed the full SDK gate before the next batch. Final gates: **2,115 SDK tests**
+and **2,102 actual Unity Editor harness cases** passed with zero skipped;
+**77 fixed generated files remain byte-identical**. Behavior-changing defects
+below remain report-only, as required.
 
 ## Findings
 
@@ -524,7 +527,7 @@ canonical working directory instead. No mocked display server or silent skip.
 Validation: scoped formatting; focused lifecycle tests 4/4; full Release
 solution **2,115/2,115 passed, zero skipped**; **77/77 raw generated files
 byte-identical**. Evidence: `tmp/full-code-quality-review/batch6/`.
-Actual Unity execution is the final validation step below.
+Actual Unity execution is recorded in the final validation section below.
 
 ### Batch 7: native test-host corrections
 
@@ -598,16 +601,18 @@ skipped**, **77/77 raw generated files byte-identical**. SDK evidence:
 
 ### Final native validation
 
-Actual Unity **6000.5.6f1**, Linux x86-64. All projects are disposable copies
-under `tmp/full-code-quality-review/`; tracked fixtures and customer projects
-were not changed. SHA-256 checks confirmed all four core fixture DLLs matched
+Actual Unity **6000.5.6f1**, Linux x86-64. Native executions used disposable
+copies under `tmp/full-code-quality-review/`; no build or Editor artifacts were
+written into tracked fixture or customer projects. SHA-256 checks confirmed all four core fixture DLLs matched
 the Release outputs at fixture preparation. Their informational version records
-`21c3ac0`; `src/` is identical between that commit and `16412b7`. Later builds
-restamp the informational version with HEAD; archived hashes identify the exact
-assemblies used, rather than assuming byte equality across revision stamps.
+`21c3ac0`; `src/` is unchanged after that commit. The later production tool
+refactor is `23252e8`; subsequent changes only affect tests/documentation. Later
+builds restamp the informational version with HEAD; archived hashes identify the
+exact assemblies used, rather than assuming byte equality across revision stamps.
 
 | Execution | Result |
 |---|---|
+| Complete compiler/analyzer/pattern/tooling/config harness in Editor Mono | 2,102/2,102 cases passed, zero skipped |
 | Editor serialization write | 126 checks passed |
 | Fresh-process Editor serialization read | 87 checks passed |
 | Invalid-data recovery | 59 checks passed |
@@ -615,9 +620,23 @@ assemblies used, rather than assuming byte equality across revision stamps.
 | Rendered UI Toolkit/IMGUI Inspector | 16 cases, 147 checks passed, zero unverified |
 | Release Mono player, High stripping | 60 checks passed, 64-bit, nondevelopment |
 | Release IL2CPP player, High stripping | 60 checks passed, 64-bit, nondevelopment |
-| Behavioral suite in Editor Mono | 86 cases passed, including all 80 original fact identities |
-| Behavioral suite in IL2CPP player | 88 cases passed, including all 80 original fact identities and IL2CPP runtime marker |
+| Behavioral suite in Editor Mono | 86 cases passed, including all 80 source fact identities |
+| Behavioral suite in IL2CPP player | 88 cases passed, including all 80 source fact identities and IL2CPP runtime marker |
 | Editor compiler feasibility probe | 5 cases passed |
+
+The final full harness independently discovered **2,012 portable xUnit cases**
+and matched every identity with actual Editor discovery. All discovered cases
+executed, together with all **80 source behavioral fact identities** (73 baseline
+facts plus seven new OfKind cases) and the bridge contract tests. The final run
+used no test-case filter or skips; host repairs added no warning suppressions
+or relaxed assertions. The corrected SDK test-host
+reference resolver was validated on this installed Unity version; other editor
+SDK layouts remain outside the validated platform/version boundary.
+
+Full harness command:
+`dotnet run -c Release --project tools/Spire.Tool -- unity-harness --project tmp/full-code-quality-review/compiler-harness --timeout 1200`.
+Final XML and CLI evidence: `tmp/full-code-quality-review/native/harness.xml`
+and `harness.log`. The earlier failing runs remain archived separately.
 
 Both core player builds reported zero errors and three warnings each; this is
 not a warning-free Unity build claim. The fixtures intentionally exercise
@@ -656,3 +675,9 @@ produced the expected SPIRE009 for `Idle`, without AD0001; restoring the complet
 input retained the successful runtime result. Evidence:
 `tmp/full-code-quality-review/package-consumer/{consumer.log,missing-arm.log,summary.json}`.
 Nothing was published or installed into a customer project.
+
+Final independent acceptance summary:
+`tmp/full-code-quality-review/final-verification.json`, code/test commit
+`0627fbd60f2c540eae2d7a43bf01798fa7f3fdf9`. It checks the SDK/native reports,
+exact identities, original behavioral facts, unchanged generated bytes, package
+consumer results, and that no production source changed during host repairs.
