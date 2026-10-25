@@ -22,13 +22,15 @@ public sealed class SPIRE007UnsafeSkipInitOfEnforceInitializationStructAnalyzer 
             var unsafeType = compilationContext.Compilation
                 .GetTypeByMetadataName("System.Runtime.CompilerServices.Unsafe");
 
-            var enforceInitializationType = compilationContext.Compilation
-                .GetTypeByMetadataName("Houtamelo.Spire.EnforceInitializationAttribute");
-
-            if (unsafeType is null || enforceInitializationType is null)
+            if (unsafeType is null)
                 return;
 
-            var enforceOnAllEnums = GlobalConfigHelper.ReadEnforceExhaustivenessOnAllEnumTypes(compilationContext.Options);
+            if (!AnalyzerPolicyHelper.TryGetInitializationPolicy(
+                    compilationContext.Compilation,
+                    compilationContext.Options,
+                    out var enforceInitializationType,
+                    out var enforceOnAllEnums))
+                return;
 
             compilationContext.RegisterOperationAction(
                 operationContext => AnalyzeInvocation(operationContext, unsafeType, enforceInitializationType, enforceOnAllEnums),

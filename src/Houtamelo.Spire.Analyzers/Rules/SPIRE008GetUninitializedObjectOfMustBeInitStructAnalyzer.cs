@@ -22,13 +22,15 @@ public sealed class SPIRE008GetUninitializedObjectOfEnforceInitializationStructA
             var runtimeHelpersType = compilationContext.Compilation
                 .GetTypeByMetadataName("System.Runtime.CompilerServices.RuntimeHelpers");
 
-            var enforceInitializationType = compilationContext.Compilation
-                .GetTypeByMetadataName("Houtamelo.Spire.EnforceInitializationAttribute");
-
-            if (runtimeHelpersType is null || enforceInitializationType is null)
+            if (runtimeHelpersType is null)
                 return;
 
-            var enforceOnAllEnums = GlobalConfigHelper.ReadEnforceExhaustivenessOnAllEnumTypes(compilationContext.Options);
+            if (!AnalyzerPolicyHelper.TryGetInitializationPolicy(
+                    compilationContext.Compilation,
+                    compilationContext.Options,
+                    out var enforceInitializationType,
+                    out var enforceOnAllEnums))
+                return;
 
             compilationContext.RegisterOperationAction(
                 operationContext => AnalyzeInvocation(operationContext, runtimeHelpersType, enforceInitializationType, enforceOnAllEnums),

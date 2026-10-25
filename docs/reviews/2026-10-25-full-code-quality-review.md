@@ -451,3 +451,17 @@ Validation: scoped formatting, full Release solution **2,111/2,111 passed, zero
 skipped**, **77/77 raw generated files byte-identical**. Existing performance
 diagnostic and snapshot tests ran as part of the full gate. Evidence:
 `tmp/full-code-quality-review/batch4/`.
+
+### Batch 5
+
+Centralized marker/config policy resolution for nine analyzers, preserving the
+separate exhaustiveness marker and required platform-symbol guards. Added a
+nullable flow contract to the internal helper; no diagnostic suppressions or
+public API changes. Consolidated the identical eight-type integral-zero test
+used by operation and enum-member checks. Registrations, diagnostics and rule
+algorithms remain unchanged.
+
+Validation: focused analyzer/global-config tests 750/750; independent read-only
+code review found no introduced issues; full Release solution **2,111/2,111
+passed, zero skipped**, **77/77 raw generated files byte-identical**. Evidence:
+`tmp/full-code-quality-review/batch5/`.

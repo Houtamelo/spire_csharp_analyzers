@@ -83,27 +83,11 @@ public static class EnforceInitializationChecks
             if (value is null)
                 continue;
 
-            if (IsZeroValue(value))
+            if (OperationUtilities.IsKnownToBeZero(value))
                 return true;
         }
 
         return false;
-    }
-
-    private static bool IsZeroValue(object value)
-    {
-        return value switch
-        {
-            int v => v == 0,
-            uint v => v == 0,
-            long v => v == 0,
-            ulong v => v == 0,
-            short v => v == 0,
-            ushort v => v == 0,
-            byte v => v == 0,
-            sbyte v => v == 0,
-            _ => false,
-        };
     }
 
     /// Returns true if the type is a nullable-annotated reference type (T?).

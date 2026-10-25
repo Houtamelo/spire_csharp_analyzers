@@ -14,7 +14,12 @@ public static class OperationUtilities
         if (!operation.ConstantValue.HasValue)
             return false;
 
-        return operation.ConstantValue.Value switch
+        return IsKnownToBeZero(operation.ConstantValue.Value);
+    }
+
+    internal static bool IsKnownToBeZero(object? value)
+    {
+        return value switch
         {
             int v => v == 0,
             uint v => v == 0,

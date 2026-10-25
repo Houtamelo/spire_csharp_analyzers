@@ -20,13 +20,12 @@ public sealed class SPIRE004NewOfEnforceInitializationStructWithoutCtorAnalyzer 
 
         context.RegisterCompilationStartAction(compilationContext =>
         {
-            var enforceInitializationType = compilationContext.Compilation
-                .GetTypeByMetadataName("Houtamelo.Spire.EnforceInitializationAttribute");
-
-            if (enforceInitializationType is null)
+            if (!AnalyzerPolicyHelper.TryGetInitializationPolicy(
+                    compilationContext.Compilation,
+                    compilationContext.Options,
+                    out var enforceInitializationType,
+                    out var enforceOnAllEnums))
                 return;
-
-            var enforceOnAllEnums = GlobalConfigHelper.ReadEnforceExhaustivenessOnAllEnumTypes(compilationContext.Options);
 
             compilationContext.RegisterOperationAction(
                 operationContext => AnalyzeObjectCreation(operationContext, enforceInitializationType, enforceOnAllEnums),

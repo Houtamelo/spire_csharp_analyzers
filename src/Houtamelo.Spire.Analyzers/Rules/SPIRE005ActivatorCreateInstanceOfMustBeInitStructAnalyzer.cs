@@ -22,16 +22,18 @@ public sealed class SPIRE005ActivatorCreateInstanceOfEnforceInitializationStruct
             var activatorType = compilationContext.Compilation
                 .GetTypeByMetadataName("System.Activator");
 
-            var enforceInitializationType = compilationContext.Compilation
-                .GetTypeByMetadataName("Houtamelo.Spire.EnforceInitializationAttribute");
-
             var arrayType = compilationContext.Compilation
                 .GetTypeByMetadataName("System.Array");
 
-            if (activatorType is null || enforceInitializationType is null)
+            if (activatorType is null)
                 return;
 
-            var enforceOnAllEnums = GlobalConfigHelper.ReadEnforceExhaustivenessOnAllEnumTypes(compilationContext.Options);
+            if (!AnalyzerPolicyHelper.TryGetInitializationPolicy(
+                    compilationContext.Compilation,
+                    compilationContext.Options,
+                    out var enforceInitializationType,
+                    out var enforceOnAllEnums))
+                return;
 
             compilationContext.RegisterOperationAction(
                 operationContext => AnalyzeInvocation(operationContext, activatorType, enforceInitializationType, enforceOnAllEnums, arrayType),

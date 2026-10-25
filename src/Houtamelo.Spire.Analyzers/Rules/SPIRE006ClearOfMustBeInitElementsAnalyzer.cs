@@ -25,13 +25,12 @@ public sealed class SPIRE006ClearOfEnforceInitializationElementsAnalyzer : Diagn
             var spanType = compilationContext.Compilation
                 .GetTypeByMetadataName("System.Span`1");
 
-            var enforceInitializationType = compilationContext.Compilation
-                .GetTypeByMetadataName("Houtamelo.Spire.EnforceInitializationAttribute");
-
-            if (enforceInitializationType is null)
+            if (!AnalyzerPolicyHelper.TryGetInitializationPolicy(
+                    compilationContext.Compilation,
+                    compilationContext.Options,
+                    out var enforceInitializationType,
+                    out var enforceOnAllEnums))
                 return;
-
-            var enforceOnAllEnums = GlobalConfigHelper.ReadEnforceExhaustivenessOnAllEnumTypes(compilationContext.Options);
 
             compilationContext.RegisterOperationAction(
                 operationContext => AnalyzeInvocation(operationContext, arrayType, spanType, enforceInitializationType, enforceOnAllEnums),
@@ -61,7 +60,7 @@ public sealed class SPIRE006ClearOfEnforceInitializationElementsAnalyzer : Diagn
         }
         else if (TryGetSpanClearElement(method, spanType, out elementType))
         {
-                methodLabel = $"Span<{elementType!.Name}>.Clear";
+            methodLabel = $"Span<{elementType!.Name}>.Clear";
         }
         else
         {

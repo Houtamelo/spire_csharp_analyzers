@@ -23,13 +23,12 @@ public sealed class SPIRE016InvalidEnforceInitializationEnumValueAnalyzer : Diag
 
         context.RegisterCompilationStartAction(compilationContext =>
         {
-            var enforceInitializationType = compilationContext.Compilation
-                .GetTypeByMetadataName("Houtamelo.Spire.EnforceInitializationAttribute");
-
-            if (enforceInitializationType is null)
+            if (!AnalyzerPolicyHelper.TryGetInitializationPolicy(
+                    compilationContext.Compilation,
+                    compilationContext.Options,
+                    out var enforceInitializationType,
+                    out var enforceOnAllEnums))
                 return;
-
-            var enforceOnAllEnums = GlobalConfigHelper.ReadEnforceExhaustivenessOnAllEnumTypes(compilationContext.Options);
 
             var flagsAttributeType = compilationContext.Compilation
                 .GetTypeByMetadataName("System.FlagsAttribute");

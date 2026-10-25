@@ -21,13 +21,12 @@ public sealed class SPIRE015ExhaustiveEnumSwitchAnalyzer : DiagnosticAnalyzer
 
         context.RegisterCompilationStartAction(compilationCtx =>
         {
-            var enforceType = compilationCtx.Compilation.GetTypeByMetadataName(
-                "Houtamelo.Spire.EnforceExhaustivenessAttribute");
-
-            if (enforceType is null)
+            if (!AnalyzerPolicyHelper.TryGetExhaustivenessPolicy(
+                    compilationCtx.Compilation,
+                    compilationCtx.Options,
+                    out var enforceType,
+                    out var enforceOnAllEnums))
                 return;
-
-            var enforceOnAllEnums = GlobalConfigHelper.ReadEnforceExhaustivenessOnAllEnumTypes(compilationCtx.Options);
 
             compilationCtx.RegisterOperationAction(
                 ctx => AnalyzeSwitch(ctx, enforceType, enforceOnAllEnums),
