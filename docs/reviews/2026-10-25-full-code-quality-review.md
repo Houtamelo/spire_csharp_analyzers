@@ -465,3 +465,21 @@ Validation: focused analyzer/global-config tests 750/750; independent read-only
 code review found no introduced issues; full Release solution **2,111/2,111
 passed, zero skipped**, **77/77 raw generated files byte-identical**. Evidence:
 `tmp/full-code-quality-review/batch5/`.
+
+### Batch 6
+
+Extracted the identical Xvfb allocation/draining/cleanup lifecycle into one
+internal helper. Unity and Rider retain their own environment, messages,
+platform handling, command arguments, report handling, and log paths. The
+allocation timeout and exit-code semantics are unchanged.
+
+Added four real-Xvfb integration cases: usable display/result, callback exception,
+nonzero subprocess result, and cancellation. They verify the actual owned server
+exits and its error log is written. This installation's `-displayfd` mode does
+not create `.XN-lock` files; ownership is verified through the process's unique
+canonical working directory instead. No mocked display server or silent skip.
+
+Validation: scoped formatting; focused lifecycle tests 4/4; full Release
+solution **2,115/2,115 passed, zero skipped**; **77/77 raw generated files
+byte-identical**. Evidence: `tmp/full-code-quality-review/batch6/`.
+Actual Unity execution is the final validation step below.

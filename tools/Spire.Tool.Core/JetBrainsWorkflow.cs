@@ -29,8 +29,10 @@ public static class JetBrainsWorkflow
                         throw new InvalidDataException("An inspection result has no source URI or line.");
                     rows.Add(new JsonObject
                     {
-                        ["id"] = item?["ruleId"]?.GetValue<string>() ?? "", ["uri"] = uri,
-                        ["region"] = physical!["region"]!.DeepClone(), ["message"] = item?["message"]?.DeepClone() ?? new JsonObject(),
+                        ["id"] = item?["ruleId"]?.GetValue<string>() ?? "",
+                        ["uri"] = uri,
+                        ["region"] = physical!["region"]!.DeepClone(),
+                        ["message"] = item?["message"]?.DeepClone() ?? new JsonObject(),
                     });
                 }
             }
@@ -84,8 +86,15 @@ public static class JetBrainsWorkflow
         var cast = rows.Where(item => item!["id"]!.GetValue<string>().EndsWith("SPIRE016", StringComparison.Ordinal)
             && item["uri"]!.GetValue<string>().EndsWith("_rider.cs", StringComparison.Ordinal)).ToArray();
         if (cast.Length != 1) throw new InvalidOperationException("Expected exactly one JetBrains SPIRE016 diagnostic.");
-        return new JsonObject { ["status"] = "pass", ["version"] = version, ["solution"] = solution, ["expectedSPIRE002"] = expectedScenarios.Count,
-            ["SPIRE016"] = new JsonArray(cast.Select(item => item!.DeepClone()).ToArray()), ["report"] = report };
+        return new JsonObject
+        {
+            ["status"] = "pass",
+            ["version"] = version,
+            ["solution"] = solution,
+            ["expectedSPIRE002"] = expectedScenarios.Count,
+            ["SPIRE016"] = new JsonArray(cast.Select(item => item!.DeepClone()).ToArray()),
+            ["report"] = report
+        };
     }
 
     private static async Task BuildDriverAsync(ToolContext context, string rider, string work)
@@ -129,19 +138,15 @@ public static class JetBrainsWorkflow
         var vmOptions = Path.Combine(work, "rider-test.vmoptions");
         FileOps.Write(vmOptions, File.ReadAllText(Path.Combine(rider, "bin/rider64.vmoptions")) + "\n-Dawt.toolkit.name=XToolkit\n" +
             "-Dspire.integration.project=" + project + "\n-Dspire.integration.report=" + report + "\n");
-        using var display = ProcessRunner.Start("Xvfb", new[] { "-displayfd", "1", "-screen", "0", "1440x1000x24", "-nolisten", "tcp" }, project, ownProcessGroup: true);
-        var displayErrors = display.StandardError.ReadToEndAsync();
-        try
+        return await VirtualDisplay.RunAsync(project, Path.Combine(work, "xvfb.log"), async displayName =>
         {
-            var displayRead = display.StandardOutput.ReadLineAsync();
-            if (await Task.WhenAny(displayRead, Task.Delay(TimeSpan.FromSeconds(15))).ConfigureAwait(false) != displayRead)
-                throw new TimeoutException("Xvfb did not allocate a display.");
-            var number = await displayRead.ConfigureAwait(false);
-            if (!int.TryParse(number, out _)) throw new InvalidOperationException("Xvfb did not allocate a display.");
             var environment = new Dictionary<string, string?>
             {
-                ["DISPLAY"] = ":" + number, ["RIDER_PROPERTIES"] = properties, ["RIDER_VM_OPTIONS"] = vmOptions,
-                ["XDG_SESSION_TYPE"] = "x11", ["WAYLAND_DISPLAY"] = null,
+                ["DISPLAY"] = displayName,
+                ["RIDER_PROPERTIES"] = properties,
+                ["RIDER_VM_OPTIONS"] = vmOptions,
+                ["XDG_SESSION_TYPE"] = "x11",
+                ["WAYLAND_DISPLAY"] = null,
             };
             await ProcessRunner.RunAsync(Path.Combine(rider, "bin/rider.sh"), new[] { state["solutionPath"]!.GetValue<string>() }, project, timeout,
                 environment, Path.Combine(work, "rider-console.log"), true).ConfigureAwait(false);
@@ -159,13 +164,7 @@ public static class JetBrainsWorkflow
             data["riderBuild"] = product["buildNumber"]!.GetValue<string>();
             FileOps.WriteJson(report, data);
             return data;
-        }
-        finally
-        {
-            ProcessRunner.Kill(display, true);
-            await DevTools.ProcessCompatibility.WaitForExitAsync(display).ConfigureAwait(false);
-            FileOps.Write(Path.Combine(work, "xvfb.log"), await displayErrors.ConfigureAwait(false));
-        }
+        }).ConfigureAwait(false);
     }
 
     private static async Task<JsonObject> RecompileAsync(ToolContext context, string project, string editor, TimeSpan timeout)

@@ -188,29 +188,15 @@ internal static class UnityRunner
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             return await ProcessRunner.RunAsync(executable, arguments, workingDirectory, timeout, environment, ownProcessGroup: true).ConfigureAwait(false);
 
-        using var display = ProcessRunner.Start("Xvfb", new[] { "-displayfd", "1", "-screen", "0", "1440x1000x24", "-nolisten", "tcp" }, project, ownProcessGroup: true);
-        var errors = display.StandardError.ReadToEndAsync();
-        try
+        return await VirtualDisplay.RunAsync(project, displayLog, async displayName =>
         {
-            var read = display.StandardOutput.ReadLineAsync();
-            if (await Task.WhenAny(read, Task.Delay(TimeSpan.FromSeconds(15))).ConfigureAwait(false) != read)
-                throw new TimeoutException("Xvfb did not allocate a display.");
-            var number = await read.ConfigureAwait(false);
-            if (!int.TryParse(number, out _)) throw new InvalidOperationException("Xvfb did not allocate a display.");
             var settings = environment == null ? new Dictionary<string, string?>() : environment.ToDictionary(pair => pair.Key, pair => pair.Value);
-            settings["DISPLAY"] = ":" + number;
+            settings["DISPLAY"] = displayName;
             settings["XDG_SESSION_TYPE"] = "x11";
             settings["WAYLAND_DISPLAY"] = null;
-            Console.WriteLine("Unity virtual display: :" + number);
+            Console.WriteLine("Unity virtual display: " + displayName);
             return await ProcessRunner.RunAsync(executable, arguments, workingDirectory, timeout, settings, ownProcessGroup: true).ConfigureAwait(false);
-        }
-        finally
-        {
-            ProcessRunner.Kill(display, ownProcessGroup: true);
-            await DevTools.ProcessCompatibility.WaitForExitAsync(display).ConfigureAwait(false);
-            var error = await errors.ConfigureAwait(false);
-            if (displayLog != null) FileOps.Write(displayLog, error);
-        }
+        }).ConfigureAwait(false);
     }
 
     internal static void PrintResults(string report, XElement[] cases)
