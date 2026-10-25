@@ -508,20 +508,32 @@ internal static class UnityGeneratorTestHarness
         AssemblyLoadContext context,
         AssemblyName assemblyName)
     {
-        if (assemblyName.Name is null ||
-            (!assemblyName.Name.StartsWith("UnityEngine", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(
-                    assemblyName.Name,
-                    "Unity.Scripting",
-                    StringComparison.OrdinalIgnoreCase)))
+        var name = assemblyName.Name;
+        if (name is null)
+            return null;
+
+        var runtimeAssembly = typeof(Houtamelo.Spire.UnitySerializationPayloadBase).Assembly;
+        if (string.Equals(name, runtimeAssembly.GetName().Name, StringComparison.Ordinal))
+            return runtimeAssembly;
+
+        if (!name.StartsWith("UnityEngine", StringComparison.OrdinalIgnoreCase) &&
+            !name.StartsWith("UnityEditor", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(name, "Unity.Scripting", StringComparison.OrdinalIgnoreCase))
         {
             return null;
         }
 
-        var path = Path.Combine(
-            UnityEngineRoot,
-            assemblyName.Name + ".dll");
-        return File.Exists(path) ? context.LoadFromAssemblyPath(path) : null;
+        var roots = name.StartsWith("UnityEditor", StringComparison.OrdinalIgnoreCase)
+            ? new[] { ManagedRoot, UnityEngineRoot }
+            : new[] { UnityEngineRoot };
+        foreach (var root in roots)
+        {
+            var path = Path.Combine(root, name + ".dll");
+            if (File.Exists(path))
+                return context.LoadFromAssemblyPath(path);
+        }
+
+        return null;
     }
 #endif
 }

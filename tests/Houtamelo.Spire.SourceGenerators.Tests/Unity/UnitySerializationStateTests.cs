@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.Loader;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Xunit;
@@ -262,32 +260,7 @@ public sealed class UnitySerializationStateTests
             result.OutputCompilation.GetTypeByMetadataName(metadataName));
 
     private static Assembly LoadUnityGeneratedAssembly(Compilation compilation)
-    {
-        AssemblyLoadContext.Default.Resolving -= ResolveUnitySerializationAssembly;
-        AssemblyLoadContext.Default.Resolving += ResolveUnitySerializationAssembly;
-        return UnityGeneratorTestHarness.EmitAndLoad(compilation, "Unity serialization state runtime");
-    }
-
-    private static Assembly? ResolveUnitySerializationAssembly(
-        AssemblyLoadContext context,
-        AssemblyName name)
-    {
-        var runtimeAssembly = typeof(Houtamelo.Spire.UnitySerializationPayloadBase).Assembly;
-        if (string.Equals(name.Name, runtimeAssembly.GetName().Name, StringComparison.Ordinal))
-            return runtimeAssembly;
-
-        if (name.Name is not null &&
-            (name.Name.StartsWith("UnityEditor", StringComparison.OrdinalIgnoreCase) ||
-                name.Name.StartsWith("UnityEngine", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(name.Name, "Unity.Scripting", StringComparison.OrdinalIgnoreCase)))
-        {
-            var path = Path.Combine(UnityGeneratorTestHarness.UnityEngineRoot, name.Name + ".dll");
-            if (File.Exists(path))
-                return context.LoadFromAssemblyPath(path);
-        }
-
-        return null;
-    }
+        => UnityGeneratorTestHarness.EmitAndLoad(compilation, "Unity serialization state runtime");
 
     private static object InvokeFactory(Type unionType, string name, params object?[] arguments)
         => unionType.GetMethod(name, BindingFlags.Public | BindingFlags.Static)!.Invoke(null, arguments)!;

@@ -6,9 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
-using System.Reflection.PortableExecutable;
 using Houtamelo.Spire.Analyzers.SourceGenerators;
 using Houtamelo.Spire.SourceGenerators.Tests.Unity;
 using Microsoft.CodeAnalysis;
@@ -271,35 +268,38 @@ public sealed class AccessorAssertionTests
         Assert.True(child.ExitCode == 0, $"Child exited {child.ExitCode}: {output}");
         Assert.False(output.Contains("Accessing the `Move` variant's fields", StringComparison.Ordinal), output);
     }
+#endif
 
     private static AccessorIl ReadAccessorIl(Compilation compilation)
     {
-        var image = EmitImage(compilation);
-        using var stream = new MemoryStream(image);
-        using var peReader = new PEReader(stream);
-        var metadata = peReader.GetMetadataReader();
-        var methodHandle = metadata.MethodDefinitions.Single(handle =>
-            metadata.GetString(metadata.GetMethodDefinition(handle).Name) == "get_move");
-        var method = metadata.GetMethodDefinition(methodHandle);
-        var body = peReader.GetMethodBody(method.RelativeVirtualAddress);
-        var il = body.GetILBytes()!;
+        var assembly = UnityGeneratorTestHarness.EmitAndLoad(
+            compilation,
+            "Accessor assertion IL inspection");
+        var unionType = assembly.GetType("Command", throwOnError: true)!;
+        var property = unionType.GetProperty(
+            "move",
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.NotNull(property);
+        var getter = property!.GetGetMethod(nonPublic: true);
+        Assert.NotNull(getter);
+        var body = getter!.GetMethodBody();
+        Assert.NotNull(body);
+        var il = body!.GetILAsByteArray();
+        Assert.NotNull(il);
         var callsAssert = false;
         var containsMessage = false;
 
-        foreach (var instruction in ReadIlInstructions(il))
+        foreach (var instruction in ReadIlInstructions(il!))
         {
             if (instruction.OperandType == OperandType.InlineMethod)
             {
-                var handle = MetadataTokens.EntityHandle(instruction.Operand);
-                if (handle.Kind == HandleKind.MemberReference)
-                {
-                    var member = metadata.GetMemberReference((MemberReferenceHandle)handle);
-                    callsAssert |= metadata.GetString(member.Name) == "Assert";
-                }
+                var method = getter.Module.ResolveMethod(instruction.Operand);
+                Assert.NotNull(method);
+                callsAssert |= method!.Name == "Assert";
             }
             else if (instruction.OperandType == OperandType.InlineString)
             {
-                var text = metadata.GetUserString(MetadataTokens.UserStringHandle(instruction.Operand));
+                var text = getter.Module.ResolveString(instruction.Operand);
                 containsMessage |= text.Contains(
                     "Accessing the `Move` variant's fields",
                     StringComparison.Ordinal);
@@ -365,6 +365,7 @@ public sealed class AccessorAssertionTests
         }
     }
 
+#if !SPIRE_UNITY_TEST_HOST
     private static ChildResult RunAccessorChild(
         StandaloneGenerated generated,
         bool includeInactiveAccess)

@@ -5,6 +5,24 @@ Newest entries first. Maintained by the history-keeper agent.
 
 ---
 
+## [2026-10-25] `manual` — `.codex/config.toml`
+
+**What**: Added `DOTNET_ROOT=/home/houtamelo/.dotnet` to the Sherlock MCP server environment.
+**Why**: Manual edit — no session summary available.
+**Commit**: e51f2b5
+
+## [2026-10-25] `manual` — `.codex/hooks.json`
+
+**What**: Reduced the SessionEnd lifecycle hook timeout from 30 seconds to 3 seconds.
+**Why**: Manual edit — no session summary available.
+**Commit**: e51f2b5
+
+## [2026-10-25] `manual` — `AGENTS.md`
+
+**What**: Updated the documented union API from `Layout`/`GenerateDeconstruct` to `ReferenceStorage` and described the variant-payload emitter structure.
+**Why**: Manual edit — no session summary available.
+**Commit**: e51f2b5
+
 ## [2026-10-07] `Houtamelo` — `.codex/hooks/lifecycle.sh`
 
 **What**: Replaced the Python lifecycle implementation with a Bash wrapper that builds `tools/Spire.Tool` in Release, runs its `hook` command, and sends build output to stderr so stdout remains reserved for event-response JSON.

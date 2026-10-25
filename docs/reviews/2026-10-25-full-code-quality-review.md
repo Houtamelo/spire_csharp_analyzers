@@ -352,3 +352,21 @@ Accepted batch sequence, each followed by the full SDK suite before proceeding:
 Final gates also include Release package build, exact generated-output checks,
 portable Unity harness, and relevant real Unity Editor/player validation.
 No production behavior repair from the report-only list is included.
+
+### Batch 1
+
+Repaired Q01 without excluding tests: centralized runtime assembly resolution in
+the existing Unity harness and made accessor IL inspection use emitted assembly
+reflection, available on both CoreCLR and Mono. The latter also repaired a
+second portable-host compilation failure hidden behind the first: its caller
+was compiled while its PE inspection helper was conditionally excluded.
+Added the existing global-config E2E project to the solution (Q20), removed the
+stray space-prefixed fixture (Q29), and removed duplicate NuGet packing (Q28).
+Recorded infrastructure history for the baseline commit; no infrastructure
+policy/configuration changed in this batch.
+
+Validation: portable host build, zero warnings/errors; focused desktop loading
+and accessor tests 16/16; scoped formatting; full Release solution **2,012/2,012
+passed, zero skipped** (including all 11 real-MSBuild global-config tests).
+Evidence: `tmp/full-code-quality-review/batch1/{summary.json,suite.log,*.trx}`.
+Production code and generated output were unchanged.
