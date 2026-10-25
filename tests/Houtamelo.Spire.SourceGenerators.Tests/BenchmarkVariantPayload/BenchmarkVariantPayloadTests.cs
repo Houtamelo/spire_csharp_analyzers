@@ -1,0 +1,309 @@
+using System;
+using System.Collections.Immutable;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using Houtamelo.Spire.Analyzers.SourceGenerators;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Xunit;
+
+namespace Houtamelo.Spire.SourceGenerators.Tests.BenchmarkVariantPayload;
+
+public sealed class BenchmarkVariantPayloadTests
+{
+    [Fact]
+    public void BenchmarkUnion_EmitsCurrentStorageRepresentationsAndCompiles()
+    {
+        var result = Run(
+            """
+            using Houtamelo.Spire;
+            using System;
+
+            namespace BenchmarkDotNet.Attributes
+            {
+                public sealed class BenchmarkAttribute : Attribute
+                {
+                    public bool Baseline { get; set; }
+                }
+                public sealed class BenchmarkCategoryAttribute : Attribute
+                {
+                    public BenchmarkCategoryAttribute(string _) { }
+                }
+                public sealed class ParamsAttribute : Attribute
+                {
+                    public ParamsAttribute(params object[] _) { }
+                }
+                public sealed class ParamsAllValuesAttribute : Attribute { }
+                public sealed class GlobalSetupAttribute : Attribute { }
+                public sealed class MemoryDiagnoserAttribute : Attribute { }
+                public sealed class ConfigAttribute : Attribute
+                {
+                    public ConfigAttribute(Type _) { }
+                }
+            }
+
+            namespace Houtamelo.Spire.Benchmarks.Helpers
+            {
+                public enum Distribution { Uniform, Skewed80 }
+                public static class BenchN { public const int Default = 1; }
+            }
+
+            namespace Houtamelo.Spire.Benchmarks.Types
+            {
+                public sealed class SpireConfig { }
+
+                [BenchmarkUnion(Name = "Probe")]
+                public partial struct ProbeInput
+                {
+                    [Variant] public static partial ProbeInput Empty();
+                    [Variant] public static partial ProbeInput Position(float x, float y);
+                    [Variant] public static partial ProbeInput Label(string text);
+                }
+            }
+            """,
+            out var output,
+            out var generatorDiagnostics);
+
+        Assert.Empty(generatorDiagnostics.Where(d => d.Severity >= DiagnosticSeverity.Error));
+        Assert.Empty(output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error));
+        var names = result.GeneratedTrees
+            .Select(tree => System.IO.Path.GetFileName(tree.FilePath))
+            .ToArray();
+        Assert.Contains(names, name => name == "ProbeAuto.Bench.g.cs");
+        Assert.Contains(names, name => name == "ProbeTyped.Bench.g.cs");
+        Assert.Contains(names, name => name == "ProbeShared.Bench.g.cs");
+        Assert.Contains(names, name => name == "ProbeRecord.Bench.g.cs");
+        Assert.Contains(names, name => name == "ProbeInput.Bench.g.cs");
+
+        var generated = string.Join(
+            "\n",
+            result.GeneratedTrees.Select(tree => tree.GetText().ToString()));
+        Assert.DoesNotContain("Layout.", generated);
+        Assert.DoesNotContain("Unsafe.SizeOf", generated);
+        Assert.DoesNotContain("unsafe", generated);
+        Assert.Contains("ProbeAuto", generated);
+        Assert.Contains("ProbeTyped", generated);
+        Assert.Contains("ProbeShared", generated);
+        Assert.Contains("Position", generated);
+    }
+
+    [Fact]
+    public void GenericBenchmarkUnion_PreservesConstraintsAndKeepsGenericFieldsTyped()
+    {
+        var result = Run(
+            """
+            using Houtamelo.Spire;
+
+            namespace Houtamelo.Spire.Benchmarks.Types;
+
+            [BenchmarkUnion(Name = "GenericProbe")]
+            public partial struct GenericProbeInput<T>
+                where T : unmanaged
+            {
+                [Variant] public static partial GenericProbeInput<T> Value(T value, int count);
+                [Variant] public static partial GenericProbeInput<T> Empty();
+            }
+            """,
+            out var output,
+            out var generatorDiagnostics);
+
+        Assert.Empty(generatorDiagnostics.Where(d => d.Severity >= DiagnosticSeverity.Error));
+        Assert.Empty(output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error));
+
+        var generated = string.Join(
+            "\n",
+            result.GeneratedTrees.Select(tree => tree.GetText().ToString()));
+        Assert.Contains("where T : unmanaged", generated);
+        Assert.Contains("GenericProbeAuto", generated);
+        Assert.Contains("GenericProbeTyped", generated);
+        Assert.Contains("GenericProbeShared", generated);
+        Assert.Contains("T value", generated);
+        var autoGenerated = result.GeneratedTrees
+            .Single(tree => Path.GetFileName(tree.FilePath) == "GenericProbeAuto.Bench.g.cs")
+            .GetText()
+            .ToString();
+        Assert.Contains("StructLayout(LayoutKind.Explicit)", autoGenerated);
+        Assert.Contains("internal struct Value", autoGenerated);
+        Assert.Contains("readonly T _s", autoGenerated);
+        Assert.DoesNotContain("Unsafe.SizeOf", generated);
+    }
+
+    [Fact]
+    public void BenchmarkUnion_NestedManagedUnion_LoadsAndReadsWithoutTypeLoadFailure()
+    {
+        var result = RunNested(
+            """
+            using Houtamelo.Spire;
+
+            namespace BenchmarkDotNet.Attributes
+            {
+                public sealed class BenchmarkAttribute : System.Attribute
+                {
+                    public bool Baseline { get; set; }
+                }
+                public sealed class BenchmarkCategoryAttribute : System.Attribute
+                {
+                    public BenchmarkCategoryAttribute(string _) { }
+                }
+                public sealed class ParamsAttribute : System.Attribute
+                {
+                    public ParamsAttribute(params object[] _) { }
+                }
+                public sealed class ParamsAllValuesAttribute : System.Attribute { }
+                public sealed class GlobalSetupAttribute : System.Attribute { }
+                public sealed class MemoryDiagnoserAttribute : System.Attribute { }
+                public sealed class ConfigAttribute : System.Attribute
+                {
+                    public ConfigAttribute(System.Type _) { }
+                }
+            }
+
+            namespace Houtamelo.Spire.Benchmarks.Helpers
+            {
+                public enum Distribution { Uniform, Skewed80 }
+                public static class BenchN { public const int Default = 1; }
+            }
+
+            namespace Houtamelo.Spire.Benchmarks.Types
+            {
+                [DiscriminatedUnion]
+                public partial struct NestedManagedChild
+                {
+                    [Variant] public static partial NestedManagedChild Value(string text);
+                    [Variant] public static partial NestedManagedChild Empty();
+                }
+
+                [DiscriminatedUnion]
+                public partial struct NestedUnmanagedChild
+                {
+                    [Variant] public static partial NestedUnmanagedChild Value(int number);
+                    [Variant] public static partial NestedUnmanagedChild Empty();
+                }
+
+                public struct NestedWrapper
+                {
+                    public NestedManagedChild child;
+                }
+
+                [BenchmarkUnion(Name = "NestedProbe")]
+                public partial struct NestedProbeInput
+                {
+                    [Variant] public static partial NestedProbeInput Empty();
+                    [Variant] public static partial NestedProbeInput Child(NestedManagedChild child);
+                    [Variant] public static partial NestedProbeInput Wrapped(NestedWrapper wrapped);
+                    [Variant] public static partial NestedProbeInput Unmanaged(NestedUnmanagedChild value);
+                }
+            }
+            """,
+            out var output,
+            out var generatorDiagnostics);
+
+        Assert.Empty(generatorDiagnostics.Where(d => d.Severity >= DiagnosticSeverity.Error));
+        Assert.Empty(output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error));
+        var generated = result.GeneratedTrees
+            .Where(tree => tree.FilePath.Contains("NestedProbeAuto.Bench.g.cs", StringComparison.Ordinal))
+            .Select(tree => tree.GetText().ToString())
+            .Single();
+        Assert.DoesNotContain("internal struct Child", generated);
+        Assert.DoesNotContain("internal struct Wrapped", generated);
+        Assert.Contains("internal struct Managed", generated);
+        Assert.Contains("internal struct UnmanagedVariant", generated);
+
+        using var stream = new MemoryStream();
+        var emit = output.Emit(stream);
+        Assert.True(emit.Success, string.Join(Environment.NewLine, emit.Diagnostics));
+
+        var assembly = TestHarnessEnvironment.LoadAssembly(stream.ToArray());
+        var childType = assembly.GetType(
+            "Houtamelo.Spire.Benchmarks.Types.NestedManagedChild",
+            throwOnError: true)!;
+        var child = childType.GetMethod("Value", BindingFlags.Public | BindingFlags.Static)!
+            .Invoke(null, new object[] { "nested" })!;
+
+        var benchmarkType = assembly.GetType(
+            "Houtamelo.Spire.Benchmarks.Types.NestedProbeAuto",
+            throwOnError: true)!;
+        var value = benchmarkType.GetMethod("Child", BindingFlags.Public | BindingFlags.Static)!
+            .Invoke(null, new[] { child })!;
+        var payload = benchmarkType.GetProperty("child")!.GetValue(value)!;
+        var nestedUnion = payload.GetType().GetProperty("child")!.GetValue(payload)!;
+        var nestedPayload = nestedUnion.GetType().GetProperty("value")!.GetValue(nestedUnion)!;
+
+        Assert.Equal("nested", nestedPayload.GetType().GetProperty("text")!.GetValue(nestedPayload));
+
+        var wrapperType = assembly.GetType(
+            "Houtamelo.Spire.Benchmarks.Types.NestedWrapper",
+            throwOnError: true)!;
+        var wrapper = Activator.CreateInstance(wrapperType)!;
+        wrapperType.GetField("child")!.SetValue(wrapper, child);
+        var wrappedValue = benchmarkType.GetMethod("Wrapped", BindingFlags.Public | BindingFlags.Static)!
+            .Invoke(null, new[] { wrapper });
+        Assert.NotNull(wrappedValue);
+
+        var unmanagedChildType = assembly.GetType(
+            "Houtamelo.Spire.Benchmarks.Types.NestedUnmanagedChild",
+            throwOnError: true)!;
+        var unmanagedChild = unmanagedChildType.GetMethod("Value", BindingFlags.Public | BindingFlags.Static)!
+            .Invoke(null, new object[] { 7 })!;
+        var unmanagedValue = benchmarkType.GetMethod("Unmanaged", BindingFlags.Public | BindingFlags.Static)!
+            .Invoke(null, new[] { unmanagedChild })!;
+        var unmanagedPayload = benchmarkType.GetProperty("unmanaged")!.GetValue(unmanagedValue)!;
+        var unmanagedUnion = unmanagedPayload.GetType().GetProperty("value")!.GetValue(unmanagedPayload)!;
+        var unmanagedVariant = unmanagedUnion.GetType().GetProperty("value")!.GetValue(unmanagedUnion)!;
+        Assert.Equal(7, unmanagedVariant.GetType().GetProperty("number")!.GetValue(unmanagedVariant));
+    }
+
+    private static GeneratorDriverRunResult Run(
+        string source,
+        out Compilation output,
+        out ImmutableArray<Microsoft.CodeAnalysis.Diagnostic> diagnostics)
+    {
+        var syntaxTree = CSharpSyntaxTree.ParseText(
+            source,
+            CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest));
+        var references = TestHarnessEnvironment.FrameworkReferences
+            .Append(MetadataReference.CreateFromFile(typeof(EnforceInitializationAttribute).Assembly.Location))
+            .Append(MetadataReference.CreateFromFile(typeof(Newtonsoft.Json.JsonConvert).Assembly.Location))
+            .Append(MetadataReference.CreateFromFile(
+                typeof(System.Text.Json.Serialization.JsonConverter<>).Assembly.Location))
+            .ToArray();
+        var compilation = CSharpCompilation.Create(
+            "BenchmarkVariantPayloadTests",
+            new[] { syntaxTree },
+            references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new BenchmarkUnionGenerator());
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out output, out diagnostics);
+        return driver.GetRunResult();
+    }
+
+    private static GeneratorDriverRunResult RunNested(
+        string source,
+        out Compilation output,
+        out ImmutableArray<Microsoft.CodeAnalysis.Diagnostic> diagnostics)
+    {
+        var syntaxTree = CSharpSyntaxTree.ParseText(
+            source,
+            CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest));
+        var references = TestHarnessEnvironment.FrameworkReferences
+            .Append(MetadataReference.CreateFromFile(typeof(EnforceInitializationAttribute).Assembly.Location))
+            .Append(MetadataReference.CreateFromFile(typeof(Newtonsoft.Json.JsonConvert).Assembly.Location))
+            .Append(MetadataReference.CreateFromFile(
+                typeof(System.Text.Json.Serialization.JsonConverter<>).Assembly.Location))
+            .ToArray();
+        var compilation = CSharpCompilation.Create(
+            "BenchmarkVariantPayloadNestedTests",
+            new[] { syntaxTree },
+            references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new ISourceGenerator[]
+        {
+            new BenchmarkUnionGenerator().AsSourceGenerator(),
+            new DiscriminatedUnionGenerator().AsSourceGenerator(),
+        });
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out output, out diagnostics);
+        return driver.GetRunResult();
+    }
+}
+

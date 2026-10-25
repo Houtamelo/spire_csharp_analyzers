@@ -12,6 +12,6 @@ namespace TestNs
     class C
     {
         double Test(Measure m) =>
-            m.kind == Measure.Kind.Distance ? m.kilograms : 0; //~ ERROR
+            m.kind == Measure.Kind.Distance ? m.weight.kilograms : 0; //~ ERROR
     }
 }

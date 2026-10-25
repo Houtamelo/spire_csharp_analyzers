@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -36,6 +37,13 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
         OperationAnalysisContext ctx, INamedTypeSymbol duAttr)
     {
         var recursive = (IRecursivePatternOperation)ctx.Operation;
+
+        // Variant payloads are ordinary generated structs. Their nested
+        // property/positional patterns must be checked against the payload
+        // fields and Deconstruct parameters, while the enclosing union pattern
+        // remains responsible for selecting the accessor.
+        if (AnalyzeGeneratedPayloadPattern(ctx, recursive, duAttr))
+            return;
 
         // Property pattern path: { kind: Shape.Kind.X, field: type name }
         // Check PropertySubpatterns first — property patterns take priority even when
@@ -153,6 +161,251 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
                 expectedType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
                 actualType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)));
         }
+    }
+
+    private static bool AnalyzeGeneratedPayloadPattern(
+        OperationAnalysisContext ctx,
+        IRecursivePatternOperation recursive,
+        INamedTypeSymbol duAttr)
+    {
+        if (!TryGetPayloadOwner(
+                recursive,
+                duAttr,
+                out var unionType,
+                out var unionInfo,
+                out var accessor))
+        {
+            return false;
+        }
+
+        var payloadType = accessor.Type as INamedTypeSymbol;
+        if (payloadType is null || !payloadType.IsValueType)
+            return false;
+
+        var variants = VariantFieldMap.TryCreate(unionType, unionInfo!)
+            ?.GetOwningVariants(accessor.Name);
+        var variantName = variants is { Count: > 0 }
+            ? variants.First()
+            : unionType.Name;
+
+        if (!recursive.PropertySubpatterns.IsEmpty)
+        {
+            foreach (var propertySubpattern in recursive.PropertySubpatterns)
+            {
+                if (propertySubpattern.Member is not IPropertyReferenceOperation &&
+                    propertySubpattern.Member is not IFieldReferenceOperation)
+                {
+                    continue;
+                }
+
+                var memberName = propertySubpattern.Member switch
+                {
+                    IPropertyReferenceOperation property => property.Property.Name,
+                    IFieldReferenceOperation field => field.Field.Name,
+                    _ => string.Empty,
+                };
+                var normalizedMemberName = memberName.TrimStart('@');
+                var memberType = payloadType.GetMembers(memberName)
+                    .Concat(payloadType.GetMembers(normalizedMemberName))
+                    .OfType<IFieldSymbol>()
+                    .Select(field => field.Type)
+                    .Concat(payloadType.GetMembers(memberName)
+                        .OfType<IPropertySymbol>()
+                        .Select(property => property.Type))
+                    .FirstOrDefault();
+                if (memberType is null)
+                    continue;
+
+                ReportPayloadPatternType(
+                    ctx,
+                    propertySubpattern.Pattern,
+                    memberType,
+                    variantName,
+                    GetPayloadFieldIndex(payloadType, memberName),
+                    expectedAsVar: true);
+            }
+
+            return true;
+        }
+
+        if (recursive.DeconstructSymbol is not IMethodSymbol deconstruct)
+            return true;
+
+        var subpatterns = recursive.DeconstructionSubpatterns;
+        for (var index = 0; index < subpatterns.Length && index < deconstruct.Parameters.Length; index++)
+        {
+            ReportPayloadPatternType(
+                ctx,
+                subpatterns[index],
+                deconstruct.Parameters[index].Type,
+                variantName,
+                index,
+                expectedAsVar: false);
+        }
+
+        return true;
+    }
+
+    private static void ReportPayloadPatternType(
+        OperationAnalysisContext ctx,
+        IPatternOperation pattern,
+        ITypeSymbol expectedType,
+        string variantName,
+        int fieldIndex,
+        bool expectedAsVar)
+    {
+        if (pattern is not IDeclarationPatternOperation &&
+            pattern is not IDiscardPatternOperation)
+            return;
+
+        var actualType = pattern is IDeclarationPatternOperation declaration
+            ? declaration.MatchedType
+            : null;
+        var actualTypeDisplay = actualType?.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+        if (actualType is not null)
+        {
+            if (IsObjectOrNullableObject(actualType))
+            {
+                return;
+            }
+
+            if (TypesCompatibleForPattern(actualType, expectedType))
+            {
+                // Roslyn can bind an invalid typed discard to the input type
+                // while still retaining the explicitly written type in syntax.
+                // Inspect that spelling so `string _` against an int field is
+                // still offered the normal type fix.
+                if (pattern.Syntax is not DeclarationPatternSyntax declarationSyntax ||
+                    TypeNamesMatch(declarationSyntax.Type.ToString(), expectedType))
+                {
+                    return;
+                }
+
+                actualTypeDisplay = declarationSyntax.Type.ToString();
+            }
+        }
+        else if (pattern.Syntax is DeclarationPatternSyntax declarationSyntax)
+        {
+            actualTypeDisplay = declarationSyntax.Type.ToString();
+            if (IsObjectTypeName(actualTypeDisplay) ||
+                TypeNamesMatch(actualTypeDisplay, expectedType))
+            {
+                return;
+            }
+        }
+        else
+        {
+            return;
+        }
+
+        var properties = ImmutableDictionary.CreateBuilder<string, string?>();
+        var expectedDisplay = expectedAsVar
+            ? "var"
+            : expectedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        properties.Add("ExpectedType", expectedDisplay);
+        properties.Add("FieldIndex", fieldIndex.ToString());
+        ctx.ReportDiagnostic(Diagnostic.Create(
+            AnalyzerDescriptors.SPIRE011_FieldTypeMismatch,
+            pattern.Syntax.GetLocation(),
+            properties.ToImmutable(),
+            variantName,
+            fieldIndex,
+            expectedDisplay,
+            actualTypeDisplay ?? "?"));
+    }
+
+    private static bool IsObjectTypeName(string typeName)
+        => string.Equals(typeName.Trim(), "object", System.StringComparison.Ordinal) ||
+            string.Equals(typeName.Trim(), "System.Object", System.StringComparison.Ordinal);
+
+    private static bool TypeNamesMatch(string syntaxTypeName, ITypeSymbol expectedType)
+    {
+        var syntaxName = syntaxTypeName.Trim();
+        if (syntaxName.StartsWith("global::", System.StringComparison.Ordinal))
+            syntaxName = syntaxName.Substring("global::".Length);
+        var expectedName = expectedType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+        return string.Equals(syntaxName, expectedName, System.StringComparison.Ordinal) ||
+            string.Equals(
+                syntaxName.TrimEnd('?'),
+                expectedName.TrimEnd('?'),
+                System.StringComparison.Ordinal);
+    }
+
+    private static bool TypesCompatibleForPattern(ITypeSymbol actual, ITypeSymbol expected)
+    {
+        if (SymbolEqualityComparer.Default.Equals(actual, expected))
+            return true;
+
+        // Nullable reference annotations are filters, not storage type changes.
+        if (actual.IsReferenceType && expected.IsReferenceType &&
+            SymbolEqualityComparer.Default.Equals(
+                actual.WithNullableAnnotation(NullableAnnotation.None),
+                expected.WithNullableAnnotation(NullableAnnotation.None)))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static int GetPayloadFieldIndex(INamedTypeSymbol payloadType, string memberName)
+    {
+        var properties = payloadType.GetMembers()
+            .OfType<IPropertySymbol>()
+            .Where(property => property.GetMethod is not null &&
+                property.SetMethod is null)
+            .ToArray();
+        for (var index = 0; index < properties.Length; index++)
+        {
+            if (string.Equals(properties[index].Name, memberName.TrimStart('@'), System.StringComparison.Ordinal))
+                return index;
+        }
+
+        return 0;
+    }
+
+    private static bool TryGetPayloadOwner(
+        IRecursivePatternOperation recursive,
+        INamedTypeSymbol duAttr,
+        out INamedTypeSymbol unionType,
+        out UnionTypeInfo? unionInfo,
+        out IPropertySymbol accessor)
+    {
+        unionType = null!;
+        unionInfo = null;
+        accessor = null!;
+        var current = recursive.Parent;
+        while (current is not null)
+        {
+            if (current is IPropertySubpatternOperation propertySubpattern &&
+                propertySubpattern.Member is IPropertyReferenceOperation propertyReference &&
+                propertyReference.Property.ContainingType is INamedTypeSymbol candidate)
+            {
+                var candidateInfo = UnionTypeInfo.TryCreate(candidate, duAttr);
+                var isAccessor = candidateInfo is { IsStructUnion: true } &&
+                    VariantFieldMap.TryCreate(candidate, candidateInfo)
+                        ?.GetOwningVariants(propertyReference.Property.Name)
+                        .IsEmpty == false;
+                var accessorType = propertyReference.Property.Type;
+                var patternInputType = recursive.MatchedType ?? recursive.InputType;
+                if (isAccessor &&
+                    SymbolEqualityComparer.Default.Equals(
+                        accessorType,
+                        patternInputType))
+                {
+                    unionType = candidate;
+                    unionInfo = candidateInfo;
+                    accessor = propertyReference.Property;
+                    return true;
+                }
+            }
+
+            if (current is IMethodBodyOperation or IAnonymousFunctionOperation)
+                break;
+            current = current.Parent;
+        }
+
+        return false;
     }
 
     /// Returns true if the type is `object` or `object?`.

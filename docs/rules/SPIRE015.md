@@ -11,6 +11,9 @@
 
 Switch statements and expressions on enum types marked with `[EnforceExhaustiveness]` must explicitly handle every named member — unless an unguarded catch-all arm is present.
 
+Struct discriminated unions apply this attribute to their generated `Kind` enum,
+so switches on a standalone `Union.Kind` value follow the same rules.
+
 An unguarded **catch-all** opts out of the check:
 
 - `default:` in a switch statement

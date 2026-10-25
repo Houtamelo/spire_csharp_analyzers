@@ -1,55 +1,69 @@
 # Using unions and utilities
 
 Struct variants are static partial factories. Generated `kind` identifies the
-active variant, and generated properties expose its fields. Guard field access
-with the variant before reading it:
+active variant; a variant accessor returns its public payload struct:
 
 ```cs
 static string Describe(Result result) => result switch
 {
-    { kind: Result.Kind.Success, value: var value } => value.ToString(),
-    { kind: Result.Kind.Failure, message: var message } => message,
+    { kind: Result.Kind.Success, success: { value: var value } } => value.ToString(),
+    { kind: Result.Kind.Failure, failure: { message: var message } } => message,
 };
 ```
 
-Spire checks exhaustive matching and guarded field access. Use Rider's quick
-fix to add missing arms. Property patterns with `var` preserve null values;
-typed declaration patterns such as `string message` exclude null. Tuple-style
-patterns can involve `ITuple` and boxing, so prefer property patterns when
-allocations matter.
+Spire checks exhaustiveness and guarded accessor use. Rider's quick fix adds
+missing arms. Property patterns with `var` preserve nulls; declaration patterns
+such as `string message` exclude null. Payloads are non-partial structs with
+private `_`-prefixed fields, public getter-only properties, constructors, and
+typed `Deconstruct` methods. Construct changed values through the union factory.
+With two or more payload fields,
+use positional patterns inside the accessor pattern. There is no union-level
+deconstruction or flat field-property API.
 
-Compatible same-name fields share a property. Incompatible types get
-`camelCaseVariantName_fieldName` properties; for example, Number's `value` and
-Text's `value` become `number_value` and `text_value`. Pattern locals can remain
-`number_value: var value`. Reference nullability differences alone do not make
-fields incompatible. This naming behavior applies to struct unions.
+Variant accessors also assert the expected kind. Unity-serialized unions use
+`UnityEngine.Debug.Assert` (`UNITY_ASSERTIONS`); other unions use
+`System.Diagnostics.Debug.Assert` (`DEBUG`). The check and message are omitted
+when the corresponding symbol is absent.
 
-| Layout | Storage and constraints |
+Payloads live under a sibling types container (`ResultTypes.Variants.Success`).
+The container matches the union's accessibility; `Variants` and its payloads are
+public within it. Payloads copy the union's generic parameters and constraints,
+while the containers remain nongeneric. Generic unions use an arity suffix
+(`ResultTypes1.Variants.Success<T>` for `Result<T>`). Accessors use camelCase; an accessor matching any variant factory
+gets one `_value` suffix. Other naming collisions use compiler diagnostics.
+
+Concrete unmanaged fields overlap in per-variant runtime-laid-out helpers.
+Generic-dependent fields remain typed outside the overlay. No unsafe code,
+manual size catalog, or additional Unsafe DLL is required. A union itself can
+be generic, but may not be nested in a generic containing type (SPIRE_DU018).
+
+| Reference storage | Behavior |
 |---|---|
-| Additive | Typed fields; compatible same-name fields share slots. Supports generics. Default for Unity-serializable structs. |
-| Overlap | Explicit offsets with compatible same-name fields sharing offsets. No Unsafe helper dependency. Cannot be generic or nested in a generic type. |
-| BoxedFields | Object slots per resolved field name. Value fields box individually. Supports generics. |
-| BoxedTuple | One object slot containing the active value or boxed tuple. Supports generics. |
-| UnsafeOverlap | Raw unmanaged buffer plus separate managed/generic slots. Supports generics; requires unsafe code in the owning asmdef. |
+| Auto | Shared when its slot count is at most half Typed's; otherwise Typed. |
+| Typed | Reuse compatible typed slots across variants; direct access without boxing. |
+| Shared | Reuse object slots; casts on reads, and boxing for structs containing managed references. |
+| ReadGlobalCfg | Inherit the project default, falling back to Auto. |
 
-Choose explicitly with `[DiscriminatedUnion(Layout.Additive)]`. `Auto` uses
-Additive for Unity-serializable unions; other structs use Overlap when
-non-generic and BoxedFields when generic. Unity does not import Spire's MSBuild
-defaults from generated IDE project files: put Unity settings on the attribute.
+Field names do not affect reuse; fields present together need separate slots.
+Auto counts every managed candidate as one slot after same-type reuse. It
+excludes unmanaged helpers, discriminator, generic-dependent fields, and cache.
 
-Record unions use nested record variants and ordinary reference-pattern matching.
-They do not use struct storage layouts or generated Unity struct serialization.
-Generated JSON converters are separate from Unity asset serialization; request
-`JsonLibrary.SystemTextJson` or `JsonLibrary.NewtonsoftJson` and provide the
-corresponding library in your project.
+Choose an explicit override with
+`[DiscriminatedUnion(ReferenceStorage = ReferenceStorage.Typed)]`. Unity does
+not import Spire's NuGet MSBuild defaults from generated IDE project files.
+Put Unity settings on the attribute.
 
-Other APIs include `SpireLINQ.OfKind` for filtering, `SpireEnum<TEnum>` for checked
-integer conversions, `[EnforceInitialization]`, and `[EnforceExhaustiveness]`.
-`[InlinerStruct]` generates struct method forwarders; `[Inlinable]` generates
-overloads that accept those structs. Their desktop JIT performance benefits are
-not a measured Unity player performance guarantee.
+Record unions retain nested record variants and ordinary reference-pattern
+matching. They do not use generated Unity struct serialization. Generated JSON
+converters retain the logical variant/field wire format; request
+`JsonLibrary.SystemTextJson` or `JsonLibrary.NewtonsoftJson` and supply that
+library. Caller options still determine how nested user types serialize.
+
+Other APIs include `SpireLINQ.OfKind`, `SpireEnum<TEnum>`,
+`[EnforceInitialization]`, and `[EnforceExhaustiveness]`. `[InlinerStruct]`
+generates struct method forwarders; `[Inlinable]` generates overloads accepting
+them. Their desktop JIT benefits are not a Unity player performance guarantee.
 
 The [rule reference](Reference/rules/SPIRE009.md) describes union exhaustiveness;
-individual SPIRE rule pages are shipped beside it. DLL tooltips describe the
-runtime public API. See [Serialization](Serialization.md) for Inspector and
-migration limits.
+individual SPIRE pages ship beside it. See [Serialization](Serialization.md)
+for persistence and Inspector behavior.

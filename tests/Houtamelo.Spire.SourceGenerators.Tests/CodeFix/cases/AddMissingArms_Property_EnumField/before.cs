@@ -14,7 +14,7 @@ namespace TestNs
     {
         int Test(Account a) => a switch
         {
-            { kind: Account.Kind.Guest, name: var n } => 1,
+            { kind: Account.Kind.Guest, guest: { name: var n  } } => 1,
         };
     }
 }

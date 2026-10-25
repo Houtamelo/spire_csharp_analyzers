@@ -12,7 +12,7 @@ namespace TestNs
     {
         int Test(Pair p) => p switch
         {
-            { kind: Pair.Kind.Entry, a: string bad1, b: string bad2 } => 1,
+            { kind: Pair.Kind.Entry, entry: { a: string bad1, b: string bad2  } } => 1,
             { kind: Pair.Kind.Empty } => 2,
         };
     }

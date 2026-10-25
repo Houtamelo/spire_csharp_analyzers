@@ -1,0 +1,169 @@
+using System;
+using System.Collections.Immutable;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Analyzers;
+using Houtamelo.Spire.CodeFixes;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeActions;
+using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
+using Xunit;
+
+namespace Houtamelo.Spire.SourceGenerators.Tests.VariantPayloadConsumers;
+
+public sealed class VariantPayloadConsumersTests : CodeFixTestBase
+{
+    private static readonly string[] AddMissingCases =
+    {
+        "AddMissingArms_FieldedExpression",
+        "AddMissingArms_FieldlessStatement",
+        "AddMissingArms_MultiFieldInlineBraces",
+        "AddMissingArms_Generic",
+        "AddMissingArms_NestedUnion",
+        "AddMissingArms_AcronymAndFactoryConflict",
+        "AddMissingArms_KeywordAndNullable",
+        "AddMissingArms_ExistingNestedPattern",
+    };
+
+    protected override string Category => "VariantPayloadConsumers";
+
+    protected override ImmutableArray<DiagnosticAnalyzer> GetAnalyzers()
+        => ImmutableArray.Create<DiagnosticAnalyzer>(
+            new ExhaustivenessAnalyzer(),
+            new CS8509Suppressor(),
+            new TypeSafetyAnalyzer());
+
+    protected override ImmutableArray<CodeFixProvider> GetCodeFixes()
+        => ImmutableArray.Create<CodeFixProvider>(
+            new AddMissingArmsCodeFix(),
+            new FixFieldTypeCodeFix());
+
+    public static IEnumerable<object[]> AfterCases()
+    {
+        foreach (var name in AddMissingCases.Concat(new[]
+        {
+            "FixFieldType_NestedProperty",
+            "FixFieldType_KeywordCapture",
+            "FixFieldType_TypedDiscard",
+            "FixFieldType_PositionalPayload",
+        }))
+        {
+            yield return new object[] { name };
+        }
+    }
+
+    public static IEnumerable<object[]> AddMissingCaseData()
+    {
+        foreach (var name in AddMissingCases)
+            yield return new object[] { name };
+    }
+
+    [Theory]
+    [MemberData(nameof(AfterCases))]
+    public void ExpectedAfterSourceCompilesThroughTheGenerator(string caseName)
+    {
+        var source = File.ReadAllText(GetCasePath(caseName, "after.cs"));
+        GeneratorTestHelper.RunGenerator(
+            source,
+            out var compilation,
+            out var generatorDiagnostics,
+            path: "case.cs");
+
+        var errors = generatorDiagnostics
+            .Concat(compilation.GetDiagnostics())
+            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+            .ToArray();
+        Assert.True(
+            errors.Length == 0,
+            $"Expected after-source '{caseName}' did not compile:\n" +
+            string.Join("\n", errors.Select(diagnostic =>
+                $"{diagnostic.Id}: {diagnostic.GetMessage()}")));
+    }
+
+    [Theory]
+    [MemberData(nameof(AddMissingCaseData))]
+    public async Task AppliedAddMissingArmsKeepVariantPatternsInline(string caseName)
+    {
+        var source = File.ReadAllText(GetCasePath(caseName, "before.cs"));
+        var fixedSource = await ApplyFirstFix(source);
+
+        Assert.DoesNotMatch("case\\s*\\r?\\n\\s*\\{", fixedSource);
+        var root = CSharpSyntaxTree.ParseText(fixedSource).GetRoot();
+        foreach (var clause in root.DescendantNodes()
+                     .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.PropertyPatternClauseSyntax>())
+        {
+            Assert.DoesNotContain("\n", clause.ToFullString());
+            Assert.DoesNotContain("\r", clause.ToFullString());
+        }
+    }
+
+    private static string GetCasePath(string caseName, string fileName)
+        => Path.Combine(
+            TestHarnessEnvironment.DataRoot,
+            "VariantPayloadConsumers",
+            "cases",
+            caseName,
+            fileName);
+
+    private async Task<string> ApplyFirstFix(string source)
+    {
+        GeneratorTestHelper.RunGenerator(
+            source,
+            out var outputCompilation,
+            out var generatorDiagnostics,
+            path: "case.cs");
+        Assert.DoesNotContain(
+            generatorDiagnostics,
+            diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+
+        using var workspace = new AdhocWorkspace();
+        var projectId = ProjectId.CreateNewId();
+        var solution = workspace.CurrentSolution
+            .AddProject(projectId, "VariantPayloadCodeFix", "VariantPayloadCodeFix", LanguageNames.CSharp)
+            .WithProjectCompilationOptions(projectId, (CSharpCompilationOptions)outputCompilation.Options)
+            .WithProjectParseOptions(projectId, (CSharpParseOptions)outputCompilation.SyntaxTrees.First().Options);
+        foreach (var reference in outputCompilation.References)
+            solution = solution.AddMetadataReference(projectId, reference);
+
+        DocumentId? userDocumentId = null;
+        foreach (var tree in outputCompilation.SyntaxTrees)
+        {
+            var documentId = DocumentId.CreateNewId(projectId);
+            solution = solution.AddDocument(documentId, Path.GetFileName(tree.FilePath), tree.GetText());
+            if (tree.FilePath.EndsWith("case.cs", StringComparison.Ordinal))
+                userDocumentId = documentId;
+        }
+
+        Assert.NotNull(userDocumentId);
+        Assert.True(workspace.TryApplyChanges(solution));
+        var project = workspace.CurrentSolution.GetProject(projectId)!;
+        var compilation = (await project.GetCompilationAsync())!;
+        var diagnostics = await compilation.WithAnalyzers(GetAnalyzers()).GetAnalyzerDiagnosticsAsync();
+        var fixableIds = GetCodeFixes()
+            .SelectMany(provider => provider.FixableDiagnosticIds)
+            .ToHashSet(StringComparer.Ordinal);
+        var diagnostic = diagnostics.FirstOrDefault(candidate =>
+            fixableIds.Contains(candidate.Id) &&
+            candidate.Location.SourceTree?.FilePath.EndsWith("case.cs", StringComparison.Ordinal) == true);
+        Assert.NotNull(diagnostic);
+
+        var document = workspace.CurrentSolution.GetDocument(userDocumentId!)!;
+        var actions = new List<CodeAction>();
+        var context = new CodeFixContext(
+            document,
+            diagnostic!,
+            (action, _) => actions.Add(action),
+            CancellationToken.None);
+        var provider = GetCodeFixes().First(candidate => candidate.FixableDiagnosticIds.Contains(diagnostic!.Id));
+        await provider.RegisterCodeFixesAsync(context);
+        Assert.NotEmpty(actions);
+        var operations = await actions[0].GetOperationsAsync(CancellationToken.None);
+        operations.OfType<ApplyChangesOperation>().Single().Apply(workspace, CancellationToken.None);
+        return (await workspace.CurrentSolution.GetDocument(userDocumentId!)!.GetTextAsync()).ToString();
+    }
+}

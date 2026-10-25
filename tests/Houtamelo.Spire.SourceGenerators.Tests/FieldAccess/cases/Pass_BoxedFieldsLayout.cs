@@ -3,7 +3,7 @@
 using Houtamelo.Spire;
 namespace TestNs
 {
-    [DiscriminatedUnion(Layout.BoxedFields)]
+    [DiscriminatedUnion]
     partial struct Token
     {
         [Variant] public static partial Token Ident(string name);

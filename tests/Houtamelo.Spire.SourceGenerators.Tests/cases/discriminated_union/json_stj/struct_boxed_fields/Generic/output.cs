@@ -3,6 +3,7 @@
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JsonConverterAttribute = global::System.Text.Json.Serialization.JsonConverterAttribute;
 
 namespace TestNs
 {
@@ -59,6 +60,6 @@ namespace TestNs
         }
     }
 
-    [global::System.Text.Json.Serialization.JsonConverter(typeof(OptionStjConverterFactory))]
+    [JsonConverterAttribute(typeof(OptionStjConverterFactory))]
     partial struct Option<T> { }
 }

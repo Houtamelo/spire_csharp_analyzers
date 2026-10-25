@@ -8,33 +8,6 @@ namespace Houtamelo.Spire.Analyzers.SourceGenerators.Emit;
 /// For record strategy: emits a separate file with per-variant partial re-declarations.
 internal static class ToStringEmitter
 {
-    /// Emits a ToString() override into the struct body (call before the final CloseBrace).
-    public static void EmitStructToString(SourceBuilder sb, UnionDeclaration union)
-    {
-        sb.AppendLine();
-        sb.AppendLine("public override string ToString()");
-        sb.OpenBrace();
-        sb.AppendLine("return this.kind switch");
-        sb.OpenBrace();
-
-        foreach (var variant in union.Variants)
-        {
-            if (variant.Fields.Length == 0)
-            {
-                sb.AppendLine($"Kind.{IdentifierUtility.Escape(variant.Name)} => \"{IdentifierUtility.SerializedName(variant.Name)}()\",");
-            }
-            else
-            {
-                var fieldList = string.Join(", ", variant.Fields.Select(f => $"{{this.{IdentifierUtility.Escape(f.ResolvedPropertyName)}}}"));
-                sb.AppendLine($"Kind.{IdentifierUtility.Escape(variant.Name)} => $\"{IdentifierUtility.SerializedName(variant.Name)}({fieldList})\",");
-            }
-        }
-
-        sb.AppendLine($"_ => \"{union.TypeName}(?)\",");
-        sb.CloseBrace(";");
-        sb.CloseBrace();
-    }
-
     /// Returns a complete generated file containing per-variant ToString() overrides.
     /// Used for the Record strategy (emitted as a separate .ToString.g.cs file).
     public static string EmitRecordToString(UnionDeclaration union)
@@ -47,24 +20,21 @@ internal static class ToStringEmitter
 
         var hasNamespace = !string.IsNullOrEmpty(union.Namespace);
         if (hasNamespace)
-        {
-            sb.AppendLine($"namespace {union.Namespace}");
-            sb.OpenBrace();
-        }
+            sb.OpenNamespace(union.Namespace);
 
         sb.OpenContainingTypes(union.ContainingTypes);
 
         var typeParams = FormatTypeParams(union.TypeParameters);
         var unionType = union.TypeName + typeParams;
 
-        var accessMod = string.IsNullOrEmpty(union.AccessibilityKeyword) ? "" : union.AccessibilityKeyword + " ";
+        var accessMod = FormatAccessibility(union.AccessibilityKeyword);
         var abstractMod = "abstract ";
         sb.AppendLine($"{accessMod}{abstractMod}partial {union.DeclarationKeyword} {unionType}");
         sb.OpenBrace();
 
         foreach (var variant in union.Variants)
         {
-            var variantAccess = string.IsNullOrEmpty(variant.AccessibilityKeyword) ? "" : variant.AccessibilityKeyword + " ";
+            var variantAccess = FormatAccessibility(variant.AccessibilityKeyword);
             sb.AppendLine($"{variantAccess}sealed partial record {variant.Name}");
             sb.OpenBrace();
 
@@ -86,7 +56,7 @@ internal static class ToStringEmitter
         sb.CloseContainingTypes(union.ContainingTypes);
 
         if (hasNamespace)
-            sb.CloseBrace(); // namespace
+            sb.CloseNamespace();
 
         return sb.ToString();
     }
@@ -96,4 +66,9 @@ internal static class ToStringEmitter
         if (typeParameters.Length == 0) return "";
         return "<" + string.Join(", ", typeParameters) + ">";
     }
+
+    private static string FormatAccessibility(string accessibility)
+        => string.IsNullOrEmpty(accessibility) || accessibility == "private"
+            ? ""
+            : accessibility + " ";
 }

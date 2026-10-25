@@ -5,8 +5,7 @@
 | Partial factories have no implementation | Start with Unity's first compiler/generator error. Confirm `partial` on the union and all containing types, all four DLLs, and `RoslynAnalyzer` labels in their metadata. |
 | Unity compiles but Rider lacks generated members or fixes | Enable Rider's Roslyn Analyzers, refresh the Unity project model, and check the IDE's analyzer errors. |
 | Analyzer works in one assembly only | Keep analyzer `.meta` files with the DLLs; inspect the owning asmdef and compiler response file for analyzer loading. |
-| UnsafeOverlap does not compile | Enable unsafe code on the union's asmdef and ensure its compiler references provide `System.Runtime.CompilerServices.Unsafe`, or choose another layout. |
-| Overlap rejects a generic union | Use Additive, BoxedFields, BoxedTuple, or UnsafeOverlap. Generic containing types also exclude Overlap. |
+| SPIRE_DU018 for a nested union | Move the union outside its generic containing type. The union itself may be generic. |
 | A field is not persisted | Check Unity's serialization eligibility for that field type and whether it needs `[UnitySerializeReference]`. |
 | Managed-reference field lacks a subtype picker | Spire's picker selects union variants. Instantiate field subtypes in C# or use a separate subtype drawer. |
 | Showcase does not compile after import | Install URP 17.5.0 and Unity Test Framework 1.7.0 before importing the sample. |
@@ -19,15 +18,13 @@ need separate validation. Unity 6000.6.5f1 has a reported engine crash in generi
 struct serialization callbacks, reproduced without Spire. Native serialization
 on that version is not supported.
 The compiler extensions now target Roslyn 4.3 and load in Unity 6000.3.26f1 LTS.
-Complete support for that Editor remains under evaluation. `UnsafeOverlap`
-requires an additional `System.Runtime.CompilerServices.Unsafe.dll` there;
-the package does not currently supply it. A native Inspector probe passed with
-that dependency supplied separately. The showcase's URP prerequisites remain
-those of the verified 6.5 environment. Ordinary `Overlap` initializes its readonly
-storage in constructors and does not need the additional DLL.
+Complete support for that Editor remains under evaluation. Historical probes
+used the removed `UnsafeOverlap` mode; the current payload representation does
+not require an Unsafe DLL. The showcase's URP prerequisites remain those of the
+verified 6.5 environment.
 
 For a reproducible Spire issue, record the Unity and Rider versions, platform,
-backend, layout, containing asmdef, the smallest union declaration, and the first
+backend, reference-storage mode, containing asmdef, the smallest union declaration, and the first
 compiler/runtime error. Include whether the failure occurs on a fresh project.
 Use the project's issue tracker: https://github.com/Houtamelo/spire_csharp_analyzers/issues.
 

@@ -12,6 +12,6 @@ namespace TestNs
     class Wrapper
     {
         private Packet _packet;
-        public byte[] Payload => _packet.payload; //~ ERROR
+        public byte[] Payload => _packet.data.payload; //~ ERROR
     }
 }

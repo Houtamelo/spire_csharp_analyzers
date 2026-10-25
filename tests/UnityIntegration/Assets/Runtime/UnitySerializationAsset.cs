@@ -23,7 +23,7 @@ namespace Spire.UnityIntegration
         public UnityGenericUnion<string> genericString;
         public UnityGenericUnion<UnityCallbackChild> genericChild;
         public UnityGenericUnion<UnityGenericChildHelper> genericHelper;
-        public UnityGenericContainer<int>.NestedUnion genericContainerNested;
+        public UnityGenericContainerNestedUnion genericContainerNested;
         public UnityBoxedFieldsUnion boxedFields;
         public UnityBoxedTupleUnion boxedTuple;
         public UnityBoxedFieldsGeneric<int> boxedFieldsGenericInt;

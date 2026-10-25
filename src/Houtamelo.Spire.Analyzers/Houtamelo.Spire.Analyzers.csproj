@@ -8,7 +8,7 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <DevelopmentDependency>true</DevelopmentDependency>
     <PackageId>Houtamelo.Spire.Analyzers</PackageId>
-    <Version>4.7.1</Version>
+    <Version>4.7.6</Version>
     <Authors>houtamelo</Authors>
     <Copyright>Copyright (c) 2026 houtamelo</Copyright>
     <Description>Roslyn analyzers and discriminated union source generator for C# struct correctness.</Description>
@@ -33,6 +33,11 @@
   <ItemGroup>
     <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
     <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="SourceGenerators/Emit/Templates/*.cs" />
+    <EmbeddedResource Include="SourceGenerators/Emit/Templates/*.cs" />
   </ItemGroup>
 
   <!-- Place analyzer DLL in the correct NuGet path -->

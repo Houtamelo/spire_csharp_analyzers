@@ -9,7 +9,10 @@
 
 ## Description
 
-Code accesses a variant-specific field (e.g., `shape.circle_radius`) while the kind guard indicates a different variant is active. Reading memory from the wrong variant's field slot is undefined behavior for overlapping layouts and a logic error for all layouts.
+Code reads a variant accessor (for example, `shape.circle`) while the kind guard
+indicates a different active variant. Inactive unmanaged payload views may read
+overlaid values; shared managed slots may fail a cast or unbox. Always guard
+the accessor with its own variant.
 
 ## Examples
 
@@ -25,7 +28,7 @@ partial struct Shape
 
 double Bad(Shape s) => s switch
 {
-    (Shape.Kind.Circle, _) => s.square_sideLength,  // SPIRE013: 'square_sideLength' belongs to 'Square', not 'Circle'
+    { kind: Shape.Kind.Circle } => s.square.sideLength, // SPIRE013: square belongs to Square
     _ => 0,
 };
 ```
@@ -35,8 +38,8 @@ double Bad(Shape s) => s switch
 ```csharp
 double Ok(Shape s) => s switch
 {
-    (Shape.Kind.Circle, _) => s.circle_radius,
-    (Shape.Kind.Square, _) => s.square_sideLength,
+    { kind: Shape.Kind.Circle } => s.circle.radius,
+    { kind: Shape.Kind.Square } => s.square.sideLength,
     _ => 0,
 };
 ```

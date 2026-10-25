@@ -12,7 +12,7 @@ namespace TestNs
     {
         int Test(ColorFCP2 c) => c switch
         {
-            (ColorFCP2.Kind.Rgb, double r, double g, double b) => 1,
+            { kind: ColorFCP2.Kind.Rgb, rgb: (double r, double g, double b) } => 1,
             _ => 0,
         };
     }

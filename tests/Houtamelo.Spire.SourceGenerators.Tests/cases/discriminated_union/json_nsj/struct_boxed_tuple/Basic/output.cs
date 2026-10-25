@@ -3,6 +3,7 @@
 using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using JsonConverterAttribute = global::Newtonsoft.Json.JsonConverterAttribute;
 
 internal sealed class ShapeNsjConverter : JsonConverter<Shape>
 {
@@ -56,5 +57,5 @@ internal sealed class ShapeNsjConverter : JsonConverter<Shape>
     }
 }
 
-[Newtonsoft.Json.JsonConverter(typeof(ShapeNsjConverter))]
+[JsonConverterAttribute(typeof(ShapeNsjConverter))]
 partial struct Shape { }

@@ -14,7 +14,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityDrawerNumericUnion
     {
         [Variant]
@@ -34,7 +34,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityDrawerInspectorNamedEnumUnion
     {
         [Variant]
@@ -60,7 +60,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityDrawerFlagsUnion
     {
         [Variant]

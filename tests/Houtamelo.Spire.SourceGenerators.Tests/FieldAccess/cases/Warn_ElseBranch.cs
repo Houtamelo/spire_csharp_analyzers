@@ -15,11 +15,11 @@ namespace TestNs
         {
             if (s.kind == Shape.Kind.Circle)
             {
-                return s.radius;
+                return s.circle.radius;
             }
             else
             {
-                return s.radius; //~ ERROR
+                return s.circle.radius; //~ ERROR
             }
         }
     }

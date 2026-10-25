@@ -15,8 +15,8 @@ namespace TestNs
     {
         int Test(Cmd c) => c switch
         {
-            { kind: Cmd.Kind.Start, delay: var d } => 1,
-            { kind: Cmd.Kind.Pause, duration: var dur } => 3,
+            { kind: Cmd.Kind.Start, start: { delay: var d  } } => 1,
+            { kind: Cmd.Kind.Pause, pause: { duration: var dur  } } => 3,
         };
     }
 }

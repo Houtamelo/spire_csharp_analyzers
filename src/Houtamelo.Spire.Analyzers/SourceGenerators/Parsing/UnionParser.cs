@@ -41,8 +41,7 @@ internal static class UnionParser
                 DeclarationKeyword: "class",
                 IsReadonly: false,
                 IsRefStruct: false,
-                Strategy: EmitStrategy.Additive,
-                GenerateDeconstruct: false,
+                Strategy: EmitStrategy.VariantPayload,
                 TypeParameters: new EquatableArray<string>(ImmutableArray<string>.Empty),
                 Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
                 ContainingTypes: new EquatableArray<ContainingTypeInfo>(ImmutableArray<ContainingTypeInfo>.Empty),
@@ -60,56 +59,16 @@ internal static class UnionParser
 
         var isRefStruct = typeSymbol.IsRefLikeType;
 
-        // Initial strategy resolution using built-in defaults for sentinels.
-        // Will be re-resolved in ResolveGlobalConfig when global config is available.
-        var effectiveLayout = rawConfig.Layout == 0 ? 1 : rawConfig.Layout; // ReadGlobalCfg → Auto
-        var strategy = isUnitySerializable
-            ? ResolveUnityStrategy(rawConfig.Layout)
-            : ResolveStrategy(declKind, effectiveLayout, isGeneric);
-
-        // Reject Overlap on generic structs and unions nested in generic containing
-        // types (CLR restriction) — for explicit Layout.Overlap only.
-        // Global-config-induced Overlap on generics is caught post-resolution in the generator.
-        if (strategy == EmitStrategy.Overlap &&
-            (isGeneric || HasGenericContainingType(typeSymbol)) &&
-            rawConfig.Layout != 0)
+        var strategy = declKind == "record" ? EmitStrategy.Record : EmitStrategy.VariantPayload;
+        UnionDiagnostic? declarationDiagnostic = null;
+        var genericAncestor = NearestGenericContainingType(typeSymbol);
+        if (declKind == "struct" && genericAncestor is not null)
         {
-            return new UnionDeclaration(
-                Namespace: typeSymbol.ContainingNamespace.IsGlobalNamespace
-                    ? ""
-                    : typeSymbol.ContainingNamespace.ToDisplayString(),
-                TypeName: typeSymbol.Name,
-                AccessibilityKeyword: ExplicitAccessibility(syntax, typeSymbol.DeclaredAccessibility),
-                DeclarationKeyword: declKind,
-                IsReadonly: syntax.Modifiers.Any(m => m.IsKind(SyntaxKind.ReadOnlyKeyword)),
-                IsRefStruct: isRefStruct,
-                Strategy: strategy,
-                GenerateDeconstruct: true,
-                TypeParameters: new EquatableArray<string>(typeSymbol.TypeParameters
-                    .Select(tp => tp.Name).ToImmutableArray()),
-                Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
-                ContainingTypes: new EquatableArray<ContainingTypeInfo>(ImmutableArray<ContainingTypeInfo>.Empty),
-                Diagnostic: CreateDiagnostic(
-                    syntax,
-                    "SPIRE_DU005",
-                    "Generic structs and unions nested in generic containing types cannot use Overlap layout (CLR restriction); use BoxedFields or BoxedTuple",
-                    isError: true),
-                Json: JsonLibrary.None,
-                JsonDiscriminator: "kind",
-                HasInitProperties: false,
-                RawConfig: rawConfig,
-                IsGeneric: isGeneric);
-        }
-
-        // Warn when Layout is explicitly set on a record (it's ignored)
-        UnionDiagnostic? layoutWarning = null;
-        if (declKind == "record" && rawConfig.Layout != 0)
-        {
-            layoutWarning = CreateDiagnostic(
+            declarationDiagnostic = CreateDiagnostic(
                 syntax,
-                "SPIRE_DU004",
-                "Layout parameter is ignored for record discriminated unions",
-                isError: false);
+                "SPIRE_DU018",
+                $"Discriminated Unions require using `[StructLayout(LayoutKind.Explicit)]` internally, which C# forbids inside generic types, please move the type `{typeSymbol.Name}` to outside the type `{genericAncestor.Name}`. Note: The type {typeSymbol.Name} itself can be generic, it just can't be placed inside another generic type such as `{genericAncestor.Name}`.",
+                isError: true);
         }
 
         var parsedVariants = declKind == "record"
@@ -124,7 +83,7 @@ internal static class UnionParser
 
         var variants = declKind == "record"
             ? parsedVariants
-            : FieldNameResolver.Resolve(
+            : FieldNameResolver.ResolveStorageTypes(
                 new EquatableArray<VariantInfo>(parsedVariants),
                 typeSymbol,
                 ctx.SemanticModel.Compilation).ToImmutableArray();
@@ -139,7 +98,8 @@ internal static class UnionParser
                     typeSymbol,
                     syntax,
                     ctx.SemanticModel.Compilation,
-                    variants)
+                    variants,
+                    out _)
                 : null;
             return new UnionDeclaration(
                 Namespace: typeSymbol.ContainingNamespace.IsGlobalNamespace
@@ -148,15 +108,14 @@ internal static class UnionParser
                 TypeName: typeSymbol.Name,
                 AccessibilityKeyword: ExplicitAccessibility(syntax, typeSymbol.DeclaredAccessibility),
                 DeclarationKeyword: declKind,
-                IsReadonly: syntax.Modifiers.Any(m => m.IsKind(SyntaxKind.ReadOnlyKeyword)),
+                IsReadonly: typeSymbol.IsReadOnly,
                 IsRefStruct: isRefStruct,
                 Strategy: strategy,
-                GenerateDeconstruct: true,
                 TypeParameters: new EquatableArray<string>(typeSymbol.TypeParameters
                     .Select(tp => tp.Name).ToImmutableArray()),
                 Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
-                ContainingTypes: new EquatableArray<ContainingTypeInfo>(ImmutableArray<ContainingTypeInfo>.Empty),
-                Diagnostic: noVariantDiagnostic ?? CreateDiagnostic(
+                ContainingTypes: new EquatableArray<ContainingTypeInfo>(GetContainingTypes(typeSymbol)),
+                Diagnostic: declarationDiagnostic ?? noVariantDiagnostic ?? CreateDiagnostic(
                     syntax,
                     "SPIRE_DU003",
                     hint,
@@ -175,7 +134,7 @@ internal static class UnionParser
         // ref struct + JSON: report error but don't block union generation
         if (isRefStruct && json != JsonLibrary.None)
         {
-            layoutWarning = CreateDiagnostic(
+            declarationDiagnostic = CreateDiagnostic(
                 syntax,
                 "SPIRE_DU008",
                 "ref struct cannot use JSON generation (ref structs cannot be generic type arguments)",
@@ -194,7 +153,20 @@ internal static class UnionParser
                 typeSymbol,
                 syntax,
                 ctx.SemanticModel.Compilation,
-                variants);
+                variants,
+                out var invalidAliasVariants);
+
+            if (invalidAliasVariants.Length > 0)
+            {
+                var invalidNames = new HashSet<string>(
+                    invalidAliasVariants,
+                    System.StringComparer.Ordinal);
+                variants = variants
+                    .Select(variant => invalidNames.Contains(variant.Name)
+                        ? variant with { FormerlySerializedAsIsValid = false }
+                        : variant)
+                    .ToImmutableArray();
+            }
         }
 
         return new UnionDeclaration(
@@ -202,44 +174,35 @@ internal static class UnionParser
                 ? ""
                 : typeSymbol.ContainingNamespace.ToDisplayString(),
             TypeName: typeSymbol.Name,
-            AccessibilityKeyword: ExplicitAccessibility(syntax, typeSymbol.DeclaredAccessibility),
+            AccessibilityKeyword: AccessibilityToKeyword(typeSymbol.DeclaredAccessibility),
             DeclarationKeyword: declKind,
-            IsReadonly: syntax.Modifiers.Any(m => m.IsKind(SyntaxKind.ReadOnlyKeyword)),
+            IsReadonly: typeSymbol.IsReadOnly,
             IsRefStruct: isRefStruct,
             Strategy: strategy,
-            GenerateDeconstruct: ResolveGenerateDeconstruct(rawConfig.GenerateDeconstruct),
             TypeParameters: new EquatableArray<string>(typeParams),
             Variants: new EquatableArray<VariantInfo>(variants),
             ContainingTypes: new EquatableArray<ContainingTypeInfo>(GetContainingTypes(typeSymbol)),
-            Diagnostic: unityDiagnostic ?? layoutWarning,
+            Diagnostic: declarationDiagnostic ?? unityDiagnostic,
             Json: json,
             JsonDiscriminator: rawConfig.JsonDiscriminator ?? "kind",
             HasInitProperties: false,
             RawConfig: rawConfig,
             IsGeneric: isGeneric,
-            IsUnitySerializable: isUnitySerializable);
+            IsUnitySerializable: isUnitySerializable)
+        {
+            ReferenceStorage = ResolveReferenceStorage(rawConfig.ReferenceStorage),
+            TypeParameterConstraints = new EquatableArray<string>(GetTypeParameterConstraints(typeSymbol)),
+        };
     }
 
     /// Re-resolves sentinel values using global config.
     /// Called after Combine in the generator pipeline.
     public static UnionDeclaration ResolveGlobalConfig(UnionDeclaration union, SpireGlobalConfig config)
     {
-        // Error diagnostics won't emit source — skip resolution
-        if (union.Diagnostic is { IsError: true })
-            return union;
-
         var raw = union.RawConfig;
-
-        var effectiveLayout = raw.Layout == 0 // ReadGlobalCfg
-            ? config.DefaultLayout
-            : raw.Layout;
-        var strategy = union.IsUnitySerializable
-            ? ResolveUnityStrategy(raw.Layout)
-            : ResolveStrategy(union.DeclarationKeyword, effectiveLayout, union.IsGeneric);
-
-        var generateDeconstruct = raw.GenerateDeconstruct == 0 // ReadGlobalCfg
-            ? config.DefaultGenerateDeconstruct
-            : ResolveGenerateDeconstruct(raw.GenerateDeconstruct);
+        var referenceStorage = raw.ReferenceStorage == ReferenceStorage.ReadGlobalCfg
+            ? config.DefaultReferenceStorage
+            : ResolveReferenceStorage(raw.ReferenceStorage);
 
         var json = raw.Json == -1 // ReadGlobalCfg
             ? config.DefaultJson
@@ -253,14 +216,13 @@ internal static class UnionParser
 
         return union with
         {
-            Strategy = strategy,
-            GenerateDeconstruct = generateDeconstruct,
+            ReferenceStorage = referenceStorage,
             Json = json,
             JsonDiscriminator = jsonDiscriminator,
         };
     }
 
-    /// Reads all 4 ctor arguments from the [DiscriminatedUnion] attribute.
+    /// Reads JSON constructor arguments and the named reference-storage policy.
     private static RawAttributeConfig ReadAttributeArgs(ImmutableArray<AttributeData> attributes)
     {
         foreach (var attr in attributes)
@@ -268,25 +230,34 @@ internal static class UnionParser
             if (attr.AttributeClass?.Name != "DiscriminatedUnionAttribute")
                 continue;
 
-            var args = attr.ConstructorArguments;
-            if (args.Length < 4)
-                break;
+            var config = RawAttributeConfig.AllSentinels;
+            for (var index = 0; index < attr.ConstructorArguments.Length; index++)
+            {
+                var argument = attr.ConstructorArguments[index];
+                var name = attr.AttributeConstructor?.Parameters[index].Name;
+                if (name == "json" && argument.Value is int json)
+                    config = config with { Json = json };
+                else if (name == "jsonDiscriminator")
+                    config = config with { JsonDiscriminator = argument.Value as string };
+            }
 
-            return new RawAttributeConfig(
-                Layout: args[0].Value is int l ? l : 0,
-                GenerateDeconstruct: args[1].Value is int gd ? gd : 0,
-                Json: args[2].Value is int j ? j : -1,
-                JsonDiscriminator: args[3].Value as string);
+            foreach (var argument in attr.NamedArguments)
+            {
+                if (argument.Key == "ReferenceStorage" && argument.Value.Value is int storage)
+                    config = config with { ReferenceStorage = (ReferenceStorage)storage };
+            }
+
+            return config;
         }
 
         return RawAttributeConfig.AllSentinels;
     }
 
-    private static bool ResolveGenerateDeconstruct(int raw) => raw switch
+    private static ReferenceStorage ResolveReferenceStorage(ReferenceStorage raw) => raw switch
     {
-        1 => true,  // Yes
-        2 => false, // No
-        _ => true,  // ReadGlobalCfg(0) or unknown → default true
+        ReferenceStorage.Typed => ReferenceStorage.Typed,
+        ReferenceStorage.Shared => ReferenceStorage.Shared,
+        _ => ReferenceStorage.Auto,
     };
 
     private static JsonLibrary ResolveJson(int raw) => raw switch
@@ -344,47 +315,44 @@ internal static class UnionParser
         };
     }
 
-    /// Maps (declarationKind, layout, isGeneric) to EmitStrategy.
-    /// Layout values use the public Layout enum ints (1=Auto, 2=Overlap, ...).
-    internal static EmitStrategy ResolveStrategy(string declKind, int layout, bool isGeneric)
-    {
-        if (declKind == "record") return EmitStrategy.Record;
-
-        return layout switch
-        {
-            1 => isGeneric ? EmitStrategy.BoxedFields : EmitStrategy.Overlap, // Auto
-            2 => EmitStrategy.Overlap,
-            3 => EmitStrategy.BoxedFields,
-            4 => EmitStrategy.BoxedTuple,
-            5 => EmitStrategy.Additive,
-            6 => EmitStrategy.UnsafeOverlap,
-            _ => isGeneric ? EmitStrategy.BoxedFields : EmitStrategy.Overlap, // fallback = Auto
-        };
-    }
-
-    private static EmitStrategy ResolveUnityStrategy(int rawLayout)
-    {
-        return rawLayout switch
-        {
-            2 => EmitStrategy.Overlap,
-            3 => EmitStrategy.BoxedFields,
-            4 => EmitStrategy.BoxedTuple,
-            6 => EmitStrategy.UnsafeOverlap,
-            _ => EmitStrategy.Additive,
-        };
-    }
-
-    private static bool HasGenericContainingType(INamedTypeSymbol typeSymbol)
+    private static INamedTypeSymbol? NearestGenericContainingType(INamedTypeSymbol typeSymbol)
     {
         for (var containing = typeSymbol.ContainingType;
              containing is not null;
              containing = containing.ContainingType)
         {
             if (containing.TypeParameters.Length > 0)
-                return true;
+                return containing;
         }
 
-        return false;
+        return null;
+    }
+
+    private static ImmutableArray<string> GetTypeParameterConstraints(INamedTypeSymbol typeSymbol)
+    {
+        var clauses = ImmutableArray.CreateBuilder<string>();
+        foreach (var parameter in typeSymbol.TypeParameters)
+        {
+            var constraints = new List<string>();
+            if (parameter.HasUnmanagedTypeConstraint)
+                constraints.Add("unmanaged");
+            else if (parameter.HasValueTypeConstraint)
+                constraints.Add("struct");
+            else if (parameter.HasReferenceTypeConstraint)
+                constraints.Add(parameter.ReferenceTypeConstraintNullableAnnotation == NullableAnnotation.Annotated
+                    ? "class?"
+                    : "class");
+            else if (parameter.HasNotNullConstraint)
+                constraints.Add("notnull");
+
+            constraints.AddRange(parameter.ConstraintTypes.Select(type => DisplayFieldType(type, true)));
+            if (parameter.HasConstructorConstraint)
+                constraints.Add("new()");
+            if (constraints.Count > 0)
+                clauses.Add($"where {Emit.IdentifierUtility.Escape(parameter.Name)} : {string.Join(", ", constraints)}");
+        }
+
+        return clauses.ToImmutable();
     }
 
     /// Reads [JsonName] attribute from a symbol and returns the Name value, or null.
@@ -462,14 +430,14 @@ internal static class UnionParser
                 Name: p.Name,
                 TypeFullName: DisplayFieldType(p.Type, includeNullableReferenceTypeModifiers),
                 ConstructorTypeKey: FieldNameResolver.ConstructorTypeName(p.Type),
-                IsUnmanaged: p.Type.IsUnmanagedType,
+                IsUnmanaged: IsUnmanagedAfterGeneration(p.Type),
                 IsReferenceType: p.Type.IsReferenceType,
-                KnownSize: ComputeKnownSize(p.Type),
                 JsonName: GetJsonName(p),
                 IsUnityUnion: UnitySerializationValidation.IsUnityUnion(p.Type),
                 IsUnityUnionCollection: UnitySerializationValidation.IsUnityUnionCollection(p.Type),
                 IsUnityComposite: UnitySerializationValidation.IsUnityComposite(p.Type),
                 RequiresUnityRuntimeDispatch: UnitySerializationValidation.ContainsTypeParameter(p.Type),
+                IsGenericDependent: UnitySerializationValidation.ContainsTypeParameter(p.Type),
                 IsUnityManagedReference: HasUnitySerializeReferenceAttribute(
                     p,
                     unitySerializeReferenceAttribute)))
@@ -479,7 +447,7 @@ internal static class UnionParser
             Name: method.Name,
             Fields: new EquatableArray<FieldInfo>(fields),
             JsonName: GetJsonName(method),
-            AccessibilityKeyword: "public",
+            AccessibilityKeyword: AccessibilityToKeyword(method.DeclaredAccessibility),
             FormerlySerializedAs: GetFormerlySerializedAs(method));
     }
 
@@ -502,14 +470,14 @@ internal static class UnionParser
                     Name: p.Name,
                     TypeFullName: DisplayFieldType(p.Type, includeNullableReferenceTypeModifiers),
                     ConstructorTypeKey: FieldNameResolver.ConstructorTypeName(p.Type),
-                    IsUnmanaged: p.Type.IsUnmanagedType,
+                    IsUnmanaged: IsUnmanagedAfterGeneration(p.Type),
                     IsReferenceType: p.Type.IsReferenceType,
-                    KnownSize: ComputeKnownSize(p.Type),
                     JsonName: GetJsonName(p),
                     IsUnityUnion: UnitySerializationValidation.IsUnityUnion(p.Type),
                     IsUnityUnionCollection: UnitySerializationValidation.IsUnityUnionCollection(p.Type),
                     IsUnityComposite: UnitySerializationValidation.IsUnityComposite(p.Type),
                     RequiresUnityRuntimeDispatch: UnitySerializationValidation.ContainsTypeParameter(p.Type),
+                    IsGenericDependent: UnitySerializationValidation.ContainsTypeParameter(p.Type),
                     IsUnityManagedReference: HasUnitySerializeReferenceAttribute(
                         p,
                         unitySerializeReferenceAttribute)))
@@ -563,36 +531,63 @@ internal static class UnionParser
                     SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier)
                 : SymbolDisplayFormat.FullyQualifiedFormat);
 
-    /// Returns sizeof for primitives, enums (underlying type), bool, nint/nuint.
-    /// Null for everything else. Called at parse time while semantic model is available.
-    private static int? ComputeKnownSize(ITypeSymbol type)
+    /// Returns whether a type remains unmanaged after Spire generates any
+    /// discriminated-union members. Input symbols can represent generated
+    /// unions as empty structs, so ordinary IsUnmanagedType is insufficient
+    /// when another generator embeds that union in explicit storage.
+    internal static bool IsUnmanagedAfterGeneration(ITypeSymbol type)
+        => IsUnmanagedAfterGeneration(
+            type,
+            new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default));
+
+    private static bool IsUnmanagedAfterGeneration(
+        ITypeSymbol type,
+        HashSet<ITypeSymbol> visiting)
     {
-        if (type.TypeKind == TypeKind.Enum)
+        if (!type.IsUnmanagedType)
+            return false;
+
+        if (type.SpecialType != SpecialType.None || type.TypeKind == TypeKind.Enum ||
+            type is not INamedTypeSymbol named)
         {
-            var underlying = ((INamedTypeSymbol)type).EnumUnderlyingType;
-            if (underlying is not null)
-                return ComputeKnownSize(underlying);
-            return null;
+            return true;
         }
 
-        return type.SpecialType switch
+        if (!visiting.Add(type))
+            return false;
+
+        try
         {
-            SpecialType.System_Byte => 1,
-            SpecialType.System_SByte => 1,
-            SpecialType.System_Boolean => 1,
-            SpecialType.System_Int16 => 2,
-            SpecialType.System_UInt16 => 2,
-            SpecialType.System_Char => 2,
-            SpecialType.System_Int32 => 4,
-            SpecialType.System_UInt32 => 4,
-            SpecialType.System_Single => 4,
-            SpecialType.System_Int64 => 8,
-            SpecialType.System_UInt64 => 8,
-            SpecialType.System_Double => 8,
-            SpecialType.System_IntPtr => 8,
-            SpecialType.System_UIntPtr => 8,
-            _ => null,
-        };
+            // Input symbols do not yet contain the fields emitted for another
+            // union. An apparently empty struct can acquire GC references, also
+            // changing the classification of ordinary structs containing it.
+            if (UnitySerializationValidation.IsUnityUnion(named))
+                return false;
+
+            foreach (var field in named.GetMembers().OfType<IFieldSymbol>().Where(field => !field.IsStatic))
+            {
+                if (!IsUnmanagedAfterGeneration(field.Type, visiting))
+                    return false;
+            }
+
+            if (named.GetAttributes().Any(attribute =>
+                    attribute.AttributeClass?.ToDisplayString() == "Houtamelo.Spire.DiscriminatedUnionAttribute"))
+            {
+                foreach (var parameter in named.GetMembers().OfType<IMethodSymbol>()
+                             .Where(method => method.IsStatic && HasVariantAttribute(method))
+                             .SelectMany(method => method.Parameters))
+                {
+                    if (!IsUnmanagedAfterGeneration(parameter.Type, visiting))
+                        return false;
+                }
+            }
+
+            return true;
+        }
+        finally
+        {
+            visiting.Remove(type);
+        }
     }
 
     private static UnionDiagnostic CreateDiagnostic(

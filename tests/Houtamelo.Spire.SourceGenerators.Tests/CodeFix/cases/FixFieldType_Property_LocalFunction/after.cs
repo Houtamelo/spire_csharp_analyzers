@@ -14,8 +14,8 @@ namespace TestNs
         {
             string Classify(Signal sig) => sig switch
             {
-                { kind: Signal.Kind.Wave, amplitude: var bad } => "wave",
-                { kind: Signal.Kind.Noise, level: var x } => "noise",
+                { kind: Signal.Kind.Wave, wave: { amplitude: var bad  } } => "wave",
+                { kind: Signal.Kind.Noise, noise: { level: var x  } } => "noise",
             };
             return Classify(s);
         }

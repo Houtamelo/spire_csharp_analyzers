@@ -19,9 +19,43 @@ internal sealed class SourceBuilder
 
     public void AppendLine() => _sb.AppendLine();
 
+    public void EnsureBlankLine()
+    {
+        if (_sb.Length == 0)
+            return;
+
+        while (_sb.Length > 0)
+        {
+            var character = _sb[^1];
+            if (character is not ('\r' or '\n' or ' ' or '\t'))
+                break;
+            _sb.Length--;
+        }
+
+        _sb.AppendLine();
+        _sb.AppendLine();
+    }
+
+    public void OpenNamespace(string namespaceName)
+        => AppendLine($"namespace {namespaceName} {{");
+
+    public void CloseNamespace()
+        => AppendLine("}");
+
     public void OpenBrace()
     {
-        AppendLine("{");
+        if (_sb.Length > 0 && _sb[^1] == '\n')
+        {
+            _sb.Length--;
+            if (_sb.Length > 0 && _sb[^1] == '\r')
+                _sb.Length--;
+            _sb.Append(" {");
+            _sb.AppendLine();
+        }
+        else
+        {
+            AppendLine("{");
+        }
         Indent();
     }
 
@@ -38,9 +72,15 @@ internal sealed class SourceBuilder
         {
             // "static class" requires "static partial class" ordering;
             // for all others, "partial {keyword}" works.
+            var accessibility = ct.AccessibilityKeyword == "private"
+                ? string.Empty
+                : ct.AccessibilityKeyword;
+            var accessPrefix = string.IsNullOrEmpty(accessibility)
+                ? string.Empty
+                : accessibility + " ";
             var declaration = ct.Keyword == "static class"
-                ? $"{ct.AccessibilityKeyword} static partial class {IdentifierUtility.Escape(ct.Name)}{FormatTypeParams(ct.TypeParameters)}"
-                : $"{ct.AccessibilityKeyword} partial {ct.Keyword} {IdentifierUtility.Escape(ct.Name)}{FormatTypeParams(ct.TypeParameters)}";
+                ? $"{accessPrefix}static partial class {IdentifierUtility.Escape(ct.Name)}{FormatTypeParams(ct.TypeParameters)}"
+                : $"{accessPrefix}partial {ct.Keyword} {IdentifierUtility.Escape(ct.Name)}{FormatTypeParams(ct.TypeParameters)}";
             AppendLine(declaration);
             OpenBrace();
         }

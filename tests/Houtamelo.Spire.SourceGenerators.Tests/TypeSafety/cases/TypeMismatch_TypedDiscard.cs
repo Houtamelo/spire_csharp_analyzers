@@ -12,8 +12,8 @@ namespace TestNs
     {
         int Test(Shape s) => s switch
         {
-            (Shape.Kind.Circle, string _) => 1, //~ ERROR
-            (Shape.Kind.Square, int x) => 2,
+            { kind: Shape.Kind.Circle, circle: { radius: string _ } } => 1, //~ ERROR
+            { kind: Shape.Kind.Square, square: { sideLength: int x } } => 2,
         };
     }
 }

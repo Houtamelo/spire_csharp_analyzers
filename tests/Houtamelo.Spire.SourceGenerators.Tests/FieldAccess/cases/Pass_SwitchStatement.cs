@@ -15,8 +15,8 @@ namespace TestNs
         {
             switch (s)
             {
-                case (Shape.Kind.Circle, _):
-                    return s.radius;
+                case { kind: Shape.Kind.Circle, circle: { radius: var r } }:
+                    return r;
                 default:
                     return 0;
             }

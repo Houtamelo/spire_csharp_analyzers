@@ -11,11 +11,13 @@
     <Project Path="tests\Houtamelo.Spire.BehavioralTests\Spire.BehavioralTests.csproj" />
     <Project Path="tests\Houtamelo.Spire.SourceGenerators.Tests\Houtamelo.Spire.SourceGenerators.Tests.csproj" />
     <Project Path="tests\Houtamelo.Spire.PatternAnalysis.Tests\Houtamelo.Spire.PatternAnalysis.Tests.csproj" />
+    <Project Path="tests/UnityStructCatalog.Tests/UnityStructCatalog.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/DevTools/DevTools.csproj" />
     <Project Path="tools/Spire.Tool.Core/Spire.Tool.Core.csproj" />
     <Project Path="tools/Spire.Tool/Spire.Tool.csproj" />
+    <Project Path="tools/UnityStructCatalog/UnityStructCatalog.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks\Houtamelo.Spire.Benchmarks\Houtamelo.Spire.Benchmarks.csproj" />

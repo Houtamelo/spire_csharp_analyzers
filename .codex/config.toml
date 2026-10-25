@@ -3,6 +3,9 @@
 [mcp_servers."sherlock"]
 command = "sherlock-mcp"
 
+[mcp_servers."sherlock".env]
+DOTNET_ROOT = "/home/houtamelo/.dotnet"
+
 [mcp_servers."dev-tools"]
 command = "bash"
 args = ["-c", "exec dotnet run --project \"$(git rev-parse --show-toplevel)/tools/DevTools\""]

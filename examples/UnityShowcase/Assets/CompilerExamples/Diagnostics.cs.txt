@@ -19,7 +19,7 @@ namespace Houtamelo.Spire.Showcase.CompilerExamples
         };
 
         // SPIRE014: a variant-specific field is accessed without establishing its kind.
-        public static float ReadRadius(Shape shape) => shape.radius;
+        public static float ReadRadius(Shape shape) => shape.circle.radius;
         // Prefer a guarded property pattern, as demonstrated by ShowcaseAlgorithms.Area.
     }
 }

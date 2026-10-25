@@ -108,18 +108,18 @@ public static class UnitySerializationBridge
     /// <summary>Compares values according to the fields Unity serializes. This deliberately
     /// avoids user-defined Equals implementations for serializable composites.</summary>
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    public static bool __SpireSerializedValuesEqual(object? current, object? snapshot)
+    public static bool SpireSerializedValuesEqual(object? current, object? snapshot)
         => ExecuteEquality(current, snapshot, requireReferenceIdentity: false);
 
     /// <summary>Compares serialized values while requiring managed-reference root identity.</summary>
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    public static bool __SpireSerializedManagedReferenceValuesEqual(object? current, object? snapshot)
+    public static bool SpireSerializedManagedReferenceValuesEqual(object? current, object? snapshot)
         => ExecuteEquality(current, snapshot, requireReferenceIdentity: true);
 
     /// <summary>Creates an isolated inline snapshot for an Inspector edit while keeping
     /// Unity managed-reference fields shared by identity.</summary>
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    public static object? __SpireCloneSerializedSnapshot(object? value)
+    public static object? SpireCloneSerializedSnapshot(object? value)
         => CloneSerializedSnapshot(value, new CloneState(), preserveManagedReference: false);
 
     private static bool ExecuteEquality(

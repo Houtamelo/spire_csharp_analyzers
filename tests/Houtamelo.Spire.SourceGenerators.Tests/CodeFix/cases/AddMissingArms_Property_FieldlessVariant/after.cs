@@ -13,8 +13,8 @@ namespace TestNs
     {
         int Test(Token t) => t switch
         {
-            { kind: Token.Kind.Ident, name: var n } => 1,
-            { kind: Token.Kind.Number, value: var v } => 2,
+            { kind: Token.Kind.Ident, ident: { name: var n  } } => 1,
+            { kind: Token.Kind.Number, number: { value: var v  } } => 2,
             { kind: Token.Kind.Eof } => throw new System.NotImplementedException()
         };
     }

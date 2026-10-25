@@ -19,14 +19,21 @@ internal static class UnitySerializationValidation
         INamedTypeSymbol union,
         TypeDeclarationSyntax syntax,
         Compilation compilation,
-        ImmutableArray<VariantInfo> variants)
+        ImmutableArray<VariantInfo> variants,
+        out ImmutableArray<string> invalidAliasVariants)
     {
+        invalidAliasVariants = ImmutableArray<string>.Empty;
+
         if (union.TypeKind != TypeKind.Struct ||
             syntax is RecordDeclarationSyntax ||
             union.IsRefLikeType ||
             union.IsReadOnly ||
             syntax.Modifiers.Any(modifier => modifier.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ReadOnlyKeyword)))
         {
+            // Alias payloads are emitted by the core payload representation as
+            // well, so still mark malformed aliases even when Unity callbacks
+            // are unavailable for the declaration shape.
+            _ = ValidateAliases(union, syntax, variants, out invalidAliasVariants);
             return CreateDiagnostic(
                 syntax,
                 "SPIRE_DU013",
@@ -35,6 +42,7 @@ internal static class UnitySerializationValidation
 
         if (compilation.GetTypeByMetadataName(UnityCallbackReceiver) is null)
         {
+            _ = ValidateAliases(union, syntax, variants, out invalidAliasVariants);
             return CreateDiagnostic(
                 syntax,
                 "SPIRE_DU016",
@@ -43,9 +51,16 @@ internal static class UnitySerializationValidation
 
         var reserved = ValidateReservedMembers(union, syntax, variants);
         if (reserved is not null)
+        {
+            _ = ValidateAliases(union, syntax, variants, out invalidAliasVariants);
             return reserved;
+        }
 
-        var aliases = ValidateAliases(union, syntax, variants);
+        var aliases = ValidateAliases(
+            union,
+            syntax,
+            variants,
+            out invalidAliasVariants);
         if (aliases is not null)
             return aliases;
 
@@ -202,13 +217,26 @@ internal static class UnitySerializationValidation
     private static UnionDiagnostic? ValidateAliases(
         INamedTypeSymbol union,
         TypeDeclarationSyntax syntax,
-        ImmutableArray<VariantInfo> variants)
+        ImmutableArray<VariantInfo> variants,
+        out ImmutableArray<string> invalidAliasVariants)
     {
         var currentNames = new HashSet<string>(
             variants.Select(variant => variant.Name),
             StringComparer.Ordinal);
         var aliases = new Dictionary<string, string>(StringComparer.Ordinal);
         var payloadNames = new Dictionary<string, string>(StringComparer.Ordinal);
+        var invalid = ImmutableArray.CreateBuilder<string>();
+        UnionDiagnostic? firstDiagnostic = null;
+
+        void MarkInvalid(VariantInfo variant, string message)
+        {
+            invalid.Add(variant.Name);
+            firstDiagnostic ??= CreateAliasDiagnostic(
+                union,
+                syntax,
+                variant.Name,
+                message);
+        }
 
         foreach (var variant in variants)
         {
@@ -222,41 +250,38 @@ internal static class UnitySerializationValidation
             var aliasValue = alias!;
             if (!IsValidAlias(aliasValue))
             {
-                return CreateAliasDiagnostic(
-                    union,
-                    syntax,
-                    variant.Name,
+                MarkInvalid(
+                    variant,
                     $"FormerlySerializedAs alias '{aliasValue}' is not a valid variant name.");
+                continue;
             }
 
             if (currentNames.Contains(aliasValue))
             {
-                return CreateAliasDiagnostic(
-                    union,
-                    syntax,
-                    variant.Name,
+                MarkInvalid(
+                    variant,
                     $"FormerlySerializedAs alias '{aliasValue}' identifies another current variant.");
+                continue;
             }
 
             if (aliases.TryGetValue(aliasValue, out var priorVariant))
             {
-                return CreateAliasDiagnostic(
-                    union,
-                    syntax,
-                    variant.Name,
+                MarkInvalid(
+                    variant,
                     $"FormerlySerializedAs alias '{aliasValue}' is already used by variant '{priorVariant}'.");
+                continue;
             }
 
             var payloadName = SerializedPayloadIdentity(aliasValue);
             if (payloadNames.TryGetValue(payloadName, out priorVariant))
             {
-                return CreateAliasDiagnostic(
-                    union,
-                    syntax,
-                    variant.Name,
+                MarkInvalid(
+                    variant,
                     $"FormerlySerializedAs alias '{aliasValue}' maps to the same generated payload name as '{priorVariant}'.");
+                continue;
             }
 
+            var collidesWithCurrent = false;
             foreach (var currentName in currentNames)
             {
                 if (string.Equals(
@@ -265,19 +290,23 @@ internal static class UnitySerializationValidation
                         StringComparison.Ordinal) &&
                     !string.Equals(aliasValue, currentName, StringComparison.Ordinal))
                 {
-                    return CreateAliasDiagnostic(
-                        union,
-                        syntax,
-                        variant.Name,
+                    MarkInvalid(
+                        variant,
                         $"FormerlySerializedAs alias '{aliasValue}' collides with generated payload name '{currentName}'.");
+                    collidesWithCurrent = true;
+                    break;
                 }
             }
+
+            if (collidesWithCurrent)
+                continue;
 
             aliases.Add(aliasValue, variant.Name);
             payloadNames.Add(payloadName, variant.Name);
         }
 
-        return null;
+        invalidAliasVariants = invalid.ToImmutable();
+        return firstDiagnostic;
     }
 
     private static bool IsValidAlias(string alias)

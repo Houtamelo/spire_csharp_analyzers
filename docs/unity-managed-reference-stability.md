@@ -1,7 +1,9 @@
 # Managed-reference stability probe
 
-Historical evidence for the former owner-token implementation. Current cache
-behavior is described in the [one-reference redesign](designs/2026-10-10-unity-serialization-footprint.md).
+Historical evidence for the former owner-token implementation and its successor.
+The current variant-payload design is recorded in the
+[union storage redesign](designs/2026-10-20-union-storage-redesign.md).
+Results below predate that representation.
 
 Verified on 2026-10-08 with Unity 6000.5.6f1, Linux Editor Mono, under Xvfb.
 Production serialization behavior was unchanged during the probe.

@@ -6,13 +6,7 @@ public static class EnforceInitializationChecks
 {
     public static bool HasEnforceInitializationAttribute(ITypeSymbol type, INamedTypeSymbol enforceInitializationType)
     {
-        foreach (var attr in type.GetAttributes())
-        {
-            if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, enforceInitializationType))
-                return true;
-        }
-
-        return false;
+        return AttributeHelper.HasOrInheritsAttribute(type, enforceInitializationType);
     }
 
     /// Returns true if this type should be treated as having [EnforceInitialization].

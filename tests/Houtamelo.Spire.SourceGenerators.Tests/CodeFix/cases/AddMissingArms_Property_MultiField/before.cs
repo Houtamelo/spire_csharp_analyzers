@@ -13,7 +13,7 @@ namespace TestNs
     {
         int Test(Vec v) => v switch
         {
-            { kind: Vec.Kind.V2, x: var a, y: var b } => 2,
+            { kind: Vec.Kind.V2, v2: { x: var a, y: var b  } } => 2,
         };
     }
 }

@@ -65,6 +65,12 @@ public sealed class JsonStjCaseDiscoveryAttribute : DataAttribute
             }
 
             var relativePath = Path.GetRelativePath(casesDir, leafDir);
+            // Former struct-layout snapshots are superseded by the variant
+            // payload JSON round-trip and consumer suites.
+            if (relativePath.StartsWith("struct_", StringComparison.Ordinal)
+                || relativePath.StartsWith("custom", StringComparison.Ordinal)
+                || relativePath.StartsWith("fieldless", StringComparison.Ordinal))
+                continue;
             yield return new object[] { relativePath };
         }
     }

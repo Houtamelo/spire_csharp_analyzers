@@ -14,7 +14,7 @@ namespace TestNs
         int Test(Bucket b) => b switch
         {
             { kind: Bucket.Kind.Empty } => 0,
-            { kind: Bucket.Kind.Full, items: var items } => throw new System.NotImplementedException()
+            { kind: Bucket.Kind.Full, full: { items: var items  } } => throw new System.NotImplementedException()
         };
     }
 }

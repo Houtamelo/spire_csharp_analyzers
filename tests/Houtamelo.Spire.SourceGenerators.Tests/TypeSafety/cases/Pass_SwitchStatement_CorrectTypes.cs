@@ -14,9 +14,9 @@ namespace TestNs
         {
             switch (t)
             {
-                case (TokenPass.Kind.Ident, string name):
+                case { kind: TokenPass.Kind.Ident, ident: { identName: string name } }:
                     return name.Length;
-                case (TokenPass.Kind.Number, int n):
+                case { kind: TokenPass.Kind.Number, number: { numVal: int n } }:
                     return n;
                 default:
                     return 0;

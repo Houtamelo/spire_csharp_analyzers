@@ -12,7 +12,7 @@ namespace TestNs
     {
         int Test(ShapePP2 s) => s switch
         {
-            { kind: ShapePP2.Kind.Circle, radius: int r } => 1, //~ ERROR
+            { kind: ShapePP2.Kind.Circle, circle: { radius: int r } } => 1, //~ ERROR
             { kind: ShapePP2.Kind.Square } => 2,
         };
     }

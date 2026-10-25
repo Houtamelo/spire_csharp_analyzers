@@ -61,6 +61,9 @@ public sealed class SnapshotCaseDiscoveryAttribute : DataAttribute
 
         foreach (var leafDir in FindLeafDirectories(casesDir))
         {
+            var relativePath = Path.GetRelativePath(casesDir, leafDir);
+            if (relativePath.Contains("variant_payload", StringComparison.Ordinal))
+                continue;
             var inputPath = Path.Combine(leafDir, "input.cs");
             var outputPath = Path.Combine(leafDir, "output.cs");
 
@@ -70,7 +73,6 @@ public sealed class SnapshotCaseDiscoveryAttribute : DataAttribute
                     $"Test case directory '{leafDir}' must contain both input.cs and output.cs");
             }
 
-            var relativePath = Path.GetRelativePath(casesDir, leafDir);
             // Skip JSON-specific test cases (handled by JsonStjSnapshotTests / JsonNsjSnapshotTests)
             if (relativePath.Contains("json_stj") || relativePath.Contains("json_nsj")
                 || relativePath.Contains("tostring") || relativePath.Contains("json_schema"))
@@ -78,6 +80,11 @@ public sealed class SnapshotCaseDiscoveryAttribute : DataAttribute
             // Skip Performance/* cases (handled by InlinerStructSnapshotTests / InlinableSnapshotTests)
             if (relativePath.StartsWith("Performance" + Path.DirectorySeparatorChar)
                 || relativePath.StartsWith("Performance/"))
+                continue;
+            // The former Layout strategy snapshots are retired. Their
+            // behavioral coverage now lives in VariantPayloadCoreTests and the
+            // consumer suites; record snapshots remain active below.
+            if (relativePath.Contains("struct_", StringComparison.Ordinal))
                 continue;
             yield return new object[] { relativePath };
         }

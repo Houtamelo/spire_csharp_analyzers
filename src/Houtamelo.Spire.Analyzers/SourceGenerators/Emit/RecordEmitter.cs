@@ -14,28 +14,25 @@ internal static class RecordEmitter
 
         var hasNamespace = !string.IsNullOrEmpty(union.Namespace);
         if (hasNamespace)
-        {
-            sb.AppendLine($"namespace {union.Namespace}");
-            sb.OpenBrace();
-        }
+            sb.OpenNamespace(union.Namespace);
 
         sb.OpenContainingTypes(union.ContainingTypes);
 
         var typeParams = FormatTypeParams(union.TypeParameters);
         var unionType = union.TypeName + typeParams;
 
-        var accessMod = string.IsNullOrEmpty(union.AccessibilityKeyword) ? "" : union.AccessibilityKeyword + " ";
+        var accessMod = FormatAccessibility(union.AccessibilityKeyword);
         sb.AppendLine($"{accessMod}abstract partial record {unionType}");
         sb.OpenBrace();
 
-        // Private ctor prevents external subclassing
-        sb.AppendLine($"private {union.TypeName}() {{ }}");
+        // The default constructor accessibility inside a record is private.
+        sb.AppendLine($"{union.TypeName}() {{}}");
         sb.AppendLine();
 
         // Variant records — just re-declare as sealed partial
         foreach (var variant in union.Variants)
         {
-            var variantAccess = string.IsNullOrEmpty(variant.AccessibilityKeyword) ? "" : variant.AccessibilityKeyword + " ";
+            var variantAccess = FormatAccessibility(variant.AccessibilityKeyword);
             sb.AppendLine($"{variantAccess}sealed partial record {variant.Name};");
         }
 
@@ -48,7 +45,7 @@ internal static class RecordEmitter
         sb.CloseContainingTypes(union.ContainingTypes);
 
         if (hasNamespace)
-            sb.CloseBrace(); // namespace
+            sb.CloseNamespace();
 
         return sb.ToString();
     }
@@ -59,4 +56,9 @@ internal static class RecordEmitter
         if (typeParameters.Length == 0) return "";
         return "<" + string.Join(", ", typeParameters) + ">";
     }
+
+    private static string FormatAccessibility(string accessibility)
+        => string.IsNullOrEmpty(accessibility) || accessibility == "private"
+            ? ""
+            : accessibility + " ";
 }

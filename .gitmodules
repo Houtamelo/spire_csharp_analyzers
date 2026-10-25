@@ -1,0 +1,6 @@
+[submodule "boss-room"]
+	path = examples/BossRoom
+	url = https://github.com/Unity-Technologies/com.unity.multiplayer.samples.coop.git
+[submodule "chop-chop"]
+	path = examples/ChopChop
+	url = https://github.com/UnityTechnologies/open-project-1.git

@@ -25,15 +25,13 @@ SPIRE015 | Correctness | Error | Switch does not handle all members of [EnforceE
 SPIRE016 | Correctness | Error | Operation may produce invalid value of [EnforceInitialization] enum
 SPIRE_DU002 | SourceGeneration | Error | ref struct not supported for [DiscriminatedUnion]
 SPIRE_DU003 | SourceGeneration | Warning | No [Variant] methods found
-SPIRE_DU004 | SourceGeneration | Warning | Layout parameter is ignored for record discriminated unions
-SPIRE_DU005 | SourceGeneration | Error | Generic structs cannot use Overlap layout (CLR restriction)
 SPIRE_DU006 | SourceGeneration | Error | System.Text.Json not referenced
 SPIRE_DU007 | SourceGeneration | Error | Newtonsoft.Json not referenced
 SPIRE_DU008 | SourceGeneration | Error | ref struct cannot use JSON generation
-SPIRE_DU009 | SourceGeneration | Error | UnsafeOverlap layout requires AllowUnsafeBlocks
 SPIRE_DU010 | SourceGeneration | Error | Field name conflict across variants
 SPIRE_DU011 | SourceGeneration | Error | Class types are not supported for [DiscriminatedUnion]
 SPIRE_DU013 | SourceGeneration | Error | Union declaration cannot use Unity serialization
 SPIRE_DU015 | SourceGeneration | Error | Member conflicts with generated Unity serialization
 SPIRE_DU016 | SourceGeneration | Error | Unity serialization requires UnityEngine references
 SPIRE_DU017 | SourceGeneration | Error | Invalid or ambiguous Unity variant serialization alias
+SPIRE_DU018 | SourceGeneration | Error | Discriminated union cannot be nested in a generic type; generated API is retained

@@ -3,6 +3,7 @@
 using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using JsonConverterAttribute = global::Newtonsoft.Json.JsonConverterAttribute;
 
 internal sealed class TokenNsjConverter : JsonConverter<Token>
 {
@@ -50,5 +51,5 @@ internal sealed class TokenNsjConverter : JsonConverter<Token>
     }
 }
 
-[Newtonsoft.Json.JsonConverter(typeof(TokenNsjConverter))]
+[JsonConverterAttribute(typeof(TokenNsjConverter))]
 partial struct Token { }

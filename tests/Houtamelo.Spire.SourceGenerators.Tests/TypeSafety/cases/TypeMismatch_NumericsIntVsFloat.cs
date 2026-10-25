@@ -12,8 +12,8 @@ namespace TestNs
     {
         int Test(MeasureUnion m) => m switch
         {
-            (MeasureUnion.Kind.Length, int bad) => 1, //~ ERROR
-            (MeasureUnion.Kind.Weight, double w) => 2,
+            { kind: MeasureUnion.Kind.Length, length: { meters: int bad } } => 1, //~ ERROR
+            { kind: MeasureUnion.Kind.Weight, weight: { kilos: double w } } => 2,
         };
     }
 }

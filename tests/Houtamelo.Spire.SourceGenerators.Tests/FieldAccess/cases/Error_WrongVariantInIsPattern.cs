@@ -13,9 +13,9 @@ namespace TestNs
     {
         int Test(Shape s)
         {
-            if (s is (Shape.Kind.Circle, _))
+            if (s is { kind: Shape.Kind.Circle })
             {
-                return s.sideLength; //~ ERROR
+                return s.square.sideLength; //~ ERROR
             }
             return 0;
         }

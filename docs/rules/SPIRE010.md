@@ -19,7 +19,7 @@ No diagnostic is reported — wildcards are valid. The refactoring appears in th
 ```csharp
 string Describe(Shape s) => s switch
 {
-    (Shape.Kind.Circle, double r) => $"circle r={r}",
+    { kind: Shape.Kind.Circle, circle: { radius: var r } } => $"circle r={r}",
     _ => "other",  // cursor here → lightbulb offers "Replace wildcard with explicit variants"
 };
 ```
@@ -29,16 +29,15 @@ string Describe(Shape s) => s switch
 ```csharp
 string Describe(Shape s) => s switch
 {
-    (Shape.Kind.Circle, double r) => $"circle r={r}",
-    { kind: Shape.Kind.Rectangle, width: var width, height: var height } => "other",
-    { kind: Shape.Kind.Square, sideLength: var sideLength } => "other",
+    { kind: Shape.Kind.Circle, circle: { radius: var r } } => $"circle r={r}",
+    { kind: Shape.Kind.Rectangle, rectangle: { width: var width, height: var height } } => "other",
+    { kind: Shape.Kind.Square, square: { sideLength: var sideLength } } => "other",
 };
 ```
 
 The wildcard's original expression (`"other"`) is preserved for each generated arm.
 
-Every new struct arm uses property patterns with `property: var local` captures.
-This matches null and preserves the property's static type, including when a
-positional `Deconstruct` overload would expose `object?`. Qualified property names
-do not add the variant prefix to the local capture. Record/class generation is
-unchanged.
+Every new struct arm uses a nested property pattern with `field: var local`
+captures under its variant accessor. This matches null and preserves the field's
+static type. Capture names are uniquified against the enclosing scope.
+Record/class generation is unchanged.

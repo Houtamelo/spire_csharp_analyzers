@@ -1,7 +1,7 @@
 #nullable enable
 using Houtamelo.Spire;
 
-[DiscriminatedUnion(Layout.Additive)]
+[DiscriminatedUnion]
 public partial struct UnityNormalAdditive
 {
     [Variant] public static partial UnityNormalAdditive Value(int value);

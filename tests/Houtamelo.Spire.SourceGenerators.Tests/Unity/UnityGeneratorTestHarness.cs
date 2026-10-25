@@ -61,7 +61,9 @@ internal static class UnityGeneratorTestHarness
         bool includeUnityReferences = true,
         bool includeEditorReferences = false,
         IReadOnlyDictionary<string, string>? globalOptions = null,
-        LanguageVersion languageVersion = LanguageVersion.Preview)
+        LanguageVersion languageVersion = LanguageVersion.Preview,
+        IEnumerable<MetadataReference>? additionalReferences = null,
+        bool allowUnsafe = true)
     {
         var parseOptions = CSharpParseOptions.Default
             .WithLanguageVersion(languageVersion)
@@ -74,9 +76,11 @@ internal static class UnityGeneratorTestHarness
             path: "unity-case.cs");
 
         var references = GetReferences(includeUnityReferences, includeEditorReferences);
+        if (additionalReferences is not null)
+            references = references.Concat(additionalReferences);
         var compilationOptions = new CSharpCompilationOptions(
             OutputKind.DynamicallyLinkedLibrary,
-            allowUnsafe: true,
+            allowUnsafe: allowUnsafe,
             nullableContextOptions: NullableContextOptions.Enable);
         var compatibilityTree = languageVersion <= LanguageVersion.CSharp9
             ? null

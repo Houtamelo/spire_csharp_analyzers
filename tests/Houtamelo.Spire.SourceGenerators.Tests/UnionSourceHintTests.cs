@@ -14,7 +14,7 @@ public sealed class UnionSourceHintTests : Behavioral.BehavioralTestBase
 
             namespace HintNamespaces.Left
             {
-                [DiscriminatedUnion(Layout.Additive)]
+                [DiscriminatedUnion]
                 public partial struct Result
                 {
                     [Variant] public static partial Result Some(int value);
@@ -24,7 +24,7 @@ public sealed class UnionSourceHintTests : Behavioral.BehavioralTestBase
 
             namespace HintNamespaces.Right
             {
-                [DiscriminatedUnion(Layout.Additive)]
+                [DiscriminatedUnion]
                 public partial struct Result
                 {
                     [Variant] public static partial Result Some(int value);
@@ -56,7 +56,7 @@ public sealed class UnionSourceHintTests : Behavioral.BehavioralTestBase
             {
                 public partial class FirstHost
                 {
-                    [DiscriminatedUnion(Layout.Additive)]
+                    [DiscriminatedUnion]
                     public partial struct Result
                     {
                         [Variant] public static partial Result Some(int value);
@@ -66,7 +66,7 @@ public sealed class UnionSourceHintTests : Behavioral.BehavioralTestBase
 
                 public partial class SecondHost
                 {
-                    [DiscriminatedUnion(Layout.Additive)]
+                    [DiscriminatedUnion]
                     public partial struct Result
                     {
                         [Variant] public static partial Result Some(int value);
@@ -97,35 +97,29 @@ public sealed class UnionSourceHintTests : Behavioral.BehavioralTestBase
 
             namespace HintGenericHosts
             {
-                public partial class Container<T>
+                [DiscriminatedUnion]
+                public partial struct ContainerResult<T>
                 {
-                    [DiscriminatedUnion(Layout.Additive)]
-                    public partial struct Result
-                    {
-                        [Variant] public static partial Result Some(int value);
-                        [Variant] public static partial Result None();
-                    }
+                    [Variant] public static partial ContainerResult<T> Some(int value);
+                    [Variant] public static partial ContainerResult<T> None();
                 }
 
-                public partial class Container<TLeft, TRight>
+                [DiscriminatedUnion]
+                public partial struct ContainerResult<TLeft, TRight>
                 {
-                    [DiscriminatedUnion(Layout.Additive)]
-                    public partial struct Result
-                    {
-                        [Variant] public static partial Result Some(int value);
-                        [Variant] public static partial Result None();
-                    }
+                    [Variant] public static partial ContainerResult<TLeft, TRight> Some(int value);
+                    [Variant] public static partial ContainerResult<TLeft, TRight> None();
                 }
             }
             """);
 
         var oneArgumentResult = InvokeFactory(
-            GetType(assembly, "HintGenericHosts.Container`1+Result")
+            GetType(assembly, "HintGenericHosts.ContainerResult`1")
                 .MakeGenericType(typeof(int)),
             "Some",
             41);
         var twoArgumentResult = InvokeFactory(
-            GetType(assembly, "HintGenericHosts.Container`2+Result")
+            GetType(assembly, "HintGenericHosts.ContainerResult`2")
                 .MakeGenericType(typeof(int), typeof(string)),
             "Some",
             43);
@@ -142,14 +136,14 @@ public sealed class UnionSourceHintTests : Behavioral.BehavioralTestBase
 
             namespace HintRootArity
             {
-                [DiscriminatedUnion(Layout.Additive)]
+                [DiscriminatedUnion]
                 public partial struct Result
                 {
                     [Variant] public static partial Result Some(int value);
                     [Variant] public static partial Result None();
                 }
 
-                [DiscriminatedUnion(Layout.Additive)]
+                [DiscriminatedUnion]
                 public partial struct Result<T>
                 {
                     [Variant] public static partial Result<T> Some(int value);
@@ -179,14 +173,14 @@ public sealed class UnionSourceHintTests : Behavioral.BehavioralTestBase
 
             namespace HintDistinctNames
             {
-                [DiscriminatedUnion(Layout.Additive)]
+                [DiscriminatedUnion]
                 public partial struct LeftResult
                 {
                     [Variant] public static partial LeftResult Some(int value);
                     [Variant] public static partial LeftResult None();
                 }
 
-                [DiscriminatedUnion(Layout.Additive)]
+                [DiscriminatedUnion]
                 public partial struct RightResult
                 {
                     [Variant] public static partial RightResult Some(int value);
@@ -217,7 +211,7 @@ public sealed class UnionSourceHintTests : Behavioral.BehavioralTestBase
 
             namespace HintEscapes.Cafe{{combiningMark}}
             {
-                [DiscriminatedUnion(Layout.Additive)]
+                [DiscriminatedUnion]
                 public partial struct Result
                 {
                     [Variant] public static partial Result Some(int value);
@@ -227,7 +221,7 @@ public sealed class UnionSourceHintTests : Behavioral.BehavioralTestBase
 
             namespace HintEscapes.Cafe_u0301_
             {
-                [DiscriminatedUnion(Layout.Additive)]
+                [DiscriminatedUnion]
                 public partial struct Result
                 {
                     [Variant] public static partial Result Some(int value);
@@ -262,7 +256,7 @@ public sealed class UnionSourceHintTests : Behavioral.BehavioralTestBase
                 public partial class Container<T>
                 {
                     [Serializable]
-                    [DiscriminatedUnion(Layout.Additive)]
+                    [DiscriminatedUnion]
                     public partial struct Result
                     {
                         [Variant] public static partial Result Some(int value);
@@ -273,7 +267,7 @@ public sealed class UnionSourceHintTests : Behavioral.BehavioralTestBase
                 public partial class Container<TLeft, TRight>
                 {
                     [Serializable]
-                    [DiscriminatedUnion(Layout.Additive)]
+                    [DiscriminatedUnion]
                     public partial struct Result
                     {
                         [Variant] public static partial Result Some(int value);
@@ -283,25 +277,8 @@ public sealed class UnionSourceHintTests : Behavioral.BehavioralTestBase
             }
             """);
 
-        UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
-        UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
-        var assembly = UnityGeneratorTestHarness.EmitAndLoad(
-            Assert.IsType<CSharpCompilation>(result.OutputCompilation),
-            "Unity nested host arity hint identity");
-
-        var oneArgumentResult = InvokeFactory(
-            GetType(assembly, "HintUnityGenericHosts.Container`1+Result")
-                .MakeGenericType(typeof(int)),
-            "Some",
-            67);
-        var twoArgumentResult = InvokeFactory(
-            GetType(assembly, "HintUnityGenericHosts.Container`2+Result")
-                .MakeGenericType(typeof(int), typeof(string)),
-            "Some",
-            71);
-
-        Assert.Equal(67, ReadProperty(oneArgumentResult, "value"));
-        Assert.Equal(71, ReadProperty(twoArgumentResult, "value"));
+        Assert.Contains(result.GeneratorDiagnostics, diagnostic => diagnostic.Id == "SPIRE_DU018");
+        Assert.NotEmpty(result.RunResult.GeneratedTrees);
     }
 
 }

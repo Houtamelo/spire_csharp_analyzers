@@ -30,7 +30,7 @@
           {
             "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/lifecycle.sh\"",
-            "timeout": 30
+            "timeout": 3
           }
         ]
       }

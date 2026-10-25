@@ -1,8 +1,7 @@
 <Project>
   <!-- Discriminated union defaults -->
   <ItemGroup>
-    <CompilerVisibleProperty Include="Spire_DU_DefaultLayout" />
-    <CompilerVisibleProperty Include="Spire_DU_DefaultGenerateDeconstruct" />
+    <CompilerVisibleProperty Include="Spire_DU_DefaultReferenceStorage" />
     <CompilerVisibleProperty Include="Spire_DU_DefaultJson" />
     <CompilerVisibleProperty Include="Spire_DU_DefaultJsonDiscriminator" />
   </ItemGroup>

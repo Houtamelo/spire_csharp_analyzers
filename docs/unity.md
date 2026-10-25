@@ -9,8 +9,9 @@ validation. Rider is the supported IDE.
 Unity now marks [6.5 end of life](https://discussions.unity.com/t/unity-6-5-is-now-available/1723176).
 This guide records compatibility evidence; a maintained release baseline remains
 unresolved. The Roslyn 4.3.1 downgrade resolves the initial 6000.3.26f1 LTS
-compiler rejection. Its native Inspector fixture passes with an additional
-runtime Unsafe DLL for `UnsafeOverlap`; that DLL is not shipped in the package.
+compiler rejection. The historical Inspector fixture needed an additional
+runtime Unsafe DLL for the removed `UnsafeOverlap` mode. The current payload
+representation has no Unsafe dependency; its native validation is tracked separately.
 The shipping minimum and showcase requirements have not been lowered. See the
 [LTS evaluation](issues/unity-6.3-roslyn-host-compatibility.md) and
 [commercial review](reviews/2026-10-11-commercial-readiness.md).
@@ -156,19 +157,27 @@ public sealed class SpireExample : MonoBehaviour
 }
 ```
 
-Omitted/Auto layout selects Additive, overriding a global default. Explicit
-`Layout.BoxedFields`, `Layout.BoxedTuple`, `Layout.UnsafeOverlap`, and
-`Layout.Overlap` also support serialization. `UnsafeOverlap` requires Unity's
-**Allow 'unsafe' Code** setting, or `allowUnsafeCode` in the consuming asmdef.
-`Overlap` cannot be generic or nested in a generic containing type. Readonly/ref
-structs, records, and record structs are outside this serialization mode.
+Concrete unmanaged variant payloads overlap without unsafe code or manual size
+calculations. Generic-dependent fields use typed storage. Reference storage uses
+`ReferenceStorage.Auto`, `Typed`, or `Shared`, with Auto as the project default.
+A union may itself be generic; nesting inside a generic containing type reports
+SPIRE_DU018. Readonly/ref structs, records, and record structs are outside this
+serialization mode.
 
-Unity stores one typed payload for the active variant. Its concrete type identifies
-the variant; the runtime `Kind` enum and runtime storage are excluded from
-serialization. Generated callbacks rebuild
-the union through its factories, and a generated editor drawer provides a
-variant selector and active fields in UI Toolkit and IMGUI.
-Every generated payload field carries an explicit `[SerializeField]` attribute;
+Unity stores `_kind` and one active managed-reference wrapper whose public
+`value` field contains the generated payload struct from the union's sibling
+types container (`ResultTypes.Variants.Success`). One generic wrapper
+declaration is shared per compilation. Runtime storage is excluded from
+serialization. A recognized payload identifies the variant even if `_kind`
+disagrees. Generated callbacks rebuild the union through its factories,
+and a generated editor drawer provides a variant selector and active fields
+in UI Toolkit and IMGUI. Each compilation with serialized union drawers receives
+one shared Editor helper and a small registration class with metadata for each
+union. Each immutable variant entry groups its identifier, current payload type,
+optional former payload type, and fields. Drawer entry points are inherited from
+the shared helper. All drawer code is guarded by `UNITY_EDITOR`; the helper is generated
+per Unity assembly/asmdef and requires no additional Editor DLL.
+Every generated payload field carries `[SerializeField]` or `[SerializeReference]`;
 Unity determines whether its type can be serialized. Spire does not diagnose
 unsupported payload field types or closed generic arguments.
 
@@ -195,9 +204,8 @@ Existing inline data is not automatically migrated to managed-reference data;
 variant rename aliases do not migrate field encodings.
 
 The stored payload schema is independent of the runtime layout. Serialization
-adds one instance reference, `_serializedPayload`, to each union. There is no
-separate owner token or state flag. `Overlap` keeps its runtime field offsets and
-appends that reference. A serializable union is therefore no longer unmanaged,
+adds only one instance reference, `_serializedPayload`, with no hydration flag
+or other per-instance bookkeeping. A serializable union is therefore no longer unmanaged,
 even when all its variant fields are unmanaged. Raw runtime bytes are never
 persisted.
 
@@ -219,9 +227,11 @@ to generic arguments and fields inside helper types. Verify persistence in Unity
 for the types your project uses. Callback-bearing helpers retain Unity's callback
 behavior; the generator does not reject them based on field-type policy.
 
-Generated public properties retain the existing compiler-profile behavior:
-`init` accessors when `IsExternalInit` is available, otherwise getter-only access.
-Unity's default profile needs no consumer polyfill for generated code.
+Variant accessors return payload structs with getter-only properties. Their
+private `_`-prefixed fields retain Unity serialization attributes and remain
+editable through the Inspector. Replace a union through its factory to change
+values from C# code. Unity's default
+profile needs no consumer polyfill for generated code.
 
 Variant reordering does not change the meaning of saved payloads. To rename a
 variant, give its declaration one previous name:
@@ -243,84 +253,71 @@ unchanged snapshot and replaces a changed snapshot without mutating the prior
 one. Runtime storage writes do not invalidate the cache; comparison happens at
 serialization time. Ordinary construction adds no per-value serialization allocation.
 
-Player reconstruction releases the payload graph and puts a shared empty marker
-in the same reference field. The marker distinguishes reconstructed values from
-missing serialized data, so repeated nested hydration preserves runtime values.
-The next `OnBeforeSerialize` replaces it with a concrete payload. Runtime
+Player reconstruction releases the concrete payload cache and uses the existing
+reference for a shared reconstructed marker. Repeated nested hydration therefore
+preserves reconstructed runtime values without adding an instance field. The
+next `OnBeforeSerialize` prepares a concrete payload. Runtime
 `Instantiate` serializes its source, which can retain a reusable cache while its
 deserialized clones release their graphs. Serialization events may allocate and
 prepare nested state; measure costs for frequently serialized large unions.
 
-Generated public/internal implementation members, including callbacks, carry
+Generated callbacks explicitly implement `ISerializationCallbackReceiver`.
+They and the public/internal implementation helpers carry
 `EditorBrowsable(Never)`. This is an IDE hint. The current
 [Rider completion probe](issues/rider-editorbrowsable-generated-members.md) was
 inconclusive; the attribute does not guarantee that every IDE hides these members.
 
 ## Validate
 
-Use the installed Editor executable:
+Run the compact AssetDatabase/SerializedObject integration fixture:
 
 ```sh
-SPIRE_UNITY_EDITOR=/path/to/Editor/Unity dotnet run -c Release --project tools/Spire.Tool -- unity-integration --graphics
+SPIRE_UNITY_EDITOR=/path/to/Editor/Unity dotnet run -c Release --project tools/Spire.Tool -- unity-integration
 ```
 
-The runner copies the tracked fixture to `tmp/unity-integration`, builds the
-package, and runs real Editor tests. It preserves JSON results and logs in that
-directory. The graphics run exercises rendered IMGUI/UI Toolkit drawers,
-Undo/Redo, prefab overrides, script reload, and Play Mode. Without `--graphics`,
-graphics-dependent checks are reported as observations rather than passes.
-
-Build the Mono player fixture separately:
+It copies the tracked fixture into `tmp/unity-integration`, builds the package,
+and records real persistence and generated-surface checks. Rendered Inspector
+coverage uses the dedicated payload fixture:
 
 ```sh
-dotnet run -c Release --project tools/Spire.Tool -- unity-integration --method Spire.UnityIntegration.SpireUnityIntegration.BuildPlayer
+SPIRE_UNITY_NATIVE_INPUT=1 dotnet run -c Release --project tools/Spire.Tool -- unity-union-core --graphics --method Spire.UnityVariantPayloadCore.SerializedUnionInspectorTests.Run --timeout 600
 ```
 
-The build report contains the executable path and runtime report argument. Run
-that executable with `-batchmode -nographics -spire-report <absolute-report-path>`
-to verify the serialized union in the player. Compiler-only Spire DLLs must be
-absent from its managed assemblies.
+This opens native UI Toolkit and IMGUI controls to check field edits, focus,
+variant changes, Undo/Redo, prefab overrides, and multi-object editing. A missing
+control or unavailable scenario is a failed verification, not a passing observation.
+On Linux the runner creates a private Xvfb display. The explicit input flag
+enables XTest keyboard/pointer events on that display for the IMGUI checks.
 
-Build and run the two IL2CPP serialization profiles:
+The same fixture provides separate native asset phases, each run in its own
+Editor process through `unity-union-core --method`:
+
+- `Spire.UnityVariantPayloadCore.SerializedUnionEditorTests.Write`
+- `Spire.UnityVariantPayloadCore.SerializedUnionEditorTests.Read`
+- `Spire.UnityVariantPayloadCore.SerializedUnionEditorTests.Recovery`
+
+Write creates persisted data, Read verifies fresh-process reconstruction and
+unchanged saves, and Recovery exercises invalid/null/missing/former payloads.
+See [the fixture README](../tests/UnityVariantPayloadCore/README.md) for reports.
+
+Build both release Linux x64 players with High stripping:
 
 ```sh
-dotnet run -c Release --project tools/Spire.Tool -- unity-integration --project tmp/unity-il2cpp-main --method Spire.UnityIntegration.SpireUnityIntegration.BuildIl2CppPlayerMainBaselineAndManaged --timeout 1200
-dotnet run -c Release --project tools/Spire.Tool -- unity-integration --project tmp/unity-il2cpp-stability --method Spire.UnityIntegration.SpireUnityIntegration.BuildIl2CppPlayerStabilityBaselineAndManaged --timeout 1200
+dotnet run -c Release --project tools/Spire.Tool -- unity-union-core --timeout 1200
 ```
 
-Both entrypoints select IL2CPP and **High** managed stripping. The main profile
-checks all layouts and nested/generic unions; the stability profile checks
-former-name payload reconstruction and cache lifetime. Both include the real
-managed-reference graph checks. Run each executable reported by
-`unity-player-build-report.json` with the runtime report argument above. Each
-player requires its expected hosts and assertions, reports its actual backend
-and profile, and exits with a failure code on a mismatch. The fixture rejects
-`Assets/**/link.xml` so test preservation cannot mask production stripping
-failures.
+`unity-core-build-report.json` records both executable paths. Launch each with
+`-batchmode -nographics -spire-report <absolute-report-path>`. Require a successful
+build, player exit zero, the expected backend, and every runtime assertion.
+Compiler-only Spire DLLs must be absent from player assemblies. Reflection-based
+behavioral test linker roots are separate from this production-stripping check.
 
-The profiles remain useful focused checks. The complete fixture also passes as
-one IL2CPP/High player on Unity 6000.5.6f1, Linux, after correcting
-`StabilityPlayerHost`'s script registration. It now lives in its own matching
-source file; builds reject an embedded script reference. The
-[native-loading investigation](issues/unity-il2cpp-opaque-managed-reference-slots.md)
-records the Unity-only MRP and the frozen-scene comparison. A successful build
-alone does not establish a passing player. To build the complete fixture:
-
-```sh
-dotnet run -c Release --project tools/Spire.Tool -- unity-integration --project tmp/unity-il2cpp-full --method Spire.UnityIntegration.SpireUnityIntegration.BuildIl2CppPlayer --timeout 1200
-```
-
-Player fixture builds request `BuildOptions.CleanBuildCache`. Fresh project
-comparisons are important because repeated builds of the bad script registration
-did not always produce the same native loading result.
-
-The initial High-stripping player crashed in Unity's native managed-reference
-type resolver. Native debugging and an isolated one-method linker descriptor
-established that Unity stripped `System.Type.GetType(string)`, which its native
-loader uses for generic payload types. Spire's runtime DLL now includes a small
-preserved method that retains that dependency. The successful final fixture
-uses the packaged DLL alone, without a project linker descriptor or whole-assembly
-preservation. Consumers still enable serialization with `[Serializable]` only.
+The earlier loading/stripping investigation is preserved in the
+[native-loading report](issues/unity-il2cpp-opaque-managed-reference-slots.md).
+Its old layout/profile results predate the current payload representation.
+The runtime still preserves the generic type-loader dependency required by
+Unity's managed-reference loader; no project linker descriptor is needed for
+ordinary generated unions.
 
 The Roslyn test suite also compiles generated code against installed Unity
 assemblies. It does not substitute Unity types or prove native persistence by
@@ -333,8 +330,8 @@ Run the existing runtime behavioral tests inside the Unity Editor:
 dotnet run -c Release --project tools/Spire.Tool -- unity-behavioral
 ```
 
-This runner copies the original union declarations and all 129 xUnit test
-methods unchanged into `tmp/unity-behavioral`. Unity's compiler runs the packaged
+This runner copies the original union declarations and all 73 xUnit test
+methods into `tmp/unity-behavioral`. Unity's compiler runs the packaged
 generator; a Unity Test Framework adapter executes each original assertion in
 Editor Mono and writes `behavioral-results.xml`. Input hashes and the expected
 test count prevent a partial run from passing unnoticed.
@@ -358,9 +355,10 @@ build-tool environment. The C# preparation CLI itself still requires SDK 10.
 
 Results are written to `il2cpp-behavioral-results.xml`. The runner requires every
 original case identity, zero failures or skips, and the IL2CPP root-domain marker.
-All 129 original assertions pass, plus six adapter checks and two backend
-capability probes: 137 checks total. This covers all five layouts, records,
-generics, both JSON converters, and closure inliners. Test-specific linker roots
+The migrated suite contains 73 original assertions plus adapter/backend checks.
+It covers payload accessors, reference storage, records, generics, both JSON
+converters, and closure inliners. Require the current manifest count and case
+identities; the historical 137-check result measured the retired layouts. Test-specific linker roots
 preserve the test and dependency assemblies for the reflection-based adapter;
 this run alone does not establish production stripping compatibility.
 
@@ -384,7 +382,7 @@ semantic models, and loading emitted assemblies in the actual Editor runtime.
 The full runner builds portable versions of the analyzer, generator snapshot and
 behavioral, PatternAnalysis, DevTools, and global configuration test assemblies.
 A Unity Test Framework adapter executes their existing xUnit assertions; the
-129 compile-time behavioral tests also run through Unity's own compiler. The
+73 compile-time behavioral tests also run through Unity's own compiler. The
 normal .NET test projects retain their default targets and runner.
 
 Independent xUnit discovery provides a case identity baseline. Unity must
@@ -411,6 +409,13 @@ the current test assemblies. Set `SPIRE_UNITY_EDITOR` or `--editor` to choose th
 installed Editor; full-harness validation covers 6000.5.6f1 and 6000.6.5f1 on Linux.
 Native serialization results differ between these versions, as recorded below.
 
+### Historical validation before the payload redesign
+
+The counts and layout-specific results below predate the current representation.
+Current redesign evidence is tracked in the
+[payload validation report](reviews/2026-10-23-union-redesign-core-validation.md)
+and the [native fixture](../tests/UnityVariantPayloadCore/README.md).
+
 Validated on October 10, 2026: all 2,266 full-harness checks pass in Editor Mono,
 with zero failures or skips. The independent portable baseline contains 2,127
 cases, and all 129 original compile-time behavioral assertions also execute.
@@ -423,7 +428,7 @@ Three metadata/type-policy observations remain; none is a failed assertion.
 Reports are under `tmp/unity-resume-editor-final`; the same resumption passes
 all 2,242 .NET tests under `tmp/unity-resume-final-dotnet-results`.
 Standalone Mono and High-stripping IL2CPP serialization/cloning results
-are recorded in the [current implementation validation](designs/2026-10-10-unity-serialization-footprint.md#validation).
+are recorded in the [earlier implementation validation](designs/2026-10-10-unity-serialization-footprint.md#validation).
 The separate eight-assembly acceptance fixture, matching InspectCode 2026.2.3.1
 inspection, and actual Rider 2026.2.3.1 quick-fix/recompilation pipeline passed
 on October 8.

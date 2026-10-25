@@ -12,7 +12,7 @@ namespace TestNs
     {
         int Test(ColorUnion c) => c switch
         {
-            (ColorUnion.Kind.Rgb, double r, string bad, double b) => 1, //~ ERROR
+            { kind: ColorUnion.Kind.Rgb, rgb: (double r, string bad, double b) } => 1, //~ ERROR
             _ => 0,
         };
     }

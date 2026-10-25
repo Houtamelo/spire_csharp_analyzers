@@ -174,8 +174,10 @@ internal static class UnityRunner
 
     internal static Task<ProcessResult> MethodAsync(ToolContext context, string project, string editor, string method, string log, TimeSpan timeout,
         bool graphics = false, IReadOnlyDictionary<string, string?>? environment = null)
-        => RunWithDisplayAsync(project, FileOps.FullPath(editor), new[] { "-batchmode", "-projectPath", project, "-executeMethod", method, "-logFile", log }
-            .Concat(graphics ? System.Array.Empty<string>() : new[] { "-nographics" }), context.Root, timeout, environment, log + ".xvfb.log");
+        => RunWithDisplayAsync(project, FileOps.FullPath(editor),
+            (graphics ? System.Array.Empty<string>() : new[] { "-batchmode", "-nographics" })
+                .Concat(new[] { "-projectPath", project, "-executeMethod", method, "-logFile", log }),
+            context.Root, timeout, environment, log + ".xvfb.log");
 
     private static async Task<ProcessResult> RunWithDisplayAsync(string project, string executable, IEnumerable<string> arguments, string workingDirectory,
         TimeSpan timeout, IReadOnlyDictionary<string, string?>? environment = null, string? displayLog = null)

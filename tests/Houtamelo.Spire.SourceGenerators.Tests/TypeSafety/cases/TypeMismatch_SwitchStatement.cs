@@ -14,9 +14,9 @@ namespace TestNs
         {
             switch (t)
             {
-                case (TokenStmt.Kind.Ident, double bad): //~ ERROR
+                case { kind: TokenStmt.Kind.Ident, ident: { name: double bad } }: //~ ERROR
                     return 1;
-                case (TokenStmt.Kind.Number, int n):
+                case { kind: TokenStmt.Kind.Number, number: { numValue: int n } }:
                     return n;
                 default:
                     return 0;

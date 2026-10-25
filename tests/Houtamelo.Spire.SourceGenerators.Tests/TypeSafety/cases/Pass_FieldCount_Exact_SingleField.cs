@@ -12,7 +12,7 @@ namespace TestNs
     {
         int Test(ShapeFCP1 s) => s switch
         {
-            (ShapeFCP1.Kind.Dot, double x) => 1,
+            { kind: ShapeFCP1.Kind.Dot, dot: { dotX: double x } } => 1,
             _ => 0,
         };
     }

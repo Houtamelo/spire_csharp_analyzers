@@ -3,6 +3,7 @@
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JsonConverterAttribute = global::System.Text.Json.Serialization.JsonConverterAttribute;
 
 internal sealed class ShapeStjConverter : JsonConverter<Shape>
 {
@@ -55,5 +56,5 @@ internal sealed class ShapeStjConverter : JsonConverter<Shape>
     }
 }
 
-[global::System.Text.Json.Serialization.JsonConverter(typeof(ShapeStjConverter))]
+[JsonConverterAttribute(typeof(ShapeStjConverter))]
 partial struct Shape { }

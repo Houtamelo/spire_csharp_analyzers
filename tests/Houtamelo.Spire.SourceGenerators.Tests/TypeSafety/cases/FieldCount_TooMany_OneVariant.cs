@@ -1,4 +1,4 @@
-//@ should_fail
+//@ should_pass
 using Houtamelo.Spire;
 namespace TestNs
 {
@@ -12,7 +12,8 @@ namespace TestNs
     {
         int Test(ShapeFC1 s) => s switch
         {
-            (ShapeFC1.Kind.Dot, double x, string extra) => 1, //~ ERROR
+            // Roslyn owns invalid positional arity after the payload accessor binds.
+            { kind: ShapeFC1.Kind.Rect, rect: (float x, float y, string extra) } => 1,
             _ => 0,
         };
     }

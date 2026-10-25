@@ -6,13 +6,14 @@ try
     var options = Options.Parse(args);
     if (options.Help)
     {
-        Console.WriteLine("Spire.Tool: package | unity-customer | unity-integration | unity-behavioral | unity-harness | unity-asmdefs | jetbrains | hook");
+        Console.WriteLine("Spire.Tool: package | unity-customer | unity-integration | unity-union-core | unity-behavioral | unity-harness | unity-asmdefs | jetbrains | hook");
         Console.WriteLine("Usage: dotnet run --project tools/Spire.Tool -- <command> [options]");
         Console.WriteLine("Common options: --root PATH --configuration Debug|Release --no-build --help");
         Console.WriteLine("package: --output PATH");
         Console.WriteLine("unity-customer: --package PATH [--baseline PATH] [--prepare-only] (real Package Manager/sample acceptance)");
         Console.WriteLine("Unity tests: --editor PATH --project PATH --timeout SECONDS");
         Console.WriteLine("unity-integration: --graphics --method NAME");
+        Console.WriteLine("unity-union-core: builds Mono and IL2CPP players; --method NAME --graphics select Editor validation");
         Console.WriteLine("unity-behavioral, unity-harness, unity-asmdefs: --prepare-only");
         Console.WriteLine("unity-behavioral: --backend Mono|IL2CPP (Mono runs in EditMode; IL2CPP builds a Linux player)");
         Console.WriteLine("unity-harness: --probe");
@@ -45,6 +46,9 @@ try
         case "unity-integration":
             return await IntegrationWorkflow.RunAsync(context, Project("unity-integration"), editor, configuration, build, options.Flag("graphics"),
                 options.Value("method", "Spire.UnityIntegration.SpireUnityIntegration.Run"), timeout);
+        case "unity-union-core":
+            return await IntegrationWorkflow.RunAsync(context, Project("unity-union-core"), editor, configuration, build, options.Flag("graphics"),
+                options.Value("method", "Spire.UnityVariantPayloadCore.CorePlayerBuild.BuildPlayers"), timeout, "tests/UnityVariantPayloadCore");
         case "unity-customer":
             return await CustomerWorkflow.RunAsync(context, Project("unity-customer"), editor,
                 options.Value("package", context.PathOf("tmp/unity-package/com.houtamelo.spire")),

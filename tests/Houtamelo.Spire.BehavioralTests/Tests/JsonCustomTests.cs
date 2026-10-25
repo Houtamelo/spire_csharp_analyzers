@@ -25,7 +25,7 @@ public class JsonCustomTests
         var json = System.Text.Json.JsonSerializer.Serialize(c);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonCustomDiscStj>(json);
         Assert.Equal(JsonCustomDiscStj.Kind.Circle, d.kind);
-        Assert.Equal(3.14, d.radius);
+        Assert.Equal(3.14, d.circle.radius);
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public class JsonCustomTests
         var json = JsonConvert.SerializeObject(c);
         var d = JsonConvert.DeserializeObject<JsonCustomDiscNsj>(json);
         Assert.Equal(JsonCustomDiscNsj.Kind.Circle, d.kind);
-        Assert.Equal(3.14, d.radius);
+        Assert.Equal(3.14, d.circle.radius);
     }
 
     // ── JsonName Attribute — STJ ────────────────────────────────
@@ -87,7 +87,7 @@ public class JsonCustomTests
         var json = System.Text.Json.JsonSerializer.Serialize(c);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonNamedStj>(json);
         Assert.Equal(JsonNamedStj.Kind.Circle, d.kind);
-        Assert.Equal(3.14, d.radius);
+        Assert.Equal(3.14, d.circle.radius);
     }
 
     [Fact]
@@ -107,8 +107,8 @@ public class JsonCustomTests
         var json = System.Text.Json.JsonSerializer.Serialize(r);
         Assert.Contains("\"rect\"", json);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonNamedStj>(json);
-        Assert.Equal(1.5f, d.width);
-        Assert.Equal(2.5f, d.height);
+        Assert.Equal(1.5f, d.rectangle.width);
+        Assert.Equal(2.5f, d.rectangle.height);
     }
 
     // ── JsonName Attribute — NSJ ────────────────────────────────
@@ -136,6 +136,6 @@ public class JsonCustomTests
         var json = JsonConvert.SerializeObject(c);
         var d = JsonConvert.DeserializeObject<JsonNamedNsj>(json);
         Assert.Equal(JsonNamedNsj.Kind.Circle, d.kind);
-        Assert.Equal(3.14, d.radius);
+        Assert.Equal(3.14, d.circle.radius);
     }
 }

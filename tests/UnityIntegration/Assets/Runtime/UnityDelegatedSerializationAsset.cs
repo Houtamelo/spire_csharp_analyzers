@@ -8,7 +8,7 @@ using UnityEngine;
 namespace Spire.UnityIntegration
 {
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityDelegatedSerializationUnion
     {
         [Variant]

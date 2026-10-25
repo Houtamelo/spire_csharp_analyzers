@@ -50,12 +50,21 @@ public sealed class FixFieldTypeCodeFix : CodeFixProvider
             .FirstOrDefault();
         if (declPattern is null) return document;
 
-        // Replace the Type
-        var newType = SyntaxFactory.ParseTypeName(expectedType)
-            .WithTriviaFrom(declPattern.Type);
-        var newPattern = declPattern.WithType(newType);
+        SyntaxNode replacement;
+        var expectedTypeSyntax = SyntaxFactory.ParseTypeName(expectedType);
+        if (string.Equals(expectedType, "var", System.StringComparison.Ordinal) ||
+            expectedTypeSyntax is NullableTypeSyntax)
+        {
+            replacement = SyntaxFactory.VarPattern(declPattern.Designation)
+                .WithTriviaFrom(declPattern);
+        }
+        else
+        {
+            var newType = expectedTypeSyntax.WithTriviaFrom(declPattern.Type);
+            replacement = declPattern.WithType(newType);
+        }
 
-        var newRoot = root.ReplaceNode(declPattern, newPattern);
+        var newRoot = root.ReplaceNode(declPattern, replacement);
         return document.WithSyntaxRoot(newRoot);
     }
 }

@@ -30,7 +30,7 @@ public class AttributeResolutionTests
             "Houtamelo.Spire.VariantAttribute");
         Assert.NotNull(variantAttr);
 
-        var layoutEnum = compilation.GetTypeByMetadataName("Houtamelo.Spire.Layout");
-        Assert.NotNull(layoutEnum);
+        var referenceStorage = compilation.GetTypeByMetadataName("Houtamelo.Spire.ReferenceStorage");
+        Assert.NotNull(referenceStorage);
     }
 }

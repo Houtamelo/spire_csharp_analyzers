@@ -14,7 +14,7 @@ namespace TestNs
     {
         void Test()
         {
-            Func<Option, double> f = s => s.someValue; //~ ERROR
+            Func<Option, double> f = s => s.some.someValue; //~ ERROR
         }
     }
 }

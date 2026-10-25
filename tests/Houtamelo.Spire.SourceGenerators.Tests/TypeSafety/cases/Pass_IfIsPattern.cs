@@ -12,7 +12,7 @@ namespace TestNs
     {
         bool Test(Shape s)
         {
-            if (s is (Shape.Kind.Circle, double r))
+            if (s is { kind: Shape.Kind.Circle, circle: { radius: double r } })
                 return true;
             return false;
         }

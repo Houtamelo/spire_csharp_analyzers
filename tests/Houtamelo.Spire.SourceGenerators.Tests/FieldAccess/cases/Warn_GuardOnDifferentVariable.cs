@@ -15,7 +15,7 @@ namespace TestNs
         {
             if (other.kind == Figure.Kind.Ellipse)
             {
-                return s.ellipseRadius; //~ ERROR
+                return s.ellipse.ellipseRadius; //~ ERROR
             }
             return 0;
         }

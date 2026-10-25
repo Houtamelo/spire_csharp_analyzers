@@ -12,8 +12,8 @@ namespace TestNs
     {
         int Test(Rect r) => r switch
         {
-            { kind: Rect.Kind.Box, x: string bad, y: var a, w: var b, h: var c } => 1,
-            { kind: Rect.Kind.Point, x: var a, y: var b } => 2,
+            { kind: Rect.Kind.Box, box: { x: string bad, y: var a, w: var b, h: var c  } } => 1,
+            { kind: Rect.Kind.Point, point: { x: var a, y: var b  } } => 2,
         };
     }
 }

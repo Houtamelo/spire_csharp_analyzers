@@ -14,7 +14,7 @@ namespace TestNs
         {
             int Test(Direction d) => d switch
             {
-                { kind: Direction.Kind.North, steps: var s } => s,
+                { kind: Direction.Kind.North, north: { steps: var s  } } => s,
             };
         }
     }

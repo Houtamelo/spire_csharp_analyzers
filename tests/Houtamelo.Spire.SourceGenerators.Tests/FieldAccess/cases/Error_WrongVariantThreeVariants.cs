@@ -14,7 +14,7 @@ namespace TestNs
     {
         double Test(Poly p) => p switch
         {
-            (Poly.Kind.Circle, _) => p.base_, //~ ERROR
+            { kind: Poly.Kind.Circle } => p.triangle.base_, //~ ERROR
             _ => 0,
         };
     }

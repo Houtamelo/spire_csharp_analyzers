@@ -12,6 +12,7 @@ internal static class SystemTextJsonEmitter
         var sb = new SourceBuilder();
         var isGeneric = union.TypeParameters.Length > 0;
         var typeParams = FormatTypeParams(union.TypeParameters);
+        var constraints = FormatConstraints(union.TypeParameterConstraints);
         var unionType = union.TypeName + typeParams;
         var converterName = union.TypeName + "StjConverter";
         var factoryName = union.TypeName + "StjConverterFactory";
@@ -21,16 +22,24 @@ internal static class SystemTextJsonEmitter
         sb.AppendLine("using System;");
         sb.AppendLine("using System.Text.Json;");
         sb.AppendLine("using System.Text.Json.Serialization;");
+        sb.AppendLine("using JsonConverterAttribute = global::System.Text.Json.Serialization.JsonConverterAttribute;");
         sb.AppendLine();
 
         var hasNamespace = !string.IsNullOrEmpty(union.Namespace);
         if (hasNamespace)
-        {
-            sb.AppendLine($"namespace {union.Namespace}");
-            sb.OpenBrace();
-        }
+            sb.OpenNamespace(union.Namespace);
 
         sb.OpenContainingTypes(union.ContainingTypes);
+
+        // Keep the union declaration first among the generated sibling types.
+        var attrTarget = isGeneric ? factoryName : converterName;
+        var accessMod = FormatAccessibility(union.AccessibilityKeyword);
+        var readonlyMod = union.IsReadonly ? "readonly " : "";
+        var refMod = union.IsRefStruct ? "ref " : "";
+        var abstractMod = IsRecord(union) ? "abstract " : "";
+        sb.AppendLine($"[JsonConverterAttribute(typeof({attrTarget}))]");
+        sb.AppendLine($"{accessMod}{abstractMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType}{constraints} {{ }}");
+        sb.AppendLine();
 
         // Factory (generic types only)
         if (isGeneric)
@@ -40,22 +49,13 @@ internal static class SystemTextJsonEmitter
         }
 
         // Converter class
-        EmitConverter(sb, union, converterName, unionType, typeParams);
+        EmitConverter(sb, union, converterName, unionType, typeParams, constraints);
         sb.AppendLine();
-
-        // Partial type declaration with [JsonConverter] attribute
-        var attrTarget = isGeneric ? factoryName : converterName;
-        var accessMod = string.IsNullOrEmpty(union.AccessibilityKeyword) ? "" : union.AccessibilityKeyword + " ";
-        var readonlyMod = union.IsReadonly ? "readonly " : "";
-        var refMod = union.IsRefStruct ? "ref " : "";
-        var abstractMod = IsRecord(union) ? "abstract " : "";
-        sb.AppendLine($"[global::System.Text.Json.Serialization.JsonConverter(typeof({attrTarget}))]");
-        sb.AppendLine($"{accessMod}{abstractMod}{readonlyMod}{refMod}partial {union.DeclarationKeyword} {unionType} {{ }}");
 
         sb.CloseContainingTypes(union.ContainingTypes);
 
         if (hasNamespace)
-            sb.CloseBrace();
+            sb.CloseNamespace();
 
         return sb.ToString();
     }
@@ -87,9 +87,9 @@ internal static class SystemTextJsonEmitter
 
     private static void EmitConverter(
         SourceBuilder sb, UnionDeclaration union,
-        string converterName, string unionType, string typeParams)
+        string converterName, string unionType, string typeParams, string constraints)
     {
-        sb.AppendLine($"internal sealed class {converterName}{typeParams} : JsonConverter<{unionType}>");
+        sb.AppendLine($"internal sealed class {converterName}{typeParams} : JsonConverter<{unionType}>{constraints}");
         sb.OpenBrace();
 
         // Read method
@@ -111,8 +111,8 @@ internal static class SystemTextJsonEmitter
 
         sb.AppendLine("using var doc = JsonDocument.ParseValue(ref reader);");
         sb.AppendLine("var root = doc.RootElement;");
-        sb.AppendLine($"if (!root.TryGetProperty(\"{union.JsonDiscriminator}\", out var kindProp))");
-        sb.AppendLine($"    throw new JsonException(\"Missing discriminator property '{union.JsonDiscriminator}'\");");
+        sb.AppendLine($"if (!root.TryGetProperty({CSharpStringLiteral.Quote(union.JsonDiscriminator)}, out var kindProp))");
+        sb.AppendLine($"    throw new JsonException({CSharpStringLiteral.Quote($"Missing discriminator property '{union.JsonDiscriminator}'")});");
         sb.AppendLine("var kindStr = kindProp.GetString();");
         sb.AppendLine("return kindStr switch");
         sb.OpenBrace();
@@ -126,7 +126,7 @@ internal static class SystemTextJsonEmitter
                 var ctor = IsRecord(union)
                     ? $"new {unionType}.{variant.Name}()"
                     : $"{unionType}.{IdentifierUtility.Escape(variant.Name)}()";
-                sb.AppendLine($"\"{jsonName}\" => {ctor},");
+                sb.AppendLine($"{CSharpStringLiteral.Quote(jsonName)} => {ctor},");
             }
             else
             {
@@ -134,13 +134,13 @@ internal static class SystemTextJsonEmitter
                     variant.Fields.Select(f =>
                     {
                         var propName = f.JsonName ?? f.Name;
-                        return $"root.GetProperty(\"{propName}\").Deserialize<{f.TypeFullName}>(options)!";
+                        return $"root.GetProperty({CSharpStringLiteral.Quote(propName)}).Deserialize<{f.TypeFullName}>(options)!";
                     }));
 
                 var ctor = IsRecord(union)
                     ? $"new {unionType}.{variant.Name}({args})"
                     : $"{unionType}.{IdentifierUtility.Escape(variant.Name)}({args})";
-                sb.AppendLine($"\"{jsonName}\" => {ctor},");
+                sb.AppendLine($"{CSharpStringLiteral.Quote(jsonName)} => {ctor},");
             }
         }
 
@@ -178,25 +178,19 @@ internal static class SystemTextJsonEmitter
         {
             var jsonVariantName = variant.JsonName ?? variant.Name;
 
-            if (variant.Fields.Length == 0)
-            {
-                sb.AppendLine($"case {{ kind: {unionType}.Kind.{IdentifierUtility.Escape(variant.Name)} }}:");
-            }
-            else
-            {
-                var props = string.Join(", ",
-                    variant.Fields.Select(f => $"{IdentifierUtility.Escape(f.ResolvedPropertyName)}: var __{f.Name}"));
-                sb.AppendLine($"case {{ kind: {unionType}.Kind.{IdentifierUtility.Escape(variant.Name)}, {props} }}:");
-            }
+            var accessor = VariantNaming.AccessorName(
+                variant.Name,
+                union.Variants.Select(candidate => candidate.Name));
+            sb.AppendLine($"case {{ kind: {unionType}.Kind.{IdentifierUtility.Escape(variant.Name)}, {IdentifierUtility.Escape(accessor)}: var __payload }}:");
 
             sb.OpenBrace();
-            sb.AppendLine($"writer.WriteString(\"{union.JsonDiscriminator}\", \"{jsonVariantName}\");");
+            sb.AppendLine($"writer.WriteString({CSharpStringLiteral.Quote(union.JsonDiscriminator)}, {CSharpStringLiteral.Quote(jsonVariantName)});");
 
             foreach (var field in variant.Fields)
             {
                 var jsonFieldName = field.JsonName ?? field.Name;
-                sb.AppendLine($"writer.WritePropertyName(\"{jsonFieldName}\");");
-                sb.AppendLine($"JsonSerializer.Serialize(writer, __{field.Name}, options);");
+                sb.AppendLine($"writer.WritePropertyName({CSharpStringLiteral.Quote(jsonFieldName)});");
+                sb.AppendLine($"JsonSerializer.Serialize(writer, __payload.{IdentifierUtility.Escape(field.Name)}, options);");
             }
 
             sb.AppendLine("break;");
@@ -225,7 +219,7 @@ internal static class SystemTextJsonEmitter
             {
                 sb.AppendLine($"case {unionType}.{variant.Name}:");
                 sb.Indent();
-                sb.AppendLine($"writer.WriteString(\"{union.JsonDiscriminator}\", \"{jsonVariantName}\");");
+                sb.AppendLine($"writer.WriteString({CSharpStringLiteral.Quote(union.JsonDiscriminator)}, {CSharpStringLiteral.Quote(jsonVariantName)});");
                 sb.AppendLine("break;");
                 sb.Dedent();
             }
@@ -233,12 +227,12 @@ internal static class SystemTextJsonEmitter
             {
                 sb.AppendLine($"case {unionType}.{variant.Name} _v:");
                 sb.Indent();
-                sb.AppendLine($"writer.WriteString(\"{union.JsonDiscriminator}\", \"{jsonVariantName}\");");
+                sb.AppendLine($"writer.WriteString({CSharpStringLiteral.Quote(union.JsonDiscriminator)}, {CSharpStringLiteral.Quote(jsonVariantName)});");
 
                 foreach (var field in variant.Fields)
                 {
                     var jsonFieldName = field.JsonName ?? field.Name;
-                    sb.AppendLine($"writer.WritePropertyName(\"{jsonFieldName}\");");
+                    sb.AppendLine($"writer.WritePropertyName({CSharpStringLiteral.Quote(jsonFieldName)});");
                     sb.AppendLine($"JsonSerializer.Serialize(writer, _v.{field.Name}, options);");
                 }
 
@@ -265,8 +259,11 @@ internal static class SystemTextJsonEmitter
     private static string FormatTypeParams(EquatableArray<string> typeParameters)
     {
         if (typeParameters.Length == 0) return "";
-        return "<" + string.Join(", ", typeParameters) + ">";
+        return "<" + string.Join(", ", typeParameters.Select(IdentifierUtility.Escape)) + ">";
     }
+
+    private static string FormatConstraints(EquatableArray<string> constraints)
+        => constraints.Length == 0 ? "" : " " + string.Join(" ", constraints);
 
     /// Produces open generic syntax: "Foo<>" for arity 1, "Foo<,>" for arity 2, etc.
     private static string OpenGenericType(string typeName, int arity)
@@ -274,6 +271,11 @@ internal static class SystemTextJsonEmitter
         if (arity == 0) return typeName;
         return typeName + "<" + new string(',', arity - 1) + ">";
     }
+
+    private static string FormatAccessibility(string accessibility)
+        => string.IsNullOrEmpty(accessibility) || accessibility == "private"
+            ? ""
+            : accessibility + " ";
 
     #endregion
 }

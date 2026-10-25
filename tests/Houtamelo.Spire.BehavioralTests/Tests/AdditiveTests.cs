@@ -13,7 +13,7 @@ public class AdditiveTests
     {
         var c = ShapeAdd.Circle(3.14);
         Assert.Equal(ShapeAdd.Kind.Circle, c.kind);
-        Assert.Equal(3.14, c.radius);
+        Assert.Equal(3.14, c.circle.radius);
     }
 
     [Fact]
@@ -21,7 +21,7 @@ public class AdditiveTests
     {
         var s = ShapeAdd.Square(42);
         Assert.Equal(ShapeAdd.Kind.Square, s.kind);
-        Assert.Equal(42, s.sideLength);
+        Assert.Equal(42, s.square.sideLength);
     }
 
     [Fact]
@@ -29,8 +29,8 @@ public class AdditiveTests
     {
         var r = ShapeAdd.Rectangle(1.5f, 2.5f);
         Assert.Equal(ShapeAdd.Kind.Rectangle, r.kind);
-        Assert.Equal(1.5f, r.width);
-        Assert.Equal(2.5f, r.height);
+        Assert.Equal(1.5f, r.rectangle.width);
+        Assert.Equal(2.5f, r.rectangle.height);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public class AdditiveTests
         var c = ShapeAdd.Circle(7.5);
         var r = c switch
         {
-            { kind: ShapeAdd.Kind.Circle, radius: var v } => v,
+            { kind: ShapeAdd.Kind.Circle, circle: { radius: var v } } => v,
             _ => -1.0
         };
         Assert.Equal(7.5, r);
@@ -80,7 +80,7 @@ public class AdditiveTests
         var rect = ShapeAdd.Rectangle(3.0f, 4.0f);
         var (w, h) = rect switch
         {
-            { kind: ShapeAdd.Kind.Rectangle, width: var ww, height: var hh } => (ww, hh),
+            { kind: ShapeAdd.Kind.Rectangle, rectangle: { width: var ww, height: var hh } } => (ww, hh),
             _ => (0f, 0f)
         };
         Assert.Equal(3.0f, w);
@@ -93,7 +93,7 @@ public class AdditiveTests
         var s = ShapeAdd.Square(10);
         var r = s switch
         {
-            { kind: ShapeAdd.Kind.Circle, radius: var v } => v,
+            { kind: ShapeAdd.Kind.Circle, circle: { radius: var v } } => v,
             _ => -1.0
         };
         Assert.Equal(-1.0, r);
@@ -105,8 +105,8 @@ public class AdditiveTests
     public void Deconstruct_UniqueArity()
     {
         var rect = ShapeAdd.Rectangle(1.5f, 2.5f);
-        rect.Deconstruct(out var kind, out var w, out var h);
-        Assert.Equal(ShapeAdd.Kind.Rectangle, kind);
+        var payload = rect.rectangle;
+        payload.Deconstruct(out var w, out var h);
         Assert.Equal(1.5f, w);
         Assert.Equal(2.5f, h);
     }
@@ -115,8 +115,7 @@ public class AdditiveTests
     public void Deconstruct_SharedArity()
     {
         var c = ShapeAdd.Circle(3.14);
-        c.Deconstruct(out var kind, out var f0);
-        Assert.Equal(ShapeAdd.Kind.Circle, kind);
+        c.circle.Deconstruct(out var f0);
         Assert.Equal(3.14, f0);
     }
 
@@ -126,17 +125,17 @@ public class AdditiveTests
     public void SharedFields_Vec2()
     {
         var v = VecAdd.Vec2(1.0, 2.0);
-        Assert.Equal(1.0, v.x);
-        Assert.Equal(2.0, v.y);
+        Assert.Equal(1.0, v.vec2.x);
+        Assert.Equal(2.0, v.vec2.y);
     }
 
     [Fact]
     public void SharedFields_Vec3()
     {
         var v = VecAdd.Vec3(3.0, 4.0, 5.0);
-        Assert.Equal(3.0, v.x);
-        Assert.Equal(4.0, v.y);
-        Assert.Equal(5.0, v.z);
+        Assert.Equal(3.0, v.vec3.x);
+        Assert.Equal(4.0, v.vec3.y);
+        Assert.Equal(5.0, v.vec3.z);
     }
 
     // ── Reference Type Fields ───────────────────────────────────
@@ -145,16 +144,16 @@ public class AdditiveTests
     public void StringField_Preserved()
     {
         var m = MsgAdd.Label("hello");
-        Assert.Equal("hello", m.text);
+        Assert.Equal("hello", m.label.text);
     }
 
     [Fact]
     public void MixedRefAndValue()
     {
         var m = MsgAdd.ColoredLine(10, 20, "red");
-        Assert.Equal(10, m.x);
-        Assert.Equal(20, m.y);
-        Assert.Equal("red", m.color);
+        Assert.Equal(10, m.coloredLine.x);
+        Assert.Equal(20, m.coloredLine.y);
+        Assert.Equal("red", m.coloredLine.color);
     }
 
     // ── Generic ─────────────────────────────────────────────────
@@ -164,7 +163,7 @@ public class AdditiveTests
     {
         var o = OptionAdd<int>.Some(42);
         Assert.Equal(OptionAdd<int>.Kind.Some, o.kind);
-        Assert.Equal(42, o.value);
+        Assert.Equal(42, o.some.value);
     }
 
     [Fact]
@@ -172,7 +171,7 @@ public class AdditiveTests
     {
         var o = OptionAdd<string>.Some("hi");
         Assert.Equal(OptionAdd<string>.Kind.Some, o.kind);
-        Assert.Equal("hi", o.value);
+        Assert.Equal("hi", o.some.value);
     }
 
     [Fact]
@@ -180,6 +179,26 @@ public class AdditiveTests
     {
         var o = OptionAdd<int>.None();
         Assert.Equal(OptionAdd<int>.Kind.None, o.kind);
+    }
+
+    [Fact]
+    public void Copy_PreservesVariantPayload()
+    {
+        var original = ShapeAdd.Rectangle(1.5f, 2.5f);
+        var copy = original;
+
+        Assert.Equal(ShapeAdd.Kind.Rectangle, copy.kind);
+        Assert.Equal(1.5f, copy.rectangle.width);
+        Assert.Equal(2.5f, copy.rectangle.height);
+    }
+
+    [Fact]
+    public void GenericReferenceNull_IsPreserved()
+    {
+        var value = OptionAdd<string>.Some(null!);
+
+        Assert.Equal(OptionAdd<string>.Kind.Some, value.kind);
+        Assert.Null(value.some.value);
     }
 
     // ── JSON System.Text.Json ───────────────────────────────────
@@ -191,7 +210,7 @@ public class AdditiveTests
         var json = System.Text.Json.JsonSerializer.Serialize(c);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonShapeAddStj>(json);
         Assert.Equal(JsonShapeAddStj.Kind.Circle, d.kind);
-        Assert.Equal(3.14, d.radius);
+        Assert.Equal(3.14, d.circle.radius);
     }
 
     [Fact]
@@ -201,8 +220,8 @@ public class AdditiveTests
         var json = System.Text.Json.JsonSerializer.Serialize(r);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonShapeAddStj>(json);
         Assert.Equal(JsonShapeAddStj.Kind.Rectangle, d.kind);
-        Assert.Equal(1.5f, d.width);
-        Assert.Equal(2.5f, d.height);
+        Assert.Equal(1.5f, d.rectangle.width);
+        Assert.Equal(2.5f, d.rectangle.height);
     }
 
     [Fact]
@@ -243,7 +262,7 @@ public class AdditiveTests
         var json = JsonConvert.SerializeObject(c);
         var d = JsonConvert.DeserializeObject<JsonShapeAddNsj>(json);
         Assert.Equal(JsonShapeAddNsj.Kind.Circle, d.kind);
-        Assert.Equal(3.14, d.radius);
+        Assert.Equal(3.14, d.circle.radius);
     }
 
     [Fact]
@@ -253,8 +272,8 @@ public class AdditiveTests
         var json = JsonConvert.SerializeObject(r);
         var d = JsonConvert.DeserializeObject<JsonShapeAddNsj>(json);
         Assert.Equal(JsonShapeAddNsj.Kind.Rectangle, d.kind);
-        Assert.Equal(1.5f, d.width);
-        Assert.Equal(2.5f, d.height);
+        Assert.Equal(1.5f, d.rectangle.width);
+        Assert.Equal(2.5f, d.rectangle.height);
     }
 
     [Fact]

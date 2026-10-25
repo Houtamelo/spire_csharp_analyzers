@@ -9,7 +9,9 @@
 
 ## Description
 
-A positional pattern on a struct discriminated union provides the wrong number of field bindings for the matched variant. For example, matching a 2-field variant with only 1 binding, or a 1-field variant with 3 bindings. The first element (the `Kind` constant) is excluded from the count.
+A positional pattern inside a variant payload accessor provides the wrong
+number of field bindings. Count payload fields only; the union's `kind` is a
+separate property pattern.
 
 ## Examples
 
@@ -25,8 +27,8 @@ partial struct Shape
 
 var result = s switch
 {
-    (Shape.Kind.Circle, double r) => 1,
-    (Shape.Kind.Rectangle, float w) => 2,  // SPIRE012: Rectangle has 2 field(s), not 1
+    { kind: Shape.Kind.Circle, circle: { radius: var r } } => 1,
+    { kind: Shape.Kind.Rectangle, rectangle: (float w, float h, float extra) } => 2, // SPIRE012
 };
 ```
 
@@ -35,8 +37,8 @@ var result = s switch
 ```csharp
 var result = s switch
 {
-    (Shape.Kind.Circle, double r) => 1,
-    (Shape.Kind.Rectangle, float w, float h) => 2,
+    { kind: Shape.Kind.Circle, circle: { radius: var r } } => 1,
+    { kind: Shape.Kind.Rectangle, rectangle: (float w, float h) } => 2,
 };
 ```
 

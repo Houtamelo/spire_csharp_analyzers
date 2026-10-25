@@ -12,8 +12,8 @@ namespace TestNs
     {
         int Test(ShapePPV s) => s switch
         {
-            { kind: ShapePPV.Kind.Circle, radius: var r } => 1,
-            { kind: ShapePPV.Kind.Square, sideLength: var x } => 2,
+            { kind: ShapePPV.Kind.Circle, circle: { radius: var r } } => 1,
+            { kind: ShapePPV.Kind.Square, square: { sideLength: var x } } => 2,
         };
     }
 }

@@ -5,7 +5,7 @@ using Houtamelo.Spire;
 using UnityEngine;
 
 [Serializable]
-[DiscriminatedUnion(Layout.Additive)]
+[DiscriminatedUnion]
 public partial struct StabilityMigrationUnion
 {
     [Variant(FormerlySerializedAs = "OldRenamed")]
@@ -26,7 +26,7 @@ public partial struct StabilityMigrationUnion
 }
 
 [Serializable]
-[DiscriminatedUnion(Layout.Additive)]
+[DiscriminatedUnion]
 public partial struct StabilityNestedChildUnion
 {
     [Variant(FormerlySerializedAs = "PriorChild")]
@@ -36,7 +36,7 @@ public partial struct StabilityNestedChildUnion
 }
 
 [Serializable]
-[DiscriminatedUnion(Layout.Additive)]
+[DiscriminatedUnion]
 public partial struct StabilityNestedParentUnion
 {
     [Variant]
@@ -59,7 +59,7 @@ public partial struct StabilityGenericUnion<T>
 }
 
 [Serializable]
-[DiscriminatedUnion(Layout.Additive)]
+[DiscriminatedUnion]
 public partial struct StabilityKeywordAliasUnion
 {
     [Variant(FormerlySerializedAs = "class")]
@@ -69,7 +69,7 @@ public partial struct StabilityKeywordAliasUnion
 }
 
 [Serializable]
-[DiscriminatedUnion(Layout.Additive)]
+[DiscriminatedUnion]
 public partial struct StabilityAliasAdditive
 {
     [Variant(FormerlySerializedAs = "OldFirst")]
@@ -78,7 +78,7 @@ public partial struct StabilityAliasAdditive
 }
 
 [Serializable]
-[DiscriminatedUnion(Layout.BoxedFields)]
+[DiscriminatedUnion]
 public partial struct StabilityAliasBoxedFields
 {
     [Variant(FormerlySerializedAs = "OldFirst")]
@@ -87,7 +87,7 @@ public partial struct StabilityAliasBoxedFields
 }
 
 [Serializable]
-[DiscriminatedUnion(Layout.BoxedTuple)]
+[DiscriminatedUnion]
 public partial struct StabilityAliasBoxedTuple
 {
     [Variant(FormerlySerializedAs = "OldFirst")]
@@ -96,7 +96,7 @@ public partial struct StabilityAliasBoxedTuple
 }
 
 [Serializable]
-[DiscriminatedUnion(Layout.UnsafeOverlap)]
+[DiscriminatedUnion]
 public partial struct StabilityAliasUnsafeOverlap
 {
     [Variant(FormerlySerializedAs = "OldFirst")]
@@ -105,7 +105,7 @@ public partial struct StabilityAliasUnsafeOverlap
 }
 
 [Serializable]
-[DiscriminatedUnion(Layout.Overlap)]
+[DiscriminatedUnion]
 public partial struct StabilityAliasOverlap
 {
     [Variant(FormerlySerializedAs = "OldFirst")]

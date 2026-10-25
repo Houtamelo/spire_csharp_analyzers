@@ -25,24 +25,16 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
 
         var compilationInfo = context.CompilationProvider.Select(static (comp, _) =>
         {
-            var parseOptions = comp.SyntaxTrees
-                .Select(tree => tree.Options)
-                .OfType<CSharpParseOptions>()
-                .FirstOrDefault();
-            var supportsInlineArraySyntax = parseOptions is not null &&
-                RoslynCompatibility.IsAtLeastCSharp12(parseOptions.LanguageVersion);
-
             return new CompilationInfo(
                 HasSystemTextJson: comp.GetTypeByMetadataName(
                     "System.Text.Json.Serialization.JsonConverter`1") is not null,
                 HasNewtonsoftJson: comp.GetTypeByMetadataName(
                     "Newtonsoft.Json.JsonConverter") is not null,
-                AllowsUnsafe: ((Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions)comp.Options).AllowUnsafe,
-                HasInlineArray: comp.GetTypeByMetadataName(
-                    "System.Runtime.CompilerServices.InlineArrayAttribute") is not null &&
-                    supportsInlineArraySyntax,
                 HasInitProperties: CompilationInfo.HasAccessibleType(
-                    comp, "System.Runtime.CompilerServices.IsExternalInit"));
+                    comp, "System.Runtime.CompilerServices.IsExternalInit"),
+                HasUnitySerialization: CompilationInfo.HasAccessibleType(
+                    comp, "UnityEngine.ISerializationCallbackReceiver"),
+                HasUnityEditor: CompilationInfo.HasAccessibleType(comp, "UnityEditor.PropertyDrawer"));
         });
 
         var combined = unions
@@ -63,48 +55,28 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
             var ((union, config), compInfo) = pair;
             if (union is null) return;
 
+            // Classes are an explicitly unsupported declaration shape. Keep the
+            // primary diagnostic, but do not invent an empty partial class that
+            // can create CS0260/partial-member cascades for non-partial input.
+            if (union.Diagnostic?.Id == "SPIRE_DU011")
+                return;
+
             // Resolve global config sentinels
             union = UnionParser.ResolveGlobalConfig(union, config);
-            union = union with { HasInitProperties = compInfo.HasInitProperties };
-
-            // Don't emit source for error diagnostics. Diagnostics are reported
-            // through a separate compilation-bound pipeline so source output
-            // remains incremental when only the diagnostic location changes.
-            if (union.Diagnostic is { IsError: true }) return;
-
-            // Post-resolution validation: Overlap on generic struct (e.g., via global config)
-            if (union.Strategy == EmitStrategy.Overlap &&
-                (union.IsGeneric || union.ContainingTypes.Any(type => type.TypeParameters.Length > 0)))
-            {
-                ReportDiagnostic(ctx,
-                    "SPIRE_DU005",
-                    "Generic structs and unions nested in generic containing types cannot use Overlap layout (CLR restriction); use BoxedFields or BoxedTuple");
-                return;
-            }
+            union = ApplyCompilationCapabilities(union, compInfo);
 
             // Preserve the record generator's existing field-conflict behavior.
             // Struct unions resolve incompatible names before reaching emitters.
-            if (union.DeclarationKeyword == "record" && HasFieldNameConflicts(ctx, union))
-                return;
+            // RecordEmitter does not emit the conflicting field properties, so
+            // the independent record surface remains constructible.
+            if (union.DeclarationKeyword == "record")
+                _ = HasFieldNameConflicts(ctx, union);
 
-            // UnsafeOverlap requires AllowUnsafe
-            if (union.Strategy == EmitStrategy.UnsafeOverlap && !compInfo.AllowsUnsafe)
-            {
-                ReportDiagnostic(ctx,
-                    "SPIRE_DU009",
-                    "UnsafeOverlap layout requires <AllowUnsafeBlocks>true</AllowUnsafeBlocks> in the project");
-                return;
-            }
-
-            var source = union.IsUnitySerializable
-                ? UnitySerializationEmitter.Emit(union, compInfo.HasInlineArray)
-                : union.Strategy == EmitStrategy.UnsafeOverlap
-                ? UnsafeOverlapEmitter.Emit(union, compInfo.HasInlineArray)
-                : Emit(union);
+            var source = Emit(union);
             var hintPrefix = SourceHintPrefix(union);
             ctx.AddSource($"{hintPrefix}.g.cs", source);
 
-            if (union.IsUnitySerializable)
+            if (CanEmitUnityDrawer(union, compInfo))
                 ctx.AddSource(
                     $"{hintPrefix}.UnityDrawer.g.cs",
                     UnityPropertyDrawerEmitter.Emit(union));
@@ -156,7 +128,51 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
                 ctx.AddSource($"{hintPrefix}.Schema.g.cs", schemaSource);
             }
         });
+
+        // The implementation is emitted once per compilation. The per-union
+        // pipeline above remains independent so adding or changing one union
+        // does not invalidate the generated runtime sources for its siblings.
+        var needsUnityDrawerSupport = combined
+            .Select(static (pair, _) =>
+            {
+                var ((union, config), compInfo) = pair;
+                if (union is null)
+                    return (Runtime: false, Editor: false);
+
+                union = UnionParser.ResolveGlobalConfig(union, config);
+                union = ApplyCompilationCapabilities(union, compInfo);
+                return (Runtime: union.EmitUnitySerialization, Editor: CanEmitUnityDrawer(union, compInfo));
+            })
+            .Collect();
+
+        context.RegisterSourceOutput(needsUnityDrawerSupport, static (ctx, values) =>
+        {
+            if (values.Any(static value => value.Runtime))
+            {
+                ctx.AddSource(
+                    UnitySerializationSupportEmitter.HintName,
+                    UnitySerializationSupportEmitter.Emit());
+            }
+            if (values.Any(static value => value.Editor))
+            {
+                ctx.AddSource(
+                    UnityPropertyDrawerSupportEmitter.HintName,
+                    UnityPropertyDrawerSupportEmitter.Emit());
+            }
+        });
     }
+
+    private static bool CanEmitUnityDrawer(UnionDeclaration union, CompilationInfo info)
+        => union.EmitUnitySerialization && info.HasUnityEditor;
+
+    private static UnionDeclaration ApplyCompilationCapabilities(UnionDeclaration union, CompilationInfo info)
+        => union with
+        {
+            HasInitProperties = info.HasInitProperties,
+            EmitUnitySerialization = union.IsUnitySerializable && info.HasUnitySerialization &&
+                union.DeclarationKeyword == "struct" && !union.IsReadonly && !union.IsRefStruct &&
+                union.Variants.Length > 0,
+        };
 
     private static void ReportUnionDiagnostic(
         SourceProductionContext ctx,
@@ -243,13 +259,30 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
         return hasConflict;
     }
 
+    private static bool HasFieldNameConflicts(UnionDeclaration union)
+    {
+        var fieldTypes = new Dictionary<string, HashSet<string>>();
+        foreach (var variant in union.Variants)
+        {
+            foreach (var field in variant.Fields)
+            {
+                if (!fieldTypes.TryGetValue(field.Name, out var types))
+                {
+                    types = new HashSet<string>();
+                    fieldTypes[field.Name] = types;
+                }
+
+                types.Add(field.TypeFullName);
+            }
+        }
+
+        return fieldTypes.Values.Any(types => types.Count > 1);
+    }
+
     private static string Emit(UnionDeclaration union) => union.Strategy switch
     {
-        EmitStrategy.Additive => AdditiveEmitter.Emit(union),
+        EmitStrategy.VariantPayload => VariantPayloadEmitter.Emit(union),
         EmitStrategy.Record => RecordEmitter.Emit(union),
-        EmitStrategy.Overlap => OverlapEmitter.Emit(union),
-        EmitStrategy.BoxedFields => BoxedFieldsEmitter.Emit(union),
-        EmitStrategy.BoxedTuple => BoxedTupleEmitter.Emit(union),
         _ => "// Unknown strategy",
     };
 

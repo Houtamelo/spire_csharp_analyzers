@@ -12,8 +12,8 @@ namespace TestNs
     {
         int Test(Val v) => v switch
         {
-            { kind: Val.Kind.Int, n: var bad } => 1,
-            { kind: Val.Kind.Str, s: var x } => 2,
+            { kind: Val.Kind.Int, int: { n: var bad  } } => 1,
+            { kind: Val.Kind.Str, str: { s: var x  } } => 2,
         };
     }
 }

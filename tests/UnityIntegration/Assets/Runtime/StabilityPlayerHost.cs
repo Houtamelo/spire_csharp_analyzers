@@ -73,9 +73,9 @@ namespace Spire.UnityIntegration
             }
 
             callbackPayloadWeakReferences = new[] { new WeakReference(payload) };
-            probe.OnAfterDeserialize();
-            lifetimeProbeAmount = probe.amount;
-            lifetimeProbeLabel = probe.label ?? string.Empty;
+            InvokeAfterDeserialize(ref probe);
+            lifetimeProbeAmount = probe.first.amount;
+            lifetimeProbeLabel = probe.first.label ?? string.Empty;
             lifetimeProbeValuesValid = probe.kind == StabilityAdditiveUnion.Kind.First &&
                 lifetimeProbeAmount == 123 &&
                 lifetimeProbeLabel == "lifetime-probe";
@@ -91,6 +91,10 @@ namespace Spire.UnityIntegration
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             return field?.GetValue(value);
         }
+
+        private static void InvokeAfterDeserialize<T>(ref T value)
+            where T : ISerializationCallbackReceiver
+            => value.OnAfterDeserialize();
 
         private static bool IsConcretePayload<T>(T value, object payload)
         {

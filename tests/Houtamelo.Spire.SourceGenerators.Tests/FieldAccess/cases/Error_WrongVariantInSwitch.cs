@@ -13,7 +13,7 @@ namespace TestNs
     {
         double Test(Shape s) => s switch
         {
-            (Shape.Kind.Circle, _) => s.sideLength, //~ ERROR
+            { kind: Shape.Kind.Circle } => s.square.sideLength, //~ ERROR
             _ => 0,
         };
     }

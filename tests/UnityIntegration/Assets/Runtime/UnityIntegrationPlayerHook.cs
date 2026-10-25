@@ -85,45 +85,45 @@ namespace Spire.UnityIntegration
             {
                 var union = host.single;
                 if (union.kind == UnityShapeSerializable.Kind.Label)
-                    label = union.text;
+                    label = union.label.text;
                 var boxedFields = host.boxedFields;
                 if (boxedFields.kind == UnityBoxedFieldsUnion.Kind.Text)
-                    boxedFieldsLabel = boxedFields.label;
+                    boxedFieldsLabel = boxedFields.text.label;
                 var boxedTuple = host.boxedTuple;
                 if (boxedTuple.kind == UnityBoxedTupleUnion.Kind.Number)
-                    boxedTupleValue = boxedTuple.value;
+                    boxedTupleValue = boxedTuple.number.value;
                 var boxedGeneric = host.boxedFieldsGenericInt;
                 if (boxedGeneric.kind == UnityBoxedFieldsGeneric<int>.Kind.Some)
-                    boxedGenericValue = boxedGeneric.value;
+                    boxedGenericValue = boxedGeneric.some.value;
                 var boxedGenericString = host.boxedTupleGenericString;
                 if (boxedGenericString.kind == UnityBoxedTupleGeneric<string>.Kind.Some)
-                    boxedGenericLabel = boxedGenericString.value;
+                    boxedGenericLabel = boxedGenericString.some.value;
                 var unsafeUnion = host.unsafeUnion;
                 if (unsafeUnion.kind == UnityUnsafeOverlapUnion.Kind.Mixed)
                 {
-                    unsafeRaw = unsafeUnion.raw;
-                    unsafeAmount = unsafeUnion.amount;
-                    unsafeLabel = unsafeUnion.label;
+                    unsafeRaw = unsafeUnion.mixed.raw;
+                    unsafeAmount = unsafeUnion.mixed.amount;
+                    unsafeLabel = unsafeUnion.mixed.label;
                 }
                 var unsafeInt = host.unsafeGenericInt;
                 if (unsafeInt.kind == UnityUnsafeOverlapGeneric<int>.Kind.Some)
                 {
-                    unsafeGenericValue = unsafeInt.value;
-                    unsafeGenericCode = unsafeInt.code;
-                    unsafeGenericWeight = unsafeInt.weight;
+                    unsafeGenericValue = unsafeInt.some.value;
+                    unsafeGenericCode = unsafeInt.some.code;
+                    unsafeGenericWeight = unsafeInt.some.weight;
                 }
                 var unsafeString = host.unsafeGenericString;
                 if (unsafeString.kind == UnityUnsafeOverlapGeneric<string>.Kind.Some)
-                    unsafeGenericLabel = unsafeString.value;
+                    unsafeGenericLabel = unsafeString.some.value;
                 var overlap = host.overlapUnion;
                 if (overlap.kind == UnityOverlapUnion.Kind.Rectangle)
                 {
-                    overlapWidth = overlap.width;
-                    overlapHeight = overlap.height;
+                    overlapWidth = overlap.rectangle.width;
+                    overlapHeight = overlap.rectangle.height;
                 }
                 var overlapReference = host.overlapReference;
                 if (overlapReference.kind == UnityOverlapReferenceUnion.Kind.Text)
-                    overlapLabel = overlapReference.label;
+                    overlapLabel = overlapReference.text.label;
             }
             var stability = ProbeStabilityPlayer();
             var managedReferences = ProbeManagedReferencePlayer();
@@ -299,7 +299,7 @@ namespace Spire.UnityIntegration
             result.cloneLegacyPayloadValuesValid = LegacyPayloadValuesMatch(firstClone);
             result.reflectionSurfaceAvailable = HasCacheReflection(source.additive) &&
                 HasCacheReflection(firstClone.additive);
-            var sourceParentLabel = source.parent.child.label;
+            var sourceParentLabel = source.parent.child.child.text.label;
             firstClone.parent = StabilityNestedParentUnion.Child(
                 StabilityNestedChildUnion.Text(99, "clone-only"),
                 ExpectedStabilityMarker + 99);
@@ -309,10 +309,10 @@ namespace Spire.UnityIntegration
                 ExpectedStabilityMarker + 100);
             firstClone.parentArray = cloneArray;
             result.copyMutationIsolationVerified =
-                source.parent.child.label == sourceParentLabel &&
-                firstClone.parent.child.label == "clone-only" &&
-                source.parentArray[0].child.label == ExpectedStabilityArrayLabel &&
-                firstClone.parentArray[0].child.label == "clone-array-only";
+                source.parent.child.child.text.label == sourceParentLabel &&
+                firstClone.parent.child.child.text.label == "clone-only" &&
+                source.parentArray[0].child.child.text.label == ExpectedStabilityArrayLabel &&
+                firstClone.parentArray[0].child.child.text.label == "clone-array-only";
 
             var sourcePayloadBeforeSecondClone = GetMemberValue(source.additive, "_serializedPayload");
             var secondCloneObject = UnityEngine.Object.Instantiate(sourceObject);
@@ -396,7 +396,7 @@ namespace Spire.UnityIntegration
                 helperNode.id == "cycle-helper-node" &&
                 source.data.helper.Opaque is UnityManagedReferenceNodeOther &&
                 source.data.helper.child.kind == UnityManagedReferenceAdditiveUnion.Kind.Reference &&
-                ReferenceEquals(source.data.helper.child.value, source.data.helper.Node);
+                ReferenceEquals(source.data.helper.child.reference.value, source.data.helper.Node);
             result.cycleValid = source.managedReferenceMetadataAvailable &&
                 source.data.cycleRoot != null &&
                 ReferenceEquals(source.data.cycleRoot!.next!.next, source.data.cycleRoot) &&
@@ -466,30 +466,30 @@ namespace Spire.UnityIntegration
 
         private static bool ManagedReferenceValuesMatch(UnityManagedReferenceHostData data)
             => data.additive.kind == UnityManagedReferenceAdditiveUnion.Kind.Reference &&
-                data.additive.value is UnityManagedReferenceNodeLeaf additiveLeaf &&
+                data.additive.reference.value is UnityManagedReferenceNodeLeaf additiveLeaf &&
                 additiveLeaf.id == "player-shared" &&
                 additiveLeaf.amount == 61 &&
                 data.boxedFields.kind == UnityManagedReferenceBoxedFieldsUnion.Kind.Reference &&
-                ReferenceEquals(data.boxedFields.value, data.sharedNode) &&
+                ReferenceEquals(data.boxedFields.reference.value, data.sharedNode) &&
                 data.boxedTuple.kind == UnityManagedReferenceBoxedTupleUnion.Kind.Reference &&
-                ReferenceEquals(data.boxedTuple.value, data.sharedNode) &&
+                ReferenceEquals(data.boxedTuple.reference.value, data.sharedNode) &&
                 data.unsafeOverlap.kind == UnityManagedReferenceUnsafeOverlapUnion.Kind.Reference &&
-                ReferenceEquals(data.unsafeOverlap.value, data.sharedNode) &&
+                ReferenceEquals(data.unsafeOverlap.reference.value, data.sharedNode) &&
                 data.overlap.kind == UnityManagedReferenceOverlapUnion.Kind.Reference &&
-                ReferenceEquals(data.overlap.value, data.sharedNode) &&
+                ReferenceEquals(data.overlap.reference.value, data.sharedNode) &&
                 data.renamed.kind == UnityManagedReferenceRenamedUnion.Kind.Reference &&
-                ReferenceEquals(data.renamed.value, data.sharedNode) &&
+                ReferenceEquals(data.renamed.reference.value, data.sharedNode) &&
                 data.genericBase.kind == UnityManagedReferenceGeneric<UnityManagedReferenceNodeBase>.Kind.Value &&
-                ReferenceEquals(data.genericBase.value, data.sharedNode) &&
+                ReferenceEquals(data.genericBase.value.value, data.sharedNode) &&
                 data.genericInterface.kind == UnityManagedReferenceGeneric<IUnityManagedReferenceNode>.Kind.Value &&
-                ReferenceEquals(data.genericInterface.value, data.sharedNode) &&
+                ReferenceEquals(data.genericInterface.value.value, data.sharedNode) &&
                 data.genericDerived.kind == UnityManagedReferenceGeneric<UnityManagedReferenceNodeLeaf>.Kind.Value &&
-                ReferenceEquals(data.genericDerived.value, data.sharedNode) &&
+                ReferenceEquals(data.genericDerived.value.value, data.sharedNode) &&
                 data.baseInterface.kind == UnityManagedReferenceBaseInterfaceUnion.Kind.Base &&
-                ReferenceEquals(data.baseInterface.baseValue, data.sharedNode) &&
+                ReferenceEquals(data.baseInterface.@base.baseValue, data.sharedNode) &&
                 data.generatedStateNode != null &&
                 data.generatedStateNode.state.kind == UnityManagedReferenceNodeStateUnion.Kind.Active &&
-                data.generatedStateNode.state.marker == 303 &&
+                data.generatedStateNode.state.active.marker == 303 &&
                 data.generatedStateNode.ObjectHolder is UnityManagedReferenceNodeOther other &&
                 other.id == "helper-opaque" &&
                 ReferenceEquals(data.generatedStateNode.InterfaceHolder, data.sharedNode) &&
@@ -498,21 +498,21 @@ namespace Spire.UnityIntegration
 
         private static bool ManagedReferenceNullValuesMatch(UnityManagedReferenceHostData data)
             => data.additive.kind == UnityManagedReferenceAdditiveUnion.Kind.Reference &&
-                data.additive.value == null &&
+                data.additive.reference.value == null &&
                 data.boxedFields.kind == UnityManagedReferenceBoxedFieldsUnion.Kind.Reference &&
-                data.boxedFields.value == null &&
+                data.boxedFields.reference.value == null &&
                 data.boxedTuple.kind == UnityManagedReferenceBoxedTupleUnion.Kind.Reference &&
-                data.boxedTuple.value == null &&
+                data.boxedTuple.reference.value == null &&
                 data.unsafeOverlap.kind == UnityManagedReferenceUnsafeOverlapUnion.Kind.Reference &&
-                data.unsafeOverlap.value == null &&
+                data.unsafeOverlap.reference.value == null &&
                 data.overlap.kind == UnityManagedReferenceOverlapUnion.Kind.Reference &&
-                data.overlap.value == null;
+                data.overlap.reference.value == null;
 
         private static bool ManagedReferenceLegacyAliasMatches(object? payload)
         {
             var restored = UnityManagedReferenceRenamedUnion.__SpireFromSerialized(payload);
             return restored.kind == UnityManagedReferenceRenamedUnion.Kind.Reference &&
-                restored.value is UnityManagedReferenceNodeLeaf leaf &&
+                restored.reference.value is UnityManagedReferenceNodeLeaf leaf &&
                 leaf.id == "player-shared" &&
                 leaf.amount == 61;
         }
@@ -545,42 +545,42 @@ namespace Spire.UnityIntegration
 
         private static bool StabilityValuesMatch(StabilityPlayerHost host)
             => host.additive.kind == StabilityAdditiveUnion.Kind.First &&
-                host.additive.amount == 11 &&
-                host.additive.label == ExpectedStabilityLabel &&
+                host.additive.first.amount == 11 &&
+                host.additive.first.label == ExpectedStabilityLabel &&
                 host.boxedFields.kind == StabilityBoxedFieldsUnion.Kind.First &&
-                host.boxedFields.amount == 12 &&
-                host.boxedFields.label == ExpectedStabilityLabel &&
+                host.boxedFields.first.amount == 12 &&
+                host.boxedFields.first.label == ExpectedStabilityLabel &&
                 host.boxedTuple.kind == StabilityBoxedTupleUnion.Kind.First &&
-                host.boxedTuple.amount == 13 &&
-                host.boxedTuple.label == ExpectedStabilityLabel &&
+                host.boxedTuple.first.amount == 13 &&
+                host.boxedTuple.first.label == ExpectedStabilityLabel &&
                 host.unsafeOverlap.kind == StabilityUnsafeOverlapUnion.Kind.First &&
-                host.unsafeOverlap.amount == 14 &&
-                host.unsafeOverlap.label == ExpectedStabilityLabel &&
+                host.unsafeOverlap.first.amount == 14 &&
+                host.unsafeOverlap.first.label == ExpectedStabilityLabel &&
                 host.overlap.kind == StabilityOverlapUnion.Kind.First &&
-                host.overlap.amount == 15 &&
-                host.overlap.label == ExpectedStabilityLabel &&
+                host.overlap.first.amount == 15 &&
+                host.overlap.first.label == ExpectedStabilityLabel &&
                 host.parent.kind == StabilityNestedParentUnion.Kind.Child &&
-                host.parent.marker == ExpectedStabilityMarker &&
-                host.parent.child.kind == StabilityNestedChildUnion.Kind.Text &&
-                host.parent.child.count == 16 &&
-                host.parent.child.label == ExpectedStabilityNestedLabel &&
+                host.parent.child.marker == ExpectedStabilityMarker &&
+                host.parent.child.child.kind == StabilityNestedChildUnion.Kind.Text &&
+                host.parent.child.child.text.count == 16 &&
+                host.parent.child.child.text.label == ExpectedStabilityNestedLabel &&
                 host.parentArray.Length == 2 &&
-                host.parentArray[0].child.label == ExpectedStabilityArrayLabel &&
+                host.parentArray[0].child.child.text.label == ExpectedStabilityArrayLabel &&
                 host.parentArray[1].kind == StabilityNestedParentUnion.Kind.Empty &&
                 host.parentList.Count == 2 &&
-                host.parentList[0].child.label == ExpectedStabilityListLabel &&
-                host.parentList[1].label == "stability-list-parent" &&
+                host.parentList[0].child.child.text.label == ExpectedStabilityListLabel &&
+                host.parentList[1].text.label == "stability-list-parent" &&
                 host.genericInt.value.kind == StabilityGenericUnion<int>.Kind.First &&
-                host.genericInt.value.value == ExpectedStabilityGenericInt &&
+                host.genericInt.value.first.value == ExpectedStabilityGenericInt &&
                 host.genericString.value.kind == StabilityGenericUnion<string>.Kind.First &&
-                host.genericString.value.value == ExpectedStabilityGenericString &&
+                host.genericString.value.first.value == ExpectedStabilityGenericString &&
                 host.genericArray.Length == 2 &&
-                host.genericArray[0].value == ExpectedStabilityGenericInt + 1 &&
+                host.genericArray[0].first.value == ExpectedStabilityGenericInt + 1 &&
                 host.genericArray[1].kind == StabilityGenericUnion<int>.Kind.Empty &&
                 host.callbackHelper.callbackMarker == 1 &&
                 host.callbackHelper.child.kind == StabilityNestedChildUnion.Kind.Text &&
-                host.callbackHelper.child.count == 19 &&
-                host.callbackHelper.child.label == ExpectedStabilityNestedLabel;
+                host.callbackHelper.child.text.count == 19 &&
+                host.callbackHelper.child.text.label == ExpectedStabilityNestedLabel;
 
         private static bool LegacyPayloadValuesMatch(StabilityPlayerHost host)
         {
@@ -596,24 +596,24 @@ namespace Spire.UnityIntegration
             var unsafeOverlap = StabilityUnsafeOverlapUnion.__SpireFromSerialized(formerPayloads[5]);
             var overlap = StabilityOverlapUnion.__SpireFromSerialized(formerPayloads[6]);
             return migration.kind == StabilityMigrationUnion.Kind.Renamed &&
-                migration.value == 71 &&
+                migration.renamed.value == 71 &&
                 generic.kind == StabilityGenericUnion<int>.Kind.First &&
-                generic.value == 72 &&
+                generic.first.value == 72 &&
                 nested.kind == StabilityNestedChildUnion.Kind.Text &&
-                nested.count == 73 &&
-                nested.label == "legacy-nested-player" &&
+                nested.text.count == 73 &&
+                nested.text.label == "legacy-nested-player" &&
                 boxedFields.kind == StabilityBoxedFieldsUnion.Kind.First &&
-                boxedFields.amount == ExpectedLegacyBoxedFieldsValue &&
-                boxedFields.label == ExpectedLegacyBoxedFieldsLabel &&
+                boxedFields.first.amount == ExpectedLegacyBoxedFieldsValue &&
+                boxedFields.first.label == ExpectedLegacyBoxedFieldsLabel &&
                 boxedTuple.kind == StabilityBoxedTupleUnion.Kind.First &&
-                boxedTuple.amount == ExpectedLegacyBoxedTupleValue &&
-                boxedTuple.label == ExpectedLegacyBoxedTupleLabel &&
+                boxedTuple.first.amount == ExpectedLegacyBoxedTupleValue &&
+                boxedTuple.first.label == ExpectedLegacyBoxedTupleLabel &&
                 unsafeOverlap.kind == StabilityUnsafeOverlapUnion.Kind.First &&
-                unsafeOverlap.amount == ExpectedLegacyUnsafeOverlapValue &&
-                unsafeOverlap.label == ExpectedLegacyUnsafeOverlapLabel &&
+                unsafeOverlap.first.amount == ExpectedLegacyUnsafeOverlapValue &&
+                unsafeOverlap.first.label == ExpectedLegacyUnsafeOverlapLabel &&
                 overlap.kind == StabilityOverlapUnion.Kind.First &&
-                overlap.amount == ExpectedLegacyOverlapValue &&
-                overlap.label == ExpectedLegacyOverlapLabel;
+                overlap.first.amount == ExpectedLegacyOverlapValue &&
+                overlap.first.label == ExpectedLegacyOverlapLabel;
         }
 
         private static bool StabilityCachesCleared(StabilityPlayerHost host)

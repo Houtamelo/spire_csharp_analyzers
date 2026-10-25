@@ -15,7 +15,7 @@ namespace TestNs
         int Test(Geometry g) => g switch
         {
             { kind: Geometry.Kind.Origin } => 0,
-            { kind: Geometry.Kind.Located, point: var point } => throw new System.NotImplementedException()
+            { kind: Geometry.Kind.Located, located: { point: var point  } } => throw new System.NotImplementedException()
         };
     }
 }

@@ -2,7 +2,7 @@ using Houtamelo.Spire;
 
 namespace Houtamelo.Spire.GlobalConfig.EndToEnd.Types;
 
-// No explicit Layout — should use Additive from global config
+// No explicit reference storage — should use Auto from global config
 [DiscriminatedUnion]
 public partial struct Shape
 {
@@ -10,8 +10,8 @@ public partial struct Shape
     [Variant] public static partial Shape Rect(float w, float h);
 }
 
-// Explicit Layout.Overlap overrides global Additive default
-[DiscriminatedUnion(layout: Layout.Overlap)]
+// Explicit Typed storage overrides global Auto default
+[DiscriminatedUnion(ReferenceStorage = ReferenceStorage.Typed)]
 public partial struct Event
 {
     [Variant] public static partial Event Click(int x, int y);

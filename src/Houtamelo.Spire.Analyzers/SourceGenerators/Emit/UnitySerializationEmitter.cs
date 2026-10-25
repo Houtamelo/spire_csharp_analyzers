@@ -10,149 +10,144 @@ namespace Houtamelo.Spire.Analyzers.SourceGenerators.Emit;
 /// payload is serialized.
 internal static class UnitySerializationEmitter
 {
-    private const string PayloadBaseName = "__SpireSerializedPayloadBase";
-    private const string ReconstructedPayloadName = "__SpireReconstructedPayload";
+    private const string ReconstructedPayloadType = "global::Houtamelo.Spire.Generated.__SpireReconstructedPayload";
+    private const string ReconstructedPayloadInstance = ReconstructedPayloadType + ".Instance";
     internal const string RuntimeKindFieldName = "_kind";
 
-    public static string Emit(UnionDeclaration union, bool hasInlineArray = false)
-        => union.Strategy switch
-        {
-            EmitStrategy.BoxedFields => BoxedFieldsEmitter.EmitUnity(union),
-            EmitStrategy.BoxedTuple => BoxedTupleEmitter.EmitUnity(union),
-            EmitStrategy.UnsafeOverlap => UnsafeOverlapEmitter.EmitUnity(union, hasInlineArray),
-            EmitStrategy.Overlap => OverlapEmitter.EmitUnity(union),
-            _ => AdditiveEmitter.EmitCore(union, unitySerialization: true),
-        };
-
-    public static void EmitSerializedStorage(SourceBuilder sb, UnionDeclaration union)
+    /// Emits the single active managed-reference cache used by the variant-payload
+    /// representation. The shared wrapper declaration is emitted once per
+    /// compilation by UnitySerializationSupportEmitter.
+    internal static void EmitVariantSerializedStorage(SourceBuilder sb, UnionDeclaration union)
     {
-        _ = union;
-        sb.AppendLine("[global::UnityEngine.SerializeReference]");
-        sb.AppendLine($"private {PayloadBaseName}? _serializedPayload;");
+        var serializeReference = GeneratedAliasEmitter.AttributeReference(
+            union,
+            "SerializeReference",
+            "global::UnityEngine.SerializeReference");
+        var payloadBase = GeneratedAliasEmitter.Reference(
+            union,
+            "UnitySerializationPayloadBase",
+            "global::Houtamelo.Spire.UnitySerializationPayloadBase");
+        sb.AppendLine($"[{serializeReference}] {payloadBase}? _serializedPayload;");
         sb.AppendLine();
     }
 
-    public static void EmitCallbacksAndPayloads(
+    /// Emits callbacks for a union whose public payload structs are themselves
+    /// Unity-serializable. This path intentionally does not emit per-variant
+    /// serializer classes: each cache value is a closed shared wrapper.
+    internal static void EmitVariantPayloadCallbacks(
         SourceBuilder sb,
         UnionDeclaration union,
-        string unionType,
-        IEnumerable<string> runtimeResetStatements)
+        string unionType)
     {
-        sb.AppendLine("[global::UnityEngine.Scripting.Preserve]");
-        sb.AppendLine($"private sealed class {ReconstructedPayloadName} : {PayloadBaseName} {{ }}");
-        sb.AppendLine($"private static readonly {PayloadBaseName} {ReconstructedPayloadName}Instance = new {ReconstructedPayloadName}();");
-        sb.AppendLine();
-        EmitSerializedStateHelpers(sb, union);
-        EmitCallbacks(sb, union, unionType);
-        EmitRuntimeResetMethod(sb, runtimeResetStatements);
-        EmitPayloadTypes(sb, union);
+        EmitVariantSerializedStateHelpers(sb, union);
+        EmitVariantCallbacks(sb, union, unionType);
     }
 
-    private static void EmitSerializedStateHelpers(SourceBuilder sb, UnionDeclaration union)
+    private static void EmitVariantSerializedStateHelpers(SourceBuilder sb, UnionDeclaration union)
     {
-        AppendHidden(sb, "public bool __SpireSerializedStateCurrent()");
+        AppendHidden(sb, union, "public readonly bool __SpireSerializedStateCurrent()");
         sb.OpenBrace();
         sb.AppendLine("return this.__SpireSerializedStateCurrent(this._serializedPayload);");
         sb.CloseBrace();
         sb.AppendLine();
 
-        AppendHidden(sb, "public bool __SpireSerializedStateCurrent(object? payload)");
+        AppendHidden(sb, union, "public readonly bool __SpireSerializedStateCurrent(object? payload) => (this._kind, payload) switch");
         sb.OpenBrace();
+        var factoryNames = union.Variants.Select(candidate => candidate.Name).ToArray();
         foreach (var variant in union.Variants)
         {
-            var payloadVariable = "payload_" + Safe(variant.Name);
-            EmitStateBranch(sb, union, variant, PayloadName(variant.Name), payloadVariable);
-            if (HasAlias(variant))
+            var payloadVariable = "serializedPayload_" + Safe(variant.Name);
+            var wrapperType = GeneratedAliasEmitter.SerializedPayloadReference(union, variant.Name);
+            var arm = $"(Kind.{IdentifierUtility.Escape(variant.Name)}, {wrapperType} {payloadVariable}) =>";
+            if (variant.Fields.Length == 0)
             {
-                var aliasVariable = "payload_" + Safe(variant.FormerlySerializedAs!);
-                EmitStateBranch(sb, union, variant, PayloadName(variant.FormerlySerializedAs!), aliasVariable);
+                sb.AppendLine(arm + " true,");
+                continue;
             }
+            sb.AppendLine(arm);
+
+            var accessor = VariantNaming.AccessorName(variant.Name, factoryNames);
+            var bridge = GeneratedAliasEmitter.Reference(
+                union,
+                "SpireSerialization",
+                "global::Houtamelo.Spire.UnitySerializationBridge");
+            var matches = variant.Fields.Select(field =>
+            {
+                var runtime = $"this.{IdentifierUtility.Escape(accessor)}.{IdentifierUtility.Escape(field.Name)}";
+                var serialized = $"{payloadVariable}.value.{IdentifierUtility.Escape(field.Name)}";
+                var comparer = field.IsUnityManagedReference
+                    ? "SpireSerializedManagedReferenceValuesEqual"
+                    : "SpireSerializedValuesEqual";
+                return $"{bridge}.{comparer}((object?){runtime}, (object?){serialized})";
+            }).ToArray();
+            sb.Indent();
+            for (var index = 0; index < matches.Length; index++)
+                sb.AppendLine($"{(index == 0 ? string.Empty : "&& ")}{matches[index]}{(index + 1 == matches.Length ? "," : string.Empty)}");
+            sb.Dedent();
         }
-        sb.AppendLine("return false;");
-        sb.CloseBrace();
+        sb.AppendLine("_ => false,");
+        sb.CloseBrace(";");
         sb.AppendLine();
     }
 
-    private static void EmitStateBranch(
-        SourceBuilder sb,
-        UnionDeclaration union,
-        VariantInfo variant,
-        string payloadType,
-        string payloadVariable)
-    {
-        sb.AppendLine($"if (payload is {payloadType} {payloadVariable})");
-        sb.OpenBrace();
-        sb.AppendLine($"if (this.kind != Kind.{IdentifierUtility.Escape(variant.Name)}) return false;");
-        if (variant.Fields.Length == 0)
-            sb.AppendLine("return true;");
-        else
-        {
-            var matches = variant.Fields.Select(field =>
-                SerializedFieldMatchExpression(union, field, payloadVariable));
-            sb.AppendLine("return " + string.Join(" && ", matches) + ";");
-        }
-        sb.CloseBrace();
-    }
-
-    private static string SerializedFieldMatchExpression(
-        UnionDeclaration union,
-        FieldInfo field,
-        string payloadVariable)
-    {
-        var runtimeProperty = UsesSafeBoxedFieldAccess(union)
-            ? $"this.__SpireGetSerializedField_{Safe(field.ResolvedPropertyName)}()"
-            : $"this.{IdentifierUtility.Escape(field.ResolvedPropertyName)}";
-        var payloadField = $"{payloadVariable}.{IdentifierUtility.Escape(field.Name)}";
-        var comparer = field.IsUnityManagedReference
-            ? "__SpireSerializedManagedReferenceValuesEqual"
-            : "__SpireSerializedValuesEqual";
-        return $"global::Houtamelo.Spire.UnitySerializationBridge.{comparer}((object?){runtimeProperty}, (object?){payloadField})";
-    }
-
-    private static void EmitCallbacks(
+    private static void EmitVariantCallbacks(
         SourceBuilder sb,
         UnionDeclaration union,
         string unionType)
     {
-        AppendHidden(sb, "public void OnBeforeSerialize() => this = this.__SpirePrepareForSerialization();");
+        AppendHidden(sb, union, $"void {GeneratedAliasEmitter.Reference(union, "ISerializationCallbackReceiver", "global::UnityEngine.ISerializationCallbackReceiver")}.OnBeforeSerialize() => this = this.__SpirePrepareForSerialization();");
         sb.AppendLine();
 
-        AppendHidden(sb, $"public {unionType} __SpirePrepareForSerialization()");
+        AppendHidden(sb, union, $"public {unionType} __SpirePrepareForSerialization()");
         sb.OpenBrace();
         sb.AppendLine($"switch (this.{RuntimeKindFieldName})");
         sb.OpenBrace();
-
         foreach (var variant in union.Variants)
         {
             var variantName = IdentifierUtility.Escape(variant.Name);
-            var payloadName = PayloadName(variant.Name);
-            var currentPayload = "currentPayload_" + Safe(variant.Name);
-            var preparedPayload = "preparedPayload_" + Safe(variant.Name);
+            var payloadType = VariantPayloadType(union, variant.Name);
+            var wrapperType = GeneratedAliasEmitter.SerializedPayloadReference(union, variant.Name);
+            var currentVariable = "currentPayload_" + Safe(variant.Name);
+            var aliasVariable = "formerPayload_" + Safe(variant.FormerlySerializedAs ?? variant.Name);
+            var preparedVariable = "preparedPayload_" + Safe(variant.Name);
+            var preparedValueVariable = "preparedValue_" + Safe(variant.Name);
+
             sb.AppendLine($"case Kind.{variantName}:");
             sb.Indent();
-            sb.AppendLine($"var {currentPayload} = this._serializedPayload as {payloadName};");
-            sb.AppendLine($"if ({currentPayload} is not null && this.__SpireSerializedStateCurrent({currentPayload}))");
+            sb.AppendLine($"var {currentVariable} = this._serializedPayload as {wrapperType};");
+            if (HasAlias(variant))
+            {
+                var aliasType = GeneratedAliasEmitter.SerializedPayloadReference(union, variant.FormerlySerializedAs!);
+                sb.AppendLine($"var {aliasVariable} = this._serializedPayload as {aliasType};");
+            }
+            sb.AppendLine($"if ({currentVariable} is not null && this.__SpireSerializedStateCurrent({currentVariable}))");
             sb.Indent();
             sb.AppendLine("return this;");
             sb.Dedent();
-            sb.AppendLine($"var {preparedPayload} = new {payloadName}();");
-            EmitPayloadRefresh(sb, union, variant, preparedPayload, currentPayload);
-            sb.AppendLine($"this._serializedPayload = {preparedPayload};");
+            sb.AppendLine($"var {preparedVariable} = new {wrapperType}();");
+            EmitVariantPayloadRefresh(
+                sb,
+                union,
+                variant,
+                payloadType,
+                preparedValueVariable,
+                currentVariable,
+                HasAlias(variant) ? aliasVariable : null);
+            sb.AppendLine($"{preparedVariable}.value = {preparedValueVariable};");
+            sb.AppendLine($"this._serializedPayload = {preparedVariable};");
             sb.AppendLine("return this;");
             sb.Dedent();
         }
-
         sb.AppendLine("default:");
         sb.Indent();
         sb.AppendLine("this._serializedPayload = null;");
-        sb.AppendLine("this.__SpireResetRuntimeFields();");
         sb.AppendLine("return this;");
         sb.Dedent();
         sb.CloseBrace();
         sb.CloseBrace();
         sb.AppendLine();
 
-        AppendHidden(sb, "public void OnAfterDeserialize()");
+        AppendHidden(sb, union, $"void {GeneratedAliasEmitter.Reference(union, "ISerializationCallbackReceiver", "global::UnityEngine.ISerializationCallbackReceiver")}.OnAfterDeserialize()");
         sb.OpenBrace();
         sb.AppendLine("var rawPayload = this._serializedPayload;");
         sb.AppendLine($"var validPayload = __SpireTryFromSerialized(rawPayload, out {unionType} restored);");
@@ -165,20 +160,24 @@ internal static class UnitySerializationEmitter
         sb.AppendLine($"global::UnityEngine.Debug.LogWarning(\"invalid union serialization data, defaulting to {fallbackName}\");");
         sb.CloseBrace();
         sb.AppendLine("#if !UNITY_EDITOR");
-        sb.AppendLine($"this._serializedPayload = {ReconstructedPayloadName}Instance;");
+        sb.AppendLine($"this._serializedPayload = {ReconstructedPayloadInstance};");
         sb.AppendLine("#endif");
         sb.CloseBrace();
         sb.AppendLine();
 
-        AppendHidden(sb, $"private static bool __SpireTryFromSerialized(object? payload, out {unionType} restored)");
+        AppendHidden(sb, union, $"static bool __SpireTryFromSerialized(object? payload, out {unionType} restored)");
+        sb.OpenBrace();
+        sb.AppendLine("switch (payload)");
         sb.OpenBrace();
         foreach (var variant in union.Variants)
         {
-            EmitPayloadRestoreBranch(sb, variant, PayloadName(variant.Name), "payload");
+            EmitVariantPayloadRestoreBranch(sb, union, variant, variant.Name, "payload");
             if (HasAlias(variant))
-                EmitPayloadRestoreBranch(sb, variant, PayloadName(variant.FormerlySerializedAs!), "payload");
+                EmitVariantPayloadRestoreBranch(sb, union, variant, variant.FormerlySerializedAs!, "payload");
         }
 
+        sb.AppendLine("default:");
+        sb.Indent();
         if (union.Variants.Length == 0)
         {
             sb.AppendLine($"restored = default({unionType});");
@@ -193,31 +192,33 @@ internal static class UnitySerializationEmitter
             sb.AppendLine($"restored = {fallbackVariable};");
         }
         sb.AppendLine("return false;");
+        sb.Dedent();
+        sb.CloseBrace();
         sb.CloseBrace();
         sb.AppendLine();
 
-        AppendHidden(sb, $"public static {unionType} __SpireFromSerialized(object? payload)");
+        AppendHidden(sb, union, $"public static {unionType} __SpireFromSerialized(object? payload)");
         sb.OpenBrace();
         sb.AppendLine($"__SpireTryFromSerialized(payload, out {unionType} restored);");
         sb.AppendLine("return restored;");
         sb.CloseBrace();
         sb.AppendLine();
 
-        AppendHidden(sb, $"public {unionType} __SpireHydrateSerialized()");
+        AppendHidden(sb, union, $"public readonly {unionType} __SpireHydrateSerialized()");
         sb.OpenBrace();
-        sb.AppendLine($"if (this._serializedPayload is {ReconstructedPayloadName})");
+        sb.AppendLine($"if (this._serializedPayload is {ReconstructedPayloadType})");
         sb.Indent();
         sb.AppendLine("return this;");
         sb.Dedent();
         sb.AppendLine("var hydrated = __SpireFromSerialized(this._serializedPayload);");
         sb.AppendLine("#if !UNITY_EDITOR");
-        sb.AppendLine($"hydrated._serializedPayload = {ReconstructedPayloadName}Instance;");
+        sb.AppendLine($"hydrated._serializedPayload = {ReconstructedPayloadInstance};");
         sb.AppendLine("#endif");
         sb.AppendLine("return hydrated;");
         sb.CloseBrace();
         sb.AppendLine();
 
-        AppendHidden(sb, $"public static {unionType} __SpireCreateDefault(int kind)");
+        AppendHidden(sb, union, $"public static {unionType} __SpireCreateDefault(int kind)");
         sb.OpenBrace();
         sb.AppendLine("switch ((Kind)kind)");
         sb.OpenBrace();
@@ -230,7 +231,7 @@ internal static class UnitySerializationEmitter
         }
         sb.AppendLine("default:");
         sb.Indent();
-        sb.AppendLine("var unknown = default(" + unionType + ");");
+        sb.AppendLine($"var unknown = default({unionType});");
         sb.AppendLine($"unknown.{RuntimeKindFieldName} = (Kind)kind;");
         sb.AppendLine("return unknown;");
         sb.Dedent();
@@ -239,161 +240,127 @@ internal static class UnitySerializationEmitter
         sb.AppendLine();
     }
 
-    private static void EmitPayloadRestoreBranch(
-        SourceBuilder sb,
-        VariantInfo variant,
-        string payloadType,
-        string payloadExpression)
-    {
-        var payloadVariable = "typedPayload_" + Safe(payloadType);
-        sb.AppendLine($"if ({payloadExpression} is {payloadType} {payloadVariable})");
-        sb.OpenBrace();
-        var args = variant.Fields
-            .Select(field => RestoreExpression(
-                field,
-                $"{payloadVariable}.{IdentifierUtility.Escape(field.Name)}",
-                variant.Name))
-            .ToArray();
-        sb.AppendLine($"var restoredVariant = {IdentifierUtility.Escape(variant.Name)}({string.Join(", ", args)});");
-        sb.AppendLine($"restoredVariant._serializedPayload = {payloadExpression} as {PayloadBaseName};");
-        sb.AppendLine("restored = restoredVariant;");
-        sb.AppendLine("return true;");
-        sb.CloseBrace();
-    }
-
-    private static bool HasAlias(VariantInfo variant)
-        => !string.IsNullOrEmpty(variant.FormerlySerializedAs) &&
-            !string.Equals(
-                variant.FormerlySerializedAs,
-                variant.Name,
-                StringComparison.Ordinal);
-
-    private static void EmitPayloadRefresh(
+    private static void EmitVariantPayloadRefresh(
         SourceBuilder sb,
         UnionDeclaration union,
         VariantInfo variant,
-        string payloadVariable,
-        string priorPayloadVariable)
+        string payloadType,
+        string preparedValueVariable,
+        string currentVariable,
+        string? aliasVariable)
     {
+        var factoryNames = union.Variants.Select(candidate => candidate.Name).ToArray();
+        var accessor = VariantNaming.AccessorName(variant.Name, factoryNames);
+        var values = new List<string>();
         foreach (var field in variant.Fields)
         {
-            var property = UsesSafeBoxedFieldAccess(union)
-                ? $"this.__SpireGetSerializedField_{Safe(field.ResolvedPropertyName)}()"
-                : "this." + IdentifierUtility.Escape(field.ResolvedPropertyName);
-            var payload = payloadVariable + "." + IdentifierUtility.Escape(field.Name);
-            var prior = $"({priorPayloadVariable} is null ? (object?)null : (object?){priorPayloadVariable}.{IdentifierUtility.Escape(field.Name)})";
-
+            var fieldName = IdentifierUtility.Escape(field.Name);
+            var property = $"this.{IdentifierUtility.Escape(accessor)}.{fieldName}";
+            var prior = PriorPayloadFieldExpression(currentVariable, aliasVariable, fieldName);
+            string value;
             if (field.IsUnityManagedReference)
             {
-                sb.AppendLine($"{payload} = ({field.TypeFullName})global::Houtamelo.Spire.UnitySerializationBridge.PrepareManagedReference((object?){property}, {prior})!;");
+                value = $"({field.TypeFullName}){Bridge(union)}.PrepareManagedReference((object?){property}, {prior})!";
             }
             else if (field.RequiresUnityRuntimeDispatch)
             {
-                sb.AppendLine($"{payload} = ({field.TypeFullName})global::Houtamelo.Spire.UnitySerializationBridge.PrepareDynamic((object?){property}, {prior})!;");
+                value = $"({field.TypeFullName}){Bridge(union)}.PrepareDynamic((object?){property}, {prior})!";
             }
             else if (field.IsUnityUnion || field.IsUnityUnionCollection || field.IsUnityComposite)
             {
-                sb.AppendLine($"{payload} = ({field.TypeFullName})global::Houtamelo.Spire.UnitySerializationBridge.Prepare((object?){property}, {prior})!;");
+                value = $"({field.TypeFullName}){Bridge(union)}.Prepare((object?){property}, {prior})!";
             }
             else
             {
-                sb.AppendLine($"{payload} = {property};");
+                value = property;
             }
+            values.Add(value);
         }
+        sb.AppendLine($"var {preparedValueVariable} = new {payloadType}({string.Join(", ", values)});");
     }
 
-    private static bool UsesSafeBoxedFieldAccess(UnionDeclaration union)
-        => union.Strategy is EmitStrategy.BoxedFields or EmitStrategy.BoxedTuple;
-
-    private static void EmitRuntimeResetMethod(
-        SourceBuilder sb,
-        IEnumerable<string> runtimeResetStatements)
+    private static string PriorPayloadFieldExpression(
+        string currentVariable,
+        string? aliasVariable,
+        string fieldName)
     {
-        sb.AppendLine("private void __SpireResetRuntimeFields()");
-        sb.OpenBrace();
-        foreach (var statement in runtimeResetStatements)
-            sb.AppendLine(statement);
-        sb.CloseBrace();
-        sb.AppendLine();
+        if (aliasVariable is null)
+            return $"{currentVariable} is null ? (object?)null : (object?){currentVariable}.value.{fieldName}";
+
+        return $"{currentVariable} is not null ? (object?){currentVariable}.value.{fieldName} : " +
+            $"{aliasVariable} is null ? (object?)null : (object?){aliasVariable}.value.{fieldName}";
     }
 
-    private static string RestoreExpression(FieldInfo field, string expression, string variantName)
+    private static void EmitVariantPayloadRestoreBranch(
+        SourceBuilder sb,
+        UnionDeclaration union,
+        VariantInfo variant,
+        string payloadVariantName,
+        string payloadExpression)
+    {
+        var payloadVariable = "typedPayload_" + Safe(payloadVariantName);
+        var restoredVariable = "restoredVariant_" + Safe(payloadVariantName);
+        sb.AppendLine($"case {GeneratedAliasEmitter.SerializedPayloadReference(union, payloadVariantName)} {payloadVariable}:");
+        sb.Indent();
+        var args = variant.Fields.Select(field => RestoreVariantFieldExpression(
+            union,
+            field,
+            $"{payloadVariable}.value.{IdentifierUtility.Escape(field.Name)}"));
+        sb.AppendLine($"var {restoredVariable} = {IdentifierUtility.Escape(variant.Name)}({string.Join(", ", args)});");
+        sb.AppendLine($"{restoredVariable}._serializedPayload = {payloadVariable};");
+        sb.AppendLine($"restored = {restoredVariable};");
+        sb.AppendLine("return true;");
+        sb.Dedent();
+    }
+
+    private static string RestoreVariantFieldExpression(
+        UnionDeclaration union,
+        FieldInfo field,
+        string expression)
     {
         if (field.IsUnityManagedReference)
-            return $"({field.TypeFullName})global::Houtamelo.Spire.UnitySerializationBridge.RestoreManagedReference((object?){expression})!";
+            return $"({field.TypeFullName}){Bridge(union)}.RestoreManagedReference((object?){expression})!";
 
         if (field.RequiresUnityRuntimeDispatch)
-            return $"({field.TypeFullName})global::Houtamelo.Spire.UnitySerializationBridge.RestoreDynamic((object?){expression})!";
+            return $"({field.TypeFullName}){Bridge(union)}.RestoreDynamic((object?){expression})!";
 
         if (field.IsUnityUnion)
             return expression + ".__SpireHydrateSerialized()";
 
         if (field.IsUnityUnionCollection || field.IsUnityComposite)
-            return $"({field.TypeFullName})global::Houtamelo.Spire.UnitySerializationBridge.Restore((object?){expression})!";
+            return $"({field.TypeFullName}){Bridge(union)}.Restore((object?){expression})!";
 
-        _ = variantName;
         return expression;
     }
 
-    private static void EmitPayloadTypes(SourceBuilder sb, UnionDeclaration union)
-    {
-        sb.AppendLine("[global::System.Serializable]");
-        sb.AppendLine($"private abstract class {PayloadBaseName} : global::Houtamelo.Spire.UnitySerializationPayloadBase");
-        sb.OpenBrace();
-        sb.CloseBrace();
-        sb.AppendLine();
+    private static string VariantPayloadType(UnionDeclaration union, string variantName)
+        => GeneratedAliasEmitter.VariantPayloadReference(union, variantName);
 
-        foreach (var variant in union.Variants)
-        {
-            EmitPayloadType(
-                sb,
-                variant,
-                PayloadName(variant.Name),
-                isFormerNamePayload: false);
-            if (HasAlias(variant))
-                EmitPayloadType(
-                    sb,
-                    variant,
-                    PayloadName(variant.FormerlySerializedAs!),
-                    isFormerNamePayload: true);
-        }
-    }
+    private static bool HasAlias(VariantInfo variant)
+        => variant.HasFormerlySerializedAs;
 
-    private static void EmitPayloadType(
+    private static string Bridge(UnionDeclaration union)
+        => GeneratedAliasEmitter.Reference(
+            union,
+            "SpireSerialization",
+            "global::Houtamelo.Spire.UnitySerializationBridge");
+
+    private static void AppendHidden(
         SourceBuilder sb,
-        VariantInfo variant,
-        string payloadName,
-        bool isFormerNamePayload)
+        UnionDeclaration union,
+        string declaration)
     {
-        if (isFormerNamePayload)
-            sb.AppendLine("[global::UnityEngine.Scripting.Preserve]");
-        sb.AppendLine("[global::System.Serializable]");
-        sb.AppendLine($"private sealed class {payloadName} : {PayloadBaseName}");
-        sb.OpenBrace();
-        if (isFormerNamePayload)
-        {
-            sb.AppendLine("[global::UnityEngine.Scripting.Preserve]");
-            sb.AppendLine($"public {payloadName}() {{ }}");
-        }
-        foreach (var field in variant.Fields)
-        {
-            sb.AppendLine("[global::UnityEngine.SerializeField]");
-            if (field.IsUnityManagedReference)
-                sb.AppendLine("[global::UnityEngine.SerializeReference]");
-            sb.AppendLine($"public {field.TypeFullName} {IdentifierUtility.Escape(field.Name)} = default!;");
-        }
-        sb.CloseBrace();
-        sb.AppendLine();
-    }
-
-    private static void AppendHidden(SourceBuilder sb, string declaration)
-    {
-        sb.AppendLine("[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]");
+        var editorBrowsable = GeneratedAliasEmitter.AttributeReference(
+            union,
+            "EditorBrowsable",
+            "global::System.ComponentModel.EditorBrowsableAttribute");
+        var editorBrowsableState = GeneratedAliasEmitter.Reference(
+            union,
+            "EditorBrowsableState",
+            "global::System.ComponentModel.EditorBrowsableState");
+        sb.AppendLine($"[{editorBrowsable}({editorBrowsableState}.Never)]");
         sb.AppendLine(declaration);
     }
-
-    private static string PayloadName(string variantName)
-        => "__Spire" + Safe(variantName) + "Payload";
 
     private static string Safe(string name)
     {

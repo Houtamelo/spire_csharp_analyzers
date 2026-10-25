@@ -14,7 +14,7 @@ namespace TestNs
         {
             int Classify(Event ev) => ev switch
             {
-                { kind: Event.Kind.Click, x: var c } => c,
+                { kind: Event.Kind.Click, click: { x: var c  } } => c,
             };
             return Classify(e);
         }

@@ -22,22 +22,6 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    private static readonly DiagnosticDescriptor LayoutIgnoredForRecord = new(
-        id: "SPIRE_DU004",
-        title: "Layout parameter ignored for record discriminated unions",
-        messageFormat: "Layout parameter is ignored for record discriminated unions",
-        category: "SourceGeneration",
-        defaultSeverity: DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
-
-    private static readonly DiagnosticDescriptor OverlapOnGenericStruct = new(
-        id: "SPIRE_DU005",
-        title: "Generic structs cannot use Overlap layout",
-        messageFormat: "Generic structs cannot use Overlap layout (CLR restriction); use BoxedFields or BoxedTuple",
-        category: "SourceGeneration",
-        defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
-
     private static readonly DiagnosticDescriptor SystemTextJsonNotReferenced = new(
         id: "SPIRE_DU006",
         title: "System.Text.Json not referenced",
@@ -58,14 +42,6 @@ internal static class Diagnostics
         id: "SPIRE_DU008",
         title: "ref struct cannot use JSON generation",
         messageFormat: "ref struct cannot use JSON generation (ref structs cannot be generic type arguments)",
-        category: "SourceGeneration",
-        defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
-
-    private static readonly DiagnosticDescriptor UnsafeOverlapRequiresUnsafe = new(
-        id: "SPIRE_DU009",
-        title: "UnsafeOverlap layout requires AllowUnsafeBlocks",
-        messageFormat: "UnsafeOverlap layout requires <AllowUnsafeBlocks>true</AllowUnsafeBlocks> in the project",
         category: "SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -99,6 +75,9 @@ internal static class Diagnostics
     private static readonly DiagnosticDescriptor UnitySerializationVariantAlias = UnityError(
         "SPIRE_DU017", "Invalid Unity variant serialization alias");
 
+    private static readonly DiagnosticDescriptor GenericContainingType = UnityError(
+        "SPIRE_DU018", "Discriminated union cannot be nested in a generic type");
+
     private static DiagnosticDescriptor UnityError(string id, string title) => new(
         id: id,
         title: title,
@@ -111,18 +90,16 @@ internal static class Diagnostics
     {
         ["SPIRE_DU002"] = RefStructNotSupported,
         ["SPIRE_DU003"] = NoVariantsFound,
-        ["SPIRE_DU004"] = LayoutIgnoredForRecord,
-        ["SPIRE_DU005"] = OverlapOnGenericStruct,
         ["SPIRE_DU006"] = SystemTextJsonNotReferenced,
         ["SPIRE_DU007"] = NewtonsoftJsonNotReferenced,
         ["SPIRE_DU008"] = RefStructJsonNotSupported,
-        ["SPIRE_DU009"] = UnsafeOverlapRequiresUnsafe,
         ["SPIRE_DU010"] = FieldNameTypeConflict,
         ["SPIRE_DU011"] = ClassNotSupported,
         ["SPIRE_DU013"] = UnitySerializationDeclaration,
         ["SPIRE_DU015"] = UnitySerializationMemberConflict,
         ["SPIRE_DU016"] = UnitySerializationReference,
         ["SPIRE_DU017"] = UnitySerializationVariantAlias,
+        ["SPIRE_DU018"] = GenericContainingType,
     };
 
     public static DiagnosticDescriptor GetDescriptor(UnionDiagnostic diag)

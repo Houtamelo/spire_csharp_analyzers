@@ -10,10 +10,9 @@ generic struct serialization callbacks, reproduced without Spire; native seriali
 on that version is not supported. Other Editor versions and platforms need
 separate validation.
 The compiler extensions use a Roslyn 4.3 baseline and load in Unity 6000.3.26f1
-LTS. Complete 6.3 support is still being evaluated: `UnsafeOverlap` requires an
-additional runtime Unsafe DLL on that Editor, and the showcase dependencies
-remain those of the verified 6.5 environment. Ordinary `Overlap` does not require
-that DLL.
+LTS. Complete 6.3 support is still being evaluated; the showcase dependencies
+remain those of the verified 6.5 environment. The current payload representation
+does not require unsafe code or an additional runtime Unsafe DLL.
 
 1. Add this folder using **Window → Package Manager → + → Install package from disk**
    and select `package.json`, or copy it to `Packages/com.houtamelo.spire`.

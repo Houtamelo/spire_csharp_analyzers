@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,30 +9,36 @@ public sealed class ShowcaseController: MonoBehaviour {
 
     int nextCommand;
 
-    public ShowcasePreset Preset      { get => preset; set => preset = value; }
-    public int            Health      { get;           private set; } = 100;
-    public Vector2        Position    { get;           private set; }
-    public float          LastSpeed   { get;           private set; }
-    public string         LastMessage { get;           private set; } = "";
-    public ActorMode      Mode        { get;           private set; } = ActorMode.Idle;
+    public ShowcasePreset Preset { get => preset; set => preset = value; }
+
+    public int       Health      { get; private set; } = 100;
+    public Vector2   Position    { get; private set; }
+    public float     LastSpeed   { get; private set; }
+    public string    LastMessage { get; private set; } = "";
+    public ActorMode Mode        { get; private set; } = ActorMode.Idle;
 
     public void Execute(GameplayCommand command) {
-        switch (command.kind) {
-            case GameplayCommand.Kind.Idle:
+        switch (command) {
+            case { kind: GameplayCommand.Kind.Idle }:
                 Mode = ActorMode.Idle;
             break;
-            case GameplayCommand.Kind.Move:
-                Position = command.destination;
-                LastSpeed = command.speed;
+            case { kind: GameplayCommand.Kind.Teleport, teleport: var teleport }:
+                Position = teleport.target;
+                LastSpeed = teleport.duration;
                 Mode = ActorMode.Acting;
             break;
-            case GameplayCommand.Kind.Speak:
-                LastMessage = command.speech;
+            case { kind: GameplayCommand.Kind.Move, move: var move }:
+                Position = move.destination;
+                LastSpeed = move.speed;
                 Mode = ActorMode.Acting;
             break;
-            case GameplayCommand.Kind.ApplyEffect:
-                if (command.effect is { } effect)
-                    Health = effect.Apply(Health);
+            case { kind: GameplayCommand.Kind.Speak, speak: var speak }:
+                LastMessage = speak.speech;
+                Mode = ActorMode.Acting;
+            break;
+            case { kind: GameplayCommand.Kind.ApplyEffect, applyEffect: var applyEffect }:
+                if (applyEffect.effect is not null)
+                    Health = applyEffect.effect.Apply(Health);
 
                 Mode = ActorMode.Acting;
             break;
@@ -53,7 +58,7 @@ public sealed class ShowcaseController: MonoBehaviour {
         if (!preset) return;
 
         GUILayout.BeginArea(new Rect(24, 24, Mathf.Min(Screen.width - 48, 850), Screen.height - 48), GUI.skin!.box!);
-        GUILayout.Label("Houtamelo.Spire — Unity showcase", GUI.skin!.box!);
+        GUILayout.Label("Houtamelo.Spire — Unity showcase", GUI.skin.box!);
         GUILayout.Label("Select ShowcasePreset in the Project window to edit variants and their fields.");
         GUILayout.Space(12);
         GUILayout.Label($"Selected command: {preset.selectedCommand.kind}");
@@ -72,9 +77,9 @@ public sealed class ShowcaseController: MonoBehaviour {
         GUILayout.Label($"Move commands in queue (OfKind): {ShowcaseAlgorithms.CountMoves(preset.commands)}");
         GUILayout.Label($"Shape area (property patterns): {ShowcaseAlgorithms.Area(preset.shape):0.##}");
         var result = preset.result;
-        if (result is { kind: OperationResult<int>.Kind.Success, value: var value })
+        if (result is { kind: OperationResult<int>.Kind.Success, success: { value: var value } })
             GUILayout.Label($"Generic result: Success({value})");
-        else if (result is { kind: OperationResult<int>.Kind.Failure, error: var error })
+        else if (result is { kind: OperationResult<int>.Kind.Failure, failure: { error: var error } })
             GUILayout.Label($"Generic result: Failure({error})");
 
         GUILayout.Label(

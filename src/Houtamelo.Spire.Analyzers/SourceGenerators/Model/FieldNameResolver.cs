@@ -6,8 +6,8 @@ using Microsoft.CodeAnalysis;
 
 namespace Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 
-/// Resolves the public property name and type for each struct-union field.
-/// Factory and payload metadata remain on FieldInfo.Name and TypeFullName.
+/// Groups CLR-equivalent storage types and merges nullable annotations.
+/// Public payload fields keep their declared names and types.
 internal static class FieldNameResolver
 {
     private static readonly SymbolDisplayFormat TypeDisplayFormat =
@@ -21,170 +21,36 @@ internal static class FieldNameResolver
     public static string ConstructorTypeName(ITypeSymbol type)
         => ConstructorTypeNameCore(type);
 
-    public static EquatableArray<VariantInfo> Resolve(
+    public static EquatableArray<VariantInfo> ResolveStorageTypes(
         EquatableArray<VariantInfo> variants,
         INamedTypeSymbol unionType,
         Compilation compilation)
     {
-        var variantList = variants.ToList();
-        var methods = unionType.GetMembers()
+        var storageTypes = unionType.GetMembers()
             .OfType<IMethodSymbol>()
             .Where(method => method.IsStatic && HasVariantAttribute(method))
-            .GroupBy(method => method.Name, StringComparer.Ordinal)
-            .Select(group => group.First())
-            .ToDictionary(method => method.Name, StringComparer.Ordinal);
+            .SelectMany(method => method.Parameters)
+            .GroupBy(parameter => ConstructorTypeName(parameter.Type), StringComparer.Ordinal)
+            .ToDictionary(
+                group => group.Key,
+                group => MergeType(group.First().Type, group.Select(parameter => parameter.Type),
+                    compilation, constructorMerge: true)!.ToDisplayString(TypeDisplayFormat),
+                StringComparer.Ordinal);
 
-        var entries = variantList
-            .SelectMany(variant =>
-            {
-                methods.TryGetValue(variant.Name, out var method);
-                return variant.Fields.Select((field, index) => new FieldEntry(
-                    variant,
-                    index,
-                    field,
-                    method is not null && index < method.Parameters.Length
-                        ? method.Parameters[index].Type
-                        : null,
-                    method is not null && index < method.Parameters.Length
-                        ? Canonicalize(method.Parameters[index].Type, compilation)
-                        : null));
-            })
-            .ToList();
-
-        var resolved = new Dictionary<(string Variant, int Index), (string Name, string Type)>();
-        foreach (var group in entries.GroupBy(entry => entry.Field.Name, StringComparer.Ordinal))
+        return new EquatableArray<VariantInfo>(variants.Select(variant => variant with
         {
-            var groupEntries = group.ToList();
-            var typeGroups = groupEntries
-                .GroupBy(entry => entry.CanonicalType, SymbolEqualityComparer.Default)
-                .ToList();
-            var incompatible = typeGroups.Count > 1;
-            var mergedType = !incompatible && groupEntries.Count > 1
-                ? MergeType(
-                    groupEntries.Select(entry => entry.Type)
-                        .FirstOrDefault(type => type is not null),
-                    groupEntries.Select(entry => entry.Type)
-                        .Where(type => type is not null)
-                        .Cast<ITypeSymbol>(),
-                    compilation)
-                : null;
-            var mergedTypeName = mergedType?.ToDisplayString(TypeDisplayFormat);
-
-            foreach (var entry in groupEntries)
+            Fields = new EquatableArray<FieldInfo>(variant.Fields.Select(field => field with
             {
-                var propertyName = incompatible
-                    ? CamelCase(entry.Variant.Name) + "_" + entry.Field.Name
-                    : entry.Field.Name;
-                var propertyType = incompatible
-                    ? entry.Field.TypeFullName
-                    : mergedTypeName ?? entry.Field.TypeFullName;
-                resolved[(entry.Variant.Name, entry.Index)] = (propertyName, propertyType);
-            }
-        }
-
-        var fieldEntries = entries.ToDictionary(
-            entry => (entry.Variant.Name, entry.Index));
-        var constructorTypes = new Dictionary<(string Variant, int Index), string>();
-        foreach (var variantGroup in variantList.GroupBy(variant => string.Join(
-            "\u001f",
-            variant.Fields.Select(field => field.ConstructorTypeKey ?? field.TypeFullName))))
-        {
-            var firstVariant = variantGroup.First();
-            for (var index = 0; index < firstVariant.Fields.Length; index++)
-            {
-                var types = variantGroup
-                    .Select(variant => fieldEntries[(variant.Name, index)].Type)
-                    .Where(type => type is not null)
-                    .Cast<ITypeSymbol>()
-                    .ToList();
-                if (types.Count == 0)
-                    continue;
-
-                var firstType = types[0];
-                var commonType = types.Any(type =>
-                        type.TypeKind == TypeKind.Dynamic ||
-                        type.SpecialType == SpecialType.System_Object)
-                    ? "object"
-                    : MergeType(firstType, types, compilation, constructorMerge: true)
-                        ?.ToDisplayString(TypeDisplayFormat)
-                        ?? firstVariant.Fields[index].TypeFullName;
-                foreach (var variant in variantGroup)
-                    constructorTypes[(variant.Name, index)] = commonType;
-            }
-        }
-
-        var result = variantList
-            .Select(variant => variant with
-            {
-                Fields = new EquatableArray<FieldInfo>(variant.Fields
-                    .Select((field, index) =>
-                    {
-                        if (!resolved.TryGetValue((variant.Name, index), out var value))
-                            return field;
-
-                        return field with
-                        {
-                            PropertyName = value.Name == field.Name ? null : value.Name,
-                            PropertyTypeFullName = value.Type == field.TypeFullName ? null : value.Type,
-                            ConstructorTypeFullName = constructorTypes.TryGetValue(
-                                (variant.Name, index),
-                                out var constructorType)
-                                ? constructorType
-                                : null,
-                        };
-                    })
-                    .ToImmutableArray())
-            })
-            .ToImmutableArray();
-
-        return new EquatableArray<VariantInfo>(result);
+                StorageTypeFullName = field.ConstructorTypeKey is { } key && storageTypes.TryGetValue(key, out var type)
+                    ? type
+                    : field.TypeFullName,
+            }).ToImmutableArray()),
+        }).ToImmutableArray());
     }
 
     private static bool HasVariantAttribute(IMethodSymbol method)
         => method.GetAttributes().Any(attribute =>
             attribute.AttributeClass?.Name == "VariantAttribute");
-
-    /// Produces a semantic grouping symbol while dropping tuple element names
-    /// and reference-nullability annotations. Assembly identity and value-type
-    /// Nullable<T> structure remain part of the symbol.
-    private static ITypeSymbol Canonicalize(
-        ITypeSymbol type,
-        Compilation compilation)
-    {
-        ITypeSymbol canonical = type;
-        if (type is IArrayTypeSymbol array)
-        {
-            canonical = compilation.CreateArrayTypeSymbol(
-                Canonicalize(array.ElementType, compilation),
-                array.Rank);
-        }
-        else if (type is IPointerTypeSymbol pointer)
-        {
-            canonical = compilation.CreatePointerTypeSymbol(
-                Canonicalize(pointer.PointedAtType, compilation));
-        }
-        else if (type is INamedTypeSymbol named)
-        {
-            if (named.IsTupleType)
-            {
-                canonical = compilation.CreateTupleTypeSymbol(
-                    named.TupleElements
-                        .Select(element => Canonicalize(element.Type, compilation))
-                        .ToImmutableArray());
-            }
-            else if (named.TypeArguments.Length > 0)
-            {
-                canonical = named.ConstructedFrom.Construct(
-                    named.TypeArguments
-                        .Select(argument => Canonicalize(argument, compilation))
-                        .ToArray());
-            }
-        }
-
-        return canonical.IsReferenceType
-            ? canonical.WithNullableAnnotation(NullableAnnotation.NotAnnotated)
-            : canonical;
-    }
 
     /// Produces a constructor-only CLR identity while keeping type and
     /// assembly identity in nested generic arguments.
@@ -368,10 +234,4 @@ internal static class FieldNameResolver
             name.Substring(lowercaseLength);
     }
 
-    private sealed record FieldEntry(
-        VariantInfo Variant,
-        int Index,
-        FieldInfo Field,
-        ITypeSymbol? Type,
-        ITypeSymbol? CanonicalType);
 }

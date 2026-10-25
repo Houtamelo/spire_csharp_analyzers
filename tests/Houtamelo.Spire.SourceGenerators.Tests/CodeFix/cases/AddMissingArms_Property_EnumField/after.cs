@@ -14,8 +14,8 @@ namespace TestNs
     {
         int Test(Account a) => a switch
         {
-            { kind: Account.Kind.Guest, name: var n } => 1,
-            { kind: Account.Kind.Member, status: var status } => throw new System.NotImplementedException()
+            { kind: Account.Kind.Guest, guest: { name: var n  } } => 1,
+            { kind: Account.Kind.Member, member: { status: var status  } } => throw new System.NotImplementedException()
         };
     }
 }

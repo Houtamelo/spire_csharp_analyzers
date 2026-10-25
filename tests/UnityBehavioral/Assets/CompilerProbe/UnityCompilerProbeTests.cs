@@ -88,7 +88,7 @@ public sealed class UnityCompilerProbeTests
         const string source = """
             using Houtamelo.Spire;
 
-            [DiscriminatedUnion(Layout.Additive)]
+            [DiscriminatedUnion]
             public partial struct ProbeUnion
             {
                 [Variant] public static partial ProbeUnion Some(int value);
@@ -119,7 +119,8 @@ public sealed class UnityCompilerProbeTests
         var value = factory.Invoke(null, new object[] { 42 })!;
 
         Assert.That(unionType.GetProperty("kind")?.GetValue(value)?.ToString(), Is.EqualTo("Some"));
-        Assert.That(GetMemberValue(unionType, value, "value"), Is.EqualTo(42));
+        var payload = GetMemberValue(unionType, value, "some")!;
+        Assert.That(GetMemberValue(payload.GetType(), payload, "value"), Is.EqualTo(42));
     }
 
     [Test]
@@ -128,7 +129,7 @@ public sealed class UnityCompilerProbeTests
         const string source = """
             using Houtamelo.Spire;
 
-            [DiscriminatedUnion(Layout.Additive)]
+            [DiscriminatedUnion]
             public partial struct ExhaustiveProbeUnion
             {
                 [Variant] public static partial ExhaustiveProbeUnion Some(int value);

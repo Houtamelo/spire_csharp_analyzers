@@ -10,7 +10,7 @@ public sealed class UnityBoxedFieldsData
 }
 
 [Serializable]
-[DiscriminatedUnion(Layout.BoxedFields)]
+[DiscriminatedUnion]
 public partial struct UnityBoxedFieldsUnion
 {
     [Variant] public static partial UnityBoxedFieldsUnion Number(int value);

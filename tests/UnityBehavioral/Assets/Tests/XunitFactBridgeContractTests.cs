@@ -22,11 +22,11 @@ public sealed class XunitFactBridgeContractTests
         var cases = XunitTestBridge.Discover(typeof(XunitFactNUnitRunner).Assembly);
         var names = cases.Select(testCase => testCase.FullName).ToArray();
 
-        Assert.That(names, Has.Length.EqualTo(129));
+        Assert.That(names, Has.Length.EqualTo(73));
         Assert.That(names, Is.Unique);
         Assert.That(names, Is.EqualTo(names.OrderBy(name => name, StringComparer.Ordinal).ToArray()));
         Assert.That(names, Does.Contain("Spire.BehavioralTests.Tests.AdditiveTests.Circle_TagAndRadius"));
-        Assert.That(names, Does.Contain("Spire.BehavioralTests.Tests.UnsafeOverlapTests.RefFields"));
+        Assert.That(names, Does.Contain("Spire.BehavioralTests.Tests.InlinerTests.InlinerStruct_ForwardsStaticCall"));
     }
 
     [Test]

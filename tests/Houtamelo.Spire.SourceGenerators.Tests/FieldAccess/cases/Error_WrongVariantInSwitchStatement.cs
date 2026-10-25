@@ -15,8 +15,8 @@ namespace TestNs
         {
             switch (v)
             {
-                case (Vehicle.Kind.Car, _):
-                    return v.wheelDiameter; //~ ERROR
+                case { kind: Vehicle.Kind.Car }:
+                    return v.bike.wheelDiameter; //~ ERROR
                 default:
                     return 0;
             }

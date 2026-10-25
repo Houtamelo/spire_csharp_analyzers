@@ -14,7 +14,7 @@ namespace TestNs
     {
         void Test(LogEntry entry)
         {
-            Console.WriteLine(entry.infoMessage); //~ ERROR
+            Console.WriteLine(entry.info.infoMessage); //~ ERROR
         }
     }
 }

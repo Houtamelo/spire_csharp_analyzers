@@ -13,8 +13,8 @@ namespace TestNs
     {
         int Test(Shape s) => s switch
         {
-            (Shape.Kind.Circle, double r) => 1,
-            (Shape.Kind.Square, int x) => 2,
+            { kind: Shape.Kind.Circle, circle: { radius: double r } } => 1,
+            { kind: Shape.Kind.Square, square: { sideLength: int x } } => 2,
         };
     }
 }

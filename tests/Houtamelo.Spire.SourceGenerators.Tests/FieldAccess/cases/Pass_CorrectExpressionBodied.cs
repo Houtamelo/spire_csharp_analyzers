@@ -13,8 +13,8 @@ namespace TestNs
     {
         string Describe(Node n) => n switch
         {
-            (Node.Kind.Leaf, _) => n.leafValue.ToString(),
-            (Node.Kind.Branch, _) => n.branchLabel,
+            { kind: Node.Kind.Leaf, leaf: { leafValue: var value } } => value.ToString(),
+            { kind: Node.Kind.Branch, branch: { branchLabel: var label } } => label,
             _ => "?",
         };
     }

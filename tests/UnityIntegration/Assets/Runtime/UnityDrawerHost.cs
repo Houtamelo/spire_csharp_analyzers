@@ -34,7 +34,7 @@ namespace Spire.UnityIntegration
         public UnityNestedOwnerData nested;
         public UnityGenericUnion<int> genericInt;
         public UnityGenericUnion<string> genericString;
-        public UnityGenericContainer<int>.NestedUnion genericContainerNested;
+        public UnityGenericContainerNestedUnion genericContainerNested;
         public UnityGenericDrawerParent genericParent;
     }
 

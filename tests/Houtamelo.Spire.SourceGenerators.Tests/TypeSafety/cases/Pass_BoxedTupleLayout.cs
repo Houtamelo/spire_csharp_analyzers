@@ -2,7 +2,7 @@
 using Houtamelo.Spire;
 namespace TestNs
 {
-    [DiscriminatedUnion(Layout.BoxedTuple)]
+    [DiscriminatedUnion]
     partial struct Token
     {
         [Variant] public static partial Token Ident(string name);
@@ -12,8 +12,8 @@ namespace TestNs
     {
         int Test(Token t) => t switch
         {
-            (Token.Kind.Ident, object? val) => 1,
-            (Token.Kind.Number, object? val) => 2,
+            { kind: Token.Kind.Ident, ident: { name: var val } } => 1,
+            { kind: Token.Kind.Number, number: { value: var val } } => 2,
         };
     }
 }

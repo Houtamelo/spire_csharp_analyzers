@@ -9,11 +9,14 @@
 
 ## Description
 
-A positional pattern on a struct discriminated union uses a typed binding that doesn't match the variant's actual field type. The `Deconstruct` method returns `object?` for shared-arity overloads, so the C# compiler won't catch type mismatches — this analyzer does.
+A pattern inside a variant payload accessor uses a typed binding that does not
+match the declared field type. Payload `Deconstruct` outputs retain their field
+types. The analyzer checks nested property and positional patterns.
 
 ### Code fix
 
-"Fix field type" — replaces the incorrect type with the variant's declared field type.
+"Fix field type" uses a `var` capture in a property pattern, preserving nulls,
+or the declared field type in a positional pattern.
 
 ## Examples
 
@@ -29,8 +32,8 @@ partial struct Shape
 
 var result = s switch
 {
-    (Shape.Kind.Circle, string bad) => 1,  // SPIRE011: field is 'double', not 'string'
-    (Shape.Kind.Square, int x) => 2,
+    { kind: Shape.Kind.Circle, circle: { radius: string bad } } => 1, // SPIRE011
+    { kind: Shape.Kind.Square, square: { sideLength: var x } } => 2,
 };
 ```
 
@@ -39,8 +42,8 @@ var result = s switch
 ```csharp
 var result = s switch
 {
-    (Shape.Kind.Circle, double r) => 1,
-    (Shape.Kind.Square, int x) => 2,
+    { kind: Shape.Kind.Circle, circle: { radius: var r } } => 1,
+    { kind: Shape.Kind.Square, square: { sideLength: var x } } => 2,
 };
 ```
 

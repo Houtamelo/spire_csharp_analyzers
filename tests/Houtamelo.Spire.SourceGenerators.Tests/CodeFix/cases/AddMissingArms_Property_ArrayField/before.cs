@@ -12,7 +12,7 @@ namespace TestNs
     {
         int Test(Payload p) => p switch
         {
-            { kind: Payload.Kind.Single, item: var i } => i,
+            { kind: Payload.Kind.Single, single: { item: var i  } } => i,
         };
     }
 }

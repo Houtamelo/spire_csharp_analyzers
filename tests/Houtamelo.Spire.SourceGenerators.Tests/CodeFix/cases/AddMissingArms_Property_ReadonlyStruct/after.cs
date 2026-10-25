@@ -12,8 +12,8 @@ namespace TestNs
     {
         int Test(Result r) => r switch
         {
-            { kind: Result.Kind.Ok, value: var v } => 1,
-            { kind: Result.Kind.Err, message: var message } => throw new System.NotImplementedException()
+            { kind: Result.Kind.Ok, ok: { value: var v  } } => 1,
+            { kind: Result.Kind.Err, err: { message: var message  } } => throw new System.NotImplementedException()
         };
     }
 }

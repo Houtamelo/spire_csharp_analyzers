@@ -13,7 +13,7 @@ namespace TestNs
     {
         string Describe(Event e) => e switch
         {
-            (Event.Kind.Click, _) => $"key={e.keyChar}", //~ ERROR
+            { kind: Event.Kind.Click } => $"key={e.keyPress.keyChar}", //~ ERROR
             _ => "other",
         };
     }

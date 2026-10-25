@@ -29,6 +29,8 @@ Scripts/ShowcaseController.cs
 Scripts/ShowcaseController.cs.meta
 Scripts/ShowcasePreset.cs
 Scripts/ShowcasePreset.cs.meta
+Scripts/csc.rsp
+Scripts/csc.rsp.meta
 ShowcaseURP.asset
 ShowcaseURP.asset.meta
 Tests.meta
@@ -44,6 +46,8 @@ Tests/ShowcaseSceneTests.cs
 Tests/ShowcaseSceneTests.cs.meta
 Tests/ShowcaseTestSupport.cs
 Tests/ShowcaseTestSupport.cs.meta
+Tests/csc.rsp
+Tests/csc.rsp.meta
 URP_RendererData.asset
 URP_RendererData.asset.meta
 UniversalRenderPipelineGlobalSettings.asset

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -49,29 +48,39 @@ internal static class StructPropertyPatternBuilder
         if (factory is not null)
         {
             var usedNames = CollectEnclosingNames(scope, semanticModel);
+            var accessorName = ResolveAccessorName(subjectType, variantName);
+            var fieldSubpatterns = new List<SubpatternSyntax>();
             foreach (var parameter in factory.Parameters)
             {
-                var propertyName = ResolvePropertyName(
-                    subjectType,
-                    variantName,
-                    parameter.Name,
-                    semanticModel.Compilation);
                 var captureName = MakeUniqueName(parameter.Name, usedNames);
                 usedNames.Add(captureName);
 
-                subpatterns.Add(SyntaxFactory.Subpattern(
+                fieldSubpatterns.Add(SyntaxFactory.Subpattern(
                     SyntaxFactory.NameColon(
-                        SyntaxFactory.IdentifierName(EscapeIdentifier(propertyName))),
+                        SyntaxFactory.IdentifierName(EscapeIdentifier(parameter.Name))),
                     SyntaxFactory.VarPattern(
                         SyntaxFactory.SingleVariableDesignation(
                             SyntaxFactory.Identifier(EscapeIdentifier(captureName))))));
+            }
+
+            if (fieldSubpatterns.Count > 0)
+            {
+                var payloadPattern = SyntaxFactory.RecursivePattern()
+                    .WithPropertyPatternClause(
+                        SyntaxFactory.PropertyPatternClause(
+                            SyntaxFactory.SeparatedList(fieldSubpatterns)));
+                subpatterns.Add(SyntaxFactory.Subpattern(
+                    SyntaxFactory.NameColon(
+                        SyntaxFactory.IdentifierName(EscapeIdentifier(accessorName))),
+                    payloadPattern));
             }
         }
 
         return SyntaxFactory.RecursivePattern()
             .WithPropertyPatternClause(
                 SyntaxFactory.PropertyPatternClause(
-                    SyntaxFactory.SeparatedList(subpatterns)));
+                    SyntaxFactory.SeparatedList(subpatterns)))
+            .NormalizeWhitespace();
     }
 
     private static ExpressionSyntax BuildKindExpression(
@@ -84,87 +93,19 @@ internal static class StructPropertyPatternBuilder
             SyntaxFactory.IdentifierName(EscapeIdentifier(variantName)));
     }
 
-    private static string ResolvePropertyName(
+    private static string ResolveAccessorName(
         INamedTypeSymbol subjectType,
-        string variantName,
-        string fieldName,
-        Compilation compilation)
+        string variantName)
     {
-        if (!HasIncompatibleFieldCollision(subjectType, fieldName, compilation))
-            return fieldName;
-
-        return ToCamelCase(variantName) + "_" + fieldName;
-    }
-
-    private static bool HasIncompatibleFieldCollision(
-        INamedTypeSymbol subjectType,
-        string fieldName,
-        Compilation compilation)
-    {
-        ITypeSymbol? firstType = null;
-
-        foreach (var method in subjectType.GetMembers().OfType<IMethodSymbol>())
-        {
-            if (!method.IsStatic || !IsVariantFactory(method))
-                continue;
-
-            foreach (var parameter in method.Parameters.Where(p => p.Name == fieldName))
-            {
-                var canonicalType = Canonicalize(parameter.Type, compilation);
-                if (firstType is null)
-                {
-                    firstType = canonicalType;
-                    continue;
-                }
-
-                if (!SymbolEqualityComparer.Default.Equals(firstType, canonicalType))
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
-    /// Produces the same collision identity used by the source generator:
-    /// reference annotations and tuple element names do not affect identity,
-    /// while Nullable<T>, assembly identity, and nested generic shapes do.
-    private static ITypeSymbol Canonicalize(
-        ITypeSymbol type,
-        Compilation compilation)
-    {
-        ITypeSymbol canonical = type;
-        if (type is IArrayTypeSymbol array)
-        {
-            canonical = compilation.CreateArrayTypeSymbol(
-                Canonicalize(array.ElementType, compilation),
-                array.Rank);
-        }
-        else if (type is IPointerTypeSymbol pointer)
-        {
-            canonical = compilation.CreatePointerTypeSymbol(
-                Canonicalize(pointer.PointedAtType, compilation));
-        }
-        else if (type is INamedTypeSymbol named)
-        {
-            if (named.IsTupleType)
-            {
-                canonical = compilation.CreateTupleTypeSymbol(
-                    named.TupleElements
-                        .Select(element => Canonicalize(element.Type, compilation))
-                        .ToImmutableArray());
-            }
-            else if (named.TypeArguments.Length > 0)
-            {
-                canonical = named.ConstructedFrom.Construct(
-                    named.TypeArguments
-                        .Select(argument => Canonicalize(argument, compilation))
-                        .ToArray());
-            }
-        }
-
-        return canonical.IsReferenceType
-            ? canonical.WithNullableAnnotation(NullableAnnotation.NotAnnotated)
-            : canonical;
+        var accessorName = ToCamelCase(variantName);
+        var hasFactoryConflict = subjectType.GetMembers()
+            .OfType<IMethodSymbol>()
+            .Where(method => method.IsStatic && IsVariantFactory(method))
+            .Any(method => string.Equals(
+                NormalizeIdentifier(method.Name),
+                accessorName,
+                StringComparison.Ordinal));
+        return hasFactoryConflict ? accessorName + "_value" : accessorName;
     }
 
     private static bool IsVariantFactory(IMethodSymbol method)

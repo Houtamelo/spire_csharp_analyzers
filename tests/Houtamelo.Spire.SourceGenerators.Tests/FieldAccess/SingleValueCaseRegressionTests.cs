@@ -30,7 +30,7 @@ public sealed class SingleValueCaseRegressionTests
                     switch (command.kind)
                     {
                         case Command.Kind.Move:
-                            return command.destination;
+                            return command.move.destination;
                         default:
                             return 0;
                     }
@@ -61,8 +61,9 @@ public sealed class SingleValueCaseRegressionTests
                     switch (command.kind)
                     {
                         case Command.Kind.Move:
+                            return command.move.destination;
                         case Command.Kind.Rotate:
-                            return command.destination;
+                            return command.rotate.destination;
                         default:
                             return 0;
                     }
@@ -93,7 +94,7 @@ public sealed class SingleValueCaseRegressionTests
                     switch (command.kind)
                     {
                         case Command.Kind.Move:
-                            return command.angle;
+                            return command.rotate.angle;
                         default:
                             return 0;
                     }
@@ -121,7 +122,7 @@ public sealed class SingleValueCaseRegressionTests
             static class Reader
             {
                 public static int Read(Command command)
-                    => command.destination;
+                    => command.move.destination;
             }
             """);
 

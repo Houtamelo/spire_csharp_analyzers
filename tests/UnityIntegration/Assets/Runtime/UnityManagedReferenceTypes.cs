@@ -33,7 +33,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityManagedReferenceNodeStateUnion
     {
         [Variant]
@@ -133,7 +133,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityManagedReferenceAdditiveUnion
     {
         [Variant]
@@ -164,7 +164,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.BoxedFields)]
+    [DiscriminatedUnion]
     public partial struct UnityManagedReferenceBoxedFieldsUnion
     {
         [Variant]
@@ -198,7 +198,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.BoxedTuple)]
+    [DiscriminatedUnion]
     public partial struct UnityManagedReferenceBoxedTupleUnion
     {
         [Variant]
@@ -229,7 +229,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.UnsafeOverlap)]
+    [DiscriminatedUnion]
     public partial struct UnityManagedReferenceUnsafeOverlapUnion
     {
         [Variant]
@@ -260,7 +260,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Overlap)]
+    [DiscriminatedUnion]
     public partial struct UnityManagedReferenceOverlapUnion
     {
         [Variant]
@@ -291,7 +291,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityManagedReferenceRenamedUnion
     {
         [Variant(FormerlySerializedAs = "OldReference")]
@@ -306,7 +306,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityManagedReferenceGeneric<T>
     {
         [Variant]
@@ -320,7 +320,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityManagedReferenceBaseInterfaceUnion
     {
         [Variant]

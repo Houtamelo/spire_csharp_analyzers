@@ -3,7 +3,7 @@ using System;
 using Houtamelo.Spire;
 
 [Serializable]
-[DiscriminatedUnion(Layout.Additive)]
+[DiscriminatedUnion]
 public partial struct StabilityNestedChildUnion
 {
     [Variant] public static partial StabilityNestedChildUnion Text(int count, string? label);
@@ -11,7 +11,7 @@ public partial struct StabilityNestedChildUnion
 }
 
 [Serializable]
-[DiscriminatedUnion(Layout.Additive)]
+[DiscriminatedUnion]
 public partial struct StabilityAdditiveUnion
 {
     [Variant] public static partial StabilityAdditiveUnion First(int amount, string? label);
@@ -20,7 +20,7 @@ public partial struct StabilityAdditiveUnion
 }
 
 [Serializable]
-[DiscriminatedUnion(Layout.BoxedFields)]
+[DiscriminatedUnion]
 public partial struct StabilityBoxedFieldsUnion
 {
     [Variant] public static partial StabilityBoxedFieldsUnion First(int amount, string? label);
@@ -29,7 +29,7 @@ public partial struct StabilityBoxedFieldsUnion
 }
 
 [Serializable]
-[DiscriminatedUnion(Layout.BoxedTuple)]
+[DiscriminatedUnion]
 public partial struct StabilityBoxedTupleUnion
 {
     [Variant] public static partial StabilityBoxedTupleUnion First(int amount, string? label);
@@ -38,7 +38,7 @@ public partial struct StabilityBoxedTupleUnion
 }
 
 [Serializable]
-[DiscriminatedUnion(Layout.UnsafeOverlap)]
+[DiscriminatedUnion]
 public partial struct StabilityUnsafeOverlapUnion
 {
     [Variant] public static partial StabilityUnsafeOverlapUnion First(int amount, string? label);
@@ -47,7 +47,7 @@ public partial struct StabilityUnsafeOverlapUnion
 }
 
 [Serializable]
-[DiscriminatedUnion(Layout.Overlap)]
+[DiscriminatedUnion]
 public partial struct StabilityOverlapUnion
 {
     [Variant] public static partial StabilityOverlapUnion First(int amount, string? label);

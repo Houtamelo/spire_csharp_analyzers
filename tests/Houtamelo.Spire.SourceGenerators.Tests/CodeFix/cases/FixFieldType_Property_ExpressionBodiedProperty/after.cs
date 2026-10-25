@@ -14,8 +14,8 @@ namespace TestNs
 
         int Tag => _token switch
         {
-            { kind: Token.Kind.Number, value: var bad } => 1,
-            { kind: Token.Kind.Text, content: var x } => 2,
+            { kind: Token.Kind.Number, number: { value: var bad  } } => 1,
+            { kind: Token.Kind.Text, text: { content: var x  } } => 2,
         };
     }
 }

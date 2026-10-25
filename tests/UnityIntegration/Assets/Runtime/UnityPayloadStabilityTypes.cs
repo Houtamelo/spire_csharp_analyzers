@@ -8,7 +8,7 @@ using UnityEngine;
 namespace Spire.UnityIntegration
 {
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct StabilityAdditiveUnion
     {
         [Variant]
@@ -22,7 +22,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.BoxedFields)]
+    [DiscriminatedUnion]
     public partial struct StabilityBoxedFieldsUnion
     {
         [Variant(FormerlySerializedAs = "OldBoxedFieldsFirst")]
@@ -36,7 +36,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.BoxedTuple)]
+    [DiscriminatedUnion]
     public partial struct StabilityBoxedTupleUnion
     {
         [Variant(FormerlySerializedAs = "OldBoxedTupleFirst")]
@@ -50,7 +50,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.BoxedTuple)]
+    [DiscriminatedUnion]
     public partial struct StabilityBoxedTupleCompositeUnion
     {
         [Variant]
@@ -64,7 +64,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.UnsafeOverlap)]
+    [DiscriminatedUnion]
     public partial struct StabilityUnsafeOverlapUnion
     {
         [Variant(FormerlySerializedAs = "OldUnsafeOverlapFirst")]
@@ -78,7 +78,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Overlap)]
+    [DiscriminatedUnion]
     public partial struct StabilityOverlapUnion
     {
         [Variant(FormerlySerializedAs = "OldOverlapFirst")]
@@ -92,7 +92,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct StabilityNestedChildUnion
     {
         [Variant(FormerlySerializedAs = "OldNestedText")]
@@ -106,7 +106,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct StabilityNestedParentUnion
     {
         [Variant]
@@ -120,7 +120,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct StabilityGenericUnion<T>
     {
         [Variant(FormerlySerializedAs = "OldGenericFirst")]
@@ -174,7 +174,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct StabilityMigrationUnion
     {
         [Variant(FormerlySerializedAs = "OldValue")]
@@ -188,7 +188,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct StabilityDrawerAliasUnion
     {
         [Variant]

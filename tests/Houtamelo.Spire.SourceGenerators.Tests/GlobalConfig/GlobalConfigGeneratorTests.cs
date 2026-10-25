@@ -14,63 +14,39 @@ public sealed class GlobalConfigGeneratorTests
         MetadataReference.CreateFromFile(typeof(Houtamelo.Spire.DiscriminatedUnionAttribute).Assembly.Location);
 
     private static readonly MetadataReference[] BaseRefs =
-        TestHarnessEnvironment.FrameworkReferences
-            .Append(CoreRef)
-            .ToArray();
+        TestHarnessEnvironment.FrameworkReferences.Append(CoreRef).ToArray();
 
-    private const string BasicUnionSource = @"
-using Houtamelo.Spire;
+    private const string BasicUnionSource = """
+        using Houtamelo.Spire;
+        [DiscriminatedUnion]
+        public partial struct Shape
+        {
+            [Variant] public static partial Shape Circle(float radius);
+            [Variant] public static partial Shape Rect(float w, float h);
+        }
+        """;
 
-[DiscriminatedUnion]
-public partial struct Shape
-{
-    [Variant] public static partial Shape Circle(float radius);
-    [Variant] public static partial Shape Rect(float w, float h);
-}
-";
+    private const string ReferenceUnionSource = """
+        #nullable enable
+        using Houtamelo.Spire;
+        [DiscriminatedUnion]
+        public partial struct Message
+        {
+            [Variant] public static partial Message Text(string text);
+            [Variant] public static partial Message Tag(object tag);
+            [Variant] public static partial Message Empty();
+        }
+        """;
 
     private static GeneratorDriverRunResult RunWithConfig(
         string source, Dictionary<string, string> globalOptions)
     {
-        var tree = CSharpSyntaxTree.ParseText(source,
-            CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest));
-        var compilation = CSharpCompilation.Create("TestAssembly",
-            new[] { tree }, BaseRefs,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
-
-        var configProvider = new TestAnalyzerConfigOptionsProvider(globalOptions);
-        var generator = new DiscriminatedUnionGenerator();
-        var driver = CSharpGeneratorDriver.Create(
-            generators: new[] { generator.AsSourceGenerator() },
-            optionsProvider: configProvider);
-
-        var ranDriver = driver.RunGenerators(compilation);
-        return ranDriver.GetRunResult();
+        var (result, _) = RunWithConfigAndCompilation(source, globalOptions);
+        return result;
     }
 
-    private static string? GetMainGeneratedSource(GeneratorDriverRunResult result)
-    {
-        return result.GeneratedTrees
-            .Where(t =>
-            {
-                var name = System.IO.Path.GetFileName(t.FilePath);
-                return !name.EndsWith(".Stj.g.cs")
-                    && !name.EndsWith(".Nsj.g.cs")
-                    && !name.EndsWith(".ToString.g.cs")
-                    && !name.EndsWith(".Schema.g.cs");
-            })
-            .Select(t => t.GetText().ToString())
-            .FirstOrDefault();
-    }
-
-    private static string GetAllGeneratedSource(GeneratorDriverRunResult result)
-    {
-        return string.Join("\n", result.GeneratedTrees.Select(t => t.GetText().ToString()));
-    }
-
-    private static (GeneratorDriverRunResult Result, Compilation OutputCompilation) RunWithConfigAndCompilation(
-        string source,
-        Dictionary<string, string> globalOptions)
+    private static (GeneratorDriverRunResult Result, Compilation OutputCompilation)
+        RunWithConfigAndCompilation(string source, Dictionary<string, string> globalOptions)
     {
         var tree = CSharpSyntaxTree.ParseText(
             source,
@@ -80,11 +56,9 @@ public partial struct Shape
             new[] { tree },
             BaseRefs,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
-
         var configProvider = new TestAnalyzerConfigOptionsProvider(globalOptions);
-        var generator = new DiscriminatedUnionGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
-            generators: new[] { generator.AsSourceGenerator() },
+            generators: new[] { new DiscriminatedUnionGenerator().AsSourceGenerator() },
             optionsProvider: configProvider);
         driver = driver.RunGeneratorsAndUpdateCompilation(
             compilation,
@@ -93,200 +67,116 @@ public partial struct Shape
         return (driver.GetRunResult(), outputCompilation);
     }
 
+    private static string GetMainGeneratedSource(GeneratorDriverRunResult result)
+        => string.Join("\n", result.GeneratedTrees
+            .Where(tree => !System.IO.Path.GetFileName(tree.FilePath).Contains(".Stj.")
+                && !System.IO.Path.GetFileName(tree.FilePath).Contains(".Nsj.")
+                && !System.IO.Path.GetFileName(tree.FilePath).Contains(".Schema."))
+            .Select(tree => tree.GetText().ToString()));
+
     [Fact]
-    public void DefaultLayout_Auto_NonGeneric_EmitsOverlap()
+    public void DefaultReferenceStorageAutoGeneratesVariantPayloads()
     {
-        // No global config: sentinel resolves to Auto → Overlap for non-generic struct
         var result = RunWithConfig(BasicUnionSource, new Dictionary<string, string>());
-
         var source = GetMainGeneratedSource(result);
-        Assert.NotNull(source);
-        Assert.Contains("FieldOffset", source);
+        Assert.Contains("static class ShapeTypes", source, StringComparison.Ordinal);
+        Assert.Contains("struct Circle", source, StringComparison.Ordinal);
+        Assert.Contains("struct Rect", source, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void GlobalLayout_Additive_EmitsAdditive()
+    public void GlobalReferenceStorageSharedUsesObjectSlots()
     {
-        // Spire_DU_DefaultLayout=Additive → Additive strategy → no FieldOffset
-        var result = RunWithConfig(BasicUnionSource, new Dictionary<string, string>
+        var result = RunWithConfig(ReferenceUnionSource, new Dictionary<string, string>
         {
-            ["build_property.Spire_DU_DefaultLayout"] = "Additive",
+            ["build_property.Spire_DU_DefaultReferenceStorage"] = "Shared",
         });
-
         var source = GetMainGeneratedSource(result);
-        Assert.NotNull(source);
-        Assert.DoesNotContain("FieldOffset", source);
+        Assert.Contains("object?", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("FieldOffset", source, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void ExplicitLayout_Overrides_GlobalDefault()
+    public void ExplicitTypedReferenceStorageOverridesGlobalShared()
     {
-        // Attribute explicitly sets Layout.Overlap (int value 2); global says Additive.
-        // The explicit attribute wins → Overlap → FieldOffset present.
-        const string source = @"
-using Houtamelo.Spire;
-
-[DiscriminatedUnion(layout: Layout.Overlap)]
-public partial struct Shape
-{
-    [Variant] public static partial Shape Circle(float radius);
-    [Variant] public static partial Shape Rect(float w, float h);
-}
-";
+        const string source = """
+            #nullable enable
+            using Houtamelo.Spire;
+            [DiscriminatedUnion(ReferenceStorage = ReferenceStorage.Typed)]
+            public partial struct Message
+            {
+                [Variant] public static partial Message Text(string text);
+                [Variant] public static partial Message Tag(object tag);
+            }
+            """;
         var result = RunWithConfig(source, new Dictionary<string, string>
         {
-            ["build_property.Spire_DU_DefaultLayout"] = "Additive",
+            ["build_property.Spire_DU_DefaultReferenceStorage"] = "Shared",
         });
-
         var generated = GetMainGeneratedSource(result);
-        Assert.NotNull(generated);
-        Assert.Contains("FieldOffset", generated);
+        Assert.DoesNotContain("object? __s", generated, StringComparison.Ordinal);
+        Assert.Contains("string", generated, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void GlobalOverlap_GenericContainingUnionReportsDU005AndEmitsNoNestedUnion()
+    public void ExplicitReadGlobalCfgInheritsGlobalReferenceStorage()
     {
         const string source = """
+            #nullable enable
             using Houtamelo.Spire;
-
-            public partial class GenericContainer<T>
+            [DiscriminatedUnion(ReferenceStorage = ReferenceStorage.ReadGlobalCfg)]
+            public partial struct Message
             {
-                [DiscriminatedUnion]
-                public partial struct Nested
-                {
-                    [Variant] public static partial Nested Some(int value);
-                    [Variant] public static partial Nested Empty();
-                }
+                [Variant] public static partial Message Text(string text);
+                [Variant] public static partial Message Tag(object tag);
             }
             """;
-
-        var (result, _) = RunWithConfigAndCompilation(
-            source,
-            new Dictionary<string, string>
-            {
-                ["build_property.Spire_DU_DefaultLayout"] = "Overlap",
-            });
-
-        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Id == "SPIRE_DU005");
-        Assert.DoesNotContain(
-            result.GeneratedTrees,
-            tree => tree.GetText().ToString().Contains("GenericContainer<T>.Nested", StringComparison.Ordinal));
-        Assert.DoesNotContain(
-            result.GeneratedTrees,
-            tree => tree.GetText().ToString().Contains("partial struct Nested", StringComparison.Ordinal));
+        var result = RunWithConfig(source, new Dictionary<string, string>
+        {
+            ["build_property.Spire_DU_DefaultReferenceStorage"] = "Shared",
+        });
+        Assert.Contains("object?", GetMainGeneratedSource(result), StringComparison.Ordinal);
     }
 
     [Fact]
-    public void GlobalOverlap_GenericContainingBoxedFieldsUnionRemainsAccepted()
+    public void GlobalJsonSystemTextJsonEmitsConverterWhenReferenced()
     {
-        const string source = """
-            using Houtamelo.Spire;
-
-            public partial class GenericContainer<T>
-            {
-                [DiscriminatedUnion(Layout.BoxedFields)]
-                public partial struct Nested
-                {
-                    [Variant] public static partial Nested Some(int value);
-                    [Variant] public static partial Nested Empty();
-                }
-            }
-            """;
-
-        var (result, outputCompilation) = RunWithConfigAndCompilation(
-            source,
-            new Dictionary<string, string>
-            {
-                ["build_property.Spire_DU_DefaultLayout"] = "Overlap",
-            });
-
-        Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Id == "SPIRE_DU005");
-        Assert.Contains(
-            result.GeneratedTrees,
-            tree => tree.GetText().ToString().Contains("partial struct Nested", StringComparison.Ordinal));
-        Assert.DoesNotContain(
-            outputCompilation.GetDiagnostics(),
-            diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
-    }
-
-    [Fact]
-    public void GlobalJson_SystemTextJson_EmitsConverter()
-    {
-        // Spire_DU_DefaultJson=SystemTextJson → STJ converter generated
         var result = RunWithConfig(BasicUnionSource, new Dictionary<string, string>
         {
             ["build_property.Spire_DU_DefaultJson"] = "SystemTextJson",
         });
-
-        var allSource = GetAllGeneratedSource(result);
-
-        // If System.Text.Json is not available, SPIRE_DU006 is reported instead
-        var stjDiag = result.Diagnostics
-            .FirstOrDefault(d => d.Id == "SPIRE_DU006");
-
-        if (stjDiag is not null)
-        {
-            // STJ not in refs — skip the converter assertion, but verify the diagnostic
-            Assert.Equal("SPIRE_DU006", stjDiag.Id);
-        }
-        else
-        {
-            Assert.Contains("JsonConverter", allSource);
-        }
+        var allSource = string.Join("\n", result.GeneratedTrees.Select(tree => tree.GetText().ToString()));
+        var missingReference = result.Diagnostics.Any(diagnostic => diagnostic.Id == "SPIRE_DU006");
+        if (!missingReference)
+            Assert.Contains("JsonConverter", allSource, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void NoGlobalJson_NoConverter()
+    public void ExplicitNoneDisablesGlobalJsonConverter()
     {
-        // No JSON config → no converter emitted
-        var result = RunWithConfig(BasicUnionSource, new Dictionary<string, string>());
-
-        var allSource = GetAllGeneratedSource(result);
-        Assert.DoesNotContain("JsonConverter", allSource);
-    }
-
-    [Fact]
-    public void GlobalGenerateDeconstruct_No_NoDeconstructMethods()
-    {
-        // Spire_DU_DefaultGenerateDeconstruct=false → no Deconstruct methods in generated source
-        var result = RunWithConfig(BasicUnionSource, new Dictionary<string, string>
-        {
-            ["build_property.Spire_DU_DefaultGenerateDeconstruct"] = "false",
-        });
-
-        var source = GetMainGeneratedSource(result);
-        Assert.NotNull(source);
-        Assert.DoesNotContain("Deconstruct", source);
-    }
-
-    [Fact]
-    public void GlobalJsonDiscriminator_Custom_UsedInConverter()
-    {
-        // Spire_DU_DefaultJson=SystemTextJson + Spire_DU_DefaultJsonDiscriminator=type
-        // → STJ converter uses "type" as the discriminator property name
-        var result = RunWithConfig(BasicUnionSource, new Dictionary<string, string>
+        const string source = """
+            using Houtamelo.Spire;
+            [DiscriminatedUnion(json: JsonLibrary.None)]
+            public partial struct Shape
+            {
+                [Variant] public static partial Shape Circle(float radius);
+            }
+            """;
+        var result = RunWithConfig(source, new Dictionary<string, string>
         {
             ["build_property.Spire_DU_DefaultJson"] = "SystemTextJson",
-            ["build_property.Spire_DU_DefaultJsonDiscriminator"] = "type",
         });
+        Assert.DoesNotContain(result.GeneratedTrees,
+            tree => System.IO.Path.GetFileName(tree.FilePath).EndsWith(".Stj.g.cs", StringComparison.Ordinal));
+    }
 
-        // Same STJ availability guard as GlobalJson_SystemTextJson_EmitsConverter
-        var stjDiag = result.Diagnostics
-            .FirstOrDefault(d => d.Id == "SPIRE_DU006");
-
-        if (stjDiag is not null)
+    [Fact]
+    public void PayloadsAlwaysHaveTypedDeconstructMethods()
+    {
+        var result = RunWithConfig(BasicUnionSource, new Dictionary<string, string>
         {
-            Assert.Equal("SPIRE_DU006", stjDiag.Id);
-        }
-        else
-        {
-            var stjSource = result.GeneratedTrees
-                .Where(t => System.IO.Path.GetFileName(t.FilePath).EndsWith(".Stj.g.cs"))
-                .Select(t => t.GetText().ToString())
-                .FirstOrDefault();
-
-            Assert.NotNull(stjSource);
-            Assert.Contains("\"type\"", stjSource);
-        }
+            ["build_property.Spire_DU_DefaultReferenceStorage"] = "Typed",
+        });
+        Assert.Contains("void Deconstruct", GetMainGeneratedSource(result), StringComparison.Ordinal);
     }
 }

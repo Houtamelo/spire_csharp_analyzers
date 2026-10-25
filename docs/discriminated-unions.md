@@ -1,253 +1,193 @@
-# Discriminated Unions
+# Discriminated unions
 
-The `[DiscriminatedUnion]` source generator turns a `partial struct` or `abstract partial record` into a closed, exhaustively-matched discriminated union type. The generator lives in `Houtamelo.Spire.Analyzers`; all attributes are in the `Houtamelo.Spire` namespace.
+`[DiscriminatedUnion]` generates a union from a `partial struct` or an
+`abstract partial record`. Attributes belong to `Houtamelo.Spire`; the generator
+and analyzers are supplied by `Houtamelo.Spire.Analyzers`.
 
-## Quick Start
+## Struct unions
 
 ```csharp
 using Houtamelo.Spire;
 
-[DiscriminatedUnion(Layout.Additive)]
-partial struct Shape
+[DiscriminatedUnion]
+public partial struct Shape
 {
     [Variant] public static partial Shape Circle(double radius);
-    [Variant] public static partial Shape Square(int side);
+    [Variant] public static partial Shape Rectangle(double width, double height);
     [Variant] public static partial Shape Point();
 }
 
-// Construction
-Shape s = Shape.Circle(5.0);
-
-// Pattern match (property pattern)
-double area = s switch
+Shape shape = Shape.Circle(5.0);
+double area = shape switch
 {
-    { kind: Shape.Kind.Circle, radius: var r } => Math.PI * r * r,
-    { kind: Shape.Kind.Square, side: var x }   => x * x,
-    { kind: Shape.Kind.Point }                 => 0,
+    { kind: Shape.Kind.Circle, circle: { radius: var r } } => Math.PI * r * r,
+    { kind: Shape.Kind.Rectangle, rectangle: (var w, var h) } => w * h,
+    { kind: Shape.Kind.Point } => 0,
 };
 ```
 
-SPIRE009 (error) fires if any variant arm is missing. The "Add missing variant arms" code fix fills them in automatically.
+Each variant has a payload struct under the sibling `ShapeTypes.Variants`
+container: `Circle`, `Rectangle`, and `Point`. Payloads are non-partial structs with private `_`-prefixed fields,
+public getter-only properties, a constructor, and a typed `Deconstruct`.
+Payload getters and `Deconstruct`, along with the union's read-only accessors,
+are readonly struct members, so reading through a readonly reference avoids
+defensive copies of the receiver.
+The outer types container matches the union's accessibility; `Variants` and its
+payload structs are public within it. Payloads copy the union's generic parameters
+and constraints, while their containers remain nongeneric. Generic unions use an
+arity suffix (`ShapeTypes1` for `Shape<T>`). For a `Command` union nested in
+`Combat`, the container is also nested there: `Combat.CommandTypes.Variants.Run`.
 
-## Layout Strategies
+The union exposes `kind`, `IsCircle`/`IsRectangle`/`IsPoint`, factories, and payload
+accessors `circle`/`rectangle`/`point`. Ordinary struct unions implement
+`IDiscriminatedUnion<Shape.Kind>`; ref struct unions expose these members without
+the interface, so their generated declarations also work before C# 13.
+Accessors return payload copies. Use the union
+factory to construct a replacement with changed values. There are no flat
+field properties or union-level `Deconstruct` overloads.
 
-All layouts expose the same factories, Kind, and variant field properties;
-Deconstruct overloads and storage costs differ. Explicit `Layout.Additive` is a
-useful starting point.
-For Unity-serializable unions, omitted/Auto layout selects Additive. Otherwise
-Auto selects Overlap for non-generic structs and BoxedFields for generic structs.
+Accessors use camelCase, including leading acronyms (`HTTPRequest` becomes
+`httpRequest`). If that name matches any variant factory, the accessor receives
+one `_value` suffix. Other name collisions use ordinary C# compiler diagnostics.
 
-**Additive** — typed fields stored side by side, with compatible same-name fields
-sharing a slot across variants. Value types remain inline; reference fields use
-reference slots. Supports generics without explicit CLR layout.
+Guard an accessor with its corresponding kind. SPIRE013/014 diagnose incorrect
+or unguarded access. SPIRE009 checks exhaustiveness, and the missing-arm code fix
+generates nested payload property patterns. A captured payload's getters need
+no further kind guard.
 
-**Overlap** — explicit `[FieldOffset]` storage with a slot for each resolved field
-name. Compatible same-name fields share storage; differently named fields retain
-separate offsets. Unmanaged fields, references, and boxed composite values occupy
-separate regions. Size depends on the distinct fields and alignment, rather than
-only the largest variant. Generic unions and generic containing types are not
-supported (SPIRE_DU005).
-Factories initialize readonly storage inside generated constructors. This layout
-does not require `System.Runtime.CompilerServices.Unsafe`.
+Variant accessors also assert the expected kind before reading their storage.
+Unity-serialized unions use `UnityEngine.Debug.Assert` (`UNITY_ASSERTIONS`);
+standalone unions use `System.Diagnostics.Debug.Assert` (`DEBUG`). When the
+corresponding symbol is absent, the check and diagnostic message are omitted.
 
-**UnsafeOverlap** — stores unmanaged fields in a raw buffer accessed through `Unsafe.ReadUnaligned` and `Unsafe.WriteUnaligned`, with managed fields in separate slots. Uses `InlineArrayAttribute` when available and fallback storage otherwise. Requires `<AllowUnsafeBlocks>true</AllowUnsafeBlocks>` (SPIRE_DU009) and a reference providing `System.Runtime.CompilerServices.Unsafe`.
+The generated `Kind` enum carries `[EnforceExhaustiveness]`. Standalone switches
+on `Shape.Kind` are checked by SPIRE015, including when the enum is passed
+separately from its union. Its integer conversions follow SPIRE016 and the
+`SpireEnum<T>.From` code fix.
 
-**BoxedFields** — one object slot per resolved field name. Value-type fields are
-boxed individually; reference fields retain their references. Unity-serializable
-unions also use slot wrappers for reconstruction. Fieldless variants need no
-field allocation. Ref structs cannot be boxed and are not supported as fields.
+Use property patterns for a one-field payload: C# treats `(var radius)` as a
+parenthesized pattern rather than positional deconstruction. With two or more
+fields, positional patterns use the generated typed `Deconstruct` directly.
+`var` captures preserve nulls; a declaration pattern such as `string text`
+excludes null.
 
-**BoxedTuple** — one object slot for the active variant. Multiple fields are
-packed into a boxed `ValueTuple`; a single field uses the slot directly, boxing
-value types as needed. Fieldless variants use null. This reduces struct storage
-at the cost of heap allocation and indirection for populated value variants.
+## Storage
 
-Benchmark comparisons are in [docs/benchmark-results/](benchmark-results/).
+Concrete unmanaged fields are grouped by variant in runtime-laid-out
+`LayoutKind.Auto` helpers. A nongeneric explicit-layout helper overlays those
+groups at offset zero. These helpers live under `ShapeTypes.Fields.Unmanaged`,
+with managed slots in `ShapeTypes.Fields.Managed`. The generator calculates no sizes, offsets within a
+payload, or alignment tables. It requires neither unsafe code nor an Unsafe DLL.
+Fields depending on generic parameters remain in ordinary typed storage outside
+the overlay, including parameters constrained to `unmanaged`.
 
-## Record Unions
+Reference types and structs containing managed references use ordinary slots:
 
-Use `abstract partial record` for heap-allocated unions with C# record semantics. Variants are `sealed partial record` nested types. The `Layout` parameter is ignored for record unions (SPIRE_DU004).
+| `ReferenceStorage` | Behavior |
+|---|---|
+| `ReadGlobalCfg` | Inherit the project default; this is the attribute default. |
+| `Auto` | Choose Shared when `SharedSlots * 2 <= TypedSlots`; otherwise Typed. |
+| `Typed` | Reuse compatible same-type slots across variants; direct reads and no boxing. |
+| `Shared` | Reuse `object?` slots across variants; reads cast or unbox, and managed structs box when stored. |
+
+Names do not affect slot reuse. Fields present together require separate slots.
+Reference nullability does not distinguish slot types. Auto counts each managed
+candidate as one slot after reuse, without inspecting its contents; discriminator,
+unmanaged helpers, generic-dependent fields, and serialization caches are excluded.
+With no managed candidates it selects Typed. Managed references are never overlaid
+using field offsets.
 
 ```csharp
-using Houtamelo.Spire;
+[DiscriminatedUnion(ReferenceStorage = ReferenceStorage.Typed)]
+public partial struct Command { /* variant factories */ }
+```
 
+Generic unions are supported. A union inside a generic containing type receives
+SPIRE_DU018 because its explicit helper would inherit the enclosing generic
+context. Move that union outside the generic ancestor. Code generation continues
+alongside the diagnostic so references to generated members remain visible.
+
+## Record unions
+
+Record variants retain their ordinary reference semantics and nested type API:
+
+```csharp
 [DiscriminatedUnion]
-public abstract partial record Shape
+public abstract partial record Result
 {
-    public sealed partial record Circle(double Radius) : Shape;
-    public sealed partial record Square(int Side) : Shape;
-    public sealed partial record Point() : Shape;
+    public sealed partial record Success(int value) : Result;
+    public sealed partial record Failure(string message) : Result;
 }
 
-// Construction
-Shape s = new Shape.Circle(5.0);
-
-// Pattern match (type pattern)
-double area = s switch
+string Describe(Result result) => result switch
 {
-    Shape.Circle { Radius: var r } => Math.PI * r * r,
-    Shape.Square { Side: var x }   => x * x,
-    Shape.Point                    => 0,
+    Result.Success { value: var value } => value.ToString(),
+    Result.Failure { message: var message } => message,
 };
 ```
 
-Record variants allocate class instances. Use inline struct layouts when
-construction allocation matters.
+ReferenceStorage affects struct storage; record variants allocate record objects.
 
-## Pattern Matching
-
-**Property pattern** (struct unions):
+## JSON
 
 ```csharp
-s switch
-{
-    { kind: Shape.Kind.Circle, radius: var r } => ...,
-    { kind: Shape.Kind.Square, side: var x }   => ...,
-    { kind: Shape.Kind.Point }                 => ...,
-};
+[DiscriminatedUnion(json: JsonLibrary.SystemTextJson, jsonDiscriminator: "type")]
+public partial struct Shape { /* variant factories */ }
 ```
 
-**Deconstruct pattern** (struct unions, enabled by default via `GenerateDeconstruct = true`):
+`Shape.Circle(5.0)` serializes as `{"type":"Circle","radius":5.0}`. The default
+discriminator is `kind`. `[JsonName]` on a factory or parameter customizes its
+logical name. Payload accessors and internal storage do not change the wire format.
+Both libraries can be selected with
+`JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson`.
 
-```csharp
-s switch
-{
-    (Shape.Kind.Circle, var r) => ...,
-    (Shape.Kind.Square, var x) => ...,
-    (Shape.Kind.Point)         => ...,
-};
-```
+Converters preserve the caller's serializer options. Nested user types still
+follow the selected library's normal serialization rules. In particular,
+System.Text.Json public fields require the caller's `IncludeFields` option or
+appropriate attributes. Missing library references report SPIRE_DU006/007 while
+core union generation continues.
 
-`Deconstruct` overloads group variants by field count. An overload for a unique field count uses the variant's field types. When several variants share a field count, its field outputs use `object?`; value-type fields are boxed by that overload. Property patterns access the typed field properties directly.
-
-For nullable fields, use a property pattern with `var`:
-
-```csharp
-case { kind: GameplayCommand.Kind.ApplyEffect, effect: var effect }:
-    // effect retains its declared Effect? type and can be null.
-    break;
-```
-
-`Effect? effect` is not a valid declaration pattern, and `Effect effect` excludes null. A positional `var effect` accepts null but inherits the selected `Deconstruct` output type, which may be `object?`. Missing-arm fixes and wildcard expansion always generate property patterns with `var` captures for struct unions. Record/class arm generation retains its existing behavior.
-
-## JSON Serialization
-
-```csharp
-[DiscriminatedUnion(Layout.Additive, Json = JsonLibrary.SystemTextJson)]
-partial struct Shape
-{
-    [Variant] public static partial Shape Circle(double radius);
-    [Variant] public static partial Shape Square(int side);
-}
-```
-
-Serializes as `{"kind":"Circle","radius":5.0}`. The discriminator field name defaults to `"kind"`; override with `JsonDiscriminator = "type"`. The `[JsonName]` attribute overrides variant and field names in the JSON output:
-
-```csharp
-[JsonName("sq")] public static partial Shape Square([JsonName("s")] int side);
-// serializes as {"kind":"sq","s":3}
-```
-
-Both `SystemTextJson` and `NewtonsoftJson` can be enabled simultaneously:
-
-```csharp
-Json = JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson
-```
-
-Generator diagnostics: SPIRE_DU006 if `System.Text.Json` is not referenced; SPIRE_DU007 if `Newtonsoft.Json` is not referenced; SPIRE_DU008 if the union is a `ref struct`.
-
-## Generated API
-
-For every struct union the generator produces:
-
-- `Shape.Kind` — enum with one member per variant (`Circle`, `Square`, `Point`)
-- `shape.kind` — property returning `Shape.Kind`
-- `shape.radius`, `shape.side` — per-variant field properties (valid only when kind matches; SPIRE013/014 guard incorrect access)
-- `shape.IsCircle`, `shape.IsSquare`, `shape.IsPoint` — convenience bool properties
-- `IDiscriminatedUnion<Shape.Kind>` — implemented unconditionally; exposes `kind` through the interface
-- `Deconstruct(out Shape.Kind, ...)` — present when `GenerateDeconstruct = true` (default)
-- Factory methods: `Shape.Circle(5.0)`, `Shape.Square(3)`, `Shape.Point()`
-
-Field properties have `init` setters when the consuming compilation can access `System.Runtime.CompilerServices.IsExternalInit`, including a local internal shim. Otherwise, they are getter-only.
-
-Struct variants can reuse a field name. Compatible types share a property, with
-reference-nullability annotations combined conservatively: `Effect` and `Effect?`
-share `Effect? effect`. Factory parameter annotations remain unchanged. Genuinely
-different types get variant-qualified properties: `Count(int value)` and
-`Text(string value)` expose `count_value` and `text_value`. Match them with
-`{ kind: Result.Kind.Count, count_value: var value }`. Noncolliding names stay
-unchanged; adding an incompatible variant can therefore rename a shared property.
-Serialized field names retain their original parameter names. Secondary member
-name collisions use ordinary C# compiler diagnostics. This policy applies only
-to struct unions.
-
-`IDiscriminatedUnion<TKind>` and `SpireLINQ.OfKind` live in `Houtamelo.Spire`:
-
-```csharp
-using Houtamelo.Spire;
-
-IEnumerable<Shape> shapes = ...;
-IEnumerable<Shape> circles = shapes.OfKind(Shape.Kind.Circle);
-```
-
-## Analyzer Rules
-
-| Rule | Severity | Description |
-|------|----------|-------------|
-| [SPIRE009](rules/SPIRE009.md) | Error | Switch does not handle all variants |
-| [SPIRE010](rules/SPIRE010.md) | Info | Code fix: expand wildcard to explicit variant arms |
-| [SPIRE011](rules/SPIRE011.md) | Error | Pattern field type mismatch |
-| [SPIRE012](rules/SPIRE012.md) | Error | Pattern field count mismatch |
-| [SPIRE013](rules/SPIRE013.md) | Error | Accessing another variant's field |
-| [SPIRE014](rules/SPIRE014.md) | Error | Accessing variant field without kind guard |
-
-## Global Defaults
-
-Instead of specifying `Layout`, `GenerateDeconstruct`, `Json`, and `JsonDiscriminator` on every `[DiscriminatedUnion]` attribute, set project-wide defaults via MSBuild properties:
+## Project defaults
 
 ```xml
 <PropertyGroup>
-  <Spire_DU_DefaultLayout>Additive</Spire_DU_DefaultLayout>
-  <Spire_DU_DefaultGenerateDeconstruct>true</Spire_DU_DefaultGenerateDeconstruct>
+  <Spire_DU_DefaultReferenceStorage>Auto</Spire_DU_DefaultReferenceStorage>
   <Spire_DU_DefaultJson>SystemTextJson</Spire_DU_DefaultJson>
-  <Spire_DU_DefaultJsonDiscriminator>type</Spire_DU_DefaultJsonDiscriminator>
+  <Spire_DU_DefaultJsonDiscriminator>kind</Spire_DU_DefaultJsonDiscriminator>
 </PropertyGroup>
 ```
 
-| Property | Values | Default |
-|----------|--------|---------|
-| `Spire_DU_DefaultLayout` | `Auto`, `Additive`, `Overlap`, `UnsafeOverlap`, `BoxedFields`, `BoxedTuple` | `Auto` |
-| `Spire_DU_DefaultGenerateDeconstruct` | `true`, `false` | `true` |
+| Property | Values | Built-in default |
+|---|---|---|
+| `Spire_DU_DefaultReferenceStorage` | `Auto`, `Typed`, `Shared` | `Auto` |
 | `Spire_DU_DefaultJson` | `None`, `SystemTextJson`, `NewtonsoftJson`, `Both` | `None` |
-| `Spire_DU_DefaultJsonDiscriminator` | any string | `kind` |
+| `Spire_DU_DefaultJsonDiscriminator` | Any string | `kind` |
 
-When an attribute parameter is omitted (or explicitly set to `ReadGlobalCfg`), the generator reads the corresponding MSBuild property. If the property is also unset, the built-in default applies.
+Omission or explicit `ReadGlobalCfg` inherits the project setting. Explicit
+`ReferenceStorage.Auto` runs automatic selection even when the project default
+differs. Explicit `JsonLibrary.None` disables converters. A null discriminator
+inherits its project default. Unity does not import these NuGet MSBuild defaults
+from its regenerated IDE projects; configure its unions on the attribute.
 
-This means `[DiscriminatedUnion]` with no arguments will inherit all four settings from the project config:
+## Unity and diagnostics
 
-```csharp
-// Uses project-wide Layout, GenerateDeconstruct, Json, and JsonDiscriminator
-[DiscriminatedUnion]
-partial struct Shape { ... }
+Mutable `[Serializable]` struct unions receive generated Unity callbacks and
+drawers when Unity references are present. Public payloads are reused through
+one shared generic managed-reference wrapper. See [Unity](unity.md) for field
+eligibility, serialization, and Editor behavior.
 
-// Overrides Layout only; other three come from project config
-[DiscriminatedUnion(Layout.Overlap)]
-partial struct Position { ... }
-```
+| Rule | Purpose |
+|---|---|
+| [SPIRE009](rules/SPIRE009.md) | Exhaustive variant matching |
+| [SPIRE010](rules/SPIRE010.md) | Expand wildcard arms |
+| [SPIRE011](rules/SPIRE011.md) | Pattern type mismatch |
+| [SPIRE012](rules/SPIRE012.md) | Payload positional field-count mismatch |
+| [SPIRE013](rules/SPIRE013.md) | Wrong-variant accessor |
+| [SPIRE014](rules/SPIRE014.md) | Unguarded variant accessor |
 
-## Comparison with C# 15 Native Unions
+Non-record classes and ref structs are unsupported union declarations. Errors
+are reported independently of source emission; unavailable optional components
+do not suppress an otherwise constructible core API.
 
-C# 15 `union` types store all variants in a shared memory slot but box value types into `object? Value`. Case types are record classes — every construction heap-allocates. Spire struct unions store all data inline: no allocations for value-type variants.
-
-Trade-off: Spire requires a source generator and NuGet reference; native unions are language-native and need no tooling.
-
-See [docs/benchmark-results/](benchmark-results/) for measured throughput comparisons across all strategies and native unions.
-
-## Limitations
-
-- **No class support** — applying `[DiscriminatedUnion]` to a non-record class emits SPIRE_DU011 (error). Use `abstract partial record` for reference-type unions.
-- **No generic Overlap** — generic structs cannot use `Layout.Overlap` (SPIRE_DU005). Use `Layout.Additive` or `Layout.BoxedFields` instead.
-- **No ref struct support** — `ref struct` types cannot be decorated with `[DiscriminatedUnion]` (SPIRE_DU002).
-- **No ref struct JSON** — `ref struct` unions cannot use JSON serialization (SPIRE_DU008).
-- **UnsafeOverlap supports generics** — only unmanaged fields use the raw buffer;
-  generic and managed fields use separate typed/reference slots.
+Historical layout benchmarks in [benchmark-results](benchmark-results/) describe
+the removed Layout strategies and are not measurements of this representation.

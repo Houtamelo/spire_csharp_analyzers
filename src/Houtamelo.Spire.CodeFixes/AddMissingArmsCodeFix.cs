@@ -300,8 +300,22 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
             kindPrefix,
             semanticModel);
 
-        return MakeSection(SyntaxFactory.CasePatternSwitchLabel(
-            pattern, SyntaxFactory.Token(SyntaxKind.ColonToken)));
+        // A newly inserted switch section has no surrounding formatter trivia.
+        // Keep the opening brace free of line trivia; the case keyword below
+        // supplies the required inline separator.
+        if (pattern.PropertyPatternClause is { } existingClause)
+        {
+            var propertyClause = existingClause.WithOpenBraceToken(
+                existingClause.OpenBraceToken.WithLeadingTrivia(default(SyntaxTriviaList)));
+            pattern = pattern.WithPropertyPatternClause(propertyClause);
+        }
+
+        var label = SyntaxFactory.CasePatternSwitchLabel(
+            pattern, SyntaxFactory.Token(SyntaxKind.ColonToken));
+        label = label.WithKeyword(
+            label.Keyword.WithTrailingTrivia(
+                SyntaxFactory.TriviaList(SyntaxFactory.Whitespace(" "))));
+        return MakeSection(label);
     }
 
     // ─── Record/class DU: switch statement sections ───

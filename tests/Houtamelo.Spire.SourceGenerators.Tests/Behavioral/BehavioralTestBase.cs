@@ -120,8 +120,71 @@ public abstract class BehavioralTestBase
     {
         var prop = instance.GetType().GetProperty(propName,
             BindingFlags.Public | BindingFlags.Instance);
-        Assert.NotNull(prop);
-        return prop.GetValue(instance);
+        if (prop is not null &&
+            prop.PropertyType.GetField(propName, BindingFlags.Public | BindingFlags.Instance) is null &&
+            prop.PropertyType.GetProperty(propName, BindingFlags.Public | BindingFlags.Instance) is null)
+            return prop.GetValue(instance);
+
+        var directField = instance.GetType().GetField(propName,
+            BindingFlags.Public | BindingFlags.Instance);
+        if (directField is not null)
+            return directField.GetValue(instance);
+
+        // Variant-payload unions expose fields through a typed sibling payload
+        // accessor rather than flat union properties. Keep this reflection helper
+        // compatible with the legacy behavioral assertions while the cases retain
+        // their field-value coverage.
+        var kindProperty = instance.GetType().GetProperty("kind",
+            BindingFlags.Public | BindingFlags.Instance);
+        var kindValue = kindProperty?.GetValue(instance);
+        var variantName = kindValue?.ToString();
+        if (variantName is not null)
+        {
+            var accessorName = char.ToLowerInvariant(variantName[0]) + variantName.Substring(1);
+            var accessor = instance.GetType().GetProperty(accessorName,
+                BindingFlags.Public | BindingFlags.Instance);
+            var payload = accessor?.GetValue(instance);
+            var payloadProperty = payload?.GetType().GetProperty(propName,
+                BindingFlags.Public | BindingFlags.Instance);
+            if (payloadProperty is not null)
+                return payloadProperty.GetValue(payload);
+            var payloadField = payload?.GetType().GetField(propName,
+                BindingFlags.Public | BindingFlags.Instance);
+            if (payloadField is not null)
+                return payloadField.GetValue(payload);
+        }
+
+        // Some generated accessor names are escaped or suffixed for factory
+        // conflicts. Search the public payload properties as a final fallback.
+        foreach (var candidate in instance.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            if (candidate.Name == "kind" || candidate.PropertyType == instance.GetType())
+                continue;
+
+            var payload = candidate.GetValue(instance);
+            var payloadProperty = payload?.GetType().GetProperty(propName,
+                BindingFlags.Public | BindingFlags.Instance);
+            if (payloadProperty is not null)
+                return payloadProperty.GetValue(payload);
+            var payloadField = payload?.GetType().GetField(propName,
+                BindingFlags.Public | BindingFlags.Instance);
+            if (payloadField is not null)
+                return payloadField.GetValue(payload);
+        }
+
+        var publicProperties = string.Join(", ", instance.GetType()
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Select(property => property.Name + ":" + property.PropertyType.Name));
+        Assert.Fail($"Property '{propName}' was not found on {instance.GetType()} or its active payload. Properties: {publicProperties}");
+        return null;
+    }
+
+    protected static object ReadPayload(object union, string accessorName)
+    {
+        var accessor = union.GetType().GetProperty(accessorName,
+            BindingFlags.Public | BindingFlags.Instance);
+        Assert.NotNull(accessor);
+        return accessor.GetValue(union)!;
     }
 
     /// Read the public `kind` property, returning the underlying integral value.
@@ -180,18 +243,16 @@ public abstract class BehavioralTestBase
 
     public static IEnumerable<object[]> StructStrategies => new[]
     {
-        new object[] { "Layout.Additive" },
-        new object[] { "Layout.Overlap" },
-        new object[] { "Layout.BoxedFields" },
-        new object[] { "Layout.BoxedTuple" },
-        new object[] { "Layout.UnsafeOverlap" },
+        new object[] { "ReferenceStorage = ReferenceStorage.Auto" },
+        new object[] { "ReferenceStorage = ReferenceStorage.Typed" },
+        new object[] { "ReferenceStorage = ReferenceStorage.Shared" },
     };
 
     public static IEnumerable<object[]> GenericCapableStrategies => new[]
     {
-        new object[] { "Layout.Additive" },
-        new object[] { "Layout.BoxedFields" },
-        new object[] { "Layout.BoxedTuple" },
+        new object[] { "ReferenceStorage = ReferenceStorage.Auto" },
+        new object[] { "ReferenceStorage = ReferenceStorage.Typed" },
+        new object[] { "ReferenceStorage = ReferenceStorage.Shared" },
     };
 
     // ── Source templates ────────────────────────────────────────────
@@ -279,13 +340,13 @@ public abstract class BehavioralTestBase
 
             public static double ExtractRadius(Shape s) => s switch
             {
-                { kind: Shape.Kind.Circle, radius: var r } => r,
+                { kind: Shape.Kind.Circle, circle: { radius: var r } } => r,
                 _ => -1.0
             };
 
             public static string ExtractMultiField(Shape s) => s switch
             {
-                { kind: Shape.Kind.Rectangle, width: var w, height: var h } => $"{w},{h}",
+                { kind: Shape.Kind.Rectangle, rectangle: { width: var w, height: var h } } => $"{w},{h}",
                 _ => "none"
             };
         }
@@ -293,7 +354,7 @@ public abstract class BehavioralTestBase
 
     protected static string JsonStjSource(string strategy) => $$"""
         using Houtamelo.Spire;
-        [DiscriminatedUnion({{strategy}}, json: JsonLibrary.SystemTextJson)]
+        [DiscriminatedUnion(json: JsonLibrary.SystemTextJson)]
         public partial struct Shape
         {
             [Variant] public static partial Shape Circle(double radius);
@@ -304,7 +365,7 @@ public abstract class BehavioralTestBase
 
     protected static string JsonNsjSource(string strategy) => $$"""
         using Houtamelo.Spire;
-        [DiscriminatedUnion({{strategy}}, json: JsonLibrary.NewtonsoftJson)]
+        [DiscriminatedUnion(json: JsonLibrary.NewtonsoftJson)]
         public partial struct Shape
         {
             [Variant] public static partial Shape Circle(double radius);
@@ -315,7 +376,7 @@ public abstract class BehavioralTestBase
 
     protected static string JsonStjCustomDiscriminatorSource(string strategy) => $$"""
         using Houtamelo.Spire;
-        [DiscriminatedUnion({{strategy}}, json: JsonLibrary.SystemTextJson, jsonDiscriminator: "type")]
+        [DiscriminatedUnion(json: JsonLibrary.SystemTextJson, jsonDiscriminator: "type")]
         public partial struct Shape
         {
             [Variant] public static partial Shape Circle(double radius);
@@ -325,7 +386,7 @@ public abstract class BehavioralTestBase
 
     protected static string JsonStjJsonNameSource(string strategy) => $$"""
         using Houtamelo.Spire;
-        [DiscriminatedUnion({{strategy}}, json: JsonLibrary.SystemTextJson)]
+        [DiscriminatedUnion(json: JsonLibrary.SystemTextJson)]
         public partial struct Shape
         {
             [Variant, JsonName("circle")]
@@ -337,7 +398,7 @@ public abstract class BehavioralTestBase
 
     protected static string JsonStjGenericSource(string strategy) => $$"""
         using Houtamelo.Spire;
-        [DiscriminatedUnion({{strategy}}, json: JsonLibrary.SystemTextJson)]
+        [DiscriminatedUnion(json: JsonLibrary.SystemTextJson)]
         public partial struct Option<T>
         {
             [Variant] public static partial Option<T> Some(T value);

@@ -12,8 +12,8 @@ namespace TestNs
     {
         int Test(EventPass e) => e switch
         {
-            (EventPass.Kind.Click, int idx) => idx,
-            (EventPass.Kind.KeyPress, char k) => (int)k,
+            { kind: EventPass.Kind.Click, click: { clickIndex: int idx } } => idx,
+            { kind: EventPass.Kind.KeyPress, keyPress: { pressedChar: char k } } => (int)k,
         };
     }
 }

@@ -2,78 +2,29 @@ using BenchmarkDotNet.Attributes;
 
 namespace Houtamelo.Spire.Benchmarks.Benchmarks;
 
-/// Single match operation per strategy. DisassemblyDiagnoser shows JIT codegen.
 [Config(typeof(SpireDisasmConfig))]
 public class MicroMatchBenchmarks
 {
-    Types.EventAdditive _addTransform;
-    Types.EventBoxedFields _bfTransform;
-    Types.EventBoxedTuple _btTransform;
-    Types.EventOverlap _ovTransform;
-    Types.EventUnsafeOverlap _uoTransform;
-    Types.EventRecord _recTransform = null!;
-    Types.EventNative _natTransform;
+    private Types.EventBench _auto;
+    private Types.EventAuto _explicitAuto;
+    private Types.EventTyped _typed;
+    private Types.EventShared _shared;
+    private Types.EventRecord _record = new Types.EventRecord.Transform(1f, 2f, 3f, 4f);
+    private Types.EventNative _native = new Types.EvtTransform(1f, 2f, 3f, 4f);
 
     [GlobalSetup]
     public void Setup()
     {
-        _addTransform = Types.EventAdditive.Transform(1f, 2f, 3f, 4f);
-        _bfTransform = Types.EventBoxedFields.Transform(1f, 2f, 3f, 4f);
-        _btTransform = Types.EventBoxedTuple.Transform(1f, 2f, 3f, 4f);
-        _ovTransform = Types.EventOverlap.Transform(1f, 2f, 3f, 4f);
-        _uoTransform = Types.EventUnsafeOverlap.Transform(1f, 2f, 3f, 4f);
-        _recTransform = new Types.EventRecord.Transform(1f, 2f, 3f, 4f);
-        _natTransform = new Types.EvtTransform(1f, 2f, 3f, 4f);
+        _auto = Types.EventBench.Transform(1f, 2f, 3f, 4f);
+        _explicitAuto = Types.EventAuto.Transform(1f, 2f, 3f, 4f);
+        _typed = Types.EventTyped.Transform(1f, 2f, 3f, 4f);
+        _shared = Types.EventShared.Transform(1f, 2f, 3f, 4f);
     }
 
-    // ── Match Transform (4 float fields) ──
-
-    [BenchmarkCategory("Micro Match"), Benchmark(Baseline = true, Description = "additive")]
-    public double MatchAdditive()
-    {
-        _addTransform.Deconstruct(out _, out var x, out var y, out var z, out var w);
-        return x * y + z * w;
-    }
-
-    [BenchmarkCategory("Micro Match"), Benchmark(Description = "boxedFields")]
-    public double MatchBoxedFields()
-    {
-        _bfTransform.Deconstruct(out _, out var x, out var y, out var z, out var w);
-        return x * y + z * w;
-    }
-
-    [BenchmarkCategory("Micro Match"), Benchmark(Description = "boxedTuple")]
-    public double MatchBoxedTuple()
-    {
-        var t = ((float, float, float, float))_btTransform._payload!;
-        return t.Item1 * t.Item2 + t.Item3 * t.Item4;
-    }
-
-    [BenchmarkCategory("Micro Match"), Benchmark(Description = "overlap")]
-    public double MatchOverlap()
-    {
-        var e = _ovTransform;
-        return e.x * e.y + e.z * e.w;
-    }
-
-    [BenchmarkCategory("Micro Match"), Benchmark(Description = "unsafeOverlap")]
-    public double MatchUnsafeOverlap()
-    {
-        var e = _uoTransform;
-        return e.x * e.y + e.z * e.w;
-    }
-
-    [BenchmarkCategory("Micro Match"), Benchmark(Description = "record")]
-    public double MatchRecord()
-    {
-        var t = (Types.EventRecord.Transform)_recTransform;
-        return t.X * t.Y + t.Z * t.W;
-    }
-
-    [BenchmarkCategory("Micro Match"), Benchmark(Description = "native")]
-    public double MatchNative()
-    {
-        var t = (Types.EvtTransform)_natTransform.Value!;
-        return t.X * t.Y + t.Z * t.W;
-    }
+    [Benchmark(Baseline = true)] public double Auto() => _auto.transform.x * _auto.transform.y + _auto.transform.z * _auto.transform.w;
+    [Benchmark] public double ExplicitAuto() => _explicitAuto.transform.x * _explicitAuto.transform.y + _explicitAuto.transform.z * _explicitAuto.transform.w;
+    [Benchmark] public double Typed() => _typed.transform.x * _typed.transform.y + _typed.transform.z * _typed.transform.w;
+    [Benchmark] public double Shared() => _shared.transform.x * _shared.transform.y + _shared.transform.z * _shared.transform.w;
+    [Benchmark] public double Record() => _record switch { Types.EventRecord.Transform(var x, var y, var z, var w) => x * y + z * w, _ => 0 };
+    [Benchmark] public double Native() => _native switch { Types.EvtTransform(var x, var y, var z, var w) => x * y + z * w, _ => 0 };
 }

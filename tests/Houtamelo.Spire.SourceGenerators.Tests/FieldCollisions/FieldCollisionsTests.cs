@@ -26,8 +26,8 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
         var text = InvokeFactory(unionType, "Text", "hello");
         var tagged = InvokeFactory(unionType, "Tagged", true);
 
-        Assert.Equal(7, ReadProperty(count, "count_value"));
-        Assert.Equal("hello", ReadProperty(text, "text_value"));
+        Assert.Equal(7, ReadProperty(count, "value"));
+        Assert.Equal("hello", ReadProperty(text, "value"));
         Assert.True((bool)ReadProperty(tagged, "tagged")!);
         Assert.Null(unionType.GetProperty("value", BindingFlags.Public | BindingFlags.Instance));
     }
@@ -45,9 +45,9 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
         var json = InvokeFactory(unionType, "JsonValue", 3.5);
         var ready = InvokeFactory(unionType, "Ready", true);
 
-        Assert.Equal(11, ReadProperty(response, "httpResponse_value"));
-        Assert.Equal("https://example.test", ReadProperty(url, "url_value"));
-        Assert.Equal(3.5, ReadProperty(json, "jsonValue_value"));
+        Assert.Equal(11, ReadProperty(ReadPayload(response, "httpResponse"), "value"));
+        Assert.Equal("https://example.test", ReadProperty(ReadPayload(url, "url"), "value"));
+        Assert.Equal(3.5, ReadProperty(ReadPayload(json, "jsonValue"), "value"));
         Assert.True((bool)ReadProperty(ready, "ready")!);
         Assert.Null(unionType.GetProperty("value", BindingFlags.Public | BindingFlags.Instance));
     }
@@ -62,8 +62,8 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
         var classValue = InvokeFactory(unionType, "class", 5);
         var eventValue = InvokeFactory(unionType, "event", "payload");
 
-        Assert.Equal(5, ReadProperty(classValue, "class_value"));
-        Assert.Equal("payload", ReadProperty(eventValue, "event_value"));
+        Assert.Equal(5, ReadProperty(ReadPayload(classValue, "class_value"), "value"));
+        Assert.Equal("payload", ReadProperty(ReadPayload(eventValue, "event_value"), "value"));
         Assert.Null(unionType.GetProperty("value", BindingFlags.Public | BindingFlags.Instance));
     }
 
@@ -87,9 +87,16 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
                 Assert.Null(ReadProperty(second, "effect"));
 
                 var compilation = Generate(source);
-                var union = GetUnion(compilation, "NullableReferenceUnion");
-                var property = Assert.Single(union.GetMembers("effect").OfType<IPropertySymbol>());
-                Assert.Equal(NullableAnnotation.Annotated, property.NullableAnnotation);
+                var firstPayload = compilation.GetTypeByMetadataName("NullableReferenceUnionTypes+Variants+First");
+                var secondPayload = compilation.GetTypeByMetadataName("NullableReferenceUnionTypes+Variants+Second");
+                Assert.NotNull(firstPayload);
+                Assert.NotNull(secondPayload);
+                Assert.Equal(
+                    nullableFirst ? NullableAnnotation.Annotated : NullableAnnotation.NotAnnotated,
+                    Assert.Single(firstPayload!.GetMembers("effect").OfType<IPropertySymbol>()).NullableAnnotation);
+                Assert.Equal(
+                    nullableFirst ? NullableAnnotation.NotAnnotated : NullableAnnotation.Annotated,
+                    Assert.Single(secondPayload!.GetMembers("effect").OfType<IPropertySymbol>()).NullableAnnotation);
             }
         }
     }
@@ -103,13 +110,15 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
             {
                 var source = NestedNullableReferenceSource(strategy, nullableFirst);
                 var compilation = Generate(source);
-                var union = GetUnion(compilation, "NestedNullableReferenceUnion");
-                var property = Assert.Single(union.GetMembers("effects").OfType<IPropertySymbol>());
-
-                Assert.Equal(NullableAnnotation.Annotated, property.NullableAnnotation);
-                var listType = Assert.IsAssignableFrom<INamedTypeSymbol>(property.Type);
+                var payload = compilation.GetTypeByMetadataName("NestedNullableReferenceUnionTypes+Variants+First");
+                Assert.NotNull(payload);
+                var field = Assert.Single(payload!.GetMembers("effects").OfType<IPropertySymbol>());
+                Assert.Equal(NullableAnnotation.Annotated, field.NullableAnnotation);
+                var listType = Assert.IsAssignableFrom<INamedTypeSymbol>(field.Type);
                 var effectType = Assert.Single(listType.TypeArguments);
-                Assert.Equal(NullableAnnotation.Annotated, effectType.NullableAnnotation);
+                Assert.Equal(
+                    nullableFirst ? NullableAnnotation.Annotated : NullableAnnotation.NotAnnotated,
+                    effectType.NullableAnnotation);
             }
         }
     }
@@ -123,9 +132,10 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
             {
                 var source = TupleNullabilitySource(strategy, firstNames);
                 var compilation = Generate(source);
-                var union = GetUnion(compilation, "TupleNullabilityUnion");
-                var property = Assert.Single(union.GetMembers("value").OfType<IPropertySymbol>());
-                var tupleType = Assert.IsAssignableFrom<INamedTypeSymbol>(property.Type);
+                var payload = compilation.GetTypeByMetadataName("TupleNullabilityUnionTypes+Variants+First");
+                Assert.NotNull(payload);
+                var field = Assert.Single(payload!.GetMembers("value").OfType<IPropertySymbol>());
+                var tupleType = Assert.IsAssignableFrom<INamedTypeSymbol>(field.Type);
 
                 var expectedNames = firstNames
                     ? new[] { "firstEffect", "firstCount" }
@@ -159,9 +169,10 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
         {
             var source = NestedGenericValueSource((string)strategy[0]);
             var compilation = Generate(source);
-            var union = GetUnion(compilation, "NestedGenericValueUnion");
-            var property = Assert.Single(union.GetMembers("value").OfType<IPropertySymbol>());
-            var outerType = Assert.IsAssignableFrom<INamedTypeSymbol>(property.Type);
+            var payload = compilation.GetTypeByMetadataName("NestedGenericValueUnionTypes+Variants+First");
+            Assert.NotNull(payload);
+            var field = Assert.Single(payload!.GetMembers("value").OfType<IPropertySymbol>());
+            var outerType = Assert.IsAssignableFrom<INamedTypeSymbol>(field.Type);
             var innerType = Assert.IsAssignableFrom<INamedTypeSymbol>(
                 Assert.Single(outerType.TypeArguments));
             var effectType = Assert.Single(innerType.TypeArguments);
@@ -191,12 +202,17 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
     {
         var source = NullableArraySource(strategy);
         var compilation = Generate(source);
-        var union = GetUnion(compilation, "NullableArrayUnion");
-        var property = Assert.Single(union.GetMembers("values").OfType<IPropertySymbol>());
-        var arrayType = Assert.IsAssignableFrom<IArrayTypeSymbol>(property.Type);
+        var payload = compilation.GetTypeByMetadataName("NullableArrayUnionTypes+Variants+First");
+        var secondPayload = compilation.GetTypeByMetadataName("NullableArrayUnionTypes+Variants+Second");
+        Assert.NotNull(payload);
+        Assert.NotNull(secondPayload);
+        var field = Assert.Single(payload!.GetMembers("values").OfType<IPropertySymbol>());
+        var secondField = Assert.Single(secondPayload!.GetMembers("values").OfType<IPropertySymbol>());
+        var arrayType = Assert.IsAssignableFrom<IArrayTypeSymbol>(field.Type);
         var nullableElement = Assert.IsAssignableFrom<INamedTypeSymbol>(arrayType.ElementType);
 
-        Assert.Equal(NullableAnnotation.Annotated, property.NullableAnnotation);
+        Assert.Equal(NullableAnnotation.NotAnnotated, field.NullableAnnotation);
+        Assert.Equal(NullableAnnotation.Annotated, secondField.NullableAnnotation);
         Assert.Equal(SpecialType.System_Nullable_T, nullableElement.OriginalDefinition.SpecialType);
         Assert.Equal(SpecialType.System_Int32, Assert.Single(nullableElement.TypeArguments).SpecialType);
 
@@ -221,8 +237,8 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
         var response = InvokeFactory(unionType, "HTTP2Response", 17);
         var url = InvokeFactory(unionType, "URL_V1", "v1");
 
-        Assert.Equal(17, ReadProperty(response, "http2Response_value"));
-        Assert.Equal("v1", ReadProperty(url, "url_V1_value"));
+        Assert.Equal(17, ReadProperty(ReadPayload(response, "http2Response"), "value"));
+        Assert.Equal("v1", ReadProperty(ReadPayload(url, "url_V1"), "value"));
         Assert.Null(unionType.GetProperty("value", BindingFlags.Public | BindingFlags.Instance));
     }
 
@@ -252,21 +268,22 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
         AssertSystemTextJsonRoundTrip(
             unionType,
             "Count",
-            "count_value",
+            "value",
             12,
             12);
         AssertSystemTextJsonRoundTrip(
             unionType,
             "Text",
-            "text_value",
+            "value",
             "hello",
             "hello");
         AssertSystemTextJsonRoundTrip(
             unionType,
             "event",
-            "event_value",
+            "value",
             true,
-            true);
+            true,
+            "event_value");
     }
 
     [Theory]
@@ -279,21 +296,22 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
         AssertNewtonsoftJsonRoundTrip(
             unionType,
             "Count",
-            "count_value",
+            "value",
             12,
             12);
         AssertNewtonsoftJsonRoundTrip(
             unionType,
             "Text",
-            "text_value",
+            "value",
             "hello",
             "hello");
         AssertNewtonsoftJsonRoundTrip(
             unionType,
             "event",
-            "event_value",
+            "value",
             true,
-            true);
+            true,
+            "event_value");
     }
 
     [Theory]
@@ -316,8 +334,8 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
         var count = InvokeFactory(unionType, "Count", 42);
         var text = InvokeFactory(unionType, "Text", "hello");
 
-        Assert.Equal(42, ReadProperty(count, "count_displayName"));
-        Assert.Equal("hello", ReadProperty(text, "text_displayName"));
+        Assert.Equal(42, ReadProperty(count, "displayName"));
+        Assert.Equal("hello", ReadProperty(text, "displayName"));
         Assert.Equal("Count(42)", count.ToString());
         Assert.Equal("Text(hello)", text.ToString());
     }
@@ -332,8 +350,8 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
         var integer = InvokeFactory(unionType, "Integer", 3);
         var nullableInteger = InvokeFactory(unionType, "NullableInteger", (object)null!);
 
-        Assert.Equal(3, ReadProperty(integer, "integer_value"));
-        Assert.Null(ReadProperty(nullableInteger, "nullableInteger_value"));
+        Assert.Equal(3, ReadProperty(integer, "value"));
+        Assert.Null(ReadProperty(nullableInteger, "value"));
         Assert.Null(unionType.GetProperty("value", BindingFlags.Public | BindingFlags.Instance));
     }
 
@@ -345,14 +363,18 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
         var unionType = GetType(assembly, "FieldCollisionUnion");
 
         var count = InvokeFactory(unionType, "Count", 19);
-        var countDeconstructed = InvokeDeconstruct(count, 2);
-        Assert.Equal(GetKindValue(unionType, "Count"), Convert.ToInt32(countDeconstructed[0]));
-        Assert.Equal(19, countDeconstructed[1]);
+        var countPayload = ReadPayload(count, "count");
+        var countDeconstruct = countPayload.GetType().GetMethod("Deconstruct")!;
+        var countValue = new object?[] { null };
+        countDeconstruct.Invoke(countPayload, countValue);
+        Assert.Equal(19, countValue[0]);
 
         var text = InvokeFactory(unionType, "Text", "deconstructed");
-        var textDeconstructed = InvokeDeconstruct(text, 2);
-        Assert.Equal(GetKindValue(unionType, "Text"), Convert.ToInt32(textDeconstructed[0]));
-        Assert.Equal("deconstructed", textDeconstructed[1]);
+        var textPayload = ReadPayload(text, "text");
+        var textDeconstruct = textPayload.GetType().GetMethod("Deconstruct")!;
+        var textValue = new object?[] { null };
+        textDeconstruct.Invoke(textPayload, textValue);
+        Assert.Equal("deconstructed", textValue[0]);
     }
 
     [Fact]
@@ -375,7 +397,7 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
             new FieldAccessSafetyAnalyzer());
 
         var diagnostic = Assert.Single(diagnostics.Where(item => item.Id == "SPIRE013"));
-        Assert.Contains("text_value", diagnostic.GetMessage(), StringComparison.Ordinal);
+        Assert.Contains("text", diagnostic.GetMessage(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -446,21 +468,16 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
 
     private static readonly string[] Layouts =
     {
-        "Layout.Additive",
-        "Layout.BoxedFields",
-        "Layout.BoxedTuple",
-        "Layout.Overlap",
-        "Layout.UnsafeOverlap",
+        "ReferenceStorage = ReferenceStorage.Auto",
+        "ReferenceStorage = ReferenceStorage.Typed",
+        "ReferenceStorage = ReferenceStorage.Shared",
     };
 
     private static readonly string[] AllLayouts =
     {
-        "Layout.Auto",
-        "Layout.Additive",
-        "Layout.BoxedFields",
-        "Layout.BoxedTuple",
-        "Layout.Overlap",
-        "Layout.UnsafeOverlap",
+        "ReferenceStorage = ReferenceStorage.Auto",
+        "ReferenceStorage = ReferenceStorage.Typed",
+        "ReferenceStorage = ReferenceStorage.Shared",
     };
 
     public static IEnumerable<object[]> AllLayoutStrategies
@@ -471,18 +488,20 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
         string variantName,
         string propertyName,
         object argument,
-        object expected)
+        object expected,
+        string? payloadAccessor = null)
     {
         var instance = InvokeFactory(unionType, variantName, argument);
         var json = System.Text.Json.JsonSerializer.Serialize(instance, unionType);
 
         Assert.Contains($"\"kind\":\"{variantName}\"", json, StringComparison.Ordinal);
         Assert.Contains("\"value\"", json, StringComparison.Ordinal);
-        Assert.DoesNotContain(propertyName, json, StringComparison.Ordinal);
-
         var roundTripped = System.Text.Json.JsonSerializer.Deserialize(json, unionType)!;
         Assert.Equal(GetKindValue(unionType, variantName), ReadKind(roundTripped));
-        Assert.Equal(expected, ReadProperty(roundTripped, propertyName));
+        var actual = payloadAccessor is null
+            ? ReadProperty(roundTripped, propertyName)
+            : ReadProperty(ReadPayload(roundTripped, payloadAccessor), propertyName);
+        Assert.Equal(expected, actual);
     }
 
     private static void AssertNewtonsoftJsonRoundTrip(
@@ -490,18 +509,20 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
         string variantName,
         string propertyName,
         object argument,
-        object expected)
+        object expected,
+        string? payloadAccessor = null)
     {
         var instance = InvokeFactory(unionType, variantName, argument);
         var json = Newtonsoft.Json.JsonConvert.SerializeObject(instance);
 
         Assert.Contains($"\"kind\":\"{variantName}\"", json, StringComparison.Ordinal);
         Assert.Contains("\"value\"", json, StringComparison.Ordinal);
-        Assert.DoesNotContain(propertyName, json, StringComparison.Ordinal);
-
         var roundTripped = Newtonsoft.Json.JsonConvert.DeserializeObject(json, unionType)!;
         Assert.Equal(GetKindValue(unionType, variantName), ReadKind(roundTripped));
-        Assert.Equal(expected, ReadProperty(roundTripped, propertyName));
+        var actual = payloadAccessor is null
+            ? ReadProperty(roundTripped, propertyName)
+            : ReadProperty(ReadPayload(roundTripped, payloadAccessor), propertyName);
+        Assert.Equal(expected, actual);
     }
 
     private static string IncompatibleFieldsSource(string strategy) => $$"""
@@ -555,7 +576,7 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
     private static string JsonCollisionSource(string strategy, string jsonLibrary) => $$"""
         using Houtamelo.Spire;
 
-        [DiscriminatedUnion({{strategy}}, json: JsonLibrary.{{jsonLibrary}})]
+        [DiscriminatedUnion(json: JsonLibrary.{{jsonLibrary}}, ReferenceStorage = ReferenceStorage.Auto)]
         public partial struct JsonCollisionUnion
         {
             [Variant] public static partial JsonCollisionUnion Count(int value);
@@ -724,7 +745,7 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
     private static readonly string AnalyzerSource = """
         using Houtamelo.Spire;
 
-        [DiscriminatedUnion(Layout.Additive)]
+        [DiscriminatedUnion]
         public partial struct AnalyzerCollisionUnion
         {
             [Variant] public static partial AnalyzerCollisionUnion Count(int value);
@@ -738,9 +759,9 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
                 switch (command.kind)
                 {
                     case AnalyzerCollisionUnion.Kind.Count:
-                        return command.count_value.ToString();
+                        return command.count.value.ToString();
                     case AnalyzerCollisionUnion.Kind.Text:
-                        return command.text_value;
+                        return command.text.value;
                     default:
                         return string.Empty;
                 }
@@ -748,8 +769,8 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
 
             public static string Match(AnalyzerCollisionUnion command) => command switch
             {
-                { kind: AnalyzerCollisionUnion.Kind.Count, count_value: var value } => value.ToString(),
-                { kind: AnalyzerCollisionUnion.Kind.Text, text_value: var value } => value,
+                { kind: AnalyzerCollisionUnion.Kind.Count, count: { value: var value } } => value.ToString(),
+                { kind: AnalyzerCollisionUnion.Kind.Text, text: { value: var value } } => value,
                 _ => string.Empty,
             };
         }
@@ -758,7 +779,7 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
     private static readonly string WrongVariantAccessSource = """
         using Houtamelo.Spire;
 
-        [DiscriminatedUnion(Layout.Additive)]
+        [DiscriminatedUnion]
         public partial struct WrongVariantCollisionUnion
         {
             [Variant] public static partial WrongVariantCollisionUnion Count(int value);
@@ -772,7 +793,7 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
                 switch (command.kind)
                 {
                     case WrongVariantCollisionUnion.Kind.Count:
-                        return command.text_value;
+                        return command.text.value;
                     default:
                         return string.Empty;
                 }
@@ -783,7 +804,7 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
     private static readonly string ExhaustivePropertyPatternSource = """
         using Houtamelo.Spire;
 
-        [DiscriminatedUnion(Layout.Additive)]
+        [DiscriminatedUnion]
         public partial struct ExhaustiveCollisionUnion
         {
             [Variant] public static partial ExhaustiveCollisionUnion Count(int value);
@@ -794,8 +815,8 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
         {
             public static string Match(ExhaustiveCollisionUnion command) => command switch
             {
-                { kind: ExhaustiveCollisionUnion.Kind.Count, count_value: var value } => value.ToString(),
-                { kind: ExhaustiveCollisionUnion.Kind.Text, text_value: var value } => value,
+                { kind: ExhaustiveCollisionUnion.Kind.Count, count: { value: var value } } => value.ToString(),
+                { kind: ExhaustiveCollisionUnion.Kind.Text, text: { value: var value } } => value,
             };
         }
         """;
@@ -803,7 +824,7 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
     private static readonly string MissingVariantPropertyPatternSource = """
         using Houtamelo.Spire;
 
-        [DiscriminatedUnion(Layout.Additive)]
+        [DiscriminatedUnion]
         public partial struct MissingVariantCollisionUnion
         {
             [Variant] public static partial MissingVariantCollisionUnion Count(int value);
@@ -814,7 +835,7 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
         {
             public static string Match(MissingVariantCollisionUnion command) => command switch
             {
-                { kind: MissingVariantCollisionUnion.Kind.Count, count_value: var value } => value.ToString(),
+                { kind: MissingVariantCollisionUnion.Kind.Count, count: { value: var value } } => value.ToString(),
             };
         }
         """;
@@ -862,7 +883,7 @@ public sealed class UnityFieldCollisionTests
             using Houtamelo.Spire;
 
             [Serializable]
-            [DiscriminatedUnion(Layout.Additive)]
+            [DiscriminatedUnion]
             public partial struct SerializableFieldCollisionUnion
             {
                 [Variant] public static partial SerializableFieldCollisionUnion Count(int value);
@@ -877,8 +898,8 @@ public sealed class UnityFieldCollisionTests
             .GetTypeByMetadataName("SerializableFieldCollisionUnion");
         Assert.NotNull(union);
 
-        Assert.NotNull(union!.GetMembers("count_value").OfType<IPropertySymbol>().SingleOrDefault());
-        Assert.NotNull(union.GetMembers("text_value").OfType<IPropertySymbol>().SingleOrDefault());
+        Assert.NotNull(union!.GetMembers("count").OfType<IPropertySymbol>().SingleOrDefault());
+        Assert.NotNull(union.GetMembers("text").OfType<IPropertySymbol>().SingleOrDefault());
         Assert.Empty(union.GetMembers("value").OfType<IPropertySymbol>());
 
         var countFactory = Assert.Single(union.GetMembers("Count").OfType<IMethodSymbol>());
@@ -888,18 +909,15 @@ public sealed class UnityFieldCollisionTests
         Assert.Equal(SpecialType.System_Int32, countFactory.Parameters[0].Type.SpecialType);
         Assert.Equal(SpecialType.System_String, textFactory.Parameters[0].Type.SpecialType);
 
-        var payloadTypes = union.GetTypeMembers()
-            .Where(type => HasAttribute(type, "System.SerializableAttribute") && !type.IsAbstract)
-            .ToArray();
-        var countPayload = Assert.Single(payloadTypes, type =>
-            InstanceFields(type).Any(field =>
-                field.Name == "value" && field.Type.SpecialType == SpecialType.System_Int32));
-        var textPayload = Assert.Single(payloadTypes, type =>
-            InstanceFields(type).Any(field =>
-                field.Name == "value" && field.Type.SpecialType == SpecialType.System_String));
+        var countPayload = result.OutputCompilation
+            .GetTypeByMetadataName("SerializableFieldCollisionUnionTypes+Variants+Count");
+        var textPayload = result.OutputCompilation
+            .GetTypeByMetadataName("SerializableFieldCollisionUnionTypes+Variants+Text");
+        Assert.NotNull(countPayload);
+        Assert.NotNull(textPayload);
 
-        AssertPayloadFieldIsSerialized(countPayload);
-        AssertPayloadFieldIsSerialized(textPayload);
+        AssertPayloadFieldIsSerialized(countPayload!);
+        AssertPayloadFieldIsSerialized(textPayload!);
         Assert.DoesNotContain(InstanceFields(countPayload), field =>
             field.Name is "count_value" or "text_value");
         Assert.DoesNotContain(InstanceFields(textPayload), field =>
@@ -917,7 +935,7 @@ public sealed class UnityFieldCollisionTests
             public sealed class Effect { }
 
             [Serializable]
-            [DiscriminatedUnion(Layout.Additive)]
+            [DiscriminatedUnion]
             public partial struct SerializableNullableFieldCollisionUnion
             {
                 [Variant] public static partial SerializableNullableFieldCollisionUnion Required(
@@ -939,18 +957,15 @@ public sealed class UnityFieldCollisionTests
         Assert.Equal(NullableAnnotation.NotAnnotated, requiredFactory.Parameters[0].NullableAnnotation);
         Assert.Equal(NullableAnnotation.Annotated, optionalFactory.Parameters[0].NullableAnnotation);
 
-        var payloadTypes = union.GetTypeMembers()
-            .Where(type => HasAttribute(type, "System.SerializableAttribute") && !type.IsAbstract)
-            .ToArray();
-        var requiredPayload = Assert.Single(payloadTypes, type =>
-            InstanceFields(type).Any(field =>
-                field.Name == "value" && field.NullableAnnotation == NullableAnnotation.NotAnnotated));
-        var optionalPayload = Assert.Single(payloadTypes, type =>
-            InstanceFields(type).Any(field =>
-                field.Name == "value" && field.NullableAnnotation == NullableAnnotation.Annotated));
+        var requiredPayload = result.OutputCompilation
+            .GetTypeByMetadataName("SerializableNullableFieldCollisionUnionTypes+Variants+Required");
+        var optionalPayload = result.OutputCompilation
+            .GetTypeByMetadataName("SerializableNullableFieldCollisionUnionTypes+Variants+Optional");
+        Assert.NotNull(requiredPayload);
+        Assert.NotNull(optionalPayload);
 
-        AssertPayloadFieldIsSerialized(requiredPayload);
-        AssertPayloadFieldIsSerialized(optionalPayload);
+        AssertPayloadFieldIsSerialized(requiredPayload!);
+        AssertPayloadFieldIsSerialized(optionalPayload!);
     }
 
     [Fact]
@@ -962,7 +977,7 @@ public sealed class UnityFieldCollisionTests
             using Houtamelo.Spire;
 
             [Serializable]
-            [DiscriminatedUnion(Layout.Auto)]
+            [DiscriminatedUnion]
             public partial struct SerializableKeywordFieldUnion
             {
                 [Variant] public static partial SerializableKeywordFieldUnion First(int @event);
@@ -976,18 +991,17 @@ public sealed class UnityFieldCollisionTests
         var union = result.OutputCompilation
             .GetTypeByMetadataName("SerializableKeywordFieldUnion");
         Assert.NotNull(union);
-        Assert.NotNull(union!.GetMembers("event").OfType<IPropertySymbol>().SingleOrDefault());
-        Assert.NotNull(union.GetMembers("class").OfType<IPropertySymbol>().SingleOrDefault());
+        Assert.NotNull(union!.GetMembers("first").OfType<IPropertySymbol>().SingleOrDefault());
+        Assert.NotNull(union.GetMembers("second").OfType<IPropertySymbol>().SingleOrDefault());
 
-        var payloadTypes = union.GetTypeMembers()
-            .Where(type => HasAttribute(type, "System.SerializableAttribute") && !type.IsAbstract)
-            .ToArray();
-        var eventPayload = Assert.Single(payloadTypes, type =>
-            InstanceFields(type).Any(field => field.Name == "event"));
-        var classPayload = Assert.Single(payloadTypes, type =>
-            InstanceFields(type).Any(field => field.Name == "class"));
-        AssertPayloadFieldIsSerialized(eventPayload, "event");
-        AssertPayloadFieldIsSerialized(classPayload, "class");
+        var eventPayload = result.OutputCompilation
+            .GetTypeByMetadataName("SerializableKeywordFieldUnionTypes+Variants+First");
+        var classPayload = result.OutputCompilation
+            .GetTypeByMetadataName("SerializableKeywordFieldUnionTypes+Variants+Second");
+        Assert.NotNull(eventPayload);
+        Assert.NotNull(classPayload);
+        AssertPayloadFieldIsSerialized(eventPayload!, "event");
+        AssertPayloadFieldIsSerialized(classPayload!, "class");
     }
 
     private static IFieldSymbol[] InstanceFields(INamedTypeSymbol type)
@@ -999,7 +1013,7 @@ public sealed class UnityFieldCollisionTests
         INamedTypeSymbol payload,
         string fieldName = "value")
     {
-        var field = Assert.Single(InstanceFields(payload), candidate => candidate.Name == fieldName);
+        var field = Assert.Single(InstanceFields(payload), candidate => candidate.Name == "_" + fieldName);
         Assert.True(
             HasAttribute(field, "UnityEngine.SerializeField"),
             $"Payload field '{payload.Name}.{fieldName}' must retain SerializeField.");

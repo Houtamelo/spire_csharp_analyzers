@@ -1,13 +1,13 @@
 # Unity Showcase (URP)
 
-This sample demonstrates struct layouts, Inspector authoring, variant rename
+This sample demonstrates variant payloads, Inspector authoring, variant rename
 aliases, managed-reference nulls/sharing, property patterns, checked enum
 conversion, filtering, and struct inliners. It includes a saved scene, preset,
 and real Unity Test Framework tests.
 
 Before importing, install URP 17.5.0 and Unity Test Framework 1.7.0. Import the
 sample once from Package Manager. Keep its asset `.meta` files and enable Rider's
-Roslyn Analyzers. Its runtime asmdef already enables unsafe code for UnsafeOverlap.
+Roslyn Analyzers. Union storage does not require unsafe code.
 
 In a disposable URP project:
 

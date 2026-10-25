@@ -5,7 +5,7 @@ using Spire.UnityAsmdefIntegration.RuntimeChild;
 namespace Spire.UnityAsmdefIntegration.RuntimeTransitive
 {
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct RuntimeTransitiveUnion
     {
         [Variant]
@@ -46,7 +46,7 @@ namespace Spire.UnityAsmdefIntegration.RuntimeTransitive
         {
             var union = RuntimeTransitiveUnion.Value(42);
             return union.kind == RuntimeTransitiveUnion.Kind.Value
-                && union.value == 42
+                && union.value.value == 42
                 && Initialized(42)[0].value == 42
                 && RuntimeChild.AsmdefProbe.Verify();
         }

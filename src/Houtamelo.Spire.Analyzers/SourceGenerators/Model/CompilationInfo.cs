@@ -6,9 +6,9 @@ namespace Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 internal sealed record CompilationInfo(
     bool HasSystemTextJson,
     bool HasNewtonsoftJson,
-    bool AllowsUnsafe,
-    bool HasInlineArray,
-    bool HasInitProperties
+    bool HasInitProperties,
+    bool HasUnitySerialization = false,
+    bool HasUnityEditor = false
 ) : IEquatable<CompilationInfo>
 {
     internal static bool HasAccessibleType(Compilation compilation, string metadataName)

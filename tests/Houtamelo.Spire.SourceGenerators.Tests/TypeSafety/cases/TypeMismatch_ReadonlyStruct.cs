@@ -12,8 +12,8 @@ namespace TestNs
     {
         int Test(EventUnion e) => e switch
         {
-            (EventUnion.Kind.Click, string bad) => 1, //~ ERROR
-            (EventUnion.Kind.KeyPress, char k) => (int)k,
+            { kind: EventUnion.Kind.Click, click: { buttonIndex: string bad } } => 1, //~ ERROR
+            { kind: EventUnion.Kind.KeyPress, keyPress: { keyChar: char k } } => (int)k,
         };
     }
 }

@@ -1258,7 +1258,7 @@ internal static class UnityCustomerDeliveryTestSupport
         var expectedTypes = new List<string>
         {
             "Houtamelo.Spire.DiscriminatedUnionAttribute",
-            "Houtamelo.Spire.Layout",
+            "Houtamelo.Spire.ReferenceStorage",
             "Houtamelo.Spire.IDiscriminatedUnion" + "\u00601",
             "Houtamelo.Spire.SpireEnum" + "\u00601",
             "Houtamelo.Spire.SpireLINQ",

@@ -13,7 +13,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityDrawerInlineHelperUnion
     {
         [Variant]

@@ -9,8 +9,7 @@
     <Nullable>enable</Nullable>
     <!-- Global config under test -->
     <Spire_EnforceExhaustivenessOnAllEnumTypes>true</Spire_EnforceExhaustivenessOnAllEnumTypes>
-    <Spire_DU_DefaultLayout>Additive</Spire_DU_DefaultLayout>
-    <Spire_DU_DefaultGenerateDeconstruct>true</Spire_DU_DefaultGenerateDeconstruct>
+    <Spire_DU_DefaultReferenceStorage>Auto</Spire_DU_DefaultReferenceStorage>
     <Spire_DU_DefaultJson>None</Spire_DU_DefaultJson>
   </PropertyGroup>
 

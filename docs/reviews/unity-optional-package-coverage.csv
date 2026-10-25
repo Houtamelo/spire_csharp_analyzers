@@ -1,0 +1,275 @@
+package,version,status,origin,source_files,public_composite_unmanaged,public_composite_unresolved,source_sha256,archive_sha256,reason
+com.autodesk.fbx,5.1.3,source-staged,editor-archive,201,6,0,5c1f662f0369d1191f8cfd9212be94cfe864e20a91833a7ec9411660e1c3b1b0,899724cf374676321d35b4864989b67969e549502fb41ae03fa821e9dd527310,
+com.havok.physics,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.2d.animation,15.1.0,source-staged,editor-archive,260,0,0,183345148619186576633df37c2566cb0f743895747b62d611a2450869aec34c,063e690da733b86aec2f05fc88d6ab144cc1b55ace78daea77442850172ff748,
+com.unity.2d.aseprite,5.0.3,source-staged,editor-archive,59,0,0,a88b9fa7f696a5c306864a0953d99e5f74588e223b9be79324564ad4c5a8c643,3ac50c7c9162d22d8738b07ee355ce6a2dcb70da9bf94524d8f875f8845ff21c,
+com.unity.2d.common,14.0.1,source-staged,editor-archive,99,0,0,496daaad111942cdb99b37cd98001b3da7df712480cb590ba40cb58fc5dd4ae7,6c5df9da9f5238f92228e1a8842da15b910af8ffdb81165dfac034ee706043c9,
+com.unity.2d.ik,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.2d.path,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.2d.pixel-perfect,6.0.0,source-staged,editor-archive,16,0,0,781b43be1efd2e80a71d5690dd40b7c84a5568403ed3d71cc7a169c6e21ddc82,49fe010faf88a31fd6c5668e9964d5760f2fdabaec30b59c7083a7332a57373e,
+com.unity.2d.psdimporter,14.0.3,source-staged,editor-archive,79,0,0,8646d6d01aa0371e1f06c0d898a075582c783fb3fc707685b9f6a6c9913dc9e5,928fde088400667a62b99f19baec4227d5998186dcbae50f6cef6330cdd62d29,
+com.unity.2d.sprite,1.0.0,source-staged,editor-built-in,53,1,0,80db65fc70fc97170172fd2a016c91dbe620d72dd7369110658c1b2f8d8e6afd,,
+com.unity.2d.spriteshape,15.0.3,source-staged,editor-archive,48,0,0,679c7e1d5c4579dcd2a4148ad5d8ed8140514eca9b35d91f3cd8eaa90be3e52f,b4d83d9fcc7ef6edc8da0741bc74f7783f663981f97940ac634a4037441b91b0,
+com.unity.2d.tilemap,1.0.0,source-staged,editor-built-in,116,0,0,33f16e7015af78e4f57e50928ba5fce6633fd8c1748994937277d2192aecba89,,
+com.unity.2d.tilemap.extras,8.0.3,source-staged,editor-archive,32,1,0,8c2fc79afde2298dd852c2713ee823dfda713d6d524ba4ac172881b638570372,e53133743931e5673d1d93334538830c357434f28cec381e14bd8c0b080f781a,
+com.unity.2d.tooling,3.0.1,source-staged,editor-archive,55,0,0,48e758526a487eb7a507823a881cc8589ea66aafea1d32445a3a4bcb1eb370ad,c0a4da67db33de44d86e640013ab2e39083935603cd5af76464ae94261172f82,
+com.unity.adaptiveperformance,6.0.0,source-staged,editor-built-in,59,0,0,e68f5d31e81b0b93dc1627fd08d7b133a3b0e874686805bf944df05990784a5d,,
+com.unity.adaptiveperformance.apple,6.0.0,source-staged,editor-built-in,12,0,0,e3650276b573dae7dd4903c543f15e46839f33af4a2b76e5cbf0002ce768c260,,
+com.unity.adaptiveperformance.google.android,6.0.0,source-staged,editor-built-in,12,0,0,202178fe08694d8c387b227a2ff73719d142ccfc5a73f49c1c248e670e006824,,
+com.unity.adaptiveperformance.samsung.android,,deprecated,,0,0,0,,,This package is no longer supported on this editor version. Use com.unity.adaptiveperformance.google.android instead.
+com.unity.addressables,2.9.1,source-staged,editor-archive,506,5,0,7e94bae00e228fb6aa421458456b58cc2cca6a59b282d8bbdc282244ac6fe926,06dc6b4a4f29c7f1337394157f6a06b29ffdec059be612fded1dd4dbd393225e,
+com.unity.addressables.android,1.1.0,source-staged,editor-archive,32,0,0,3cdb043fb20cd109e67996eb705d4d9b9d0c07ab492505a1957c9142bdb6fbbd,21456f2380d49f53d6fd68c6f46721f07c5cbe863f100af0dd32dc49721c36c1,
+com.unity.ads,4.19.0,source-staged,editor-archive,95,0,0,adae4573c54d3deebd5739fc34cec8698334e8a60c76fe42b583c3f430bfd340,bd7ff39066c4d43f697a5eab08b498e5e749707f6ff6226a42f6368b1e5aaf4d,
+com.unity.ads.ios-support,1.0.1,source-staged,editor-archive,22,0,0,34a7799a3bc80e2d1cdf2e295fd1a36ed3d0e28a24c2b43004a8babf32674f87,24c3a8d4b4079be749f226d5acbda99383e496c828c3f77ed2597ea33173bcc9,
+com.unity.ai.inference,2.6.1,source-staged,editor-archive,1033,3,0,bb75a4debd35984eb3174605beece375dcd48a62c2eea15979cf02d5820fc5fe,f2835a6de08fd8d16934feb4a828b4f9d1296a33085c5222eb66682cdbcbc96f,
+com.unity.ai.navigation,2.0.14,source-staged,editor-archive,53,0,0,9d21868f40b3a302f2fdbeffa10ab54fce986ed58fa3c4a0ca864126b22b4adc,dc4f091429151f1f4858850cdf6b4a7abef057b9b2893f112b4049400fe6202e,
+com.unity.analytics,3.8.2,source-staged,unity-registry,40,0,0,708340bf9d6ac3e6edc38164ed6c6fdd09c95886b43f0388405831b6071905dc,81c945f0c87993c4201249adc65da7a23a51efd9e1bf14ea98e5237a3f35d14d,
+com.unity.animation.rigging,1.4.1,source-staged,editor-archive,117,27,0,76739a6ee5f31d4c9ae0cd4e8a62a495a58db5da708fe46697a596aa95868373,0fc2ef2c9598154d9a02d3c1ea8934b36abd94dc2dcd3fd444812805ad9daa2e,
+com.unity.asset-manager-for-unity,1.11.0,source-staged,editor-archive,1079,0,0,3ca89b09c43dbda00b22de045d83731797b7f6eef4d296bfd097d4a250ba17ad,10c0d26c824d85c8ba784ea1f4e1346ec5905c52779c93f176bd41186733a99c,
+com.unity.barracuda,3.0.2,source-staged,editor-archive,95,4,0,370b057b91e504bd95c4e1e30a05c76e9513a7fd608a986d60454974db9cb34d,1fb0b4b03ef6b261ad77e622fd4b962f33b334c7b4c3ec887f06d0942bfe2910,
+com.unity.behavior,1.0.13,source-staged,unity-registry,559,1,0,2c9ad9a4089d560e7b6a14425200b9d382a22384058442f01318a68d208881c7,a03bcac85bddd647f10b159ea5f6cb5e402e89cc8aa2ffa94fd1e94d21e50fb9,
+com.unity.bindings.openimageio,1.0.2,source-staged,editor-archive,2,3,0,61b3a93844844b4d0fb5b34562064ddf52a81867e3b2dd7a20092b1c532359ee,7d483d8a8fc04dcd0025d4d94180f27695af18d85c48005af0b98eacd7f88e87,
+com.unity.burst,1.8.29,source-staged,editor-archive,79,9,1,523b78c85e9c444377f90e39ad9a9378014779524bd3c500aec74b1b32b8f083,5a7d6df652bd5842d3964327c321cde743d971fd0a0bbfd817e7e8fe0fef48d5,
+com.unity.charactercontroller,1.4.1,source-staged,editor-archive,60,24,29,2cb35544ab3b79888957f23f268776eefa3355f0d34194512897152576155600,ec9820c8c1c11716b16e1b29d385d865f857f8bcbd0f40290b748fcd7ec1131f,
+com.unity.cinemachine,2.10.7,source-staged,editor-archive,193,10,1,14adb57a79717e0f24558b02416ddf8a13d5b16cbbddf76bef377e19fbbd810b,f409347e3c19d2cb7a783664fec2df262c09ce0596b13c04a79aebbcbcf894c1,
+com.unity.cloud.draco,5.4.3,source-staged,unity-registry,53,2,0,4ba683c9357ee24164260311ea70eea6976ddc84c22683096e87f938c6755e03,c43821df78179b320140cbcfc40a484ae5ad1caf3b0e9ebb39b83aeb49f290e7,
+com.unity.cloud.gltfast,6.14.1,source-staged,unity-registry,273,0,0,f90609a4f745b33e1d4195a363fdcde72236bcc494dd54e6845fb09c776e814d,99f1854f50e9da7b4c10c03da5c788802ce0fefed749bf4b3726ab3de1b1949e,
+com.unity.cloud.ktx,3.6.3,source-staged,unity-registry,27,0,0,e14cf11da69bb51d35a0ae4e70826712210d7118caf938acfe771563f9c71793,57f70a6a7381741352fc958165653352e4de730d41e023b353169f351f880878,
+com.unity.collab-proxy,2.13.3,source-staged,editor-archive,904,0,0,c4ee50787771645654e3500f9cf7df973158bc4f2c057092c824dbb324f783be,953b3bf2c8325660c263e1d0cbd6a94f4b2ce96103f0cad759628fca47297fb5,
+com.unity.collections,6.5.0,source-staged,editor-built-in,175,44,0,4cba9cc54c56a66caae1b7585be3d7bd8a5d0add4450bfb3f9d3e6bd3493dd8c,,
+com.unity.connect.share,4.2.4,source-staged,editor-archive,17,0,0,864173b261fb259b9c1f65caf39b6560ff54655c57c31afadeb9b8162db8b7f4,c92d7ff6fc1128f3d92641dc7689affd4189e04e8345b3326d2f488f1ebe28d4,
+com.unity.dedicated-server,2.0.2,source-staged,editor-archive,29,0,0,5394d331ead6f33d9d9f773f7d66802d844265dbe0e4183610da8ca100a2e7b5,a0f46ce2aaa4582d39379f1e1971824bee100cd5ac56667c077e3cd2589eecf0,
+com.unity.device-simulator,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.device-simulator.devices,1.0.1,source-staged,editor-archive,1,0,0,6121989568fe98e0a3424617cf6f9c7923e3cd0dc8fd4afcb43e821706adcef1,0c67bc0c4ea3ed2a72e7e046112262c9695d578d98757a10e0f8f55ef3723af8,
+com.unity.dt.app-ui,2.1.7,source-staged,editor-archive,540,8,0,47799a221ee0d846ec98aeca490efdace338bec532e1094600fe43aa65671d8f,2094d640b66cb8b1eb1fb41ab64217386f5297e93767e0d0c5386c9378431203,
+com.unity.editorcoroutines,1.1.0,source-staged,editor-archive,4,0,0,988271c13a82bd9ed5bbe43f10bee1c2a45189375400a2d36f21f47f50569f2f,5b9e41c7838cf278ef0c6e923ceadb9f60660577d2964359d012c81e862b7be2,
+com.unity.entities,6.5.0,source-staged,editor-built-in,1400,121,61,d7cc236e6d9578ead0a0a7402061afdb8258a0607d0b9097688623dd14598ea7,,
+com.unity.entities.graphics,6.5.0,source-staged,editor-built-in,124,17,0,2ca7da5c463284dc75f2e8397acca47369862a826ef2086b06dd61fb28afaa2a,,
+com.unity.ext.flatsharp,1.1.4,source-staged,editor-archive,5,0,0,441b5c1e99a9c74200b1d005ff29c13df15fc062d3495ae0871322175f418c16,dd7ad9ac8deec5c10f9351e6ff8012b5a493a249f52b60d6878c648da0655d96,
+com.unity.ext.nunit,2.1.0,no-csharp-source,editor-built-in,0,0,0,2a044b1722f975807597a509329e3cdb1efd6e98658bc9e247ea41f4a503cb2a,,
+com.unity.feature.2d,2.0.2,no-csharp-source,editor-built-in,0,0,0,5a64d3407f7dbeab185ff8444573627b451c73e9823c357d58b0483ed18e2490,,
+com.unity.feature.ar,1.0.2,no-csharp-source,editor-built-in,0,0,0,c7f06b275e35ba5d3aa00e5825ec939a02b99d4e791ec2b789eacd45e9efe331,,
+com.unity.feature.characters-animation,1.0.0,no-csharp-source,editor-built-in,0,0,0,6419aaf5618455238fc09a9eb7373cccce812bef1967cdf5b5d0c72189c98854,,
+com.unity.feature.cinematic,,deprecated,,0,0,0,,,This feature set is no longer supported on this editor version.
+com.unity.feature.development,1.0.2,no-csharp-source,editor-built-in,0,0,0,40c8b6a1a6fbc30c5c2e4d59cd68a6371c541f32826a7bb2b460cc1e5d770ad6,,
+com.unity.feature.ecs,1.0.0,no-csharp-source,editor-built-in,0,0,0,2bfa125e85e7ef045f184e851fc4bd14fc3d44c45a054d6aa1e0973f786698bd,,
+com.unity.feature.gameplay-storytelling,1.0.0,no-csharp-source,editor-built-in,0,0,0,6f723e771b23bd0f8f7bdd6c44d68dd44f2dc9ae4c0065ec610ed6e14e3ebc53,,
+com.unity.feature.mobile,1.0.0,no-csharp-source,editor-built-in,0,0,0,37833ca1592caa1101ff6b32040ba432c7e27de6579f100cb1b342f162cc9d52,,
+com.unity.feature.vr,1.0.1,no-csharp-source,editor-built-in,0,0,0,c6251ac347dac8aef917d2c83027d296e817f79aa54243c3714d195baf69345b,,
+com.unity.feature.worldbuilding,1.0.1,no-csharp-source,editor-built-in,0,0,0,e49dc06216eccc719bc9f8a1715fa5a1a892bebe13ba33d94e2df72fd73cc274,,
+com.unity.formats.alembic,2.4.7,source-staged,editor-archive,53,0,0,463957089398e20fb50d002561f6a984ee3575c037775b3afd845a8209cf5079,9c85fea3d7721efd2926e04f3d0f2f699d11074e3bfd0ef1956b93b020073e97,
+com.unity.formats.fbx,5.1.6,source-staged,editor-archive,20,0,0,0f8bc6cdefc83334bfa657cf99af1d6c791b345fba2d144c7d0740456a8327f1,b8a77dd185ff5813bad42419fbc33064eaa1ad22e765cacc832b79413c1d7c3b,
+com.unity.generator.sound,,deprecated,,0,0,0,,,This package is no longer supported. Muse is being replaced with Unity AI.
+com.unity.google.resonance.audio,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.graphtoolkit,0.5.0-exp.1,no-csharp-source,editor-built-in,0,0,0,86504a53f3d29db4e89504b202003eb8cf9702a1d1b06003a437af73d01669bf,,
+com.unity.ide.rider,3.0.38,source-staged,editor-archive,42,0,0,80fe2cc22534692eabdae7607faf4ee19aaded9eb393ca203db44af319bf8280,3bf299329fda12b0129eb1d20af608a73482346e38265cea3511ea3f2226e972,
+com.unity.ide.visualstudio,2.0.26,source-staged,editor-archive,47,0,0,37dc952d30764dcc7170e5cb4b416170c24ddb8bf23fed21e4ab1b773c5a5951,9b125b31cecb9e28e190763926776255e8c0d480a2f74076334d7571e19af576,
+com.unity.ide.vscode,,deprecated,,0,0,0,,,"Visual Studio Code package is not supported anymore. You can continue to use it, but we won't provide any update anymore."
+com.unity.inputsystem,1.20.0,source-staged,editor-archive,488,36,5,1ae09ceb2ce0aa6157ea4c6eb12a446155d07c6224e1b2c4bfc7c7198c66eece,7f1050d80b8771ad2d3405972b1e222d4fa4fb409521521020d1eae341bd95e5,
+com.unity.learn.iet-framework,5.0.4,source-staged,editor-archive,172,0,0,de952d93d127e067d309afacb2c7d7a52e8289cfa1ef750e42959f3c84a78dff,46fec0808790225115cc0dc10ba56ea79decf4d95cb42ab28e4e0c839855767a,
+com.unity.learn.iet-framework.authoring,1.5.4,source-staged,editor-archive,11,0,0,106958a81fc4ac9b6ab27ae1da648580d2e06b4b86e9548f70826459acae460b,070711c6ad77d9c8c0496359d0a5d8a2b95be222c319871bc1a413c91ce50e76,
+com.unity.live-capture,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.localization,1.5.12,source-staged,editor-archive,451,1,0,dd73e3c2c6fa35c0c7c4180a9dcd0df53c23e67785373d0de94abefa237646be,a6273131584d9dfa181f9d412de33032fa20a16b4411071759040d738240249e,
+com.unity.logging,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.mathematics,1.4.0,source-staged,editor-built-in,2,0,0,6b6d51f410d5891c85bb335246ebb40e65ea1c61dd85436efbf0529925be5d09,,
+com.unity.memoryprofiler,1.1.12,source-staged,editor-archive,232,0,0,c87ba3c6c94ff3e306b9a806ccee99f051379bdd6ecca68f29d8b7091f2b73cf,31ca70b3aad27704a16194cad7fc412dbf9bbb21aac0c66c0e90f7af2f4262c9,
+com.unity.meta-instant-games-sdk,,deprecated,,0,0,0,,,Support for the Facebook Instant Games C# SDK for Unity is now deprecated and not recommended for production.
+com.unity.microsoft.gdk,1.7.0,source-staged,editor-archive,495,7,0,87c16ba21ce0c2e272f4dd00312ab4ea2143c32b3abf704969172c441935f19c,17ad184cdbc08f494cb5e13c604433ea1d898df5134de37838a166cd4031bdf3,
+com.unity.microsoft.gdk.discovery,1.3.0,source-staged,editor-archive,8,0,0,288736d0c4d487c27550d6de817065cb9b24a4548cb58dcaa7787c35da9ce7d2,93dfc7d0b3f3132a767b7c12bc4ecce52821e8a28f157c020b93daed0bf7efa1,
+com.unity.microsoft.gdk.intelligent-delivery,1.0.1,source-staged,unity-registry,73,0,0,9dea8f79afbdffe52f2cfdb61c932d48e82aff43d0775a1aa1b9a9a3ff578fda,1f596a4f8d3c09b2bc49e86ce57cd1c86e18081f9f137f1953b52cefa22dc83c,
+com.unity.microsoft.gdk.tools,1.7.0,source-staged,editor-archive,37,0,0,8561d43b259fc92b60063075b4d9dc82e6d7102c5226eb9dd27f20a26561f892,1dc6aea755b1cb385e4f608d916ebed15e272dcce60c537a6e60447528c5c12c,
+com.unity.ml-agents,4.0.3,source-staged,editor-archive,178,4,0,9f9ea53aff30642e672ea647fc3ec49c53019b14f577e5da9b862df4fd5e5904,1bd9d21beb23cea10214dc10d920c0b67076d11a34688d3781c7815f6b484b65,
+com.unity.mobile.android-logcat,1.4.7,source-staged,editor-archive,85,0,0,c247bb803106d65f78ff9afc5b421226fea398cf5f608954436b380994cfd9e3,7544f4d53ec0fdbb5e8d5a3347377cf88897ac874bbeacfcf520deff739e81b0,
+com.unity.mobile.notifications,2.4.3,source-staged,editor-archive,47,4,3,dc5176c8cc3ef1ae966fe068720118fabb68d120ac95b6db04529a0f14aee876,76cb026f5d5e9e235fb8ea35fdc28a5e2ae5705505912beee89a7ef373473563,
+com.unity.modules.accessibility,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.adaptiveperformance,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.ai,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.amd,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.androidjni,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.animation,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.assetbundle,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.audio,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.cloth,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.director,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.hierarchy,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.hierarchycore,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.imageconversion,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.imgui,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.jsonserialize,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.nvidia,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.particlesystem,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.physics,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.physics2d,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.physicscore2d,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.screencapture,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.terrain,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.terrainphysics,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.tilemap,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.ui,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.uielements,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.umbra,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.unityanalytics,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.unitywebrequest,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.unitywebrequestassetbundle,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.unitywebrequestaudio,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.unitywebrequesttexture,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.unitywebrequestwww,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.vectorgraphics,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.vehicles,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.video,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.vr,,deprecated,,0,0,0,,,This module is no longer supported on this editor version.
+com.unity.modules.wind,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.modules.xr,,engine-module,,0,0,0,,,Engine module scope was covered by UnityCsReference and Editor metadata.
+com.unity.multiplayer-hlapi,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.multiplayer.center,1.0.1,source-staged,editor-built-in,63,0,0,4fcbb6dbd8e351f5d86ea85ef51195b8ad1b77158be994c9bcb5b7581edc0bc4,,
+com.unity.multiplayer.playmode,2.0.2,no-csharp-source,unity-registry,0,0,0,287ad09ac8c001198024bfcb9b2976a907d179628f2054d19c128dd27d371943,e10568810082540770cbf0d67442cf67621fde64d8929a242053ff2dfe766a63,
+com.unity.multiplayer.tools,2.2.9,source-staged,unity-registry,498,1,0,438add72c6d8518c37f6ca1aa0285243f03af7eaa3cffaf57162b6247bfe0a19,b42816f54a909976616f63f246ad5d79ec0fe15f2817388ddc5ecde1fb9c7b5c,
+com.unity.multiplayer.widgets,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.muse.common,,deprecated,,0,0,0,,,This package is no longer supported on this editor version. Muse is being replaced with Unity AI.
+com.unity.muse.sprite,,deprecated,,0,0,0,,,This package is no longer supported on this editor version. Muse is being replaced with Unity AI.
+com.unity.muse.spritepartners,,deprecated,,0,0,0,,,This package is no longer supported. Muse is being replaced with Unity AI.
+com.unity.muse.texture,,deprecated,,0,0,0,,,This package is no longer supported on this editor version. Muse is being replaced with Unity AI.
+com.unity.netcode,6.5.0,source-staged,editor-built-in,439,87,26,2fc7f53dbe0f6eb1e033127bd110d1af35ca40603393514b008441ca6c73624d,,
+com.unity.netcode.gameobjects,2.13.0,source-staged,editor-archive,384,14,0,a27e977fff9e26114e5238cb0c5233fc024a9c011098b55de55c39c780caeefa,3c7adaec1704149f1164cbfa2f8f045542c94ce47abfce90bb46937e9293fbdf,
+com.unity.nuget.mono-cecil,1.11.6,source-staged,editor-archive,1,0,0,436080b0dcf7c2926b95f090f32df4cef1e2c2a025ed3b3311f7a2fd6e465bfa,42a0d6a5b17948d960fdb07552995c35f974d33c960d1c0bd8689e751da7cd60,
+com.unity.nuget.newtonsoft-json,3.2.2,no-csharp-source,editor-archive,0,0,0,0099159a677382e3bc9cbd06524cf6f6e19b01152e0e1ae293362140627f550c,5db19a6ec4478ab974922d155aa32b952bc34abadaa78afc7973cf049b62db41,
+com.unity.package-manager-ui,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.path-tracing,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.performance.profile-analyzer,1.4.0,source-staged,editor-archive,46,1,0,9756304558bcee474752a2959bc32dfae6be89a7d2a7556b4d6fbec259ac82ba,0f47492bb0e24c1cb10799f68cd72032324a48dccd7d85d8c974e671b9eee37e,
+com.unity.physics,6.5.0,source-staged,editor-built-in,358,102,21,0f7c66b010196c097148fe7c77f09b4cb71dc78ffb08e5d9950c39d75c552472,,
+com.unity.platformtoolkit,1.1.0,source-staged,unity-registry,187,0,0,67926dde20dc51a4ff711a0cec1fa2f11e941c3dd601ae453e7f2d1858f109a7,c9d0a5772d8c3488211ac0274a7fecef03c7b4218e7d6ad0dc42f4fcfe499b46,
+com.unity.platformtoolkit.gamekit,1.1.0,unavailable,,0,0,0,,,HTTP Error 401: Unauthorized
+com.unity.platformtoolkit.gdk,1.1.0,unavailable,,0,0,0,,,HTTP Error 401: Unauthorized
+com.unity.platformtoolkit.playgamesservices,1.1.0,unavailable,,0,0,0,,,HTTP Error 401: Unauthorized
+com.unity.platformtoolkit.steam,1.1.0,unavailable,,0,0,0,,,HTTP Error 401: Unauthorized
+com.unity.polybrush,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.polyspatial,3.1.5,source-staged,editor-archive,699,2,0,7efd0e6c8a2d48260ae1fbacaaf130100708f3016db2a2da0702f5d2be38db9e,6a5b839fdb975d427751f9378c6e49001502059691f430d53b75ad04484a5691,
+com.unity.polyspatial.extensions,3.1.5,source-staged,editor-archive,19,0,0,926fbf28f7e0934bd442ec167a520426c88bb3d3f11eaa622598b484ecfb4ac4,d3ed5306af9b743c37d9ba28aa5c4e13ec1a3ef14d32c896bd86888d8d84e8ff,
+com.unity.polyspatial.visionos,3.1.5,source-staged,editor-archive,13,0,0,95c743ee0045e782532b66a581accf184f43e8e94e73f6bc9386679c1166f70e,7c52d5866d677c0fbb03ea594777ce5ff5162d7227db6072e21d5be7b59eec72,
+com.unity.polyspatial.xr,3.1.5,source-staged,editor-archive,44,0,0,2877eb12fb4266a131f9d2808f99e9509cea4de4d42b8c3c73e683ad897d1a67,274fb2015e7c04d3052d689f7354b33ead6d90a92bde0b027a6125e38b749f1d,
+com.unity.postprocessing,3.5.4,source-staged,editor-archive,94,0,0,d3929a6599a49872fdb82b564552d66b640d95c0c393c2fc0cd36781f84cd839,0b824b316e121259e9e240a5fc9c02dd252b435d169aa9800aa8698e0692385f,
+com.unity.probuilder,6.1.2,source-staged,editor-archive,374,5,0,d5605fbaa621f32c5590cfc35d8284e82f0188cb7475aec3b0ced37f1b206b87,1ba3198740eadb2ef3888e5864a6043b67f09799eb2a3851e9b67b4334f821ff,
+com.unity.profiling.core,1.0.3,source-staged,editor-archive,8,0,0,c1ec0e6f99dbb53179b2bdd36240486b4b3b60eb3049d7ffec8680263286d610,8cfdeb53057b01723c7e39529cdb2682ed2672e8b6482f194b1dda24a04bae10,
+com.unity.profiling.systemmetrics.mali,1.1.1,source-staged,editor-archive,8,0,0,5133b671bc9af759f0c286a677e06bc7c0bf5b699bd856699f31ba3b817b0f0e,2818735bbae87f1bdddf82ed3c1319f509a4e2a00fde7c4d6e4b8f06f78778d3,
+com.unity.project-auditor,2.0.0,no-csharp-source,editor-built-in,0,0,0,d44a727470cfa4ca4f48c4e64dce4d421274768c6e4a6ef14cf1f8bb3b286d01,,
+com.unity.project-auditor-rules,1.0.1,source-staged,editor-archive,1,0,0,79e8b54f95d462d7098a30d099ddcd82e049dfd7e0841aed6d15260f413b844c,6bcb8b466c340969e89e71299fcfbb9dec40e235e59ee9b2e06adc8fd4bd79a6,
+com.unity.properties,2.1.0-exp.3,source-staged,unity-registry,134,0,0,08d588aaa97bb978bd7a9e751f1895498883708980e8e04c6bd769e31d64fcdf,4ddd9f803f0f491655192fe275db8cfdb5d03f0f8c28b5145a44061274698513,
+com.unity.properties.ui,2.0.0-exp.11,source-staged,unity-registry,126,0,0,5a226daa45e92ea96723c50a0a3ab361002d6ecaae26f41786963cd2c18ebe3f,ca72bc6de58ffb9140b424a843cf8081b7b93bd84ed81c0b4446095849f65587,
+com.unity.purchasing,4.15.1,source-staged,unity-registry,435,0,0,6f6a7d411b78c6b0648d9e57f00e061b3c0e195eda68562cad550c23efb35ad5,2c0907c0cf811ce035968540236483d71866e81ad8444f13ca630b6ee40d6a50,
+com.unity.purchasing.udp,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.quicksearch,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.recorder,5.1.6,source-staged,editor-archive,160,0,0,8582cb1150e5d859dbe40c2938cb8944f1763625525b276d80b9c008c9ca775d,a04b308bbf33ffc24be3ed30d37ec24b2bd9422a83eb5853fd57a83a00ec40fb,
+com.unity.remote-config,4.2.5,source-staged,unity-registry,114,0,0,d4147a0366709147e56fa931fefb4a74e77b9cf00c6524877cae6c2dd720764d,314155c72558c35c8737d18de0f1ec63b8c66bd00ed3b60de0650a807f497539,
+com.unity.remote-config-runtime,4.0.4,source-staged,unity-registry,19,0,0,6d7e3996b7d85c9997b1d11efd4958181d50aa6931be91aac95e31847142cd5c,8985194223e8373bf398f70fc8cdada96f1f78536ef56118376bd423fc0c2d7f,
+com.unity.render-pipelines.core,17.5.0,source-staged,editor-built-in,718,26,1,f78adee72a698d476ab5dcaf3816a22b5925227f10f53321acb66b3105273169,,
+com.unity.render-pipelines.high-definition,17.5.0,source-staged,editor-built-in,996,30,0,2b281e24b01fa49596789f53a8c36f26a98c4e8be45362b2f3aca9ab5e94d962,,
+com.unity.render-pipelines.high-definition-config,17.5.0,source-staged,editor-built-in,2,0,0,802686333815630b7f09b324d0ab9f19bc5f2b3c1db9b9ad2797da9edc1f1ca4,,
+com.unity.render-pipelines.lightweight,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.render-pipelines.universal,17.5.0,source-staged,editor-built-in,575,9,0,40c28cb733f9ca3c85be9fa04814cd95a9e29ea47f227b8ab4f4d6810411b1f7,,
+com.unity.render-pipelines.universal-config,17.5.0,source-staged,editor-built-in,2,0,0,60ca6f68884f6aff066955e50b0ecc9f7e4846c6648cae15b403fc564e094470,,
+com.unity.rendering.denoising,1.0.5,source-staged,editor-built-in,4,0,0,0122cfb7b43763b463c12ece9d006b1f9cbb941e589dd4890c86acf5962b2997,,
+com.unity.rendering.light-transport,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.scriptablebuildpipeline,2.6.1,source-staged,editor-archive,141,0,0,724d4e740fdbc8793782c5e89d36958f5f9d8c46d40033108130d259b9d75956,32df6ad1a80d51488a8929145ea0fc88cf99dd34cdae0f08b752716728ea3dfb,
+com.unity.scripting.python,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.scripting.python.linux,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.scripting.python.macos,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.scripting.python.windows,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.sdk.linux-arm64,,native-build-tool,,0,0,0,,,Host SDK/sysroot/compiler distributions; excluded from the C# value-type package survey.
+com.unity.sdk.linux-x86_64,,native-build-tool,,0,0,0,,,Host SDK/sysroot/compiler distributions; excluded from the C# value-type package survey.
+com.unity.searcher,4.9.4,source-staged,editor-archive,17,1,0,4d66459fd4bbf0c90f973b63802425fd9c00a829ebc58a83dac05ca0a8fa6a82,171860874b406b19db2cce30c6cf0326b0ce2a1d22db70c6069bd1cef6ab9176,
+com.unity.sentis,2.2.0,no-csharp-source,editor-built-in,0,0,0,5f6f5c41398ecbad38dfe1dcfddcddebc1707e9764deb107d23eacb7163af625,,
+com.unity.sequences,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.serialization,6.5.0,source-staged,editor-built-in,140,15,0,fab11ccf9669575f64e69d6e6ebecb727e6115a2fe14d97b2c4c955f7b1798ca,,
+com.unity.services.analytics,6.3.0,source-staged,unity-registry,45,0,0,f7cc003882b9590d265882ee6bdc0a43224175bc20920b2eb11b084c058f4cd3,bc1f64b7c3432aa7209ed37d0db5a53e3044507d77326845069de891d57b8910,
+com.unity.services.apis,1.1.1,source-staged,editor-archive,1028,0,0,ce28c8aba861f15b334e2d65d34f9875ba0ecae9c403bdf6dba8e00d5106bef7,ff196670063d24ed2baeadebd2ae11f0788168f2a056c4ca595a14a7f1f7ab10,
+com.unity.services.authentication,3.7.3,source-staged,unity-registry,254,0,0,e4e0769e026356c050e3e58d93a05f292d912ffc24bf52aff2c9171ad8e11738,db82dcaf14e5896efd92c6bce996218a573d8afa87bb6ccd0976a98a9f0289ce,
+com.unity.services.ccd.management,3.0.3,source-staged,unity-registry,149,0,0,cb8d5243bb095a0eb163e45f4fc603bc6267a9ea1c7ee66ed639d220462c2809,f65d124f266af2bb4524c412f50e009558753e19b7cf05751b18ebd062c83718,
+com.unity.services.cloud-build,2.0.8,source-staged,unity-registry,19,0,0,38d3e4fd02e9f903d2af65698a3742273d817043bf5257bec0336eabf5a86895,325a9317ff22f34e9c54b12c5b3c312da9e14fb66d5eb0e01f79cb3a4a4a95f5,
+com.unity.services.cloud-diagnostics,,deprecated,,0,0,0,,,"Attention: Cloud Diagnostics is deprecated, and will be phased out in future versions of Unity. For more robust reports and device information, including information on Application Not Responding (ANR) errors for Android, use the diagnostics (https://docs.unity.com/en-us/cloud/developer-data/diagnostics) experience available in Unity 6.2 and later."
+com.unity.services.cloudcode,2.10.4,source-staged,unity-registry,346,0,0,53949cc57f5d6babbefe8783e92991ef7360ac3a9199b5cf4182296339677591,4fdaa1d1f3e2d5dd1488c82e1c25886a67b4b192a74c9cc57c34f804fa4abd48,
+com.unity.services.cloudsave,3.4.0,source-staged,unity-registry,114,0,0,86defe40525d7e5d07c49e7ecbe8960ff0ba7d1a1f61238ee988e3ef222cf113,fc2492fbe884feb463003f40ee011444774d6c1771c9c91d46ac124b9efb95ac,
+com.unity.services.core,1.18.0,source-staged,unity-registry,388,0,0,5775e76825cd5c66718b863a091c88c66fdbd77189d7fd2621c82a32ba80a88d,38fc4fb1b45b907e934d1c92c0bea4429e72e78dc6435f9744dc8dab428d5c56,
+com.unity.services.deployment,1.7.2,source-staged,unity-registry,194,0,0,cbea2ca50608e93e574608c797a1c2953ba4918a8b066d40634917ffe8357c2f,661f1bf71a319fc5fc9d183b5b520e133d5f6dd1eaedc63d685204dc5ad3bacb,
+com.unity.services.deployment.api,1.1.3,source-staged,unity-registry,24,0,0,c8ce2bf4def722af7e5c297ff5b5a63571769eb70e0e78d5622c1ac75ce62777,cdd654e26a63a150e2a84d1a1a6975a222d1ed00fdea4bfe808f35ff36687ddd,
+com.unity.services.economy,3.5.4,source-staged,unity-registry,300,0,0,7a144e0790d1994d12a49cc7fe037bfb7face386643812f2dfb4b9782190c060,a9d8376194ab5796af412791924b4b2bcd473dc895e2e4b6056af6964b3b3631,
+com.unity.services.friends,1.1.1,source-staged,unity-registry,106,0,0,69a50bdf5f331bbb624329a87c882b90321c73298cd5ce8274a22e6d96e59256,0b92cad60254bad04a21deeb3472dee43bbeb5bcef32e50e2fbdfbd917eea910,
+com.unity.services.leaderboards,2.3.3,source-staged,unity-registry,269,0,0,6a20ef67a456fe21f1a3a8f6cb7006b0afdc6d5ebf864d04e76e0eab312cc491,70cf38fa9b683c36ac4896baf9fe8694096d57c425fbd48954e6b5bf2679c193,
+com.unity.services.levelplay,8.10.2,source-staged,unity-registry,195,0,0,16a70d4f58c8ea1400007ff240565efc5b6673a9ad13c528d84f340e2b298e35,5d43f24d7c660b647263970ab96cd478ce8315d94e96127509a9b077d7262365,
+com.unity.services.lobby,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.services.matchmaker,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.services.moderation,1.0.2,source-staged,unity-registry,50,0,0,71be214ad66000cdc6526da255ddd069800d3c038e865a53598ff514311f0dcd,a4fed00ae57da8ae07520d6b1dc3c99f4a9e15ad68f5cd1128de6cf32656deac,
+com.unity.services.multiplay,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.services.multiplayer,2.2.4,source-staged,unity-registry,570,0,0,569d7f656475ef7d7535b2a2ea34877126182c8c3b6e08b6074a26cf8d4b7b74,021c503be63d4184b231f354e1cb2699731acfbfad1ab4862c84d01ec91b29c5,
+com.unity.services.push-notifications,4.0.2,source-staged,unity-registry,21,0,0,c01ce6da6ea3e2ca69899a4c08c01627f8afe2fd00a0c579783f8f2d3fadccf6,a67a452884add963f4e7f95f5cbe241732225a1fc8274b00f49d0065eb509930,
+com.unity.services.qos,1.4.1,source-staged,unity-registry,85,0,0,ba877eac693ee0dd68c0cb3ececbdc907d3ff6ccbed3e7dca45244667f57a06d,ec6e2f18b2cb1f7880a8a74c3ae7975144518f28a0a1e96c89386eea3d8e138c,
+com.unity.services.relay,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.services.tooling,1.4.1,source-staged,unity-registry,239,0,0,03cd7c96d7f680b5d68de97db5218bba94028a107d9561aff675c72f81a44f64,f08c7a4f77b4c070db4da190f89a7bc33d929ce6a02d2baab4d4840975440f01,
+com.unity.services.ugc,,deprecated,,0,0,0,,,This package is no longer supported. The UGC service associated with this package is no longer accessible as of May 11th 2025.
+com.unity.services.ugc.bridge,,deprecated,,0,0,0,,,This package is no longer supported. The UGC service associated with this package is no longer accessible as of May 11th 2025.
+com.unity.services.user-reporting,2.0.15,source-staged,unity-registry,38,0,0,fbfc90343b5d5c5d7948304d0895fb2ac1b26a16708d0a9bafa2c26ecf4f4926,4619df6bf9fbffd77e54f7a72e1f1f77a9bec41216e31c2af5cf1f5f19ba3dc7,
+com.unity.services.vivox,16.10.0,source-staged,unity-registry,730,1,0,ef070ad00721e5eb61b3653b00e44def0a1818adea9f28dff6bc04e5f7820f60,3d053cd68b8ce4ab12f5c045ec8d57c4e923c062a89b9407b504b53da80f7493,
+com.unity.services.wire,1.4.4,source-staged,unity-registry,112,0,0,82afa4a6526e98b4e7d2ce540b01d4b5ef619f21a38b538a1a974cc9f523ab02,7e7de3b66590704eb64fe3e8a0c6957b330c42e1276c9e86378d01d5825d307d,
+com.unity.settings-manager,2.1.1,source-staged,editor-archive,23,0,0,1e97bf201f99aa3652a0fd229d38aa3904b5fde7bfb17b1121effc8f27624612,21fafed1676dd59eeeeede0fe13f936a522ac69dda97353f9819e941b0b8854d,
+com.unity.shaderanalysis,1.0.0,source-staged,editor-built-in,47,1,0,b8b0f4904eb8db1f42d9e47416f843b8ac35f50f442192574bb59ab46ac1e5d3,,
+com.unity.shadergraph,17.5.0,source-staged,editor-built-in,797,2,0,bc579d191486f45bba8a881e1da19ff708d49bc91cc9227bf650ea66a186b5fd,,
+com.unity.sharp-zip-lib,1.4.1,source-staged,editor-archive,21,0,0,bc5772d61a82481cf856fc96b75458d76021b437e754885e80d93a007702d6e3,aba15b00608447a29d7c41917e513c983f000083084ffd8377500359897a5d92,
+com.unity.splines,2.9.0,source-staged,editor-archive,139,9,0,906dcebd76556a0b17b9c8d85d63cdf7c7d1fbfda12a583d5ee5cf7e8d0355a3,4e961554e38919e2f305ee8184c3b8a1d7f55f70cded5fa359ff18e9cf0ab1b9,
+com.unity.standardevents,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.subsystemregistration,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.sysroot,,deprecated,,0,0,0,,,This package is no longer supported on this editor version. Use com.unity.sysroot.base instead.
+com.unity.sysroot.base,,native-build-tool,,0,0,0,,,Host SDK/sysroot/compiler distributions; excluded from the C# value-type package survey.
+com.unity.sysroot.linux-x86_64,,deprecated,,0,0,0,,,This package is no longer supported on this editor version. Use com.unity.sdk.linux-x86_64 instead.
+com.unity.terrain-tools,5.3.2,source-staged,editor-archive,140,0,0,4297915ad86b45d7fa21fd6d393e70da92a496fa0c027c81eb3d6a87f602be5b,12cd062aaf57c9662b479c1d9d68eabec71ccc837c0d77f554e002dc4e2b6eff,
+com.unity.test-framework,1.7.0,source-staged,editor-built-in,439,1,0,2c3733f6455e9d3a9883c33332ae4a462f50f1da6fceaa0f7a0ab8518e1bf0cc,,
+com.unity.test-framework.performance,3.5.0,source-staged,editor-archive,50,0,0,06f8e0c26389307a4c05ab6c2630471d3921dfd12bc500a550cb3e6f8d97a9ab,647739d3f94e41c3e0cdf797a2259400d2587e4cb6d32dcb5e07b474807367e3,
+com.unity.testtools.codecoverage,1.3.0,source-staged,editor-archive,91,0,0,a8cbe5d221195e763db7e496b40d1fce5abfc03eac5337b7a752f83c1f105a63,3f0b204ce9348bb99033f71370d6b413611229d0af72a21ecaaad37ad300eee1,
+com.unity.textmeshpro,,deprecated,,0,0,0,,,"This package is no longer supported. TextMeshPro functionalities are now included in the com.unity.ugui package. To continue using them, consider adding it to your project dependencies."
+com.unity.timeline,1.8.12,source-staged,editor-archive,386,2,0,e8bcbc39e1994f9770d67f9f2b7d4b18ec75b033ff1d5a702210ad71a0922c9d,cc9a1b4203f40a625e8e59d3b86cc28cb27d1316f5cdbb873977f7afba52cc90,
+com.unity.toolchain.linux-x86_64,,deprecated,,0,0,0,,,This package is no longer supported on this editor version. Use com.unity.toolchain.linux-x86_64-linux instead.
+com.unity.toolchain.linux-x86_64-linux,,native-build-tool,,0,0,0,,,Host SDK/sysroot/compiler distributions; excluded from the C# value-type package survey.
+com.unity.toolchain.macos-arm64-linux,,native-build-tool,,0,0,0,,,Host SDK/sysroot/compiler distributions; excluded from the C# value-type package survey.
+com.unity.toolchain.macos-arm64-linux-x86_64,,deprecated,,0,0,0,,,This package is no longer supported on this editor version. Use com.unity.toolchain.macos-arm64-linux instead.
+com.unity.toolchain.macos-x86_64-linux,,native-build-tool,,0,0,0,,,Host SDK/sysroot/compiler distributions; excluded from the C# value-type package survey.
+com.unity.toolchain.macos-x86_64-linux-x86_64,,deprecated,,0,0,0,,,This package is no longer supported on this editor version. Use com.unity.toolchain.macos-x86_64-linux instead.
+com.unity.toolchain.win-arm64-linux,,native-build-tool,,0,0,0,,,Host SDK/sysroot/compiler distributions; excluded from the C# value-type package survey.
+com.unity.toolchain.win-arm64-linux-x86_64,,deprecated,,0,0,0,,,This package is no longer supported on this editor version. Use com.unity.toolchain.win-arm64-linux instead.
+com.unity.toolchain.win-x86_64-linux,,native-build-tool,,0,0,0,,,Host SDK/sysroot/compiler distributions; excluded from the C# value-type package survey.
+com.unity.toolchain.win-x86_64-linux-x86_64,,deprecated,,0,0,0,,,This package is no longer supported on this editor version. Use com.unity.toolchain.win-x86_64-linux instead.
+com.unity.transport,6.5.0,source-staged,editor-built-in,103,33,1,99fc1f4d73deeca0964d5a7b7195bb2355e53040f547cd3a55fe9a0b157f7c0e,,
+com.unity.ugui,2.5.0,source-staged,editor-built-in,359,23,0,4db87daa8a4985290811633912b7aa9c6264e17b4f75a28e648d4daddc2665f2,,
+com.unity.ui,2.0.0,no-csharp-source,editor-built-in,0,0,0,dcccc03a539385a2e999d7cdfe47cf85913ca0efd58256f52ff00652761f5efd,,
+com.unity.ui.builder,2.0.0,no-csharp-source,editor-built-in,0,0,0,b8006de01ae1953200cb11ffda6f1746bc28c83b1a2c11266c0fbae133806be3,,
+com.unity.ui.test-framework,6.5.0,source-staged,editor-built-in,43,0,0,d7109c863093571b51cd2d4705820a1f168c4cfed3f883caf2398081e667f586,,
+com.unity.vectorgraphics,3.0.0-preview.7,source-staged,unity-registry,8,0,0,00a03095bbdb84d2cc73c3c41bb147ebeda0cabee8dcd06505d1e5932294b2e3,3b4963043c175e57f2a002bace2c4437fafbc03ece3b0de5af1bb1e726bd714d,
+com.unity.visualeffectgraph,17.5.0,source-staged,editor-built-in,642,0,0,bb4daa88162c439273e9f5e59c7bad627ca745249692b3cb7f5bc722cc8e7d0a,,
+com.unity.visualscripting,1.9.11,source-staged,editor-archive,1583,5,0,1be3886409d25beda5b3120fde8258e1119290e16e113ea95cfb72e9f7fab2d0,24e96df835af1443dd2105b0bd9002b192a29abdbaeca902f4ebdcd366bd797b,
+com.unity.web.stripping-tool,1.3.0,source-staged,editor-archive,45,0,0,f3b03efcfae2e01492f3668168302da1d224267066d20a4f4f84d0a1f66672e0,ccb722abb65e0c50dd185acfdf86ad01fae9e4a8b70061952f952c49a5266305,
+com.unity.webrtc,,deprecated,,0,0,0,,,This feature set is no longer supported on this editor version.
+com.unity.xr.androidxr-openxr,1.3.1,source-staged,editor-archive,78,1,0,54a708975e73632f972a3864319fe8363400921b2055f7ade03e470c8e81803f,d4f34548014174a18ad5fc205ec6a3848d63e577ceae6be93c7d90a8b4f4252a,
+com.unity.xr.arcore,6.5.0,source-staged,editor-archive,74,3,0,ef5d4c6dfe769d7a652fc5cc100a0f00e024566e38557ad5feedcff32c96797f,266347d69fc7e9a2971c225cb2cb54b00747147006bfe9a1a6355d58abe19d9c,
+com.unity.xr.arextensions,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.xr.arfoundation,6.5.0,source-staged,editor-archive,547,42,0,7b86471e6ae1faef9e51508dfade1cc0c32b7815fdaa5a54af25614c1be20f19,08529a36c3f871968d52a4c8d0dea8d82c9720dc7703f442874e4a75db6cb419,
+com.unity.xr.arkit,6.5.0,source-staged,editor-archive,114,9,0,57c0a8a624e691a75869a9e80bee5d1265d5c31059e9c10126c8bc04c6c87322,ad668850154b27cf55bbfabe9697018c8709ef917ff3e773c32447b4c653589a,
+com.unity.xr.compositionlayers,2.5.0,source-staged,editor-archive,132,3,0,31614a06b2d347fa7981fbf7fad21b4f21b9a29a6dd1657f4734282d36eb3aba,60e4a4f1f5069d1503989f8f5100ddd6af75e294b4a6b0b843cd75b2f00cb7a5,
+com.unity.xr.core-utils,2.6.0,source-staged,editor-archive,159,1,0,def491c9807e29848d84c17ba3a4bfd4eccaa5063a34fc00fff77e3dde10ac9b,ec1fd6b2d762e83ac6ff652a5e0211e563ed2b0f51644b966ecd138af52805d5,
+com.unity.xr.facesubsystem,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.xr.googlevr.android,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.xr.googlevr.ios,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.xr.hands,1.8.0,source-staged,editor-archive,147,10,0,96bb24de55f596df0bcd6868318af2eade4b60f98b0559f102e7ffff6750c43d,b5409e826e93c0dca320929f41f06c72ffa0ac01ebdc58cb09e7226d44feb1b2,
+com.unity.xr.interaction.toolkit,3.5.1,source-staged,editor-archive,663,10,0,650e216cd7bca5ed2c5e3d11179c7f2a33b19a4b646b1c35b7dd2d7ffd33e083,cab5374c5b6b9a701240e856f23ff0b8394a38c18c2bc2e151a877187df0dfcd,
+com.unity.xr.interactionsubsystems,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.xr.legacyinputhelpers,3.0.1,source-staged,editor-archive,16,0,0,1e67a6a0549dfbe1d16910e806db6403ed7db0f089ee2eede794aba1aef23f9c,4101e65c03a7c5f079b231859637ab48cb8d0a2ef17eeaccd49fb4418e56b811,
+com.unity.xr.magicleap,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.xr.management,4.5.4,source-staged,editor-archive,72,0,0,8fb677aa019be6451249dc59c870f0ff6b2ccb16dd76102f5667ec357c6a2387,920fbb59ac30aa6387b401e0e1771c9e50685fced699a516c7a4c1b07c357b0e,
+com.unity.xr.meta-openxr,2.5.0,source-staged,editor-archive,116,3,0,d237fc5653baee11a0716196586c65f4871673fb4dc689b8cfaf01928217c128,7793f54342c75d16b6667c8904412a3fd86b88598cb534fa7f550ca7a8db5506,
+com.unity.xr.oculus,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.xr.oculus.android,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.xr.oculus.standalone,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.xr.openvr.standalone,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.xr.openxr,1.17.1,source-staged,editor-archive,354,84,0,87052ac5b28935200a1c8ffd544a522ee5efee3ed28a0e2452764e50e8249871,e8020f098af243204688c31ed87927e29ea703020928930fe22ddcd2dc704240,
+com.unity.xr.visionos,3.1.5,source-staged,editor-archive,123,3,1,6a63abff2239b198038cb6de719cd0e7e47f76d2894bbf0fe67972c9a54ad2ba,2aa195c59d2cbe588abda5e254007bf33f486ae7faa3104eab7bf167cb69c5f1,
+com.unity.xr.windowsmr,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+com.unity.xr.windowsmr.metro,,deprecated,,0,0,0,,,This package is no longer supported on this editor version.
+nuget.castle-core,2.0.1,no-csharp-source,editor-archive,0,0,0,e9d469a33f1dd06acb79945a7bf951a781835c32e30ad584f4d6a54a26d8da7b,aaef6b4eda72d6ff63cf9eb4a2e3d1585ad8d475fd38b43ddc12ec485c51b31b,
+nuget.mono-cecil,1.0.0,no-csharp-source,editor-built-in,0,0,0,6956611676bbed6de9a79c8b6baa005e0fddfe0862c0420f4cafc17851a44d17,,
+nuget.moq,2.0.1,no-csharp-source,editor-archive,0,0,0,20203f4816610e80e3493ea0f6dbe3d1cf9cf89c5fbc9f3ea3d3477a5096bdc5,c65617b068aff6008ca02b4641cee02b46f8a59f94579b5a52406ecd988c1805,

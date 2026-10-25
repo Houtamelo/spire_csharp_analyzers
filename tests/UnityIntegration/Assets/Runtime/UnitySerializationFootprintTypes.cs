@@ -19,7 +19,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnitySerializationFootprintUnion
     {
         [Variant]
@@ -32,7 +32,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnitySerializationFootprintCollisionUnion
     {
         [Variant]
@@ -42,12 +42,13 @@ namespace Spire.UnityIntegration
         public static partial UnitySerializationFootprintCollisionUnion Text(string value);
 
         public static string Describe(UnitySerializationFootprintCollisionUnion value)
-            => value switch
-            {
-                { kind: Kind.Count, count_value: var count } => "count:" + count,
-                { kind: Kind.Text, text_value: var text } => "text:" + text,
-                _ => "invalid",
-            };
+        {
+            if (value.kind == Kind.Count)
+                return "count:" + value.count.value;
+            if (value.kind == Kind.Text)
+                return "text:" + value.text.value;
+            return "invalid";
+        }
     }
 
     [Serializable]
@@ -57,7 +58,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnitySerializationFootprintNullableUnion
     {
         [Variant]
@@ -69,12 +70,13 @@ namespace Spire.UnityIntegration
             [UnitySerializeReference] UnitySerializationFootprintEffect effect);
 
         public static int ReadEffect(UnitySerializationFootprintNullableUnion value)
-            => value switch
-            {
-                { kind: Kind.Apply, effect: var effect } => effect?.marker ?? -1,
-                { kind: Kind.Remove, effect: var effect } => effect?.marker ?? -1,
-                _ => -1,
-            };
+        {
+            if (value.kind == Kind.Apply)
+                return value.apply.effect?.marker ?? -1;
+            if (value.kind == Kind.Remove)
+                return value.remove.effect?.marker ?? -1;
+            return -1;
+        }
     }
 
 }

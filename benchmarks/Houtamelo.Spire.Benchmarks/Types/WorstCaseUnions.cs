@@ -2,43 +2,39 @@ namespace Houtamelo.Spire.Benchmarks.Types;
 
 // ── Scenario 1: WideTypes ──
 // Many unique field types across variants → maximum slot/field count.
-// Exposes: Additive (slot explosion — one slot per unique type combo)
-//          BoxedFields (many object? slots, every access boxes)
+// Exposes the current Auto/Typed/Shared reference-storage choices.
 [BenchmarkUnion(Name = "Wide")]
 public partial struct WideBench
 {
+    [Variant] public static partial WideBench Empty();
     [Variant] public static partial WideBench IntOnly(int ia, int ib);
     [Variant] public static partial WideBench FloatOnly(float fa, float fb);
     [Variant] public static partial WideBench DoubleOnly(double da, double db);
     [Variant] public static partial WideBench LongOnly(long la, long lb);
     [Variant] public static partial WideBench Mixed(int ia, float fb, double dc, long ld);
-    [Variant] public static partial WideBench Empty();
 }
 
 // ── Scenario 2: AllManaged ──
 // Only reference-type fields + one numeric for measurability.
-// Exposes: Overlap (can't overlap managed refs, no size benefit)
-//          UnsafeOverlap (byte buffer unused, falls back to object? slots)
+// Exposes Typed versus Shared managed-reference storage.
 [BenchmarkUnion(Name = "Managed")]
 public partial struct ManagedBench
 {
+    [Variant] public static partial ManagedBench None();
     [Variant] public static partial ManagedBench One(string a, int len);
     [Variant] public static partial ManagedBench Two(string a, string b, int len);
     [Variant] public static partial ManagedBench Three(string a, string b, string c, int len);
-    [Variant] public static partial ManagedBench None();
 }
 
 // ── Scenario 3: BigVariant ──
 // One variant with 8 fields, others small.
-// Exposes: All struct strategies (struct size dominated by largest variant)
-//          Copy benchmarks penalize large structs
-//          BoxedTuple (8-element tuple creation + cast)
+// Exposes the current payload representation for a large variant.
 [BenchmarkUnion(Name = "Big")]
 public partial struct BigBench
 {
+    [Variant] public static partial BigBench Empty();
     [Variant] public static partial BigBench Huge(float a, float b, float c, float d, float e, float f, float g, float h);
     [Variant] public static partial BigBench Small(float x, float y);
-    [Variant] public static partial BigBench Empty();
 }
 
 // ── Scenario 4: ManyVariants ──

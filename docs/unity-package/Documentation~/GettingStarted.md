@@ -29,7 +29,7 @@ public partial struct Result
 `[UnityEngine.SerializeField] private Result result;` gets a variant picker and
 fields for the selected variant. The union and every containing type must be
 `partial`. Mutable serializable structs opt into Unity serialization with
-`[Serializable]`; the default storage is Additive.
+`[Serializable]`; reference storage defaults to Auto.
 
 Use [Usage](Usage.md) for matching and storage choices,
 [Serialization](Serialization.md) for persistence, or
@@ -37,6 +37,5 @@ Use [Usage](Usage.md) for matching and storage choices,
 
 To try the supplied scene, install URP **17.5.0** and Unity Test Framework **1.7.0**
 in your project, then import **Unity Showcase (URP)** from this package's Samples
-tab. Its assembly enables unsafe code for the UnsafeOverlap example. The sample
-is optional and does not change your render pipeline until you invoke its setup
+tab. The sample is optional and does not change your render pipeline until you invoke its setup
 menu. Follow its README before doing that.

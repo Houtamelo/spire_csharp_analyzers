@@ -8,22 +8,18 @@ namespace Houtamelo.Spire.Analyzers;
 /// Used by both the source generator (DU defaults) and analyzers (enum enforcement).
 internal readonly struct SpireGlobalConfig : IEquatable<SpireGlobalConfig>
 {
-    /// Default Layout as the public enum int value (1=Auto, 2=Overlap, ...). 0=ReadGlobalCfg never stored here.
-    public int DefaultLayout { get; }
-    public bool DefaultGenerateDeconstruct { get; }
+    public ReferenceStorage DefaultReferenceStorage { get; }
     public JsonLibrary DefaultJson { get; }
     public string DefaultJsonDiscriminator { get; }
     public bool EnforceExhaustivenessOnAllEnumTypes { get; }
 
     public SpireGlobalConfig(
-        int defaultLayout,
-        bool defaultGenerateDeconstruct,
+        ReferenceStorage defaultReferenceStorage,
         JsonLibrary defaultJson,
         string defaultJsonDiscriminator,
         bool enforceExhaustivenessOnAllEnumTypes)
     {
-        DefaultLayout = defaultLayout;
-        DefaultGenerateDeconstruct = defaultGenerateDeconstruct;
+        DefaultReferenceStorage = defaultReferenceStorage;
         DefaultJson = defaultJson;
         DefaultJsonDiscriminator = defaultJsonDiscriminator;
         EnforceExhaustivenessOnAllEnumTypes = enforceExhaustivenessOnAllEnumTypes;
@@ -31,24 +27,16 @@ internal readonly struct SpireGlobalConfig : IEquatable<SpireGlobalConfig>
 
     public static SpireGlobalConfig Parse(AnalyzerConfigOptions globalOptions)
     {
-        var layout = 1; // Auto
-        if (globalOptions.TryGetValue("build_property.Spire_DU_DefaultLayout", out var layoutStr))
+        var referenceStorage = ReferenceStorage.Auto;
+        if (globalOptions.TryGetValue("build_property.Spire_DU_DefaultReferenceStorage", out var storageStr))
         {
-            layout = layoutStr switch
+            referenceStorage = storageStr switch
             {
-                "Auto" => 1,
-                "Overlap" => 2,
-                "BoxedFields" => 3,
-                "BoxedTuple" => 4,
-                "Additive" => 5,
-                "UnsafeOverlap" => 6,
-                _ => 1,
+                "Typed" => ReferenceStorage.Typed,
+                "Shared" => ReferenceStorage.Shared,
+                _ => ReferenceStorage.Auto,
             };
         }
-
-        var generateDeconstruct = true;
-        if (globalOptions.TryGetValue("build_property.Spire_DU_DefaultGenerateDeconstruct", out var gdStr))
-            generateDeconstruct = !string.Equals(gdStr, "false", StringComparison.OrdinalIgnoreCase);
 
         var json = JsonLibrary.None;
         if (globalOptions.TryGetValue("build_property.Spire_DU_DefaultJson", out var jsonStr))
@@ -75,12 +63,11 @@ internal readonly struct SpireGlobalConfig : IEquatable<SpireGlobalConfig>
             enforceExhaustiveness = string.Equals(eeStr, "true", StringComparison.OrdinalIgnoreCase);
 
         return new SpireGlobalConfig(
-            layout, generateDeconstruct, json, jsonDiscriminator, enforceExhaustiveness);
+            referenceStorage, json, jsonDiscriminator, enforceExhaustiveness);
     }
 
     public bool Equals(SpireGlobalConfig other) =>
-        DefaultLayout == other.DefaultLayout
-        && DefaultGenerateDeconstruct == other.DefaultGenerateDeconstruct
+        DefaultReferenceStorage == other.DefaultReferenceStorage
         && DefaultJson == other.DefaultJson
         && string.Equals(DefaultJsonDiscriminator, other.DefaultJsonDiscriminator, StringComparison.Ordinal)
         && EnforceExhaustivenessOnAllEnumTypes == other.EnforceExhaustivenessOnAllEnumTypes;
@@ -91,8 +78,7 @@ internal readonly struct SpireGlobalConfig : IEquatable<SpireGlobalConfig>
     {
         unchecked
         {
-            var hash = DefaultLayout * 397;
-            hash = (hash * 397) ^ DefaultGenerateDeconstruct.GetHashCode();
+            var hash = (int)DefaultReferenceStorage * 397;
             hash = (hash * 397) ^ (int)DefaultJson;
             hash = (hash * 397) ^ DefaultJsonDiscriminator.GetHashCode();
             hash = (hash * 397) ^ EnforceExhaustivenessOnAllEnumTypes.GetHashCode();

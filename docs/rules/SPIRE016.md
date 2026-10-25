@@ -11,6 +11,9 @@
 
 Flags casts to `[EnforceInitialization]` enums when the resulting value may not correspond to a valid variant. Covers both integer-to-enum and enum-to-enum casts.
 
+Attributes derived from `[EnforceInitialization]` also opt in, including
+`[EnforceExhaustiveness]` on generated discriminated-union `Kind` enums.
+
 - **Non-constant casts** (`(MarkedEnum)variable`) — always flagged, value cannot be verified at compile time
 - **Constant casts** (`(MarkedEnum)42`) — flagged when the value doesn't match any named member
 - **Enum-to-enum casts** (`(MarkedEnum)(OtherEnum.Value)`) — same rules as integer casts, based on the source's underlying value

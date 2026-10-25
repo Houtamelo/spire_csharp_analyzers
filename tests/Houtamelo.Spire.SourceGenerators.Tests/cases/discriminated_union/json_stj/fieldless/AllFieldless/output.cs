@@ -3,6 +3,7 @@
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JsonConverterAttribute = global::System.Text.Json.Serialization.JsonConverterAttribute;
 
 internal sealed class TokenStjConverter : JsonConverter<Token>
 {
@@ -49,5 +50,5 @@ internal sealed class TokenStjConverter : JsonConverter<Token>
     }
 }
 
-[global::System.Text.Json.Serialization.JsonConverter(typeof(TokenStjConverter))]
+[JsonConverterAttribute(typeof(TokenStjConverter))]
 partial struct Token { }

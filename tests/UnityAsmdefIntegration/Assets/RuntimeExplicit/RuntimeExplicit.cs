@@ -4,7 +4,7 @@ using Houtamelo.Spire;
 namespace Spire.UnityAsmdefIntegration.RuntimeExplicit
 {
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct RuntimeExplicitUnion
     {
         [Variant]
@@ -45,7 +45,7 @@ namespace Spire.UnityAsmdefIntegration.RuntimeExplicit
         {
             var union = RuntimeExplicitUnion.Value(42);
             return union.kind == RuntimeExplicitUnion.Kind.Value
-                && union.value == 42
+                && union.value.value == 42
                 && Initialized(42)[0].value == 42;
         }
         #pragma warning restore SPIRE014

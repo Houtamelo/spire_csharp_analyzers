@@ -17,8 +17,8 @@ namespace TestNs
             await Task.Delay(1);
             return m switch
             {
-                { kind: Msg.Kind.Ping, seq: var s } => s,
-                { kind: Msg.Kind.Pong, seq: var seq } => throw new System.NotImplementedException(),
+                { kind: Msg.Kind.Ping, ping: { seq: var s  } } => s,
+                { kind: Msg.Kind.Pong, pong: { seq: var seq  } } => throw new System.NotImplementedException(),
                 { kind: Msg.Kind.Close } => throw new System.NotImplementedException()
             };
         }

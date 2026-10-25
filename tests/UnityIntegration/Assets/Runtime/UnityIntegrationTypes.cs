@@ -32,7 +32,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityShapeSerializable
     {
         [Variant]
@@ -46,7 +46,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityPayloadFieldMatrix
     {
         [Variant]
@@ -69,7 +69,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityCallbackChild
     {
         [Variant]
@@ -83,7 +83,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.BoxedFields)]
+    [DiscriminatedUnion]
     public partial struct UnityBoxedFieldsUnion
     {
         [Variant]
@@ -100,7 +100,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.BoxedTuple)]
+    [DiscriminatedUnion]
     public partial struct UnityBoxedTupleUnion
     {
         [Variant]
@@ -117,7 +117,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.BoxedFields)]
+    [DiscriminatedUnion]
     public partial struct UnityBoxedFieldsGeneric<T>
     {
         [Variant]
@@ -128,7 +128,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.BoxedTuple)]
+    [DiscriminatedUnion]
     public partial struct UnityBoxedTupleGeneric<T>
     {
         [Variant]
@@ -139,7 +139,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.BoxedFields)]
+    [DiscriminatedUnion]
     public partial struct UnityBoxedLayoutParent
     {
         [Variant]
@@ -153,7 +153,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.UnsafeOverlap)]
+    [DiscriminatedUnion]
     public partial struct UnityUnsafeOverlapUnion
     {
         [Variant]
@@ -170,7 +170,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.UnsafeOverlap)]
+    [DiscriminatedUnion]
     public partial struct UnityUnsafeOverlapGeneric<T>
     {
         [Variant]
@@ -181,7 +181,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.UnsafeOverlap)]
+    [DiscriminatedUnion]
     public partial struct UnityUnsafeOverlapParent
     {
         [Variant]
@@ -192,7 +192,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Overlap)]
+    [DiscriminatedUnion]
     public partial struct UnityOverlapUnion
     {
         [Variant]
@@ -206,7 +206,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Overlap)]
+    [DiscriminatedUnion]
     public partial struct UnityOverlapReferenceUnion
     {
         [Variant]
@@ -220,7 +220,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Overlap)]
+    [DiscriminatedUnion]
     public partial struct UnityOverlapParent
     {
         [Variant]
@@ -234,7 +234,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityCallbackParent
     {
         [Variant]
@@ -248,7 +248,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityCollectionUnion
     {
         [Variant]
@@ -262,7 +262,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityCopyProbe
     {
         [Variant]
@@ -327,7 +327,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityAllowedCallbackUnion
     {
         [Variant]
@@ -337,7 +337,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityDrawerUnion
     {
         [Variant]
@@ -354,7 +354,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityGenericUnion<T>
     {
         [Variant]
@@ -388,7 +388,7 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityGenericDrawerParent
     {
         [Variant]
@@ -399,12 +399,12 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityZeroVariant
     {
     }
 
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct UnityNormalAdditive
     {
         [Variant]
@@ -421,18 +421,14 @@ namespace Spire.UnityIntegration
     }
 
     [Serializable]
-    public partial class UnityGenericContainer<T>
+    [DiscriminatedUnion]
+    public partial struct UnityGenericContainerNestedUnion
     {
-        [Serializable]
-        [DiscriminatedUnion(Layout.Additive)]
-        public partial struct NestedUnion
-        {
-            [Variant]
-            public static partial NestedUnion Some(int value);
+        [Variant]
+        public static partial UnityGenericContainerNestedUnion Some(int value);
 
-            [Variant]
-            public static partial NestedUnion Empty();
-        }
+        [Variant]
+        public static partial UnityGenericContainerNestedUnion Empty();
     }
 
     [Serializable]

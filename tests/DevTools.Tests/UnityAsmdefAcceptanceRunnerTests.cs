@@ -265,11 +265,35 @@ public sealed class UnityAsmdefAcceptanceRunnerTests
         Assert.True(Directory.Exists(sampleRoot), sampleRoot);
         var sampleAsmdefs = Directory.EnumerateFiles(sampleRoot, "*.asmdef", SearchOption.AllDirectories).ToArray();
         Assert.NotEmpty(sampleAsmdefs);
-        Assert.All(sampleAsmdefs, asmdef =>
+        var authoredSampleAssets = Path.Combine(repositoryRoot, "examples", "UnityShowcase", "Assets");
+        foreach (var asmdef in sampleAsmdefs)
         {
-            var rsp = Path.Combine(Path.GetDirectoryName(asmdef)!, "csc.rsp");
-            Assert.False(File.Exists(rsp), "Hidden sample asmdef was treated as a compiled project input: " + asmdef);
-        });
+            var relativeAsmdef = RelativePath(sampleRoot, asmdef);
+            var targetRsp = Path.Combine(Path.GetDirectoryName(asmdef)!, "csc.rsp");
+            var authoredRsp = Path.Combine(
+                authoredSampleAssets,
+                Path.GetDirectoryName(relativeAsmdef)?.Replace('/', Path.DirectorySeparatorChar) ?? string.Empty,
+                "csc.rsp");
+
+            if (File.Exists(authoredRsp))
+            {
+                Assert.True(
+                    File.Exists(targetRsp),
+                    "The authored sample response file was not copied: " + authoredRsp);
+                Assert.Equal(File.ReadAllBytes(authoredRsp), File.ReadAllBytes(targetRsp));
+
+                var responseText = File.ReadAllText(targetRsp);
+                Assert.DoesNotContain("-ruleset:", responseText, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("Default.ruleset", responseText, StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                Assert.False(
+                    File.Exists(targetRsp),
+                    "A response file was injected beside a sample asmdef without authored csc.rsp: " +
+                    asmdef);
+            }
+        }
     }
 
     private static void AssertInputProvenance(string repositoryRoot, string projectPath)

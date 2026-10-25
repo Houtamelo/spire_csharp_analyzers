@@ -65,6 +65,8 @@ public sealed class JsonSchemaCaseDiscoveryAttribute : DataAttribute
             }
 
             var relativePath = Path.GetRelativePath(casesDir, leafDir);
+            if (relativePath.StartsWith("struct_", StringComparison.Ordinal))
+                continue;
             yield return new object[] { relativePath };
         }
     }

@@ -11,20 +11,18 @@ public class SizeReportBenchmarks
     public void Setup()
     {
         Console.WriteLine("── Event (mixed managed/unmanaged) ──");
-        Console.WriteLine($"  EventAdditive        = {Unsafe.SizeOf<Types.EventAdditive>()} bytes");
-        Console.WriteLine($"  EventBoxedFields     = {Unsafe.SizeOf<Types.EventBoxedFields>()} bytes");
-        Console.WriteLine($"  EventBoxedTuple      = {Unsafe.SizeOf<Types.EventBoxedTuple>()} bytes");
-        Console.WriteLine($"  EventOverlap         = {Unsafe.SizeOf<Types.EventOverlap>()} bytes");
-        Console.WriteLine($"  EventUnsafeOverlap   = {Unsafe.SizeOf<Types.EventUnsafeOverlap>()} bytes");
+        Console.WriteLine($"  EventBench           = {Unsafe.SizeOf<Types.EventBench>()} bytes");
+        Console.WriteLine($"  EventAuto            = {Unsafe.SizeOf<Types.EventAuto>()} bytes");
+        Console.WriteLine($"  EventTyped           = {Unsafe.SizeOf<Types.EventTyped>()} bytes");
+        Console.WriteLine($"  EventShared          = {Unsafe.SizeOf<Types.EventShared>()} bytes");
         Console.WriteLine($"  EventRecord (ref)    = {IntPtr.Size} bytes");
         Console.WriteLine($"  EventNative          = {Unsafe.SizeOf<Types.EventNative>()} bytes");
         Console.WriteLine();
         Console.WriteLine("── Physics (all unmanaged) ──");
-        Console.WriteLine($"  PhysicsAdditive      = {Unsafe.SizeOf<Types.PhysicsAdditive>()} bytes");
-        Console.WriteLine($"  PhysicsBoxedFields   = {Unsafe.SizeOf<Types.PhysicsBoxedFields>()} bytes");
-        Console.WriteLine($"  PhysicsBoxedTuple    = {Unsafe.SizeOf<Types.PhysicsBoxedTuple>()} bytes");
-        Console.WriteLine($"  PhysicsOverlap       = {Unsafe.SizeOf<Types.PhysicsOverlap>()} bytes");
-        Console.WriteLine($"  PhysicsUnsafeOverlap = {Unsafe.SizeOf<Types.PhysicsUnsafeOverlap>()} bytes");
+        Console.WriteLine($"  PhysicsBench         = {Unsafe.SizeOf<Types.PhysicsBench>()} bytes");
+        Console.WriteLine($"  PhysicsAuto          = {Unsafe.SizeOf<Types.PhysicsAuto>()} bytes");
+        Console.WriteLine($"  PhysicsTyped         = {Unsafe.SizeOf<Types.PhysicsTyped>()} bytes");
+        Console.WriteLine($"  PhysicsShared        = {Unsafe.SizeOf<Types.PhysicsShared>()} bytes");
         Console.WriteLine($"  PhysicsRecord (ref)  = {IntPtr.Size} bytes");
         Console.WriteLine($"  PhysicsNative        = {Unsafe.SizeOf<Types.PhysicsNative>()} bytes");
     }

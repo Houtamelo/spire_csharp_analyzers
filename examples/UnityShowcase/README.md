@@ -45,10 +45,9 @@ The scene camera has URP camera data, and the project uses Linear color space.
 
 | Example | Feature |
 |---|---|
-| `GameplayCommand` | Additive union, fieldless/scalar/reference variants, list authoring, generated Inspector drawer, exhaustive property patterns |
+| `GameplayCommand` | Variant payloads, fieldless/scalar/reference variants, list authoring, generated Inspector drawer, exhaustive property patterns |
 | `Shape` and `ShowcaseAlgorithms.Area` | Guarded field extraction and compiler-checked exhaustive matching |
-| `OperationResult<int>` | Generic union using BoxedFields, success/failure variants |
-| `BoxedTupleStats`, `UnsafeStats`, `OverlapShape` | Remaining storage layouts using the same serialization/Inspector workflow |
+| `OperationResult<int>` | Generic union with success/failure payloads |
 | `GameplayCommand.ApplyEffect` | `[UnitySerializeReference]`, concrete subclasses, null values, and shared references within the preset |
 | `GameplayCommand.Speak` | One former variant name through `[Variant(FormerlySerializedAs = "Say")]` |
 | `CountMoves` | `SpireLINQ.OfKind` |
@@ -61,8 +60,8 @@ both entries in this one host asset. Entry six has a null effect. The native uni
 drawer selects union variants; constructing arbitrary managed-reference subclasses
 is demonstrated in C# by `ResetExamples` and the HealingEffect runtime button.
 
-`UnsafeOverlap` requires the project's enabled unsafe-code setting. `Overlap`
-retains its restriction against generic unions. Unity owns field-type eligibility.
+Union storage requires no unsafe code. Generic unions are supported; a union
+inside a generic containing type reports SPIRE_DU018. Unity owns field-type eligibility.
 Alias support covers variant names, not arbitrary field/type/assembly migrations.
 See [the Unity guide](../../docs/unity.md) for support and serialization limits.
 
@@ -89,10 +88,20 @@ Use an available display or Xvfb on Linux for the Play Mode rendering smoke test
 Unity exits when the test run finishes. The project consumes the current local
 package; building it requires the SDK, while running its Unity tests uses the Editor.
 
-Validation on October 11, 2026, with Unity 6000.5.6f1, Linux, under Xvfb passed
+Historical validation on October 11, 2026, with Unity 6000.5.6f1, Linux, under Xvfb passed
 all 13 tests after the URP migration, including a real camera render, Play Mode
 execution, native persistence for all layouts, reference sharing/nulls, variant
 rename migration, and stable unchanged saves. The test run leaves the authored
 scene and preset byte-identical. The review repaired Unity value-type snapshot
 comparison and made the batch rendering probe explicit; see the
 [commercial review](../../docs/reviews/2026-10-11-commercial-readiness.md).
+That run predates the variant-payload representation; it is not validation of
+the migrated showcase.
+
+On October 23, the migrated showcase passes 16 EditMode tests on Unity
+6000.5.6f1 under Xvfb in a disposable clone. The new serialized wrapper schema
+preserves the authored preset's existing values and managed-reference IDs.
+Additional assertions cover an unchanged save, alias reconstruction, and the
+authored preset separately from the resettable example defaults. The recorded
+result is `tmp/unity-showcase-redesign/ShowcaseEditModeResults.xml` in the
+development workspace.

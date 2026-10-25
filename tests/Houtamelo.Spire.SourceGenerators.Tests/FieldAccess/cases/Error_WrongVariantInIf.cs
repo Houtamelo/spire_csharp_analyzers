@@ -15,7 +15,7 @@ namespace TestNs
         {
             if (s.kind == Shape.Kind.Circle)
             {
-                return s.sideLength; //~ ERROR
+                return s.square.sideLength; //~ ERROR
             }
             return 0;
         }

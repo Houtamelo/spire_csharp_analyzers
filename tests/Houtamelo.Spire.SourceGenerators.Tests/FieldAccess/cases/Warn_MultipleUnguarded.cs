@@ -13,8 +13,8 @@ namespace TestNs
     {
         string Test(Command cmd)
         {
-            var d = cmd.moveDistance; //~ ERROR
-            var a = cmd.rotateAngle; //~ ERROR
+            var d = cmd.move.moveDistance; //~ ERROR
+            var a = cmd.rotate.rotateAngle; //~ ERROR
             return $"{d} {a}";
         }
     }

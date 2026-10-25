@@ -15,11 +15,11 @@ namespace TestNs
     {
         int Test(Cmd c) => c switch
         {
-            { kind: Cmd.Kind.Start, delay: var d } => 1,
-            { kind: Cmd.Kind.Pause, duration: var dur } => 3,
+            { kind: Cmd.Kind.Start, start: { delay: var d  } } => 1,
+            { kind: Cmd.Kind.Pause, pause: { duration: var dur  } } => 3,
             { kind: Cmd.Kind.Stop } => throw new System.NotImplementedException(),
             { kind: Cmd.Kind.Resume } => throw new System.NotImplementedException(),
-            { kind: Cmd.Kind.Reset, reason: var reason } => throw new System.NotImplementedException()
+            { kind: Cmd.Kind.Reset, reset: { reason: var reason  } } => throw new System.NotImplementedException()
         };
     }
 }

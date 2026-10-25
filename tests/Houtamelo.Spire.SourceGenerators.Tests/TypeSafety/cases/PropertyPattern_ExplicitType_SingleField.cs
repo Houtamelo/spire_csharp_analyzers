@@ -13,7 +13,7 @@ namespace TestNs
     {
         int Test(ShapePP1 s) => s switch
         {
-            { kind: ShapePP1.Kind.Circle, radius: double r } => 1,
+            { kind: ShapePP1.Kind.Circle, circle: { radius: double r } } => 1,
             { kind: ShapePP1.Kind.Square } => 2,
         };
     }

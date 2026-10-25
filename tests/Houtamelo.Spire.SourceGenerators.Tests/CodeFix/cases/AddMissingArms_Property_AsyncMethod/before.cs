@@ -17,7 +17,7 @@ namespace TestNs
             await Task.Delay(1);
             return m switch
             {
-                { kind: Msg.Kind.Ping, seq: var s } => s,
+                { kind: Msg.Kind.Ping, ping: { seq: var s  } } => s,
             };
         }
     }

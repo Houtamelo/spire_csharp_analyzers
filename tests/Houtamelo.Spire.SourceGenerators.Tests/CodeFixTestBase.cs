@@ -186,6 +186,7 @@ public sealed class CodeFixCaseDiscoveryAttribute : DataAttribute
         var category = ExtractCategory(testClass.Name);
         var casesDir = Path.Combine(TestHarnessEnvironment.DataRoot, category, "cases");
 
+
         if (!Directory.Exists(casesDir))
         {
             yield return new object[] { NoCasesSentinel };

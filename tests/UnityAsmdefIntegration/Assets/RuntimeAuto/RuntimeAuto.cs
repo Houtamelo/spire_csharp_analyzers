@@ -5,7 +5,7 @@ using Houtamelo.Spire;
 namespace Spire.UnityAsmdefIntegration.RuntimeAuto
 {
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct RuntimeAutoUnion
     {
         [Variant]
@@ -27,7 +27,7 @@ namespace Spire.UnityAsmdefIntegration.RuntimeAuto
         }
     }
 
-    [DiscriminatedUnion(Layout.Overlap)]
+    [DiscriminatedUnion]
     public readonly partial struct RuntimeAutoOverlapUnion
     {
         [Variant]
@@ -88,20 +88,20 @@ namespace Spire.UnityAsmdefIntegration.RuntimeAuto
             var empty = RuntimeAutoOverlapUnion.Empty();
 
             return union.kind == RuntimeAutoUnion.Kind.Value
-                && union.value == 42
+                && union.value.value == 42
                 && first.kind == RuntimeAutoOverlapUnion.Kind.First
-                && first.x == 11
-                && first.y == 22
+                && first.first.x == 11
+                && first.first.y == 22
                 && second.kind == RuntimeAutoOverlapUnion.Kind.Second
-                && second.left == 33
-                && second.right == 44
+                && second.second.left == 33
+                && second.second.right == 44
                 && text.kind == RuntimeAutoOverlapUnion.Kind.Text
-                && text.text == "text"
+                && text.text.text == "text"
                 && objectValue.kind == RuntimeAutoOverlapUnion.Kind.Object
-                && object.ReferenceEquals(objectValue.detail, detail)
+                && object.ReferenceEquals(objectValue.@object.detail, detail)
                 && point.kind == RuntimeAutoOverlapUnion.Kind.Point
-                && point.point.x == 55
-                && point.point.y == 66
+                && point.point.point.x == 55
+                && point.point.point.y == 66
                 && empty.kind == RuntimeAutoOverlapUnion.Kind.Empty
                 && Initialized(42)[0].value == 42;
         }

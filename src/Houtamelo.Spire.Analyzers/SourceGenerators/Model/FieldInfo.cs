@@ -2,18 +2,11 @@ using System;
 
 namespace Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 
-/// Region classification for Overlap layout field placement.
-internal enum FieldRegion { Unmanaged, Reference, Boxed }
-
 internal sealed record FieldInfo(
     string Name,
     string TypeFullName,
     bool IsUnmanaged,
     bool IsReferenceType,
-    /// Computed sizeof at parse time (null if not computable).
-    /// Populated from ITypeSymbol while the semantic model is available.
-    /// Used by FieldClassifier for Overlap region offset computation.
-    int? KnownSize,
     /// [JsonName] override for JSON serialization. Null = use Name.
     string? JsonName,
     /// True when the field type is another Unity-serializable union.
@@ -29,21 +22,11 @@ internal sealed record FieldInfo(
     bool RequiresUnityRuntimeDispatch = false,
     /// True when the variant parameter explicitly requests Unity managed-reference serialization.
     bool IsUnityManagedReference = false,
-    /// Null for fields that keep their declared name. Incompatible struct-union
-    /// collisions use a variant-qualified name here.
-    string? PropertyName = null,
-    /// Null for fields whose property keeps the declared type. Compatible
-    /// reference-nullability collisions use the merged nullable type here.
-    string? PropertyTypeFullName = null,
     /// Constructor-only CLR-equivalent type identity used for grouping.
     /// This omits reference nullability and tuple element names.
     string? ConstructorTypeKey = null,
-    /// Common type spelling for a generated private constructor parameter.
-    /// It is computed per ordered CLR-equivalent variant signature.
-    string? ConstructorTypeFullName = null
-) : IEquatable<FieldInfo>
-{
-    public string ResolvedPropertyName => PropertyName ?? Name;
-
-    public string ResolvedPropertyTypeFullName => PropertyTypeFullName ?? TypeFullName;
-}
+    /// Generic-dependent values cannot enter nongeneric explicit-layout helpers.
+    bool IsGenericDependent = false,
+    /// Reused typed storage accepts the merged nullable annotations of all users.
+    string? StorageTypeFullName = null
+) : IEquatable<FieldInfo>;

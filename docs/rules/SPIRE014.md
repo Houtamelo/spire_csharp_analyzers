@@ -9,7 +9,10 @@
 
 ## Description
 
-Code accesses a variant-specific field (e.g., `shape.circle_radius`) without first checking which variant is active via a switch, if-pattern, or equality check on `kind`. Without a guard, the field read may return garbage data from a different variant's overlapping memory.
+Code reads a variant accessor (for example, `shape.circle`) without checking
+the active variant through a switch, if-pattern, or equality check on `kind`.
+An inactive accessor can read unrelated unmanaged storage or fail a shared-slot
+cast. A captured payload's fields are ordinary fields and need no further guard.
 
 Accessing the `kind` field itself is always safe and does not trigger this diagnostic.
 
@@ -27,7 +30,7 @@ partial struct Shape
 
 void Bad(Shape s)
 {
-    var r = s.circle_radius;  // SPIRE014: no kind guard
+    var r = s.circle.radius;  // SPIRE014: no kind guard
 }
 ```
 
@@ -38,15 +41,15 @@ void Ok(Shape s)
 {
     if (s.kind == Shape.Kind.Circle)
     {
-        var r = s.circle_radius;  // guarded by kind check
+        var r = s.circle.radius;  // guarded by kind check
     }
 }
 
 // Also fine: switch expression/statement arms
 double Area(Shape s) => s switch
 {
-    (Shape.Kind.Circle, double r) => Math.PI * r * r,
-    (Shape.Kind.Square, int x) => x * x,
+    { kind: Shape.Kind.Circle, circle: { radius: var r } } => Math.PI * r * r,
+    { kind: Shape.Kind.Square, square: { sideLength: var x } } => x * x,
 };
 ```
 
@@ -56,6 +59,6 @@ Suppress when you've verified the variant through external logic not visible to 
 
 ```csharp
 #pragma warning disable SPIRE014
-var r = shapes[knownCircleIndex].circle_radius;
+var r = shapes[knownCircleIndex].circle.radius;
 #pragma warning restore SPIRE014
 ```

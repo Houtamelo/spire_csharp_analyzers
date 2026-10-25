@@ -11,6 +11,6 @@ namespace TestNs
     }
     class C
     {
-        string Test(Color c) => $"color={c.colorName}"; //~ ERROR
+        string Test(Color c) => $"color={c.named.colorName}"; //~ ERROR
     }
 }

@@ -16,12 +16,12 @@ namespace TestNs
         {
             switch (a)
             {
-                case (Animal.Kind.Dog, _):
-                    return a.dogName;
-                case (Animal.Kind.Cat, _):
-                    return a.catAge.ToString();
-                case (Animal.Kind.Bird, _):
-                    return a.wingSpan.ToString();
+                case { kind: Animal.Kind.Dog, dog: { dogName: var name } }:
+                    return name;
+                case { kind: Animal.Kind.Cat, cat: { catAge: var age } }:
+                    return age.ToString();
+                case { kind: Animal.Kind.Bird, bird: { wingSpan: var span } }:
+                    return span.ToString();
                 default:
                     return "unknown";
             }

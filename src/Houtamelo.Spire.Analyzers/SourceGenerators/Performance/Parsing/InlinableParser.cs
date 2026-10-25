@@ -15,6 +15,7 @@ namespace Houtamelo.Spire.Analyzers.SourceGenerators.Performance.Parsing;
 internal static class InlinableParser
 {
     private const string InlinableAttrFullName = "Houtamelo.Spire.InlinableAttribute";
+    private const int MaxDelegateArity = 8;
 
     public static InlinableHostDecl? Parse(
         IMethodSymbol method,
@@ -50,7 +51,11 @@ internal static class InlinableParser
             {
                 if (!TryBuildInlinable(p, i, usedGenericNames, out var ip))
                 {
-                    otherParams.Add(BuildHostParamInfo(p, i, isThis));
+                    otherParams.Add(BuildHostParamInfo(
+                        p,
+                        i,
+                        isThis,
+                        mds.ParameterList.Parameters[i].Type?.ToString()));
                     continue;
                 }
                 inlinableParams.Add(ip!);
@@ -92,6 +97,8 @@ internal static class InlinableParser
         else
             bodyText = "";
 
+        var diagnostic = ValidateHost(method, declaringType, mds, inlinableParams);
+
         // Capture using directives from the original file so the body sees the same
         // namespaces. Includes compilation-unit usings and any namespace-scoped ones
         // the method's containing namespace pulls in.
@@ -131,7 +138,7 @@ internal static class InlinableParser
             OtherParams: new EquatableArray<HostParamInfo>(otherParams.ToImmutable()),
             OriginalBody: bodyText,
             UsingDirectives: new EquatableArray<string>(usings.ToImmutableArray()),
-            Diagnostic: null);
+            Diagnostic: diagnostic);
     }
 
     private static bool TryBuildInlinable(
@@ -142,6 +149,13 @@ internal static class InlinableParser
     {
         result = null;
         var type = p.Type;
+
+        if (p.RefKind != RefKind.None ||
+            RoslynCompatibility.IsRefReadOnlyParameter(p.RefKind) ||
+            p.IsParams)
+        {
+            return false;
+        }
 
         // Unwrap Nullable<T> (only for reference types it's NullableAnnotation; for
         // delegate types which are reference types the annotation is what we check).
@@ -182,6 +196,9 @@ internal static class InlinableParser
             delegateInputs = typeArgs;
         }
 
+        if (delegateInputs.Length > MaxDelegateArity)
+            return false;
+
         var genericName = BuildUniqueGenericName(p.Name, usedGenericNames);
 
         result = new InlinableParam(
@@ -193,6 +210,279 @@ internal static class InlinableParser
             ReturnType: returnType,
             GenericName: genericName);
         return true;
+    }
+
+    private static InlinerDiagnostic? ValidateHost(
+        IMethodSymbol method,
+        INamedTypeSymbol declaringType,
+        MethodDeclarationSyntax mds,
+        ImmutableArray<InlinableParam>.Builder inlinableParams)
+    {
+        var nonPartial = FindNonPartialEnclosingType(declaringType);
+        if (nonPartial is not null)
+        {
+            return CreateDiagnostic(
+                "SPIRE023",
+                $"The type containing '[Inlinable]' parameter must be declared 'partial'; '{nonPartial.Name}' is not partial",
+                GetSymbolLocation(method));
+        }
+
+        if (inlinableParams.Count == 0)
+            return null;
+
+        var bodyRoot = (SyntaxNode?)mds.Body ?? mds.ExpressionBody;
+        if (bodyRoot is null)
+            return null;
+
+        var parameterNames = new HashSet<string>(
+            inlinableParams.Select(parameter => parameter.Name),
+            System.StringComparer.Ordinal);
+        var trackedNames = new HashSet<string>(
+            parameterNames,
+            System.StringComparer.Ordinal);
+
+        var aliases = bodyRoot.DescendantNodes()
+            .OfType<VariableDeclaratorSyntax>()
+            .ToList();
+        bool changed = true;
+        while (changed)
+        {
+            changed = false;
+            foreach (var variable in aliases)
+            {
+                if (variable.Parent is not VariableDeclarationSyntax declaration ||
+                    declaration.Type is not IdentifierNameSyntax type ||
+                    type.Identifier.Text != "var" ||
+                    declaration.Variables.Count != 1 ||
+                    variable.Initializer is null)
+                {
+                    continue;
+                }
+
+                var initializer = variable.Initializer.Value;
+                var isAlias = initializer is IdentifierNameSyntax rhs &&
+                    trackedNames.Contains(rhs.Identifier.Text);
+                if (initializer is ConditionalExpressionSyntax conditional &&
+                    conditional.WhenTrue is IdentifierNameSyntax whenTrue &&
+                    conditional.WhenFalse is IdentifierNameSyntax whenFalse)
+                {
+                    isAlias = trackedNames.Contains(whenTrue.Identifier.Text) &&
+                        trackedNames.Contains(whenFalse.Identifier.Text);
+                }
+
+                if (isAlias && trackedNames.Add(variable.Identifier.Text))
+                    changed = true;
+            }
+        }
+
+        foreach (var identifier in bodyRoot.DescendantNodes().OfType<IdentifierNameSyntax>())
+        {
+            var name = identifier.Identifier.Text;
+            if (!trackedNames.Contains(name) || IsInsideNameof(identifier))
+                continue;
+
+            if (IsInsideNestedFunction(identifier, bodyRoot))
+            {
+                return CreateDiagnostic(
+                    "SPIRE021",
+                    $"[Inlinable] parameter '{name}' is captured by a nested function and cannot be rewritten",
+                    identifier.GetLocation());
+            }
+
+            if (IsAllowedUsage(identifier, trackedNames))
+                continue;
+
+            return CreateDiagnostic(
+                "SPIRE021",
+                $"[Inlinable] parameter '{name}' is used in a form the twin generator cannot rewrite",
+                identifier.GetLocation());
+        }
+
+        return null;
+    }
+
+    private static bool IsAllowedUsage(
+        IdentifierNameSyntax identifier,
+        HashSet<string> trackedNames)
+    {
+        var parent = identifier.Parent;
+        if (parent is null)
+            return false;
+
+        if (parent is InvocationExpressionSyntax invocation &&
+            invocation.Expression == identifier)
+        {
+            return true;
+        }
+
+        if (parent is ConditionalAccessExpressionSyntax conditional &&
+            conditional.Expression == identifier)
+        {
+            return true;
+        }
+
+        if (parent is ArgumentSyntax)
+            return true;
+
+        if (parent is ConditionalExpressionSyntax aliasConditional &&
+            aliasConditional.WhenTrue is IdentifierNameSyntax aliasWhenTrue &&
+            aliasConditional.WhenFalse is IdentifierNameSyntax aliasWhenFalse &&
+            trackedNames.Contains(aliasWhenTrue.Identifier.Text) &&
+            trackedNames.Contains(aliasWhenFalse.Identifier.Text) &&
+            aliasConditional.Parent is EqualsValueClauseSyntax aliasEqualsValue &&
+            aliasEqualsValue.Parent is VariableDeclaratorSyntax aliasVariable &&
+            aliasVariable.Parent is VariableDeclarationSyntax aliasDeclaration &&
+            aliasDeclaration.Type is IdentifierNameSyntax aliasType &&
+            aliasType.Identifier.Text == "var" &&
+            aliasDeclaration.Variables.Count == 1 &&
+            trackedNames.Contains(aliasVariable.Identifier.Text))
+        {
+            return true;
+        }
+
+        if (parent is BinaryExpressionSyntax binary &&
+            (binary.IsKind(SyntaxKind.EqualsExpression) ||
+             binary.IsKind(SyntaxKind.NotEqualsExpression)))
+        {
+            var other = binary.Left == identifier ? binary.Right : binary.Left;
+            if (other is LiteralExpressionSyntax literal &&
+                literal.IsKind(SyntaxKind.NullLiteralExpression))
+            {
+                return true;
+            }
+        }
+
+        if (parent is IsPatternExpressionSyntax pattern &&
+            pattern.Expression == identifier)
+        {
+            return true;
+        }
+
+        if (parent is BinaryExpressionSyntax isExpression &&
+            isExpression.IsKind(SyntaxKind.IsExpression) &&
+            isExpression.Left == identifier)
+        {
+            return true;
+        }
+
+        if (parent is EqualsValueClauseSyntax equalsValue &&
+            equalsValue.Parent is VariableDeclaratorSyntax variable &&
+            variable.Initializer == equalsValue &&
+            variable.Parent is VariableDeclarationSyntax declaration &&
+            declaration.Type is IdentifierNameSyntax type &&
+            type.Identifier.Text == "var" &&
+            declaration.Variables.Count == 1 &&
+            trackedNames.Contains(variable.Identifier.Text))
+        {
+            return true;
+        }
+
+        if (parent is AssignmentExpressionSyntax assignment &&
+            assignment.Left == identifier)
+        {
+            return false;
+        }
+
+        return false;
+    }
+
+    private static bool IsInsideNestedFunction(IdentifierNameSyntax identifier, SyntaxNode bodyRoot)
+    {
+        for (SyntaxNode? current = identifier.Parent;
+             current is not null && current != bodyRoot;
+             current = current.Parent)
+        {
+            if (current is AnonymousFunctionExpressionSyntax ||
+                current is LocalFunctionStatementSyntax)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsInsideNameof(IdentifierNameSyntax identifier)
+    {
+        for (SyntaxNode? current = identifier.Parent;
+             current is not null;
+             current = current.Parent)
+        {
+            if (current is InvocationExpressionSyntax invocation &&
+                invocation.Expression is IdentifierNameSyntax target &&
+                target.Identifier.Text == "nameof")
+            {
+                return true;
+            }
+
+            if (current is StatementSyntax)
+                break;
+        }
+
+        return false;
+    }
+
+    private static INamedTypeSymbol? FindNonPartialEnclosingType(INamedTypeSymbol declaringType)
+    {
+        for (INamedTypeSymbol? current = declaringType;
+             current is not null;
+             current = current.ContainingType)
+        {
+            if (!IsDeclaredPartial(current))
+                return current;
+        }
+
+        return null;
+    }
+
+    private static bool IsDeclaredPartial(INamedTypeSymbol type)
+    {
+        foreach (var syntaxReference in type.DeclaringSyntaxReferences)
+        {
+            if (syntaxReference.GetSyntax() is not TypeDeclarationSyntax declaration)
+                continue;
+
+            if (declaration.Modifiers.Any(modifier =>
+                    modifier.IsKind(SyntaxKind.PartialKeyword)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static InlinerDiagnostic CreateDiagnostic(
+        string id,
+        string message,
+        Location location)
+    {
+        var lineSpan = location.GetLineSpan();
+        var sourceSpan = location.SourceSpan;
+        return new InlinerDiagnostic(
+            Id: id,
+            Message: message,
+            FilePath: location.SourceTree?.FilePath ?? "",
+            StartOffset: sourceSpan.Start,
+            Length: sourceSpan.Length,
+            StartLine: lineSpan.StartLinePosition.Line,
+            StartColumn: lineSpan.StartLinePosition.Character,
+            EndLine: lineSpan.EndLinePosition.Line,
+            EndColumn: lineSpan.EndLinePosition.Character);
+    }
+
+    private static Location GetSymbolLocation(ISymbol symbol)
+    {
+        if (!symbol.Locations.IsDefaultOrEmpty)
+        {
+            foreach (var location in symbol.Locations)
+            {
+                if (location.IsInSource)
+                    return location;
+            }
+        }
+
+        return Location.None;
     }
 
     private static string BuildUniqueGenericName(string paramName, HashSet<string> used)
@@ -222,7 +512,11 @@ internal static class InlinableParser
         return sb.ToString();
     }
 
-    private static HostParamInfo BuildHostParamInfo(IParameterSymbol p, int position, bool isThis)
+    private static HostParamInfo BuildHostParamInfo(
+        IParameterSymbol p,
+        int position,
+        bool isThis,
+        string? sourceType = null)
     {
         string? refKind = p.IsParams
             ? "params"
@@ -237,7 +531,7 @@ internal static class InlinableParser
 
         return new HostParamInfo(
             Name: p.Name,
-            Type: p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+            Type: sourceType ?? p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
             Position: position,
             RefKind: refKind,
             IsThis: isThis);

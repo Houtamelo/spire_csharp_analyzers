@@ -1,5 +1,9 @@
+using Houtamelo.Spire;
+
 namespace Houtamelo.Spire.Benchmarks.Types;
 
+// One benchmark declaration is expanded into the current representations:
+// PhysBench (Auto), PhysAuto, PhysTyped, PhysShared, and PhysRecord.
 [BenchmarkUnion(Name = "Phys")]
 public partial struct PhysBench
 {

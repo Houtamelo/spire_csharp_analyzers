@@ -26,6 +26,7 @@ public sealed class ToolCliTests
         {
             "package",
             "unity-integration",
+            "unity-union-core",
             "unity-behavioral",
             "unity-harness",
             "unity-asmdefs",
@@ -62,6 +63,42 @@ public sealed class ToolCliTests
         Assert.True(result.ExitCode == 2, result.CombinedOutput);
         Assert.Contains("backend", result.CombinedOutput, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("editor executable", result.CombinedOutput, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task UnityUnionCore_MissingEditorFailsBeforeCreatingProject()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var suffix = Guid.NewGuid().ToString("N");
+        var missingEditor = Path.Combine(repositoryRoot, "tmp", "missing-editor-for-union-core-" + suffix);
+        var missingProject = Path.Combine(repositoryRoot, "tmp", "missing-project-for-union-core-" + suffix);
+
+        var result = await RunCliAsync(
+            repositoryRoot,
+            "unity-union-core",
+            "--editor",
+            missingEditor,
+            "--project",
+            missingProject);
+
+        Assert.False(result.TimedOut, result.CombinedOutput);
+        Assert.True(result.ExitCode == 1, result.CombinedOutput);
+        Assert.Contains("Required file is missing", result.CombinedOutput, StringComparison.Ordinal);
+        Assert.Contains(missingEditor, result.CombinedOutput, StringComparison.Ordinal);
+        Assert.False(Directory.Exists(missingProject));
+    }
+
+    [Fact]
+    public async Task UnityUnionCore_BackendOptionIsRejectedAsAnInappropriateCommandOption()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+
+        var result = await RunCliAsync(repositoryRoot, "unity-union-core", "--backend", "Mono");
+
+        Assert.False(result.TimedOut, result.CombinedOutput);
+        Assert.True(result.ExitCode == 2, result.CombinedOutput);
+        Assert.Contains("backend", result.CombinedOutput, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Required file is missing", result.CombinedOutput, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

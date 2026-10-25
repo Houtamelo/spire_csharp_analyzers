@@ -12,6 +12,6 @@ namespace TestNs
     class C
     {
         double Test(Sensor s) =>
-            s.kind == Sensor.Kind.Temperature ? s.celsius : 0;
+            s.kind == Sensor.Kind.Temperature ? s.temperature.celsius : 0;
     }
 }

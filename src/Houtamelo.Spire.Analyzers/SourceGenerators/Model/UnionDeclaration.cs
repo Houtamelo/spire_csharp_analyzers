@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Immutable;
 
 namespace Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 
-internal enum EmitStrategy { Record, Overlap, BoxedFields, BoxedTuple, Additive, UnsafeOverlap }
+internal enum EmitStrategy { Record, VariantPayload }
+
+internal enum ReferenceStorage { ReadGlobalCfg, Auto, Typed, Shared }
 
 [Flags]
 internal enum JsonLibrary
@@ -36,17 +39,14 @@ internal sealed record ContainingTypeInfo(
     EquatableArray<string> TypeParameters
 ) : IEquatable<ContainingTypeInfo>;
 
-/// Raw [DiscriminatedUnion] ctor arg values before global config resolution.
-/// Sentinel values: Layout 0=ReadGlobalCfg, GenerateDeconstruct 0=ReadGlobalCfg,
-/// Json -1=ReadGlobalCfg, JsonDiscriminator null=read global config.
+/// Raw attribute values before project-default resolution.
 internal sealed record RawAttributeConfig(
-    int Layout,
-    int GenerateDeconstruct,
+    ReferenceStorage ReferenceStorage,
     int Json,
     string? JsonDiscriminator
 ) : IEquatable<RawAttributeConfig>
 {
-    public static readonly RawAttributeConfig AllSentinels = new(0, 0, -1, null);
+    public static readonly RawAttributeConfig AllSentinels = new(ReferenceStorage.ReadGlobalCfg, -1, null);
 }
 
 internal sealed record UnionDeclaration(
@@ -57,13 +57,11 @@ internal sealed record UnionDeclaration(
     bool IsReadonly,
     bool IsRefStruct,
     EmitStrategy Strategy,
-    bool GenerateDeconstruct,
     EquatableArray<string> TypeParameters,
     EquatableArray<VariantInfo> Variants,
     /// Containing types from outermost to innermost (empty if top-level).
     EquatableArray<ContainingTypeInfo> ContainingTypes,
-    /// Optional diagnostic to report (e.g., Layout on record, Overlap on generic).
-    /// If IsError, no source is emitted for this union.
+    /// A declaration diagnostic. Reporting an error does not suppress generated API.
     UnionDiagnostic? Diagnostic,
     /// Which JSON libraries to generate converters for.
     JsonLibrary Json,
@@ -73,8 +71,18 @@ internal sealed record UnionDeclaration(
     bool HasInitProperties,
     /// Raw attribute values for global config resolution.
     RawAttributeConfig RawConfig,
-    /// Whether the union type has type parameters (needed for Layout auto-resolution).
+    /// Whether the union type has type parameters.
     bool IsGeneric,
     /// Whether the complete union symbol has System.SerializableAttribute.
     bool IsUnitySerializable = false
-) : IEquatable<UnionDeclaration>;
+) : IEquatable<UnionDeclaration>
+{
+    public ReferenceStorage ReferenceStorage { get; init; } = ReferenceStorage.Auto;
+
+    /// Engine-dependent output requires supported declaration shape and references,
+    /// independently of any diagnostic reported for the declaration.
+    public bool EmitUnitySerialization { get; init; }
+
+    public EquatableArray<string> TypeParameterConstraints { get; init; } =
+        new(ImmutableArray<string>.Empty);
+}

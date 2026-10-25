@@ -5,7 +5,7 @@ using Spire.UnityAsmdefIntegration.RuntimeAuto;
 namespace Spire.UnityAsmdefIntegration.EditorRuntime
 {
     [Serializable]
-    [DiscriminatedUnion(Layout.Additive)]
+    [DiscriminatedUnion]
     public partial struct EditorRuntimeUnion
     {
         [Variant]
@@ -46,7 +46,7 @@ namespace Spire.UnityAsmdefIntegration.EditorRuntime
         {
             var union = EditorRuntimeUnion.Value(42);
             return union.kind == EditorRuntimeUnion.Kind.Value
-                && union.value == 42
+                && union.value.value == 42
                 && Initialized(42)[0].value == 42
                 && RuntimeAuto.AsmdefProbe.Verify();
         }

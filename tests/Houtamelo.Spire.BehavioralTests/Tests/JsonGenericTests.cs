@@ -15,7 +15,7 @@ public class JsonGenericTests
         var json = System.Text.Json.JsonSerializer.Serialize(o);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonOptionAddStj<int>>(json);
         Assert.Equal(JsonOptionAddStj<int>.Kind.Some, d.kind);
-        Assert.Equal(42, d.value);
+        Assert.Equal(42, d.some.value);
     }
 
     [Fact]
@@ -25,7 +25,7 @@ public class JsonGenericTests
         var json = System.Text.Json.JsonSerializer.Serialize(o);
         var d = System.Text.Json.JsonSerializer.Deserialize<JsonOptionAddStj<string>>(json);
         Assert.Equal(JsonOptionAddStj<string>.Kind.Some, d.kind);
-        Assert.Equal("hello", d.value);
+        Assert.Equal("hello", d.some.value);
     }
 
     [Fact]
@@ -37,30 +37,6 @@ public class JsonGenericTests
         Assert.Equal(JsonOptionAddStj<int>.Kind.None, d.kind);
     }
 
-    // ── System.Text.Json — BoxedFields ──────────────────────────
-
-    [Fact]
-    public void Stj_Bf_IntSome_RoundTrip()
-    {
-        var o = JsonOptionBfStj<int>.Some(99);
-        var json = System.Text.Json.JsonSerializer.Serialize(o);
-        var d = System.Text.Json.JsonSerializer.Deserialize<JsonOptionBfStj<int>>(json);
-        Assert.Equal(JsonOptionBfStj<int>.Kind.Some, d.kind);
-        Assert.Equal(99, d.value);
-    }
-
-    // ── System.Text.Json — BoxedTuple ───────────────────────────
-
-    [Fact]
-    public void Stj_Bt_IntSome_RoundTrip()
-    {
-        var o = JsonOptionBtStj<int>.Some(77);
-        var json = System.Text.Json.JsonSerializer.Serialize(o);
-        var d = System.Text.Json.JsonSerializer.Deserialize<JsonOptionBtStj<int>>(json);
-        Assert.Equal(JsonOptionBtStj<int>.Kind.Some, d.kind);
-        Assert.Equal(77, d.value);
-    }
-
     // ── Newtonsoft — Additive ───────────────────────────────────
 
     [Fact]
@@ -70,7 +46,7 @@ public class JsonGenericTests
         var json = JsonConvert.SerializeObject(o);
         var d = JsonConvert.DeserializeObject<JsonOptionAddNsj<int>>(json);
         Assert.Equal(JsonOptionAddNsj<int>.Kind.Some, d.kind);
-        Assert.Equal(42, d.value);
+        Assert.Equal(42, d.some.value);
     }
 
     [Fact]
@@ -80,7 +56,7 @@ public class JsonGenericTests
         var json = JsonConvert.SerializeObject(o);
         var d = JsonConvert.DeserializeObject<JsonOptionAddNsj<string>>(json);
         Assert.Equal(JsonOptionAddNsj<string>.Kind.Some, d.kind);
-        Assert.Equal("hello", d.value);
+        Assert.Equal("hello", d.some.value);
     }
 
     [Fact]
@@ -92,27 +68,4 @@ public class JsonGenericTests
         Assert.Equal(JsonOptionAddNsj<int>.Kind.None, d.kind);
     }
 
-    // ── Newtonsoft — BoxedFields ────────────────────────────────
-
-    [Fact]
-    public void Nsj_Bf_IntSome_RoundTrip()
-    {
-        var o = JsonOptionBfNsj<int>.Some(99);
-        var json = JsonConvert.SerializeObject(o);
-        var d = JsonConvert.DeserializeObject<JsonOptionBfNsj<int>>(json);
-        Assert.Equal(JsonOptionBfNsj<int>.Kind.Some, d.kind);
-        Assert.Equal(99, d.value);
-    }
-
-    // ── Newtonsoft — BoxedTuple ─────────────────────────────────
-
-    [Fact]
-    public void Nsj_Bt_IntSome_RoundTrip()
-    {
-        var o = JsonOptionBtNsj<int>.Some(77);
-        var json = JsonConvert.SerializeObject(o);
-        var d = JsonConvert.DeserializeObject<JsonOptionBtNsj<int>>(json);
-        Assert.Equal(JsonOptionBtNsj<int>.Kind.Some, d.kind);
-        Assert.Equal(77, d.value);
-    }
 }

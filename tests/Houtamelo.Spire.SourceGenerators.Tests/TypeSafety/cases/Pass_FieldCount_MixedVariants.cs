@@ -12,8 +12,8 @@ namespace TestNs
     {
         int Test(ExprFCP3 e) => e switch
         {
-            (ExprFCP3.Kind.Literal, int v) => v,
-            (ExprFCP3.Kind.Add, float l, float r) => (int)(l + r),
+            { kind: ExprFCP3.Kind.Literal, literal: { litValue: int v } } => v,
+            { kind: ExprFCP3.Kind.Add, add: (float l, float r) } => (int)(l + r),
         };
     }
 }

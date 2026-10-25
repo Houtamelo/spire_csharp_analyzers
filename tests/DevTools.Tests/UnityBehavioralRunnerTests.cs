@@ -336,12 +336,12 @@ public sealed class UnityBehavioralRunnerTests
             .ToArray();
 
         Assert.Equal(expected, actual);
-        Assert.Equal(129, CountFacts(Path.Combine(sourceRoot, "Tests")));
+        Assert.Equal(73, CountFacts(Path.Combine(sourceRoot, "Tests")));
 
         using var manifest = JsonDocument.Parse(
             File.ReadAllText(Path.Combine(projectPath, "behavioral-inputs.json")));
         var root = manifest.RootElement;
-        Assert.Equal(129, root.GetProperty("expectedFacts").GetInt32());
+        Assert.Equal(73, root.GetProperty("expectedFacts").GetInt32());
 
         var inputPaths = new HashSet<string>(StringComparer.Ordinal);
         foreach (var input in root.GetProperty("inputs").EnumerateArray())
@@ -371,7 +371,7 @@ public sealed class UnityBehavioralRunnerTests
             .ToArray();
         Assert.Equal(expectedNames, manifestNames);
         Assert.Equal(manifestNames.Length, manifestNames.Distinct(StringComparer.Ordinal).Count());
-        Assert.Equal(129, manifestNames.Length);
+        Assert.Equal(73, manifestNames.Length);
     }
 
     private static void AssertPreparedManifest(string projectPath, string? editorPath)
@@ -461,8 +461,8 @@ public sealed class UnityBehavioralRunnerTests
         var root = inputs.RootElement;
         Assert.Equal("IL2CPP", root.GetProperty("backend").GetString());
         Assert.Equal("Player", root.GetProperty("platform").GetString());
-        Assert.Equal(129, root.GetProperty("expectedFacts").GetInt32());
-        Assert.Equal(129, root.GetProperty("expectedFactNames").GetArrayLength());
+        Assert.Equal(73, root.GetProperty("expectedFacts").GetInt32());
+        Assert.Equal(73, root.GetProperty("expectedFactNames").GetArrayLength());
         Assert.False(Directory.Exists(Path.Combine(projectPath, "Assets", "CompilerProbe")));
 
         var asmdefPath = Path.Combine(

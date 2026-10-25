@@ -56,14 +56,14 @@ The source generator provides:
 - Property-pattern and `Deconstruct` support for `switch`.
 - Optional JSON serialization (System.Text.Json, Newtonsoft.Json).
 - Exhaustive switch checking (SPIRE009) and field access safety (SPIRE011-014).
-- 5 struct memory layouts + record unions.
+- Overlapping unmanaged payloads, configurable reference storage, and record unions.
 
 Define a struct union with `[DiscriminatedUnion]`:
 
 ```csharp
 using Houtamelo.Spire;
 
-[DiscriminatedUnion(Layout.Additive)]
+[DiscriminatedUnion]
 partial struct Shape
 {
     [Variant] public static partial Shape Circle(double radius);
@@ -80,19 +80,17 @@ Shape shape = Shape.Circle(5.0);
 // Property pattern
 var area = shape switch
 {
-    { kind: Shape.Kind.Circle, radius: var r } => Math.PI * r * r,
-    { kind: Shape.Kind.Square, side: var s }   => s * s,
+    { kind: Shape.Kind.Circle, circle: { radius: var r } } => Math.PI * r * r,
+    { kind: Shape.Kind.Square, square: { side: var s } } => s * s,
     { kind: Shape.Kind.Point }                 => 0,
 };
 
-// Deconstruct pattern
-area = shape switch 
-{
-    (Shape.Kind.Circle, radius: var r) => Math.PI * r * r,
-    (Shape.Kind.Square, side: var s)   => s * s,
-    (Shape.Kind.Point, _)              => 0,
-};
 ```
+
+Each accessor returns a sibling payload struct (`ShapeCircle`, `ShapeSquare`,
+`ShapePoint`) with getter-only properties and a typed `Deconstruct`. Payloads with two or
+more fields support positional patterns inside the accessor pattern. Accessors
+replace flat field properties and union-level deconstruction.
 
 Record types are also supported:
 
@@ -115,8 +113,7 @@ Set project-wide defaults via MSBuild properties in your `.csproj` (or `Director
 ```xml
 <PropertyGroup>
   <!-- Discriminated union defaults -->
-  <Spire_DU_DefaultLayout>Additive</Spire_DU_DefaultLayout>
-  <Spire_DU_DefaultGenerateDeconstruct>true</Spire_DU_DefaultGenerateDeconstruct>
+  <Spire_DU_DefaultReferenceStorage>Auto</Spire_DU_DefaultReferenceStorage>
   <Spire_DU_DefaultJson>SystemTextJson</Spire_DU_DefaultJson>
   <Spire_DU_DefaultJsonDiscriminator>kind</Spire_DU_DefaultJsonDiscriminator>
 
@@ -127,8 +124,7 @@ Set project-wide defaults via MSBuild properties in your `.csproj` (or `Director
 
 | Property | Values | Default |
 |----------|--------|---------|
-| `Spire_DU_DefaultLayout` | `Auto`, `Additive`, `Overlap`, `UnsafeOverlap`, `BoxedFields`, `BoxedTuple` | `Auto` |
-| `Spire_DU_DefaultGenerateDeconstruct` | `true`, `false` | `true` |
+| `Spire_DU_DefaultReferenceStorage` | `Auto`, `Typed`, `Shared` | `Auto` |
 | `Spire_DU_DefaultJson` | `None`, `SystemTextJson`, `NewtonsoftJson`, `Both` | `None` |
 | `Spire_DU_DefaultJsonDiscriminator` | any string | `kind` |
 | `Spire_EnforceExhaustivenessOnAllEnumTypes` | `true`, `false` | `false` |
@@ -168,31 +164,21 @@ string Describe(Animal a) => a switch
 
 See [docs/exhaustiveness.md](docs/exhaustiveness.md) for the full guide.
 
-## Discriminated Unions — Layout Strategy Comparison
+## Reference storage
 
-N=1000, .NET 11.0, AMD Ryzen 9 9900X. Full results in [docs/benchmark-results/](docs/benchmark-results/).
+Concrete unmanaged payloads overlap without unsafe code or generator-calculated
+sizes. Generic-dependent fields stay typed. `ReferenceStorage.Typed` reuses
+compatible typed slots without boxing; `Shared` reuses object slots and may box
+managed structs. `Auto` selects Shared when it needs at most half as many managed
+slots as Typed, after same-type reuse. It is the project default.
 
-**Legend**: Ctor = Construction, Prop = Property Pattern, Decon = Deconstruct
+Set a union override with
+`[DiscriminatedUnion(ReferenceStorage = ReferenceStorage.Typed)]`.
+Generic unions are supported; nesting a union inside a generic type reports
+SPIRE_DU018. See the [union guide](docs/discriminated-unions.md) for details.
 
-| Layout             | Ctor Speed | Ctor Alloc | Prop Match  | Decon Match   | Decon Alloc | Copy         | Generics |
-|--------------------|------------|------------|-------------|---------------|-------------|--------------|----------|
-| **Additive**       | Fast       | Moderate   | Fastest     | Slow (boxing) | Yes         | Slow (large) | Yes      |
-| **Overlap**        | Fast       | Moderate   | Fastest     | Slow (boxing) | Yes         | Slow (large) | No       |
-| **UnsafeOverlap**  | Moderate   | Moderate   | Fastest     | Slow (boxing) | Yes         | Slow (large) | Yes      |
-| **BoxedTuple**     | Fast       | Low        | Slow (cast) | Fast          | None        | Fast (16B)   | Yes      |
-| **BoxedFields**    | Slow       | High       | Slowest     | Fast          | None        | Slowest      | Yes      |
-| **Record**         | Fastest    | Low        | Fast        | Fastest       | None        | Fastest (8B) | Yes      |
-| **Native (C# 15)** | Fast       | Low (heap) | Moderate    | Moderate      | None        | Fast (ref)   | Yes      |
-
-### Choosing a layout
-
-- **Default choice**: `Layout.Additive` — fastest struct match, zero-alloc property access, works with generics.
-- **Reference semantics or JSON**: `record` — fastest construction, best JSON deserialization, natural C# pattern matching. Trades GC pressure for
-  speed.
-- **Explicit offsets, no generics**: `Layout.Overlap` — compatible same-name fields share storage. Distinct fields retain separate offsets; compare actual struct sizes for your data.
-- **Skewed variant distribution** (80%+ one variant): `Layout.BoxedTuple` — fieldless fast-path is sub-nanosecond. Poor uniform performance.
-- **C# 15 native unions**: comparable to Additive/Record depending on usage; avoids source generator overhead.
-- **Avoid**: `Layout.BoxedFields` — outperformed by Additive in most categories. Only advantage: zero-alloc Deconstruct (fields already boxed).
+The [existing benchmark reports](docs/benchmark-results/) measure the removed
+Layout strategies. They do not describe the new payload representation.
 
 ## License
 

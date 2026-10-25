@@ -13,7 +13,7 @@ namespace TestNs
     {
         int Test(Shape s) => s switch
         {
-            (Shape.Kind.Rectangle, float w, int h) => 1, //~ ERROR
+            { kind: Shape.Kind.Rectangle, rectangle: (float w, int h) } => 1, //~ ERROR
             _ => 0,
         };
     }

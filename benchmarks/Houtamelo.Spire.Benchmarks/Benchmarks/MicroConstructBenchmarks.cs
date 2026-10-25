@@ -2,76 +2,60 @@ using BenchmarkDotNet.Attributes;
 
 namespace Houtamelo.Spire.Benchmarks.Benchmarks;
 
-/// Single factory call per strategy. DisassemblyDiagnoser reveals JIT inlining.
 [Config(typeof(SpireDisasmConfig))]
 public class MicroConstructBenchmarks
 {
-    // ── Fieldless (Point/Idle) ──
+    [BenchmarkCategory("Micro Construct Fieldless"), Benchmark(Baseline = true)]
+    public Types.EventBench FieldlessAuto() => Types.EventBench.Point();
 
-    [BenchmarkCategory("Micro Construct Fieldless"), Benchmark(Baseline = true, Description = "additive")]
-    public Types.EventAdditive FieldlessAdditive() => Types.EventAdditive.Point();
+    [BenchmarkCategory("Micro Construct Fieldless"), Benchmark]
+    public Types.EventAuto FieldlessExplicitAuto() => Types.EventAuto.Point();
 
-    [BenchmarkCategory("Micro Construct Fieldless"), Benchmark(Description = "boxedFields")]
-    public Types.EventBoxedFields FieldlessBoxedFields() => Types.EventBoxedFields.Point();
+    [BenchmarkCategory("Micro Construct Fieldless"), Benchmark]
+    public Types.EventTyped FieldlessTyped() => Types.EventTyped.Point();
 
-    [BenchmarkCategory("Micro Construct Fieldless"), Benchmark(Description = "boxedTuple")]
-    public Types.EventBoxedTuple FieldlessBoxedTuple() => Types.EventBoxedTuple.Point();
+    [BenchmarkCategory("Micro Construct Fieldless"), Benchmark]
+    public Types.EventShared FieldlessShared() => Types.EventShared.Point();
 
-    [BenchmarkCategory("Micro Construct Fieldless"), Benchmark(Description = "overlap")]
-    public Types.EventOverlap FieldlessOverlap() => Types.EventOverlap.Point();
-
-    [BenchmarkCategory("Micro Construct Fieldless"), Benchmark(Description = "unsafeOverlap")]
-    public Types.EventUnsafeOverlap FieldlessUnsafeOverlap() => Types.EventUnsafeOverlap.Point();
-
-    [BenchmarkCategory("Micro Construct Fieldless"), Benchmark(Description = "record")]
+    [BenchmarkCategory("Micro Construct Fieldless"), Benchmark]
     public Types.EventRecord FieldlessRecord() => new Types.EventRecord.Point();
 
-    [BenchmarkCategory("Micro Construct Fieldless"), Benchmark(Description = "native")]
+    [BenchmarkCategory("Micro Construct Fieldless"), Benchmark]
     public Types.EventNative FieldlessNative() => new Types.EvtPoint();
 
-    // ── 4 unmanaged fields (Transform) ──
+    [BenchmarkCategory("Micro Construct Transform"), Benchmark(Baseline = true)]
+    public Types.EventBench TransformAuto() => Types.EventBench.Transform(1f, 2f, 3f, 4f);
 
-    [BenchmarkCategory("Micro Construct 4-field"), Benchmark(Baseline = true, Description = "additive")]
-    public Types.EventAdditive Transform4Additive() => Types.EventAdditive.Transform(1f, 2f, 3f, 4f);
+    [BenchmarkCategory("Micro Construct Transform"), Benchmark]
+    public Types.EventAuto TransformExplicitAuto() => Types.EventAuto.Transform(1f, 2f, 3f, 4f);
 
-    [BenchmarkCategory("Micro Construct 4-field"), Benchmark(Description = "boxedFields")]
-    public Types.EventBoxedFields Transform4BoxedFields() => Types.EventBoxedFields.Transform(1f, 2f, 3f, 4f);
+    [BenchmarkCategory("Micro Construct Transform"), Benchmark]
+    public Types.EventTyped TransformTyped() => Types.EventTyped.Transform(1f, 2f, 3f, 4f);
 
-    [BenchmarkCategory("Micro Construct 4-field"), Benchmark(Description = "boxedTuple")]
-    public Types.EventBoxedTuple Transform4BoxedTuple() => Types.EventBoxedTuple.Transform(1f, 2f, 3f, 4f);
+    [BenchmarkCategory("Micro Construct Transform"), Benchmark]
+    public Types.EventShared TransformShared() => Types.EventShared.Transform(1f, 2f, 3f, 4f);
 
-    [BenchmarkCategory("Micro Construct 4-field"), Benchmark(Description = "overlap")]
-    public Types.EventOverlap Transform4Overlap() => Types.EventOverlap.Transform(1f, 2f, 3f, 4f);
+    [BenchmarkCategory("Micro Construct Transform"), Benchmark]
+    public Types.EventRecord TransformRecord() => new Types.EventRecord.Transform(1f, 2f, 3f, 4f);
 
-    [BenchmarkCategory("Micro Construct 4-field"), Benchmark(Description = "unsafeOverlap")]
-    public Types.EventUnsafeOverlap Transform4UnsafeOverlap() => Types.EventUnsafeOverlap.Transform(1f, 2f, 3f, 4f);
+    [BenchmarkCategory("Micro Construct Transform"), Benchmark]
+    public Types.EventNative TransformNative() => new Types.EvtTransform(1f, 2f, 3f, 4f);
 
-    [BenchmarkCategory("Micro Construct 4-field"), Benchmark(Description = "record")]
-    public Types.EventRecord Transform4Record() => new Types.EventRecord.Transform(1f, 2f, 3f, 4f);
+    [BenchmarkCategory("Micro Construct RichText"), Benchmark(Baseline = true)]
+    public Types.EventBench RichTextAuto() => Types.EventBench.RichText("hello", 12, true, "Arial", 1.5);
 
-    [BenchmarkCategory("Micro Construct 4-field"), Benchmark(Description = "native")]
-    public Types.EventNative Transform4Native() => new Types.EvtTransform(1f, 2f, 3f, 4f);
+    [BenchmarkCategory("Micro Construct RichText"), Benchmark]
+    public Types.EventAuto RichTextExplicitAuto() => Types.EventAuto.RichText("hello", 12, true, "Arial", 1.5);
 
-    // ── 5 mixed fields (RichText) ──
+    [BenchmarkCategory("Micro Construct RichText"), Benchmark]
+    public Types.EventTyped RichTextTyped() => Types.EventTyped.RichText("hello", 12, true, "Arial", 1.5);
 
-    [BenchmarkCategory("Micro Construct 5-mixed"), Benchmark(Baseline = true, Description = "additive")]
-    public Types.EventAdditive RichText5Additive() => Types.EventAdditive.RichText("hello", 12, true, "Arial", 1.5);
+    [BenchmarkCategory("Micro Construct RichText"), Benchmark]
+    public Types.EventShared RichTextShared() => Types.EventShared.RichText("hello", 12, true, "Arial", 1.5);
 
-    [BenchmarkCategory("Micro Construct 5-mixed"), Benchmark(Description = "boxedFields")]
-    public Types.EventBoxedFields RichText5BoxedFields() => Types.EventBoxedFields.RichText("hello", 12, true, "Arial", 1.5);
+    [BenchmarkCategory("Micro Construct RichText"), Benchmark]
+    public Types.EventRecord RichTextRecord() => new Types.EventRecord.RichText("hello", 12, true, "Arial", 1.5);
 
-    [BenchmarkCategory("Micro Construct 5-mixed"), Benchmark(Description = "boxedTuple")]
-    public Types.EventBoxedTuple RichText5BoxedTuple() => Types.EventBoxedTuple.RichText("hello", 12, true, "Arial", 1.5);
-
-    [BenchmarkCategory("Micro Construct 5-mixed"), Benchmark(Description = "overlap")]
-    public Types.EventOverlap RichText5Overlap() => Types.EventOverlap.RichText("hello", 12, true, "Arial", 1.5);
-
-    [BenchmarkCategory("Micro Construct 5-mixed"), Benchmark(Description = "unsafeOverlap")]
-    public Types.EventUnsafeOverlap RichText5UnsafeOverlap() => Types.EventUnsafeOverlap.RichText("hello", 12, true, "Arial", 1.5);
-
-    [BenchmarkCategory("Micro Construct 5-mixed"), Benchmark(Description = "record")]
-    public Types.EventRecord RichText5Record() => new Types.EventRecord.RichText("hello", 12, true, "Arial", 1.5);
-
-    [BenchmarkCategory("Micro Construct 5-mixed"), Benchmark(Description = "native")]
-    public Types.EventNative RichText5Native() => new Types.EvtRichText("hello", 12, true, "Arial", 1.5);
+    [BenchmarkCategory("Micro Construct RichText"), Benchmark]
+    public Types.EventNative RichTextNative() => new Types.EvtRichText("hello", 12, true, "Arial", 1.5);
 }

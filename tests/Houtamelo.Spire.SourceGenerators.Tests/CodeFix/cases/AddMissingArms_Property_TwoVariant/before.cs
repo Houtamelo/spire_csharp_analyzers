@@ -12,7 +12,7 @@ namespace TestNs
     {
         int Test(Result r) => r switch
         {
-            { kind: Result.Kind.Ok, value: var v } => v,
+            { kind: Result.Kind.Ok, ok: { value: var v  } } => v,
         };
     }
 }

@@ -13,7 +13,7 @@ namespace TestNs
         Flag _flag;
         int Value => _flag switch
         {
-            { kind: Flag.Kind.On, level: var l } => l,
+            { kind: Flag.Kind.On, on: { level: var l  } } => l,
         };
     }
 }
