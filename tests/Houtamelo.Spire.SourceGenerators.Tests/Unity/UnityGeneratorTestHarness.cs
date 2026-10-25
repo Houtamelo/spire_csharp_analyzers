@@ -446,31 +446,54 @@ internal static class UnityGeneratorTestHarness
 #if SPIRE_UNITY_TEST_HOST
     private static IEnumerable<MetadataReference> HostFrameworkReferences()
     {
-        var shimRoot = Path.Combine(
+        var sdkRoot = Path.Combine(
             UnityEditorRoot,
             "Editor",
             "Data",
-            "NetStandard",
-            "compat",
-            "2.1.0",
-            "shims",
-            "netstandard");
-        var referenceRoot = Path.Combine(
-            UnityEditorRoot,
-            "Editor",
-            "Data",
-            "NetStandard",
-            "ref",
-            "2.1.0");
-        var netstandardPath = Path.Combine(referenceRoot, "netstandard.dll");
-        if (!Directory.Exists(shimRoot) || !File.Exists(netstandardPath))
+            "DotNetSdk",
+            "sdk");
+        if (!Directory.Exists(sdkRoot))
             return TestHarnessEnvironment.FrameworkReferences;
 
-        return Directory.EnumerateFiles(shimRoot, "*.dll")
-            .Append(netstandardPath)
+        var frameworkRoot = Directory.EnumerateDirectories(sdkRoot)
+            .Select(path => Path.Combine(path, "TestHostNetFramework"))
+            .Where(Directory.Exists)
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .LastOrDefault();
+        if (frameworkRoot is null)
+            return TestHarnessEnvironment.FrameworkReferences;
+
+        // Unity's TestHostNetFramework facade carries netstandard 2.0, matching
+        // Houtamelo.Spire's netstandard2.0 reference. Do not import its bundled
+        // Newtonsoft/TestPlatform assemblies; JSON tests add their actual runtime
+        // assemblies explicitly. Unity's loaded Mono core assemblies supply
+        // framework types forwarded by the netstandard facades, such as
+        // EditorBrowsableState, without introducing a second reference-only
+        // mscorlib/System pair.
+        var frameworkPaths = Directory.EnumerateFiles(frameworkRoot, "*.dll")
+            .Where(path =>
+            {
+                var name = Path.GetFileName(path);
+                return name.StartsWith("System.", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(name, "netstandard.dll", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(name, "Microsoft.Win32.Primitives.dll", StringComparison.OrdinalIgnoreCase);
+            })
+            .Concat(TestHarnessEnvironment.RuntimeReferences
+                .Select(reference => reference.Display)
+                .Where(path => path is not null)
+                .Where(path =>
+                {
+                    var name = Path.GetFileName(path);
+                    return string.Equals(name, "mscorlib.dll", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(name, "System.dll", StringComparison.OrdinalIgnoreCase);
+                })
+                .Cast<string>())
+            .Where(File.Exists)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
             .Select(path => MetadataReference.CreateFromFile(path));
+
+        return frameworkPaths;
     }
 
     private const string UnityEditorFacadeAlias = "__SpireUnityEditorFacade";

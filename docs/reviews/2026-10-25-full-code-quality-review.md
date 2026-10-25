@@ -359,8 +359,8 @@ removed and the complete harness executed inside Unity.
 36. **Q36 — Standalone analyzer packaging omits its pattern-analysis dependency.**
     `src/Houtamelo.Spire.Analyzers/Houtamelo.Spire.Analyzers.csproj:30,43-49`
     makes PatternAnalysis a private project reference but packs only the analyzer
-    DLL. The existing standalone NuGet confirms the missing assembly; the main
-    `Houtamelo.Spire` package includes it correctly. An actual `csc` invocation
+    DLL. The freshly built 4.7.6 standalone NuGet confirms the missing assembly;
+    the main `Houtamelo.Spire` package includes it correctly. An actual `csc` invocation
     with just the standalone analyzer DLL reports AD0001/FileNotFoundException
     for both ExhaustivenessAnalyzer and CS8509Suppressor. Registering the pattern
     DLL alongside it instead produces the expected SPIRE009 for a missing `Dog`
@@ -557,13 +557,34 @@ Scoped formatting and whitespace checks passed. SDK evidence:
 `tmp/full-code-quality-review/batch7-final/`. First failing native evidence:
 `tmp/full-code-quality-review/native/harness-first-failure/`.
 
+### Batch 8: coherent Mono framework identities
+
+The second complete Editor harness passed 2,096/2,102 cases, with all discovery
+identities matching and no skips. All original runtime-loading and display
+failures were fixed; six strict warning checks exposed CS1701 because Unity's
+NetStandard reference directory identifies netstandard as 2.1 while Spire targets
+2.0. The host-only reference resolver now uses Unity's `TestHostNetFramework`
+facades with the loaded Mono `mscorlib`/`System` assemblies, excluding unrelated
+SDK test-platform and serializer binaries. SDK compilation remains unchanged.
+No warnings were suppressed and no assertions were relaxed.
+
+A targeted actual Unity Editor Mono run passed all six affected tests without
+CS1701/CS1069 diagnostics. Evidence:
+`tmp/targeted-mono-project/variant-payload-mono-probe-xvfb3.{xml,log}`.
+The temporary bridge was removed afterward. Portable dependency build passed
+with zero warnings/errors; focused SDK tests passed 58/58. Final full Release
+gate: **2,115/2,115 passed, zero skipped**, **77/77 raw generated files
+byte-identical**. Formatting and whitespace checks passed. SDK evidence:
+`tmp/full-code-quality-review/batch8-final/`; second failing native run:
+`tmp/full-code-quality-review/native/harness-second-failure/`.
+
 ### Final native validation
 
 Actual Unity **6000.5.6f1**, Linux x86-64. All projects are disposable copies
 under `tmp/full-code-quality-review/`; tracked fixtures and customer projects
 were not changed. SHA-256 checks confirmed all four core fixture DLLs matched
 the Release outputs at fixture preparation. Their informational version records
-`21c3ac0`; `src/` is identical between that commit and `23252e8`. Later builds
+`21c3ac0`; `src/` is identical between that commit and `16412b7`. Later builds
 restamp the informational version with HEAD; archived hashes identify the exact
 assemblies used, rather than assuming byte equality across revision stamps.
 
@@ -600,3 +621,20 @@ journeys. Reports were checked for success, empty failures, exact behavioral
 identities, backend markers, and player configuration; exit zero alone was not
 accepted. Logs, reports and package hashes:
 `tmp/full-code-quality-review/native/`.
+
+### Release artifacts
+
+Release API/analyzer/codefix builds completed without warnings or errors.
+All three NuGet packages were packed successfully at the unchanged synchronized
+version **4.7.6**. The main package contains the runtime DLL, all three analyzer
+and codefix DLLs, the global-config props file, and README; DLL bytes matched
+the Release outputs at package creation. Package SHA-256 and file inventories:
+`tmp/full-code-quality-review/packages/summary.json`. The standalone analyzer's
+existing missing dependency is Q36, not treated as a successful consumer gate.
+An independent executable consumer restored the main package from a local feed
+into an isolated package cache, generated a union, and executed its factory,
+guarded payload access, and complete switch successfully. Removing one arm
+produced the expected SPIRE009 for `Idle`, without AD0001; restoring the complete
+input retained the successful runtime result. Evidence:
+`tmp/full-code-quality-review/package-consumer/{consumer.log,missing-arm.log,summary.json}`.
+Nothing was published or installed into a customer project.
