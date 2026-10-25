@@ -24,17 +24,17 @@ internal static class ToStringEmitter
 
         sb.OpenContainingTypes(union.ContainingTypes);
 
-        var typeParams = FormatTypeParams(union.TypeParameters);
+        var typeParams = DeclarationFormatting.FormatRawTypeParameters(union.TypeParameters);
         var unionType = union.TypeName + typeParams;
 
-        var accessMod = FormatAccessibility(union.AccessibilityKeyword);
+        var accessMod = DeclarationFormatting.FormatAccessibility(union.AccessibilityKeyword);
         var abstractMod = "abstract ";
         sb.AppendLine($"{accessMod}{abstractMod}partial {union.DeclarationKeyword} {unionType}");
         sb.OpenBrace();
 
         foreach (var variant in union.Variants)
         {
-            var variantAccess = FormatAccessibility(variant.AccessibilityKeyword);
+            var variantAccess = DeclarationFormatting.FormatAccessibility(variant.AccessibilityKeyword);
             sb.AppendLine($"{variantAccess}sealed partial record {variant.Name}");
             sb.OpenBrace();
 
@@ -61,14 +61,4 @@ internal static class ToStringEmitter
         return sb.ToString();
     }
 
-    private static string FormatTypeParams(EquatableArray<string> typeParameters)
-    {
-        if (typeParameters.Length == 0) return "";
-        return "<" + string.Join(", ", typeParameters) + ">";
-    }
-
-    private static string FormatAccessibility(string accessibility)
-        => string.IsNullOrEmpty(accessibility) || accessibility == "private"
-            ? ""
-            : accessibility + " ";
 }

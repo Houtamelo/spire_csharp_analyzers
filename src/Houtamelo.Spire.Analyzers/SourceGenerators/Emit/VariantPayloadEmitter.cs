@@ -137,8 +137,8 @@ internal static class VariantPayloadEmitter
         string variantName)
     {
         var name = IdentifierUtility.SerializedName(variantName);
-        var typeParams = FormatTypeParams(union.TypeParameters);
-        var constraints = FormatConstraints(union.TypeParameterConstraints);
+        var typeParams = DeclarationFormatting.FormatEscapedTypeParameters(union.TypeParameters);
+        var constraints = DeclarationFormatting.FormatConstraints(union.TypeParameterConstraints);
         if (union.EmitUnitySerialization)
             sb.AppendLine($"[{GeneratedAliasEmitter.AttributeReference(union, "Preserve", "global::UnityEngine.Scripting.PreserveAttribute")}]");
         sb.AppendLine($"[{GeneratedAliasEmitter.AttributeReference(union, "Serializable", "global::System.SerializableAttribute")}]");
@@ -197,8 +197,8 @@ internal static class VariantPayloadEmitter
 
     private static void EmitUnion(SourceBuilder sb, UnionDeclaration union, IReadOnlyList<VariantInfo> variants, StorageLayout layout)
     {
-        var typeParams = FormatTypeParams(union.TypeParameters);
-        var constraints = FormatConstraints(union.TypeParameterConstraints);
+        var typeParams = DeclarationFormatting.FormatEscapedTypeParameters(union.TypeParameters);
+        var constraints = DeclarationFormatting.FormatConstraints(union.TypeParameterConstraints);
         var unionType = IdentifierUtility.Escape(union.TypeName) + typeParams;
         var access = Access(union.AccessibilityKeyword);
         var readonlyModifier = union.IsReadonly && !union.EmitUnitySerialization ? "readonly " : string.Empty;
@@ -277,7 +277,7 @@ internal static class VariantPayloadEmitter
 
     private static void EmitConstructor(SourceBuilder sb, UnionDeclaration union, StorageLayout layout)
     {
-        var unionType = IdentifierUtility.Escape(union.TypeName) + FormatTypeParams(union.TypeParameters);
+        var unionType = IdentifierUtility.Escape(union.TypeName) + DeclarationFormatting.FormatEscapedTypeParameters(union.TypeParameters);
         var parameters = new List<string> { "Kind kind" };
         if (layout.HasUnmanagedFields)
             parameters.Add($"{FieldsReference(union)}.Unmanaged unmanaged");
@@ -299,7 +299,7 @@ internal static class VariantPayloadEmitter
 
     private static void EmitFactories(SourceBuilder sb, UnionDeclaration union, IReadOnlyList<VariantInfo> variants, StorageLayout layout)
     {
-        var unionType = IdentifierUtility.Escape(union.TypeName) + FormatTypeParams(union.TypeParameters);
+        var unionType = IdentifierUtility.Escape(union.TypeName) + DeclarationFormatting.FormatEscapedTypeParameters(union.TypeParameters);
         for (var index = 0; index < variants.Count; index++)
         {
             var variant = variants[index];
@@ -471,9 +471,7 @@ internal static class VariantPayloadEmitter
     private static string FieldsReference(UnionDeclaration union)
         => GeneratedAliasEmitter.FieldsReference(union);
     private static string Access(string accessibility)
-        => accessibility == "private" || string.IsNullOrEmpty(accessibility)
-            ? string.Empty
-            : accessibility + " ";
+        => DeclarationFormatting.FormatAccessibility(accessibility);
     private static string ContainerAccess(string accessibility)
         => accessibility switch
         {
@@ -485,8 +483,6 @@ internal static class VariantPayloadEmitter
             "public" => "public ",
             _ => string.Empty,
         };
-    private static string FormatTypeParams(EquatableArray<string> parameters) => parameters.Length == 0 ? string.Empty : "<" + string.Join(", ", parameters.Select(IdentifierUtility.Escape)) + ">";
-    private static string FormatConstraints(EquatableArray<string> constraints) => constraints.Length == 0 ? string.Empty : " " + string.Join(" ", constraints);
     private static string KindType(int count) => count <= byte.MaxValue ? "byte" : count <= ushort.MaxValue ? "ushort" : "int";
 
     private static string Safe(string name)

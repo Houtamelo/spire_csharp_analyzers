@@ -18,10 +18,10 @@ internal static class RecordEmitter
 
         sb.OpenContainingTypes(union.ContainingTypes);
 
-        var typeParams = FormatTypeParams(union.TypeParameters);
+        var typeParams = DeclarationFormatting.FormatRawTypeParameters(union.TypeParameters);
         var unionType = union.TypeName + typeParams;
 
-        var accessMod = FormatAccessibility(union.AccessibilityKeyword);
+        var accessMod = DeclarationFormatting.FormatAccessibility(union.AccessibilityKeyword);
         sb.AppendLine($"{accessMod}abstract partial record {unionType}");
         sb.OpenBrace();
 
@@ -32,7 +32,7 @@ internal static class RecordEmitter
         // Variant records — just re-declare as sealed partial
         foreach (var variant in union.Variants)
         {
-            var variantAccess = FormatAccessibility(variant.AccessibilityKeyword);
+            var variantAccess = DeclarationFormatting.FormatAccessibility(variant.AccessibilityKeyword);
             sb.AppendLine($"{variantAccess}sealed partial record {variant.Name};");
         }
 
@@ -50,15 +50,4 @@ internal static class RecordEmitter
         return sb.ToString();
     }
 
-    /// Formats type parameters as "<T1, T2>" or empty string if none.
-    private static string FormatTypeParams(EquatableArray<string> typeParameters)
-    {
-        if (typeParameters.Length == 0) return "";
-        return "<" + string.Join(", ", typeParameters) + ">";
-    }
-
-    private static string FormatAccessibility(string accessibility)
-        => string.IsNullOrEmpty(accessibility) || accessibility == "private"
-            ? ""
-            : accessibility + " ";
 }

@@ -11,8 +11,8 @@ internal static class SystemTextJsonEmitter
     {
         var sb = new SourceBuilder();
         var isGeneric = union.TypeParameters.Length > 0;
-        var typeParams = FormatTypeParams(union.TypeParameters);
-        var constraints = FormatConstraints(union.TypeParameterConstraints);
+        var typeParams = DeclarationFormatting.FormatEscapedTypeParameters(union.TypeParameters);
+        var constraints = DeclarationFormatting.FormatConstraints(union.TypeParameterConstraints);
         var unionType = union.TypeName + typeParams;
         var converterName = union.TypeName + "StjConverter";
         var factoryName = union.TypeName + "StjConverterFactory";
@@ -33,7 +33,7 @@ internal static class SystemTextJsonEmitter
 
         // Keep the union declaration first among the generated sibling types.
         var attrTarget = isGeneric ? factoryName : converterName;
-        var accessMod = FormatAccessibility(union.AccessibilityKeyword);
+        var accessMod = DeclarationFormatting.FormatAccessibility(union.AccessibilityKeyword);
         var readonlyMod = union.IsReadonly ? "readonly " : "";
         var refMod = union.IsRefStruct ? "ref " : "";
         var abstractMod = IsRecord(union) ? "abstract " : "";
@@ -64,8 +64,8 @@ internal static class SystemTextJsonEmitter
         SourceBuilder sb, UnionDeclaration union,
         string factoryName, string converterName)
     {
-        var openUnion = OpenGenericType(union.TypeName, union.TypeParameters.Length);
-        var openConverter = OpenGenericType(converterName, union.TypeParameters.Length);
+        var openUnion = DeclarationFormatting.FormatOpenGenericType(union.TypeName, union.TypeParameters.Length);
+        var openConverter = DeclarationFormatting.FormatOpenGenericType(converterName, union.TypeParameters.Length);
 
         sb.AppendLine($"internal sealed class {factoryName} : JsonConverterFactory");
         sb.OpenBrace();
@@ -255,27 +255,6 @@ internal static class SystemTextJsonEmitter
 
     private static bool IsRecord(UnionDeclaration union)
         => union.Strategy == EmitStrategy.Record;
-
-    private static string FormatTypeParams(EquatableArray<string> typeParameters)
-    {
-        if (typeParameters.Length == 0) return "";
-        return "<" + string.Join(", ", typeParameters.Select(IdentifierUtility.Escape)) + ">";
-    }
-
-    private static string FormatConstraints(EquatableArray<string> constraints)
-        => constraints.Length == 0 ? "" : " " + string.Join(" ", constraints);
-
-    /// Produces open generic syntax: "Foo<>" for arity 1, "Foo<,>" for arity 2, etc.
-    private static string OpenGenericType(string typeName, int arity)
-    {
-        if (arity == 0) return typeName;
-        return typeName + "<" + new string(',', arity - 1) + ">";
-    }
-
-    private static string FormatAccessibility(string accessibility)
-        => string.IsNullOrEmpty(accessibility) || accessibility == "private"
-            ? ""
-            : accessibility + " ";
 
     #endregion
 }

@@ -67,7 +67,7 @@ internal static class GeneratedAliasEmitter
         => ContainerReference(union, "Variants", $"{GlobalTypesPath(union)}.Variants");
 
     internal static string VariantPayloadReference(UnionDeclaration union, string variantName)
-        => $"{VariantsReference(union)}.{IdentifierUtility.Escape(Safe(variantName))}{FormatTypeParams(union.TypeParameters)}";
+        => $"{VariantsReference(union)}.{IdentifierUtility.Escape(Safe(variantName))}{DeclarationFormatting.FormatEscapedTypeParameters(union.TypeParameters)}";
 
     private static void AppendAlias(
         SourceBuilder sb,
@@ -168,7 +168,7 @@ internal static class GeneratedAliasEmitter
         foreach (var containingType in union.ContainingTypes)
         {
             var typeName = IdentifierUtility.Escape(containingType.Name);
-            parts.Add(typeName + FormatTypeParams(containingType.TypeParameters));
+            parts.Add(typeName + DeclarationFormatting.FormatEscapedTypeParameters(containingType.TypeParameters));
         }
 
         parts.Add(IdentifierUtility.Escape(TypesName(union)));
@@ -178,11 +178,6 @@ internal static class GeneratedAliasEmitter
     internal static string TypesName(UnionDeclaration union)
         => union.TypeName + "Types" +
             (union.TypeParameters.Length == 0 ? string.Empty : union.TypeParameters.Length.ToString());
-
-    private static string FormatTypeParams(EquatableArray<string> parameters)
-        => parameters.Length == 0
-            ? string.Empty
-            : "<" + string.Join(", ", parameters.Select(IdentifierUtility.Escape)) + ">";
 
     private static string Safe(string name)
     {

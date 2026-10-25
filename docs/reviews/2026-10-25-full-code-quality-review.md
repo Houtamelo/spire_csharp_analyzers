@@ -425,3 +425,15 @@ files byte-identical**. Evidence:
 `tmp/full-code-quality-review/batch2-final/{summary.json,suite.log,*.trx,actual/}`.
 Raw comparison command:
 `bash tmp/full-code-quality-review/batch2/compare-fixed-outputs.sh <actual-root>`.
+
+### Batch 3
+
+Consolidated repeated declaration formatting into one internal helper with
+explicit raw and escaped type-parameter paths. Updated seven emitters; retained
+backend-specific serialization logic and all existing identifier algorithms.
+No SourceBuilder/template/test/golden changes. Net production reduction:
+57 lines, with one implementation per shared formatting operation.
+
+Validation: scoped formatting and analyzer build (zero warnings/errors), full
+Release solution **2,111/2,111 passed, zero skipped**, **77/77 raw generated files
+byte-identical**. Evidence: `tmp/full-code-quality-review/batch3/`.
