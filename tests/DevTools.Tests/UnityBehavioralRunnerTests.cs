@@ -93,6 +93,9 @@ public sealed class UnityBehavioralRunnerTests
         using var fixture = PreparationFixture.Create(repositoryRoot);
         var editorPath = fixture.CreateIsolatedEditor();
         var sourceRoot = Path.Combine(repositoryRoot, "tests", "Houtamelo.Spire.BehavioralTests");
+        var sourceTestsRoot = Path.Combine(sourceRoot, "Tests");
+        var expectedFactNames = ExpectedFactNames(sourceTestsRoot);
+        Assert.Equal(expectedFactNames.Length, CountFacts(sourceTestsRoot));
         var sourceBefore = CaptureFileDigests(sourceRoot);
         var result = await RunPrepareProjectAsync(
             repositoryRoot,
@@ -104,7 +107,7 @@ public sealed class UnityBehavioralRunnerTests
 
         Assert.True(result.ExitCode == 0, CombinedOutput(result));
         AssertCopiedBehavioralSources(repositoryRoot, fixture.ProjectPath);
-        AssertIl2CppPreparedManifest(fixture.ProjectPath);
+        AssertIl2CppPreparedManifest(fixture.ProjectPath, expectedFactNames);
         Assert.Equal(sourceBefore, CaptureFileDigests(sourceRoot));
     }
 
@@ -324,7 +327,9 @@ public sealed class UnityBehavioralRunnerTests
     private static void AssertCopiedBehavioralSources(string repositoryRoot, string projectPath)
     {
         var sourceRoot = Path.Combine(repositoryRoot, "tests", "Houtamelo.Spire.BehavioralTests");
+        var sourceTestsRoot = Path.Combine(sourceRoot, "Tests");
         var copiedRoot = Path.Combine(projectPath, "Assets", "Tests", "Existing");
+        var expectedNames = ExpectedFactNames(sourceTestsRoot);
         var expected = Directory.EnumerateDirectories(sourceRoot)
             .SelectMany(directory => Directory.EnumerateFiles(directory, "*.cs"))
             .Select(path => RelativePath(sourceRoot, path))
@@ -336,12 +341,12 @@ public sealed class UnityBehavioralRunnerTests
             .ToArray();
 
         Assert.Equal(expected, actual);
-        Assert.Equal(73, CountFacts(Path.Combine(sourceRoot, "Tests")));
+        Assert.Equal(expectedNames.Length, CountFacts(sourceTestsRoot));
 
         using var manifest = JsonDocument.Parse(
             File.ReadAllText(Path.Combine(projectPath, "behavioral-inputs.json")));
         var root = manifest.RootElement;
-        Assert.Equal(73, root.GetProperty("expectedFacts").GetInt32());
+        Assert.Equal(expectedNames.Length, root.GetProperty("expectedFacts").GetInt32());
 
         var inputPaths = new HashSet<string>(StringComparer.Ordinal);
         foreach (var input in root.GetProperty("inputs").EnumerateArray())
@@ -364,14 +369,12 @@ public sealed class UnityBehavioralRunnerTests
 
         Assert.Equal(expected, inputPaths.OrderBy(path => path, StringComparer.Ordinal));
 
-        var expectedNames = ExpectedFactNames(Path.Combine(sourceRoot, "Tests"));
         var manifestNames = root.GetProperty("expectedFactNames")
             .EnumerateArray()
             .Select(value => value.GetString()!)
             .ToArray();
         Assert.Equal(expectedNames, manifestNames);
         Assert.Equal(manifestNames.Length, manifestNames.Distinct(StringComparer.Ordinal).Count());
-        Assert.Equal(73, manifestNames.Length);
     }
 
     private static void AssertPreparedManifest(string projectPath, string? editorPath)
@@ -454,15 +457,22 @@ public sealed class UnityBehavioralRunnerTests
         }
     }
 
-    private static void AssertIl2CppPreparedManifest(string projectPath)
+    private static void AssertIl2CppPreparedManifest(
+        string projectPath,
+        string[] expectedFactNames)
     {
         using var inputs = JsonDocument.Parse(
             File.ReadAllText(Path.Combine(projectPath, "behavioral-inputs.json")));
         var root = inputs.RootElement;
         Assert.Equal("IL2CPP", root.GetProperty("backend").GetString());
         Assert.Equal("Player", root.GetProperty("platform").GetString());
-        Assert.Equal(73, root.GetProperty("expectedFacts").GetInt32());
-        Assert.Equal(73, root.GetProperty("expectedFactNames").GetArrayLength());
+        Assert.Equal(expectedFactNames.Length, root.GetProperty("expectedFacts").GetInt32());
+        var manifestNames = root.GetProperty("expectedFactNames")
+            .EnumerateArray()
+            .Select(value => value.GetString()!)
+            .ToArray();
+        Assert.Equal(expectedFactNames, manifestNames);
+        Assert.Equal(manifestNames.Length, manifestNames.Distinct(StringComparer.Ordinal).Count());
         Assert.False(Directory.Exists(Path.Combine(projectPath, "Assets", "CompilerProbe")));
 
         var asmdefPath = Path.Combine(

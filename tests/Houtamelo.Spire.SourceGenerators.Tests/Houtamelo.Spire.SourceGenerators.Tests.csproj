@@ -12,6 +12,7 @@
   <ItemGroup>
     <Compile Remove="**/cases/**" />
     <None Include="**/cases/**" Exclude="bin/**;obj/**" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Compatibility/manifest.json;Compatibility/fixturedata/**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

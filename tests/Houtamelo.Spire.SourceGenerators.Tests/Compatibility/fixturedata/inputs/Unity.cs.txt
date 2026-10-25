@@ -1,0 +1,35 @@
+#nullable enable
+using System;
+using Houtamelo.Spire;
+using UnityEngine;
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct Q09UnityCommand
+{
+    [Variant(FormerlySerializedAs = "OldMove")]
+    public static partial Q09UnityCommand Move(Vector3 position, string? label);
+
+    [Variant] public static partial Q09UnityCommand ObjectRef(Texture2D texture);
+    [Variant] public static partial Q09UnityCommand Empty();
+}
+
+[Serializable]
+[DiscriminatedUnion]
+public partial struct Q09UnityGeneric<T> where T : unmanaged
+{
+    [Variant] public static partial Q09UnityGeneric<T> Some(T value);
+    [Variant] public static partial Q09UnityGeneric<T> None();
+}
+
+[Serializable]
+public partial class Q09UnityPrivateContainer
+{
+    [Serializable]
+    [DiscriminatedUnion]
+    private partial struct @event
+    {
+        [Variant] public static partial @event @new(int @class, string @event);
+        [Variant] public static partial @event Empty();
+    }
+}

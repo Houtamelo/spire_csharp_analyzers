@@ -1,0 +1,41 @@
+#nullable enable
+using System;
+using System.Collections.Generic;
+using Houtamelo.Spire;
+
+namespace Q09.Core
+{
+    [DiscriminatedUnion(ReferenceStorage = ReferenceStorage.Typed)]
+    public partial struct Typed
+    {
+        [Variant] public static partial Typed Value(int value, string? label);
+        [Variant] public static partial Typed Pair((int X, string? Y) pair);
+        [Variant] public static partial Typed Empty();
+    }
+
+    [DiscriminatedUnion(ReferenceStorage = ReferenceStorage.Shared)]
+    internal partial struct Shared<T> where T : class
+    {
+        [Variant] public static partial Shared<T> Value(T value);
+        [Variant] public static partial Shared<T> Items(List<T> values);
+        [Variant] public static partial Shared<T> Empty();
+    }
+
+    [DiscriminatedUnion(ReferenceStorage = ReferenceStorage.Auto)]
+    public partial struct Auto
+    {
+        [Variant] public static partial Auto Array(int[] values);
+        [Variant] public static partial Auto Text(string? text);
+        [Variant] public static partial Auto Empty();
+    }
+
+    public partial class Container
+    {
+        [DiscriminatedUnion(ReferenceStorage = ReferenceStorage.Typed)]
+        internal partial struct @event<TInner> where TInner : class
+        {
+            [Variant] public static partial @event<TInner> Value(TInner inner);
+            [Variant] public static partial @event<TInner> Nothing();
+        }
+    }
+}

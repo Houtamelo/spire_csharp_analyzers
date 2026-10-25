@@ -1,0 +1,46 @@
+using Houtamelo.Spire;
+
+namespace BenchmarkDotNet.Attributes
+{
+    public sealed class BenchmarkAttribute : System.Attribute
+    {
+        public bool Baseline { get; set; }
+    }
+
+    public sealed class BenchmarkCategoryAttribute : System.Attribute
+    {
+        public BenchmarkCategoryAttribute(string _) { }
+    }
+
+    public sealed class ParamsAttribute : System.Attribute
+    {
+        public ParamsAttribute(params object[] _) { }
+    }
+
+    public sealed class ParamsAllValuesAttribute : System.Attribute { }
+    public sealed class GlobalSetupAttribute : System.Attribute { }
+    public sealed class MemoryDiagnoserAttribute : System.Attribute { }
+
+    public sealed class ConfigAttribute : System.Attribute
+    {
+        public ConfigAttribute(System.Type _) { }
+    }
+}
+
+namespace Houtamelo.Spire.Benchmarks.Helpers
+{
+    public enum Distribution { Uniform, Skewed80 }
+    public static class BenchN { public const int Default = 1; }
+}
+
+namespace Houtamelo.Spire.Benchmarks.Types
+{
+    [BenchmarkUnion(Name = "Compat")]
+    public partial struct CompatInput
+    {
+        [Variant] public static partial CompatInput Empty();
+        [Variant] public static partial CompatInput Position(float x, float y);
+        [Variant] public static partial CompatInput Label(string text);
+        [Variant] public static partial CompatInput Batch(int count, double duration);
+    }
+}

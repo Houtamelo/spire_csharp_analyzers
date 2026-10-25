@@ -21,13 +21,33 @@ public sealed class XunitFactBridgeContractTests
     {
         var cases = XunitTestBridge.Discover(typeof(XunitFactNUnitRunner).Assembly);
         var names = cases.Select(testCase => testCase.FullName).ToArray();
+        var expectedNames = ReflectedBehavioralFactNames();
 
-        Assert.That(names, Has.Length.EqualTo(73));
+        Assert.That(names, Is.EqualTo(expectedNames));
         Assert.That(names, Is.Unique);
         Assert.That(names, Is.EqualTo(names.OrderBy(name => name, StringComparer.Ordinal).ToArray()));
         Assert.That(names, Does.Contain("Spire.BehavioralTests.Tests.AdditiveTests.Circle_TagAndRadius"));
         Assert.That(names, Does.Contain("Spire.BehavioralTests.Tests.InlinerTests.InlinerStruct_ForwardsStaticCall"));
     }
+
+    private static string[] ReflectedBehavioralFactNames()
+        => typeof(XunitFactNUnitRunner).Assembly
+            .GetTypes()
+            .Where(type => type.IsClass &&
+                type.IsPublic &&
+                string.Equals(
+                    type.Namespace,
+                    "Spire.BehavioralTests.Tests",
+                    StringComparison.Ordinal))
+            .SelectMany(type => type.GetMethods(
+                    BindingFlags.Public |
+                    BindingFlags.Instance |
+                    BindingFlags.Static |
+                    BindingFlags.DeclaredOnly)
+                .Where(method => method.IsDefined(typeof(XunitFactAttribute), inherit: false))
+                .Select(method => string.Concat(type.FullName, ".", method.Name)))
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
 
     [Test]
     public void RuntimeBackend_ReportsActualIl2CppPlayerWhenRequested()

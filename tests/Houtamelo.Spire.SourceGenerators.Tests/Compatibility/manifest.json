@@ -1,0 +1,603 @@
+{
+  "Baseline": "46ac18b",
+  "ProductionBuild": "Clean Release source build completed with 0 warnings and 0 errors before compatibility verification.",
+  "CaptureMethod": "One-shot baseline generator-driver capture before emitter refactors; core/record/JSON/performance/benchmark bytes are in tmp/full-code-quality-review/batch2/raw and the expanded Unity bytes are in tmp/full-code-quality-review/batch2/raw-unity-expanded.",
+  "NewlinePolicy": "Compare exact UTF-8 source after normalizing CRLF or CR to LF only.",
+  "Cases": [
+    {
+      "Id": "core",
+      "Kind": "discriminated-union",
+      "Input": "Compatibility/fixturedata/inputs/Core.cs.txt",
+      "Outputs": [
+        {
+          "Hint": "Q09.Core.Auto.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/core/000-Q09.Core.Auto.g.cs.txt",
+          "SourceSha256": "83d622cc1d648e95714b66625d1ff5b48962d198a62566151c5576b19cf2815c"
+        },
+        {
+          "Hint": "Q09.Core.Container.event\u00601.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/core/001-Q09.Core.Container.event\u00601.g.cs.txt",
+          "SourceSha256": "2d507f8ef301f21610835dd63d8a62fb8eeb76c0e033aca8a6c344e191d7e896"
+        },
+        {
+          "Hint": "Q09.Core.Shared\u00601.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/core/002-Q09.Core.Shared\u00601.g.cs.txt",
+          "SourceSha256": "7d4f3141c0480432d7f10e06ba9434a4bb38e787cc4a96d99ebb89e5552fc02d"
+        },
+        {
+          "Hint": "Q09.Core.Typed.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/core/003-Q09.Core.Typed.g.cs.txt",
+          "SourceSha256": "95868678b7f5513ccfb1667137d654a20f6cebb0e780e29f1886908f6d6cceb9"
+        }
+      ]
+    },
+    {
+      "Id": "records",
+      "Kind": "discriminated-union",
+      "Input": "Compatibility/fixturedata/inputs/Records.cs.txt",
+      "Outputs": [
+        {
+          "Hint": "Q09.Records.Container.record.ToString.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/records/000-Q09.Records.Container.record.ToString.g.cs.txt",
+          "SourceSha256": "cd51144f26a9bb25beaa1e2573c973738ae074403fd592bba8ec3120087796ee"
+        },
+        {
+          "Hint": "Q09.Records.Container.record.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/records/001-Q09.Records.Container.record.g.cs.txt",
+          "SourceSha256": "4bb4536c814d6c3d355e28d68c01c7678486070e33144df2d0569b62d79ae038"
+        },
+        {
+          "Hint": "Q09.Records.Result\u00601.ToString.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/records/002-Q09.Records.Result\u00601.ToString.g.cs.txt",
+          "SourceSha256": "cb830d2330ed291a593266d291374268ce40982ca9a97b8f86e1fe6d97615b5b"
+        },
+        {
+          "Hint": "Q09.Records.Result\u00601.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/records/003-Q09.Records.Result\u00601.g.cs.txt",
+          "SourceSha256": "61cc2ef0f5899de5235bbc1d4e3cf14adcc15adc0b1158c18a65c3726c28b11a"
+        }
+      ]
+    },
+    {
+      "Id": "json",
+      "Kind": "discriminated-union",
+      "Input": "Compatibility/fixturedata/inputs/Json.cs.txt",
+      "Outputs": [
+        {
+          "Hint": "Q09.Json.BothShape.Nsj.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/000-Q09.Json.BothShape.Nsj.g.cs.txt",
+          "SourceSha256": "0b1a57775c0f6bfbbe9230ab67f9c86bed4bd50fc3b74705387fefa57cb83931"
+        },
+        {
+          "Hint": "Q09.Json.BothShape.Schema.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/001-Q09.Json.BothShape.Schema.g.cs.txt",
+          "SourceSha256": "bd83af5e06291c6b02c5ce7e1f8aebab9ad40c43cf6adcceee2481914a64cdc3"
+        },
+        {
+          "Hint": "Q09.Json.BothShape.Stj.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/002-Q09.Json.BothShape.Stj.g.cs.txt",
+          "SourceSha256": "ffcd81d681854a4f3164eeed191886fcbd902e53eaaafe7265434781e5c6eb02"
+        },
+        {
+          "Hint": "Q09.Json.BothShape.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/003-Q09.Json.BothShape.g.cs.txt",
+          "SourceSha256": "5778eba2d67a627fb7b705932ea83dea8a13d2c0412031643fe802283db9c990"
+        },
+        {
+          "Hint": "Q09.Json.NsjOption\u00601.Nsj.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/004-Q09.Json.NsjOption\u00601.Nsj.g.cs.txt",
+          "SourceSha256": "b8d134c41c79f2b3eb45646dee19a2132656b47b7b9056ba28fdc7cf97fff64b"
+        },
+        {
+          "Hint": "Q09.Json.NsjOption\u00601.Schema.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/005-Q09.Json.NsjOption\u00601.Schema.g.cs.txt",
+          "SourceSha256": "697f026ff3860b5c6ee003743dca9bc690340362bdddf39052dae23f14596204"
+        },
+        {
+          "Hint": "Q09.Json.NsjOption\u00601.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/006-Q09.Json.NsjOption\u00601.g.cs.txt",
+          "SourceSha256": "c59b96371dd56b2b6a6ede60fabb6ab8bb3e36ae0b244201ca406ed38d5dcd2d"
+        },
+        {
+          "Hint": "Q09.Json.SchemaShape\u00601.Nsj.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/007-Q09.Json.SchemaShape\u00601.Nsj.g.cs.txt",
+          "SourceSha256": "43862a78bb320c9e74b3f941580c11605681eaeba54d3ce5dc54deb088425331"
+        },
+        {
+          "Hint": "Q09.Json.SchemaShape\u00601.Schema.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/008-Q09.Json.SchemaShape\u00601.Schema.g.cs.txt",
+          "SourceSha256": "bf2127a951eb8b1b33af197e538686d65ef4dc8712b901d5b6d6571bd4f23cda"
+        },
+        {
+          "Hint": "Q09.Json.SchemaShape\u00601.ToString.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/009-Q09.Json.SchemaShape\u00601.ToString.g.cs.txt",
+          "SourceSha256": "85c10a74870ab81703afaa5a3b2c5d19a0f8e8adf95a604d6e094d6fd923f3b1"
+        },
+        {
+          "Hint": "Q09.Json.SchemaShape\u00601.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/010-Q09.Json.SchemaShape\u00601.g.cs.txt",
+          "SourceSha256": "cc8dc5cb5e39c1aa3b31c08adc0cbc067e4eea45324c91da53ae81520c2d1070"
+        },
+        {
+          "Hint": "Q09.Json.StjShape.Schema.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/011-Q09.Json.StjShape.Schema.g.cs.txt",
+          "SourceSha256": "948169d14955a824975522f3f3083a95f3701b7d018cd3f944132bb9ef0279cc"
+        },
+        {
+          "Hint": "Q09.Json.StjShape.Stj.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/012-Q09.Json.StjShape.Stj.g.cs.txt",
+          "SourceSha256": "c663b241bd413e94abc888435c7382b495ab7f8dc2cea40d8af44fbda194717c"
+        },
+        {
+          "Hint": "Q09.Json.StjShape.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/013-Q09.Json.StjShape.g.cs.txt",
+          "SourceSha256": "2a26bbcc643ada974f9a9b7a6cddfa0e945c6c472117019f86ae326c8336817d"
+        }
+      ]
+    },
+    {
+      "Id": "unity-player",
+      "Kind": "unity-player",
+      "Input": "Compatibility/fixturedata/inputs/Unity.cs.txt",
+      "Outputs": [
+        {
+          "Hint": "Q09UnityCommand.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/unity-player/000-Q09UnityCommand.g.cs.txt",
+          "SourceSha256": "d27fa84e80b3a6fc1a0fdf7e5ab3deb50d841ef47a1a578e561a3330ccca2b61"
+        },
+        {
+          "Hint": "Q09UnityGeneric`1.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/unity-player/001-Q09UnityGeneric`1.g.cs.txt",
+          "SourceSha256": "7b18f57abd9d74a262c5c2a872dfee0b315113298bea5b77f1ed37682fe3306f"
+        },
+        {
+          "Hint": "Q09UnityPrivateContainer.event.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/unity-player/002-Q09UnityPrivateContainer.event.g.cs.txt",
+          "SourceSha256": "5f58415ebb64c9b53a4241cedf3e5241600ba4cf3bce78138d9a6f8de7439277"
+        },
+        {
+          "Hint": "Spire.UnitySerializationSupport.generated.cs",
+          "Expected": "Compatibility/fixturedata/outputs/unity-player/003-Spire.UnitySerializationSupport.generated.cs.txt",
+          "SourceSha256": "3aff6adf0480dbb08346966af25ad9b8a8e21a0f76e4f5b360ca7e617a11299d"
+        }
+      ]
+    },
+    {
+      "Id": "unity-editor",
+      "Kind": "unity-editor",
+      "Input": "Compatibility/fixturedata/inputs/Unity.cs.txt",
+      "Outputs": [
+        {
+          "Hint": "Q09UnityCommand.UnityDrawer.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/unity-editor/000-Q09UnityCommand.UnityDrawer.g.cs.txt",
+          "SourceSha256": "24ef6fb693ddb779dbed3598ca5ec0435d1f60df930fe3cb09609aff7fa0039e"
+        },
+        {
+          "Hint": "Q09UnityCommand.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/unity-editor/001-Q09UnityCommand.g.cs.txt",
+          "SourceSha256": "d27fa84e80b3a6fc1a0fdf7e5ab3deb50d841ef47a1a578e561a3330ccca2b61"
+        },
+        {
+          "Hint": "Q09UnityGeneric`1.UnityDrawer.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/unity-editor/002-Q09UnityGeneric`1.UnityDrawer.g.cs.txt",
+          "SourceSha256": "7897f1374cdf5b2eb5969d1fbfc32176e925fec3ad224ef2f0e67c661d51dd46"
+        },
+        {
+          "Hint": "Q09UnityGeneric`1.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/unity-editor/003-Q09UnityGeneric`1.g.cs.txt",
+          "SourceSha256": "7b18f57abd9d74a262c5c2a872dfee0b315113298bea5b77f1ed37682fe3306f"
+        },
+        {
+          "Hint": "Q09UnityPrivateContainer.event.UnityDrawer.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/unity-editor/004-Q09UnityPrivateContainer.event.UnityDrawer.g.cs.txt",
+          "SourceSha256": "a16bd14433f675d8709cda9daf7f363599474e8d6501b0e412a0180c40d7e15d"
+        },
+        {
+          "Hint": "Q09UnityPrivateContainer.event.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/unity-editor/005-Q09UnityPrivateContainer.event.g.cs.txt",
+          "SourceSha256": "5f58415ebb64c9b53a4241cedf3e5241600ba4cf3bce78138d9a6f8de7439277"
+        },
+        {
+          "Hint": "Spire.UnityDrawerSupport.generated.cs",
+          "Expected": "Compatibility/fixturedata/outputs/unity-editor/006-Spire.UnityDrawerSupport.generated.cs.txt",
+          "SourceSha256": "f93f7a292d621a8cd9713ebf3b21c1f3c52432754c5f5b8f53b9ff9d0f6b528e"
+        },
+        {
+          "Hint": "Spire.UnitySerializationSupport.generated.cs",
+          "Expected": "Compatibility/fixturedata/outputs/unity-editor/007-Spire.UnitySerializationSupport.generated.cs.txt",
+          "SourceSha256": "3aff6adf0480dbb08346966af25ad9b8a8e21a0f76e4f5b360ca7e617a11299d"
+        }
+      ]
+    },
+    {
+      "Id": "benchmark",
+      "Kind": "benchmark",
+      "Input": "Compatibility/fixturedata/inputs/Benchmark.cs.txt",
+      "Outputs": [
+        {
+          "Hint": "BenchmarkUnionAttribute.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/000-BenchmarkUnionAttribute.g.cs.txt",
+          "SourceSha256": "5f6e5ebc49af64df3226555321a1645ffcc24a5795c86b403d4eb84adb9fc04a"
+        },
+        {
+          "Hint": "Compat.BenchCode.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/001-Compat.BenchCode.g.cs.txt",
+          "SourceSha256": "24e43a6d5b2db274190075615e25bd7b51627fa24ebfcda20c18595df8025d36"
+        },
+        {
+          "Hint": "CompatAuto.Bench.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/002-CompatAuto.Bench.g.cs.txt",
+          "SourceSha256": "ee7ac6759dc4efffd3bb0b634576cbaed56c05f4a7d8c83ac880c7a2d0acf07d"
+        },
+        {
+          "Hint": "CompatAuto.BenchDecl.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/003-CompatAuto.BenchDecl.g.cs.txt",
+          "SourceSha256": "95513280513effc770e5c4c17cff38457bee04f4ae0f4749f56e227e3d8d0b14"
+        },
+        {
+          "Hint": "CompatAuto.Nsj.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/004-CompatAuto.Nsj.g.cs.txt",
+          "SourceSha256": "0eecb77ef780aa48349a8b182681444c85ea11fad2d100396b5b151d8624fc91"
+        },
+        {
+          "Hint": "CompatAuto.Stj.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/005-CompatAuto.Stj.g.cs.txt",
+          "SourceSha256": "a72978e6667b5b77fc748ac0b15afc35f7bfb5e31f8eb19dc28a7722f911f0f9"
+        },
+        {
+          "Hint": "CompatInput.Bench.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/006-CompatInput.Bench.g.cs.txt",
+          "SourceSha256": "062ad749ffd6a651fab6f1982fe03b79fd49c11d4c1dc59ee5951ff2a69901f9"
+        },
+        {
+          "Hint": "CompatRecord.Bench.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/007-CompatRecord.Bench.g.cs.txt",
+          "SourceSha256": "3631d19defce722b21e5cfdce59e2e195a8e9e3fe9401d349e6754c27118d36f"
+        },
+        {
+          "Hint": "CompatRecord.BenchDecl.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/008-CompatRecord.BenchDecl.g.cs.txt",
+          "SourceSha256": "2257bd4a8f26cbad26f00f68d3b8ef022334d3e31fc85f618837f70610571a04"
+        },
+        {
+          "Hint": "CompatRecord.Nsj.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/009-CompatRecord.Nsj.g.cs.txt",
+          "SourceSha256": "e4355e23bdfa1e558acceeda6b081201bafe0a00e5ed9ba218e499e0bed1fc8c"
+        },
+        {
+          "Hint": "CompatRecord.Stj.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/010-CompatRecord.Stj.g.cs.txt",
+          "SourceSha256": "afe3502401467fd558dea70ff5dc2c74cb26187230e8c7d4fc8a02ed2a944564"
+        },
+        {
+          "Hint": "CompatShared.Bench.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/011-CompatShared.Bench.g.cs.txt",
+          "SourceSha256": "0caecc8b69feae75c4dd06a1d0b137776dbaef707dfd5f49443b0f468292ef33"
+        },
+        {
+          "Hint": "CompatShared.BenchDecl.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/012-CompatShared.BenchDecl.g.cs.txt",
+          "SourceSha256": "29b80e95c1d1d21cbe053cb1914ada995d1a4dd8dbce0db8d184e5fb4a742299"
+        },
+        {
+          "Hint": "CompatShared.Nsj.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/013-CompatShared.Nsj.g.cs.txt",
+          "SourceSha256": "7a76efbbc88cc7a4a3e6381643cb30c444055efd526741534a36fcf0be07f3a1"
+        },
+        {
+          "Hint": "CompatShared.Stj.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/014-CompatShared.Stj.g.cs.txt",
+          "SourceSha256": "91447729b00508a66d9a1ae5c229d5b22ec926e38f2d7fc9965bea58b930397d"
+        },
+        {
+          "Hint": "CompatTyped.Bench.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/015-CompatTyped.Bench.g.cs.txt",
+          "SourceSha256": "9644cb98b9ddab75bc72aef0fd6456e233cac77ac18aa70c7dde5ed182e73940"
+        },
+        {
+          "Hint": "CompatTyped.BenchDecl.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/016-CompatTyped.BenchDecl.g.cs.txt",
+          "SourceSha256": "4a90e7240340ef878a381ac70f5d30227a0d100da450df65b2b2f0a16ab8fbed"
+        },
+        {
+          "Hint": "CompatTyped.Nsj.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/017-CompatTyped.Nsj.g.cs.txt",
+          "SourceSha256": "64847e8c140e21cdcd7a788ee772c7815cb8ca6b79d9464ee62f3d2537204bc3"
+        },
+        {
+          "Hint": "CompatTyped.Stj.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/benchmark/018-CompatTyped.Stj.g.cs.txt",
+          "SourceSha256": "fbb39f1e480c22e7e9bc1ba63a42139f7b0ceb9baf1c44b36f4b37e043a924a5"
+        }
+      ]
+    },
+    {
+      "Id": "performance-Inlinable-action_arity0",
+      "Kind": "performance-inlinable",
+      "Input": "cases/Performance/Inlinable/action_arity0/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Runner.Repeat.InlinableTwin.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-action_arity0/000-Runner.Repeat.InlinableTwin.g.cs.txt",
+          "SourceSha256": "1f6226cd797b9e5e74270ee9c16a7aa04eebdc8c58c64442a105af46c963299e"
+        }
+      ]
+    },
+    {
+      "Id": "performance-Inlinable-action_arity3",
+      "Kind": "performance-inlinable",
+      "Input": "cases/Performance/Inlinable/action_arity3/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Runner.Run.InlinableTwin.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-action_arity3/000-Runner.Run.InlinableTwin.g.cs.txt",
+          "SourceSha256": "cc714cf79e921a594b11ac2fe8cd586007a338cc537990689fddde9a223e0dc7"
+        }
+      ]
+    },
+    {
+      "Id": "performance-Inlinable-action_arity8",
+      "Kind": "performance-inlinable",
+      "Input": "cases/Performance/Inlinable/action_arity8/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Runner.Run.InlinableTwin.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-action_arity8/000-Runner.Run.InlinableTwin.g.cs.txt",
+          "SourceSha256": "8be7e99722ab578ba933ffd4d499118abf9349dd9dee2c3f5ed9db123e131055"
+        }
+      ]
+    },
+    {
+      "Id": "performance-Inlinable-action_t_direct",
+      "Kind": "performance-inlinable",
+      "Input": "cases/Performance/Inlinable/action_t_direct/input.cs",
+      "Outputs": [
+        {
+          "Hint": "ListExt.ForEach.InlinableTwin.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-action_t_direct/000-ListExt.ForEach.InlinableTwin.g.cs.txt",
+          "SourceSha256": "6a5894e740f8d8acbe3d2c1a752875a2a034c51c07f11b2b83435b46f602cf4c"
+        }
+      ]
+    },
+    {
+      "Id": "performance-Inlinable-alias_ternary",
+      "Kind": "performance-inlinable",
+      "Input": "cases/Performance/Inlinable/alias_ternary/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Aliases.Run.InlinableTwin.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-alias_ternary/000-Aliases.Run.InlinableTwin.g.cs.txt",
+          "SourceSha256": "3ff6f40339f980d8af72d4c04ffae58ffa015afea29ef0282156f80b80a1baaa"
+        }
+      ]
+    },
+    {
+      "Id": "performance-Inlinable-alias_transitive",
+      "Kind": "performance-inlinable",
+      "Input": "cases/Performance/Inlinable/alias_transitive/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Aliases.Run.InlinableTwin.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-alias_transitive/000-Aliases.Run.InlinableTwin.g.cs.txt",
+          "SourceSha256": "e1ed382eaef3e625915ff1fa686b74ad522d7ee2453c8676ac873ea04cdec9c6"
+        }
+      ]
+    },
+    {
+      "Id": "performance-Inlinable-alias_var",
+      "Kind": "performance-inlinable",
+      "Input": "cases/Performance/Inlinable/alias_var/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Aliases.Run.InlinableTwin.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-alias_var/000-Aliases.Run.InlinableTwin.g.cs.txt",
+          "SourceSha256": "3173fb70403a96fbd0b7f6445b383b80922dc933ca066d9948c51113566fec5a"
+        }
+      ]
+    },
+    {
+      "Id": "performance-Inlinable-func_r_arity0",
+      "Kind": "performance-inlinable",
+      "Input": "cases/Performance/Inlinable/func_r_arity0/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Lazy.Get.InlinableTwin.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-func_r_arity0/000-Lazy.Get.InlinableTwin.g.cs.txt",
+          "SourceSha256": "fbcadb28e2e05a25b4a34ac10a83c663459472ac87af752e876f09855648b3ce"
+        }
+      ]
+    },
+    {
+      "Id": "performance-Inlinable-func_t_r_direct",
+      "Kind": "performance-inlinable",
+      "Input": "cases/Performance/Inlinable/func_t_r_direct/input.cs",
+      "Outputs": [
+        {
+          "Hint": "ListExt.Map.InlinableTwin.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-func_t_r_direct/000-ListExt.Map.InlinableTwin.g.cs.txt",
+          "SourceSha256": "683c8c62798db8a7d4d086ea98dcf12ab385bfbda4036e003041241364127c4e"
+        }
+      ]
+    },
+    {
+      "Id": "performance-Inlinable-multi_inlinable",
+      "Kind": "performance-inlinable",
+      "Input": "cases/Performance/Inlinable/multi_inlinable/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Pipeline.Run.InlinableTwin.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-multi_inlinable/000-Pipeline.Run.InlinableTwin.g.cs.txt",
+          "SourceSha256": "9672351ea62ed91bf8bf3a4d61b0681593cf679e0c75f8d264f54d3f385db4c6"
+        }
+      ]
+    },
+    {
+      "Id": "performance-Inlinable-nonnull_strip_null_check",
+      "Kind": "performance-inlinable",
+      "Input": "cases/Performance/Inlinable/nonnull_strip_null_check/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Notifier.Fire.InlinableTwin.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-nonnull_strip_null_check/000-Notifier.Fire.InlinableTwin.g.cs.txt",
+          "SourceSha256": "7f1d0d6a86276670e5f48e06ed6f839e53a6c5ff8fd48a0bc20343115db48ac6"
+        }
+      ]
+    },
+    {
+      "Id": "performance-Inlinable-nullable_cond_invoke",
+      "Kind": "performance-inlinable",
+      "Input": "cases/Performance/Inlinable/nullable_cond_invoke/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Notifier.Fire.InlinableTwin.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-nullable_cond_invoke/000-Notifier.Fire.InlinableTwin.g.cs.txt",
+          "SourceSha256": "84d93e996b107f8ff9e83d366fe8ab1b5280701d8a37f4d65c96939ababf5619"
+        }
+      ]
+    },
+    {
+      "Id": "performance-Inlinable-ref_readonly_host_parameter",
+      "Kind": "performance-inlinable",
+      "Input": "cases/Performance/Inlinable/ref_readonly_host_parameter/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Runner.Run.InlinableTwin.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-ref_readonly_host_parameter/000-Runner.Run.InlinableTwin.g.cs.txt",
+          "SourceSha256": "edbe85671747c7a2ed2025419df964c2e41856c55873c5716faaa925b3a857b9"
+        }
+      ]
+    },
+    {
+      "Id": "performance-InlinerStruct-generic_method",
+      "Kind": "performance-inliner",
+      "Input": "cases/Performance/InlinerStruct/generic_method/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Samples.Log.InlinerStruct.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-generic_method/000-Samples.Log.InlinerStruct.g.cs.txt",
+          "SourceSha256": "3fe0d8ea31658ec823d60e0722a4ff6e8d6cc396fce93f8b32e952065cacb7ff"
+        }
+      ]
+    },
+    {
+      "Id": "performance-InlinerStruct-generic_type",
+      "Kind": "performance-inliner",
+      "Input": "cases/Performance/InlinerStruct/generic_type/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Box.Get.InlinerStruct.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-generic_type/000-Box.Get.InlinerStruct.g.cs.txt",
+          "SourceSha256": "4c4143345fa0e669b0f12203684eaaf66b448a447b50772a60675fc0cf59ffeb"
+        }
+      ]
+    },
+    {
+      "Id": "performance-InlinerStruct-instance_func_arity2",
+      "Kind": "performance-inliner",
+      "Input": "cases/Performance/InlinerStruct/instance_func_arity2/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Calc.Mul.InlinerStruct.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-instance_func_arity2/000-Calc.Mul.InlinerStruct.g.cs.txt",
+          "SourceSha256": "ecc4edb636e4f186773a43a4caf6d2f6e17bfb2b334dccdaa040259da0193ad9"
+        }
+      ]
+    },
+    {
+      "Id": "performance-InlinerStruct-instance_void_arity1",
+      "Kind": "performance-inliner",
+      "Input": "cases/Performance/InlinerStruct/instance_void_arity1/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Widget.Set.InlinerStruct.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-instance_void_arity1/000-Widget.Set.InlinerStruct.g.cs.txt",
+          "SourceSha256": "eda9936edf683aeee14842ec5775d422b6df454809ccda3719ca54295fb80716"
+        }
+      ]
+    },
+    {
+      "Id": "performance-InlinerStruct-nested_types",
+      "Kind": "performance-inliner",
+      "Input": "cases/Performance/InlinerStruct/nested_types/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Inner.Double.InlinerStruct.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-nested_types/000-Inner.Double.InlinerStruct.g.cs.txt",
+          "SourceSha256": "4549eac2d3079e725edd206100659c306a510c33b537e4e8cbabe8e4fa3d4900"
+        }
+      ]
+    },
+    {
+      "Id": "performance-InlinerStruct-static_func_arity0",
+      "Kind": "performance-inliner",
+      "Input": "cases/Performance/InlinerStruct/static_func_arity0/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Samples.Zero.InlinerStruct.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-static_func_arity0/000-Samples.Zero.InlinerStruct.g.cs.txt",
+          "SourceSha256": "06bafc2373673f8ca2b6c006b7cf5f0343162d60df5e995d54d9af02f885944f"
+        }
+      ]
+    },
+    {
+      "Id": "performance-InlinerStruct-static_func_arity1",
+      "Kind": "performance-inliner",
+      "Input": "cases/Performance/InlinerStruct/static_func_arity1/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Samples.Double.InlinerStruct.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-static_func_arity1/000-Samples.Double.InlinerStruct.g.cs.txt",
+          "SourceSha256": "2509f0b1601b2e81478c1a806abfa6e166a13d9f5f963c36105cafc2dfd216d7"
+        }
+      ]
+    },
+    {
+      "Id": "performance-InlinerStruct-static_void_arity0",
+      "Kind": "performance-inliner",
+      "Input": "cases/Performance/InlinerStruct/static_void_arity0/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Samples.Run.InlinerStruct.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-static_void_arity0/000-Samples.Run.InlinerStruct.g.cs.txt",
+          "SourceSha256": "39839f582fe21bd243e644ccafa2da515bc8867d807f49eb71a2b4ce78d26bfb"
+        }
+      ]
+    },
+    {
+      "Id": "performance-InlinerStruct-static_void_arity1",
+      "Kind": "performance-inliner",
+      "Input": "cases/Performance/InlinerStruct/static_void_arity1/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Samples.Log.InlinerStruct.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-static_void_arity1/000-Samples.Log.InlinerStruct.g.cs.txt",
+          "SourceSha256": "9f4a596a9cf7220f4cc2751980f0c701c1705fe836ad2f863a45fbfbaf550bd5"
+        }
+      ]
+    },
+    {
+      "Id": "performance-InlinerStruct-static_void_arity3",
+      "Kind": "performance-inliner",
+      "Input": "cases/Performance/InlinerStruct/static_void_arity3/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Samples.Op.InlinerStruct.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-static_void_arity3/000-Samples.Op.InlinerStruct.g.cs.txt",
+          "SourceSha256": "31050c69ea73550bc0cfc97aa5416f347e29e250389b309a81c15d82cf2aac13"
+        }
+      ]
+    },
+    {
+      "Id": "performance-InlinerStruct-static_void_arity8",
+      "Kind": "performance-inliner",
+      "Input": "cases/Performance/InlinerStruct/static_void_arity8/input.cs",
+      "Outputs": [
+        {
+          "Hint": "Samples.Big.InlinerStruct.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-static_void_arity8/000-Samples.Big.InlinerStruct.g.cs.txt",
+          "SourceSha256": "c0b00da13d603110f92324d079c06f8d6a2fdb528b6d6235d10815819af5d424"
+        }
+      ]
+    }
+  ]
+}

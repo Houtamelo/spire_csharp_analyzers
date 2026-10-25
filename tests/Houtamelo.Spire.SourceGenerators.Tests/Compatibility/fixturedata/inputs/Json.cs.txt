@@ -1,0 +1,36 @@
+#nullable enable
+using Houtamelo.Spire;
+
+namespace Q09.Json
+{
+    [DiscriminatedUnion(json: JsonLibrary.SystemTextJson, jsonDiscriminator: "type")]
+    public partial struct StjShape
+    {
+        [Variant, JsonName("circle")]
+        public static partial StjShape Circle([JsonName("radius")] double value);
+        [Variant, JsonName("point")] public static partial StjShape Point();
+    }
+
+    [DiscriminatedUnion(json: JsonLibrary.NewtonsoftJson)]
+    public partial struct NsjOption<T> where T : unmanaged
+    {
+        [Variant] public static partial NsjOption<T> Some(T value);
+        [Variant] public static partial NsjOption<T> None();
+    }
+
+    [DiscriminatedUnion(json: JsonLibrary.SystemTextJson | JsonLibrary.NewtonsoftJson)]
+    [JsonName("both-shape")]
+    public partial struct BothShape
+    {
+        [Variant, JsonName("line")]
+        public static partial BothShape Line(int start, int end);
+        [Variant] public static partial BothShape Empty();
+    }
+
+    [DiscriminatedUnion(json: JsonLibrary.NewtonsoftJson, jsonDiscriminator: "tag")]
+    public partial record SchemaShape<T> where T : class
+    {
+        public partial record Node(T Value) : SchemaShape<T>;
+        public partial record None() : SchemaShape<T>;
+    }
+}

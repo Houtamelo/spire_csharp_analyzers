@@ -1,0 +1,22 @@
+#nullable enable
+using Houtamelo.Spire;
+
+namespace Q09.Records
+{
+    [DiscriminatedUnion]
+    public partial record Result<T> where T : notnull
+    {
+        public partial record Success(T Value) : Result<T>;
+        public partial record Failure(string? Message) : Result<T>;
+    }
+
+    public partial class Container
+    {
+        [DiscriminatedUnion]
+        internal partial record @record
+        {
+            public partial record Value(int Number) : @record;
+            public partial record Empty() : @record;
+        }
+    }
+}
