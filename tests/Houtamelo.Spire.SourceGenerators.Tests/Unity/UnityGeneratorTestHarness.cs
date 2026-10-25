@@ -469,7 +469,8 @@ internal static class UnityGeneratorTestHarness
         // assemblies explicitly. Unity's loaded Mono core assemblies supply
         // framework types forwarded by the netstandard facades, such as
         // EditorBrowsableState, without introducing a second reference-only
-        // mscorlib/System pair.
+        // mscorlib/System pair. The Unity MSBuild System.Memory facade matches
+        // the 4.0.1.2 dependency declared by its loaded System.Text.Json.
         var frameworkPaths = Directory.EnumerateFiles(frameworkRoot, "*.dll")
             .Where(path =>
             {
@@ -485,9 +486,17 @@ internal static class UnityGeneratorTestHarness
                 {
                     var name = Path.GetFileName(path);
                     return string.Equals(name, "mscorlib.dll", StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(name, "System.dll", StringComparison.OrdinalIgnoreCase);
+                        string.Equals(name, "System.dll", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(name, "System.Core.dll", StringComparison.OrdinalIgnoreCase);
                 })
                 .Cast<string>())
+            .Append(Path.Combine(
+                UnityEditorRoot,
+                "Editor",
+                "Data",
+                "MSBuild",
+                "buildTools",
+                "System.Memory.dll"))
             .Where(File.Exists)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)

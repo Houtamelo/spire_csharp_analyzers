@@ -578,6 +578,24 @@ byte-identical**. Formatting and whitespace checks passed. SDK evidence:
 `tmp/full-code-quality-review/batch8-final/`; second failing native run:
 `tmp/full-code-quality-review/native/harness-second-failure/`.
 
+### Batch 9: serializer dependency references
+
+The third complete Editor harness passed 2,100/2,102 cases, with exact identities
+matching and no skips. Two JSON execution tests needed their serializers'
+explicit dependencies: `System.Memory, Version=4.0.1.2` for STJ and Mono's
+`System.Core` for Newtonsoft. The host-only resolver now includes Unity's exact
+MSBuild System.Memory facade and the loaded Mono System.Core assembly. No
+production code, generated output, assertions, or diagnostic policy changed.
+
+A targeted actual Editor Mono run passed all nine affected cases together:
+both JSON round trips, the six warning-free core cases, and ToString. Evidence:
+`tmp/targeted-mono-project/targeted-json-variant-mono.xml`. Probe-only assets were
+removed. The portable build passed with zero warnings/errors. Scoped formatting
+and whitespace checks passed. Full Release gate: **2,115/2,115 passed, zero
+skipped**, **77/77 raw generated files byte-identical**. SDK evidence:
+`tmp/full-code-quality-review/batch9-final/`; third failing native run:
+`tmp/full-code-quality-review/native/harness-third-failure/`.
+
 ### Final native validation
 
 Actual Unity **6000.5.6f1**, Linux x86-64. All projects are disposable copies
