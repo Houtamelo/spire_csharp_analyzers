@@ -74,7 +74,7 @@ internal static class InlinableParser
             ? ""
             : declaringType.ContainingNamespace.ToDisplayString();
 
-        var containingTypes = BuildContainingTypes(declaringType);
+        var containingTypes = InlinerSymbolInfo.BuildContainingTypes(declaringType);
 
         var declaringTypeParameters = new EquatableArray<string>(
             declaringType.TypeParameters.Select(tp => tp.Name).ToImmutableArray());
@@ -124,12 +124,12 @@ internal static class InlinableParser
         return new InlinableHostDecl(
             Namespace: ns,
             MethodName: method.Name,
-            Accessibility: AccessibilityToKeyword(method.DeclaredAccessibility),
+            Accessibility: InlinerSymbolInfo.AccessibilityToKeyword(method.DeclaredAccessibility),
             IsStatic: method.IsStatic,
             ReturnType: returnType,
             DeclaringTypeName: declaringType.Name,
-            DeclaringTypeKeyword: GetTypeKeyword(declaringType),
-            DeclaringTypeAccessibility: AccessibilityToKeyword(declaringType.DeclaredAccessibility),
+            DeclaringTypeKeyword: InlinerSymbolInfo.GetTypeKeyword(declaringType),
+            DeclaringTypeAccessibility: InlinerSymbolInfo.AccessibilityToKeyword(declaringType.DeclaredAccessibility),
             DeclaringTypeParameters: declaringTypeParameters,
             ContainingTypes: new EquatableArray<InlinerContainingType>(containingTypes),
             HostTypeParameters: hostTypeParameters,
@@ -221,10 +221,10 @@ internal static class InlinableParser
         var nonPartial = FindNonPartialEnclosingType(declaringType);
         if (nonPartial is not null)
         {
-            return CreateDiagnostic(
+            return InlinerSymbolInfo.CreateDiagnostic(
                 "SPIRE023",
                 $"The type containing '[Inlinable]' parameter must be declared 'partial'; '{nonPartial.Name}' is not partial",
-                GetSymbolLocation(method));
+                InlinerSymbolInfo.GetSymbolLocation(method));
         }
 
         if (inlinableParams.Count == 0)
@@ -283,7 +283,7 @@ internal static class InlinableParser
 
             if (IsInsideNestedFunction(identifier, bodyRoot))
             {
-                return CreateDiagnostic(
+                return InlinerSymbolInfo.CreateDiagnostic(
                     "SPIRE021",
                     $"[Inlinable] parameter '{name}' is captured by a nested function and cannot be rewritten",
                     identifier.GetLocation());
@@ -292,7 +292,7 @@ internal static class InlinableParser
             if (IsAllowedUsage(identifier, trackedNames))
                 continue;
 
-            return CreateDiagnostic(
+            return InlinerSymbolInfo.CreateDiagnostic(
                 "SPIRE021",
                 $"[Inlinable] parameter '{name}' is used in a form the twin generator cannot rewrite",
                 identifier.GetLocation());
@@ -452,38 +452,7 @@ internal static class InlinableParser
         return false;
     }
 
-    private static InlinerDiagnostic CreateDiagnostic(
-        string id,
-        string message,
-        Location location)
-    {
-        var lineSpan = location.GetLineSpan();
-        var sourceSpan = location.SourceSpan;
-        return new InlinerDiagnostic(
-            Id: id,
-            Message: message,
-            FilePath: location.SourceTree?.FilePath ?? "",
-            StartOffset: sourceSpan.Start,
-            Length: sourceSpan.Length,
-            StartLine: lineSpan.StartLinePosition.Line,
-            StartColumn: lineSpan.StartLinePosition.Character,
-            EndLine: lineSpan.EndLinePosition.Line,
-            EndColumn: lineSpan.EndLinePosition.Character);
-    }
 
-    private static Location GetSymbolLocation(ISymbol symbol)
-    {
-        if (!symbol.Locations.IsDefaultOrEmpty)
-        {
-            foreach (var location in symbol.Locations)
-            {
-                if (location.IsInSource)
-                    return location;
-            }
-        }
-
-        return Location.None;
-    }
 
     private static string BuildUniqueGenericName(string paramName, HashSet<string> used)
     {
@@ -537,23 +506,6 @@ internal static class InlinableParser
             IsThis: isThis);
     }
 
-    private static ImmutableArray<InlinerContainingType> BuildContainingTypes(INamedTypeSymbol declaringType)
-    {
-        var chain = new List<InlinerContainingType>();
-        var current = declaringType.ContainingType;
-        while (current is not null)
-        {
-            chain.Add(new InlinerContainingType(
-                AccessibilityKeyword: AccessibilityToKeyword(current.DeclaredAccessibility),
-                Keyword: GetTypeKeyword(current),
-                Name: current.Name,
-                TypeParameters: new EquatableArray<string>(
-                    current.TypeParameters.Select(tp => tp.Name).ToImmutableArray())));
-            current = current.ContainingType;
-        }
-        chain.Reverse();
-        return chain.ToImmutableArray();
-    }
 
     private static IEnumerable<string> BuildConstraints(MethodDeclarationSyntax mds)
     {
@@ -563,31 +515,6 @@ internal static class InlinableParser
         }
     }
 
-    private static string GetTypeKeyword(INamedTypeSymbol type)
-    {
-        if (type.TypeKind == TypeKind.Interface) return "interface";
-        if (type.IsRecord && type.IsValueType) return "record struct";
-        if (type.IsRecord) return "record";
-        if (type.IsValueType)
-        {
-            if (type.IsReadOnly) return "readonly struct";
-            return "struct";
-        }
-        if (type.IsStatic) return "static class";
-        return "class";
-    }
 
-    private static string AccessibilityToKeyword(Accessibility accessibility)
-    {
-        return accessibility switch
-        {
-            Accessibility.Public => "public",
-            Accessibility.Internal => "internal",
-            Accessibility.Private => "private",
-            Accessibility.Protected => "protected",
-            Accessibility.ProtectedOrInternal => "protected internal",
-            Accessibility.ProtectedAndInternal => "private protected",
-            _ => "internal",
-        };
-    }
+
 }

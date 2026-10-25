@@ -15,6 +15,20 @@ internal static class DeclarationFormatting
             ? string.Empty
             : "<" + string.Join(", ", parameters) + ">";
 
+    /// Inliner headers preserve the declared accessibility and raw identifiers.
+    internal static string FormatRawPartialTypeDeclaration(
+        string accessibility,
+        string keyword,
+        string name,
+        EquatableArray<string> parameters)
+    {
+        var generics = FormatRawTypeParameters(parameters);
+        var prefix = string.IsNullOrEmpty(accessibility) ? "" : accessibility + " ";
+        return keyword == "static class"
+            ? $"{prefix}static partial class {name}{generics}"
+            : $"{prefix}partial {keyword} {name}{generics}";
+    }
+
     internal static string FormatConstraints(EquatableArray<string> constraints)
         => constraints.Length == 0 ? string.Empty : " " + string.Join(" ", constraints);
 

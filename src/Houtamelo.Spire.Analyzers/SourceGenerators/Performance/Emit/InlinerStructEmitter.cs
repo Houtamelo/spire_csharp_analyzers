@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Emit;
-using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Performance.Model;
 
 namespace Houtamelo.Spire.Analyzers.SourceGenerators.Performance.Emit;
@@ -25,12 +24,12 @@ internal static class InlinerStructEmitter
         // Outer containing types (outermost-first, already ordered in decl).
         foreach (var ct in decl.ContainingTypes)
         {
-            sb.AppendLine(OpenTypeDeclaration(ct.AccessibilityKeyword, ct.Keyword, ct.Name, ct.TypeParameters));
+            sb.AppendLine(DeclarationFormatting.FormatRawPartialTypeDeclaration(ct.AccessibilityKeyword, ct.Keyword, ct.Name, ct.TypeParameters));
             sb.OpenBrace();
         }
 
         // Declaring type.
-        sb.AppendLine(OpenTypeDeclaration(
+        sb.AppendLine(DeclarationFormatting.FormatRawPartialTypeDeclaration(
             decl.DeclaringTypeAccessibility,
             decl.DeclaringTypeKeyword,
             decl.DeclaringTypeName,
@@ -38,7 +37,7 @@ internal static class InlinerStructEmitter
         sb.OpenBrace();
 
         // Inliner struct.
-        var methodGenerics = FormatGenerics(decl.TypeParameters);
+        var methodGenerics = DeclarationFormatting.FormatRawTypeParameters(decl.TypeParameters);
         var structName = $"{decl.MethodName}Inliner{methodGenerics}";
         var iface = BuildInterface(decl);
         sb.AppendLine($"{decl.Accessibility} readonly struct {structName} : {iface}");
@@ -61,27 +60,7 @@ internal static class InlinerStructEmitter
         return sb.ToString();
     }
 
-    private static string OpenTypeDeclaration(
-        string accessibility,
-        string keyword,
-        string name,
-        EquatableArray<string> typeParams)
-    {
-        var generics = FormatGenerics(typeParams);
-        var prefix = string.IsNullOrEmpty(accessibility) ? "" : accessibility + " ";
 
-        // "static class" requires "static partial class" ordering; everything else is "partial <keyword>".
-        if (keyword == "static class")
-            return $"{prefix}static partial class {name}{generics}";
-
-        return $"{prefix}partial {keyword} {name}{generics}";
-    }
-
-    private static string FormatGenerics(EquatableArray<string> typeParams)
-    {
-        if (typeParams.Length == 0) return "";
-        return "<" + string.Join(", ", (IEnumerable<string>)typeParams) + ">";
-    }
 
     private static string BuildInterface(InlinerStructDecl decl)
     {
@@ -114,7 +93,7 @@ internal static class InlinerStructEmitter
 
     private static (string Signature, string Body) BuildInvoke(InlinerStructDecl decl)
     {
-        var methodGenerics = FormatGenerics(decl.TypeParameters);
+        var methodGenerics = DeclarationFormatting.FormatRawTypeParameters(decl.TypeParameters);
         var parameters = ((IEnumerable<InlinerParamInfo>)decl.Parameters).ToList();
 
         if (decl.IsStatic)
@@ -156,9 +135,9 @@ internal static class InlinerStructEmitter
             parts.Add(decl.Namespace);
 
         foreach (var ct in decl.ContainingTypes)
-            parts.Add(ct.Name + FormatGenerics(ct.TypeParameters));
+            parts.Add(ct.Name + DeclarationFormatting.FormatRawTypeParameters(ct.TypeParameters));
 
-        parts.Add(decl.DeclaringTypeName + FormatGenerics(decl.DeclaringTypeParameters));
+        parts.Add(decl.DeclaringTypeName + DeclarationFormatting.FormatRawTypeParameters(decl.DeclaringTypeParameters));
 
         return "global::" + string.Join(".", parts);
     }

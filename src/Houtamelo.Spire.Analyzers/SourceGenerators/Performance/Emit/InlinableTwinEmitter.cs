@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Emit;
-using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Performance.Model;
 
 namespace Houtamelo.Spire.Analyzers.SourceGenerators.Performance.Emit;
@@ -30,12 +29,12 @@ internal static class InlinableTwinEmitter
         // Outer containing types (outermost-first).
         foreach (var ct in decl.ContainingTypes)
         {
-            sb.AppendLine(OpenTypeDeclaration(ct.AccessibilityKeyword, ct.Keyword, ct.Name, ct.TypeParameters));
+            sb.AppendLine(DeclarationFormatting.FormatRawPartialTypeDeclaration(ct.AccessibilityKeyword, ct.Keyword, ct.Name, ct.TypeParameters));
             sb.OpenBrace();
         }
 
         // Declaring type.
-        sb.AppendLine(OpenTypeDeclaration(
+        sb.AppendLine(DeclarationFormatting.FormatRawPartialTypeDeclaration(
             decl.DeclaringTypeAccessibility,
             decl.DeclaringTypeKeyword,
             decl.DeclaringTypeName,
@@ -175,23 +174,6 @@ internal static class InlinableTwinEmitter
         return $"global::Houtamelo.Spire.IActionInliner<{string.Join(", ", typeArgs)}>";
     }
 
-    private static string OpenTypeDeclaration(
-        string accessibility,
-        string keyword,
-        string name,
-        EquatableArray<string> typeParams)
-    {
-        var generics = FormatGenerics(typeParams);
-        var prefix = string.IsNullOrEmpty(accessibility) ? "" : accessibility + " ";
 
-        if (keyword == "static class")
-            return $"{prefix}static partial class {name}{generics}";
-        return $"{prefix}partial {keyword} {name}{generics}";
-    }
 
-    private static string FormatGenerics(EquatableArray<string> typeParams)
-    {
-        if (typeParams.Length == 0) return "";
-        return "<" + string.Join(", ", (IEnumerable<string>)typeParams) + ">";
-    }
 }

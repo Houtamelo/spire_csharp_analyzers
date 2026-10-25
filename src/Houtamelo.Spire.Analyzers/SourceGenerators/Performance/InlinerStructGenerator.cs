@@ -25,7 +25,7 @@ public sealed class InlinerStructGenerator : IIncrementalGenerator
         {
             if (decl.Diagnostic is { } diag)
             {
-                srcCtx.ReportDiagnostic(CreateDiagnostic(diag));
+                srcCtx.ReportDiagnostic(InlinerDiagnosticFactory.CreateDiagnostic(diag, ResolveDescriptor(diag.Id)));
                 return;
             }
 
@@ -35,35 +35,6 @@ public sealed class InlinerStructGenerator : IIncrementalGenerator
         });
     }
 
-    private static Diagnostic CreateDiagnostic(InlinerDiagnostic d)
-    {
-        var location = string.IsNullOrEmpty(d.FilePath)
-            ? Location.None
-            : Location.Create(
-                d.FilePath,
-                new Microsoft.CodeAnalysis.Text.TextSpan(d.StartOffset, d.Length),
-                new Microsoft.CodeAnalysis.Text.LinePositionSpan(
-                    new Microsoft.CodeAnalysis.Text.LinePosition(d.StartLine, d.StartColumn),
-                    new Microsoft.CodeAnalysis.Text.LinePosition(d.EndLine, d.EndColumn)));
-
-        var template = ResolveDescriptor(d.Id);
-        // Use a per-call descriptor that ships the parser's already-formatted message
-        // in the Title/MessageFormat slots. Keeps Id/Category/Severity from the template
-        // so diagnostic filtering and release-tracking work uniformly.
-        var descriptor = template is null
-            ? new DiagnosticDescriptor(
-                d.Id, d.Id, d.Message, "SourceGeneration",
-                DiagnosticSeverity.Error, isEnabledByDefault: true)
-            : new DiagnosticDescriptor(
-                template.Id,
-                template.Title,
-                d.Message,
-                template.Category,
-                template.DefaultSeverity,
-                template.IsEnabledByDefault);
-
-        return Diagnostic.Create(descriptor, location);
-    }
 
     private static DiagnosticDescriptor? ResolveDescriptor(string id)
         => id switch

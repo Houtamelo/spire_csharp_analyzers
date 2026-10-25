@@ -437,3 +437,17 @@ No SourceBuilder/template/test/golden changes. Net production reduction:
 Validation: scoped formatting and analyzer build (zero warnings/errors), full
 Release solution **2,111/2,111 passed, zero skipped**, **77/77 raw generated files
 byte-identical**. Evidence: `tmp/full-code-quality-review/batch3/`.
+
+### Batch 4
+
+Extracted shared performance-parser containing-type, keyword, accessibility,
+source-location and diagnostic-coordinate logic. Centralized the identical
+diagnostic presentation while retaining each generator's descriptor map and
+validation flow. Reused raw declaration formatting for the two performance
+emitters, preserving their explicit-accessibility and unescaped-name behavior.
+No algorithm, supported-input, hint-name, constraint, or golden changes.
+
+Validation: scoped formatting, full Release solution **2,111/2,111 passed, zero
+skipped**, **77/77 raw generated files byte-identical**. Existing performance
+diagnostic and snapshot tests ran as part of the full gate. Evidence:
+`tmp/full-code-quality-review/batch4/`.
