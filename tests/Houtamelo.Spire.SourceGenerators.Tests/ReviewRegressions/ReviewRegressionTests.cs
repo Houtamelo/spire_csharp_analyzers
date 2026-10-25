@@ -12,6 +12,7 @@ using Houtamelo.Spire;
 using Houtamelo.Spire.Analyzers.SourceGenerators;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Analyzers;
 using Houtamelo.Spire.CodeFixes;
+using Houtamelo.Spire.SourceGenerators.Tests.Unity;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -283,11 +284,13 @@ public sealed class ReviewRegressionTests
         string source,
         Dictionary<string, string>? globalOptions = null)
     {
-        var references = TestHarnessEnvironment.FrameworkReferences
-            .Append(MetadataReference.CreateFromFile(
-                typeof(DiscriminatedUnionAttribute).Assembly.Location))
+        var references = UnityGeneratorTestHarness.GetReferences(
+                includeUnityReferences: false,
+                includeEditorReferences: false)
             .Append(MetadataReference.CreateFromFile(
                 typeof(JsonConvert).Assembly.Location))
+            .Append(MetadataReference.CreateFromFile(
+                typeof(StjSerializer).Assembly.Location))
             .Distinct(new MetadataReferenceComparer())
             .ToArray();
         var tree = CSharpSyntaxTree.ParseText(

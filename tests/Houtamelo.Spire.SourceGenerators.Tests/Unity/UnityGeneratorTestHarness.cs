@@ -383,7 +383,7 @@ internal static class UnityGeneratorTestHarness
 #if SPIRE_UNITY_TEST_HOST
         var references = (includeUnityReferences
                 ? TestHarnessEnvironment.RuntimeReferences
-                : TestHarnessEnvironment.FrameworkReferences)
+                : HostFrameworkReferences())
             .Where(reference => !IsUnityEditorReference(reference))
             .Append(
                 MetadataReference.CreateFromFile(
@@ -444,6 +444,35 @@ internal static class UnityGeneratorTestHarness
     }
 
 #if SPIRE_UNITY_TEST_HOST
+    private static IEnumerable<MetadataReference> HostFrameworkReferences()
+    {
+        var shimRoot = Path.Combine(
+            UnityEditorRoot,
+            "Editor",
+            "Data",
+            "NetStandard",
+            "compat",
+            "2.1.0",
+            "shims",
+            "netstandard");
+        var referenceRoot = Path.Combine(
+            UnityEditorRoot,
+            "Editor",
+            "Data",
+            "NetStandard",
+            "ref",
+            "2.1.0");
+        var netstandardPath = Path.Combine(referenceRoot, "netstandard.dll");
+        if (!Directory.Exists(shimRoot) || !File.Exists(netstandardPath))
+            return TestHarnessEnvironment.FrameworkReferences;
+
+        return Directory.EnumerateFiles(shimRoot, "*.dll")
+            .Append(netstandardPath)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .Select(path => MetadataReference.CreateFromFile(path));
+    }
+
     private const string UnityEditorFacadeAlias = "__SpireUnityEditorFacade";
 
     private static bool IsUnityEditorReference(MetadataReference reference)

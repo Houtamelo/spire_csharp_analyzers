@@ -215,6 +215,7 @@ public sealed class UnityHarnessRunnerTests
         Assert.Equal(
             cases.Length,
             cases.Select(value => value.GetProperty("identity").GetString()!).Distinct(StringComparer.Ordinal).Count());
+        AssertNoSupportTheoryRows(cases);
         var actualCounts = cases
             .GroupBy(value => value.GetProperty("assembly").GetString()!, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
@@ -409,6 +410,48 @@ public sealed class UnityHarnessRunnerTests
         catch (InvalidOperationException)
         {
             return false;
+        }
+    }
+
+    private static void AssertNoSupportTheoryRows(JsonElement[] cases)
+    {
+        const string methodName =
+            "Houtamelo.Spire.SourceGenerators.Tests.Unity.UnityDrawerSharedSupportTests." +
+            "EditorDrawer_NoSupportForNoUnionOrRejectedInput";
+        var rows = cases
+            .Where(value => value.GetProperty("identity").GetString()!.Contains(
+                methodName,
+                StringComparison.Ordinal))
+            .ToArray();
+
+        Assert.Equal(6, rows.Length);
+        Assert.Equal(
+            rows.Length,
+            rows.Select(value => value.GetProperty("identity").GetString()!)
+                .Distinct(StringComparer.Ordinal)
+                .Count());
+        Assert.All(rows, row =>
+        {
+            var arguments = row.GetProperty("arguments");
+            Assert.Equal(JsonValueKind.Array, arguments.ValueKind);
+            Assert.Equal(3, arguments.GetArrayLength());
+        });
+
+        foreach (var marker in new[]
+                 {
+                     "UnityNormalAdditive",
+                     "NoUnionInput",
+                     "UnityRecordRejectedInput",
+                     "UnityMissingEngineInput",
+                     "UnityZeroVariantInput",
+                     "UnityReadonlyRejectedInput",
+                 })
+        {
+            Assert.Contains(
+                rows,
+                row => row.GetProperty("arguments")[0].GetString()!.Contains(
+                    marker,
+                    StringComparison.Ordinal));
         }
     }
 

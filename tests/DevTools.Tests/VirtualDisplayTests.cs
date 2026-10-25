@@ -188,37 +188,20 @@ public sealed class VirtualDisplayTests
         try
         {
             var expectedRoot = new ToolContext(workingDirectory).Root;
-            foreach (var process in Process.GetProcessesByName("Xvfb"))
-            {
-                using (process)
-                {
-                    try
-                    {
-                        var processWorkingDirectory = Path.Combine(
-                            "/proc",
-                            process.Id.ToString(),
-                            "cwd");
-                        var actualRoot = new ToolContext(processWorkingDirectory).Root;
-                        if (string.Equals(expectedRoot, actualRoot, StringComparison.Ordinal))
-                        {
-                            processId = process.Id;
-                            return true;
-                        }
-                    }
-                    catch (ArgumentException)
-                    {
-                    }
-                    catch (InvalidOperationException)
-                    {
-                    }
-                    catch (IOException)
-                    {
-                    }
-                    catch (UnauthorizedAccessException)
-                    {
-                    }
-                }
-            }
+            if (TryFindOwnedXvfbPid(
+                    Process.GetProcessesByName("Xvfb"),
+                    expectedRoot,
+                    filterByProcessName: false,
+                    out processId))
+                return true;
+
+            // Unity's Mono reports the full executable path as ProcessName, so its
+            // exact-name lookup misses the Xvfb process that .NET finds directly.
+            return TryFindOwnedXvfbPid(
+                Process.GetProcesses(),
+                expectedRoot,
+                filterByProcessName: true,
+                out processId);
         }
         catch (ArgumentException)
         {
@@ -229,6 +212,55 @@ public sealed class VirtualDisplayTests
 
         return false;
     }
+
+    private static bool TryFindOwnedXvfbPid(
+        Process[] processes,
+        string expectedRoot,
+        bool filterByProcessName,
+        out int processId)
+    {
+        processId = 0;
+        foreach (var process in processes)
+        {
+            using (process)
+            {
+                if (processId != 0)
+                    continue;
+
+                try
+                {
+                    if (filterByProcessName && !IsXvfbProcessName(process.ProcessName))
+                        continue;
+
+                    var processWorkingDirectory = Path.Combine(
+                        "/proc",
+                        process.Id.ToString(),
+                        "cwd");
+                    var actualRoot = new ToolContext(processWorkingDirectory).Root;
+                    if (string.Equals(expectedRoot, actualRoot, StringComparison.Ordinal))
+                        processId = process.Id;
+                }
+                catch (ArgumentException)
+                {
+                }
+                catch (InvalidOperationException)
+                {
+                }
+                catch (IOException)
+                {
+                }
+                catch (UnauthorizedAccessException)
+                {
+                }
+            }
+        }
+
+        return processId != 0;
+    }
+
+    private static bool IsXvfbProcessName(string processName)
+        => string.Equals(processName, "Xvfb", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(Path.GetFileName(processName), "Xvfb", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsProcessRunning(int processId)
     {

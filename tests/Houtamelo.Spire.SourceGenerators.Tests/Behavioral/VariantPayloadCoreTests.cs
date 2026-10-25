@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using Houtamelo.Spire.Analyzers.SourceGenerators;
 using Houtamelo.Spire.SourceGenerators.Tests.GlobalConfig;
+using Houtamelo.Spire.SourceGenerators.Tests.Unity;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -854,8 +855,9 @@ public sealed class VariantPayloadCoreTests
             source,
             parseOptions,
             path: "variant-payload-test.cs");
-        var references = TestHarnessEnvironment.FrameworkReferences
-            .Append(MetadataReference.CreateFromFile(typeof(Houtamelo.Spire.DiscriminatedUnionAttribute).Assembly.Location));
+        var references = UnityGeneratorTestHarness.GetReferences(
+            includeUnityReferences: false,
+            includeEditorReferences: false);
         var compilation = CSharpCompilation.Create(
             $"VariantPayloadTests_{Guid.NewGuid():N}",
             new[] { tree },

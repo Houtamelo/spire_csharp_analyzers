@@ -29,6 +29,10 @@ Read-only review completed before implementation. The findings below refer to
 the baseline, including its line numbers. Implementation decisions are explicit;
 the validation log records the subsequent batches separately.
 
+All six accepted cleanup batches are implemented and committed. The final SDK
+gate passes 2,115 tests with zero skipped; 77 fixed generated files remain
+byte-identical. Behavior-changing defects below remain report-only, as required.
+
 ## Findings
 
 ## Highest-priority findings
@@ -327,6 +331,44 @@ the validation log records the subsequent batches separately.
     and the CLI's existing exact-identity checks; do not replace a magic number
     with a weaker minimum count.
 
+## Additional findings from native and package validation
+
+These existing boundaries became observable after Q01's compile blocker was
+removed and the complete harness executed inside Unity.
+
+34. **Q34 — Some dynamically executed tests compile against the wrong runtime.**
+    `Behavioral/VariantPayloadCoreTests.cs:857` and
+    `ReviewRegressions/ReviewRegressionTests.cs:286` use the .NET 8 reference
+    pack even when loading the result in Editor Mono. Five native cases fail
+    resolving `DefaultInterpolatedStringHandler`, `ValueTuple`, or
+    `NullableContextAttribute` from `System.Runtime, Version=8.0.0.0`.
+    **Implement:** use the actual host's references for execution tests while
+    retaining the SDK path and all output/behavior assertions. Do not change
+    the production generator or globally replace compilation-only references.
+
+35. **Q35 — Independent harness discovery lacks Unity fixture input.**
+    `tests/UnityTestHarness/ManifestExporter/Program.cs:59-67` copies portable
+    output into its DataRoot. The source-generator project does not include
+    `Unity/fixtures` in that output, although `HarnessWorkflow` separately
+    supplies it to the Editor. xUnit therefore leaves one MemberData theory
+    unexpanded during independent discovery; Unity successfully expands its
+    six rows, making exact identities differ despite executing every case.
+    **Implement:** make fixture deployment consistent and protect the six
+    independently discovered row identities. Retain strict identity matching.
+
+36. **Q36 — Standalone analyzer packaging omits its pattern-analysis dependency.**
+    `src/Houtamelo.Spire.Analyzers/Houtamelo.Spire.Analyzers.csproj:30,43-49`
+    makes PatternAnalysis a private project reference but packs only the analyzer
+    DLL. The existing standalone NuGet confirms the missing assembly; the main
+    `Houtamelo.Spire` package includes it correctly. An actual `csc` invocation
+    with just the standalone analyzer DLL reports AD0001/FileNotFoundException
+    for both ExhaustivenessAnalyzer and CS8509Suppressor. Registering the pattern
+    DLL alongside it instead produces the expected SPIRE009 for a missing `Dog`
+    arm. **Report-only:** repairing package contents changes delivered analyzer
+    behavior. Future packaging tests should compile a consumer using each
+    standalone package independently, rather than only packing successfully.
+    Reproduction and control: `tmp/full-code-quality-review/package-probe/`.
+
 ## Review coverage and evidence
 
 Inventory included 1,654 tracked C# files across first-party implementation,
@@ -483,3 +525,78 @@ Validation: scoped formatting; focused lifecycle tests 4/4; full Release
 solution **2,115/2,115 passed, zero skipped**; **77/77 raw generated files
 byte-identical**. Evidence: `tmp/full-code-quality-review/batch6/`.
 Actual Unity execution is the final validation step below.
+
+### Batch 7: native test-host corrections
+
+The first complete Editor harness executed 2,102 cases: 2,093 passed and nine
+failed, with no skipped cases. Four newly added display tests assumed .NET's
+`ProcessName == "Xvfb"`; the installed Mono returns `"/usr/bin/Xvfb"` and its
+`GetProcessesByName("Xvfb")` returns none. The test-only probe now also checks
+the basename of actual enumerated processes, preserving canonical working
+directory/PID ownership and cleanup assertions. A temporary probe using the
+installed Unity Mono reproduced this difference directly.
+
+The other five failures exposed Q34. Shared host-only references now use Unity's
+NetStandard 2.1 reference/shim assemblies for dynamically executed non-Unity
+sources. The SDK reference path and production generator are unchanged. JSON
+execution fixtures explicitly reference both serializer assemblies.
+
+Q35 caused a separate exact-identity mismatch: one expected unexpanded theory
+versus six actual concrete rows. Fixture files are now copied into portable
+output, and the preparation integration test requires all six distinct argument
+rows with their expected source markers. Independent xUnit discovery and strict
+Editor identity comparison remain intact.
+
+Focused desktop tests passed 58/58 for host loading/discovery and 4/4 for display
+ownership. Portable source-generator and DevTools builds passed with zero
+warnings/errors. The first SDK gate caught the new manifest assertion reading
+the nullable row index instead of the argument array; correcting that assertion
+passed all seven actual harness-preparation tests. Final full Release gate:
+**2,115/2,115 passed, zero skipped**; **77/77 raw generated files byte-identical**.
+Scoped formatting and whitespace checks passed. SDK evidence:
+`tmp/full-code-quality-review/batch7-final/`. First failing native evidence:
+`tmp/full-code-quality-review/native/harness-first-failure/`.
+
+### Final native validation
+
+Actual Unity **6000.5.6f1**, Linux x86-64. All projects are disposable copies
+under `tmp/full-code-quality-review/`; tracked fixtures and customer projects
+were not changed. SHA-256 checks confirmed all four core fixture DLLs matched
+the Release outputs at fixture preparation. Their informational version records
+`21c3ac0`; `src/` is identical between that commit and `23252e8`. Later builds
+restamp the informational version with HEAD; archived hashes identify the exact
+assemblies used, rather than assuming byte equality across revision stamps.
+
+| Execution | Result |
+|---|---|
+| Editor serialization write | 126 checks passed |
+| Fresh-process Editor serialization read | 87 checks passed |
+| Invalid-data recovery | 59 checks passed |
+| Accessor assertions | 9 checks passed |
+| Rendered UI Toolkit/IMGUI Inspector | 16 cases, 147 checks passed, zero unverified |
+| Release Mono player, High stripping | 60 checks passed, 64-bit, nondevelopment |
+| Release IL2CPP player, High stripping | 60 checks passed, 64-bit, nondevelopment |
+| Behavioral suite in Editor Mono | 86 cases passed, including all 80 original fact identities |
+| Behavioral suite in IL2CPP player | 88 cases passed, including all 80 original fact identities and IL2CPP runtime marker |
+| Editor compiler feasibility probe | 5 cases passed |
+
+Both core player builds reported zero errors and three warnings each; this is
+not a warning-free Unity build claim. The fixtures intentionally exercise
+unguarded accessor reads. Editor Mono behavioral execution is distinct from
+the separate Mono player probe.
+
+Standalone player startup initially failed on the inherited desktop's X11 mode
+query; removing the display instead caused a native Unity startup crash. Both
+completed successfully on private Xvfb displays with `XDG_SESSION_TYPE=x11`
+and no `WAYLAND_DISPLAY`, matching the Editor runner's existing environment.
+No production or fixture behavior was changed to address this host condition.
+
+Commands use `tools/Spire.Tool` with `unity-union-core` (the four serialization
+methods and graphics-enabled Inspector method listed in
+`tests/UnityVariantPayloadCore/README.md`), followed by both built standalone
+executables with `-batchmode -nographics -spire-report <path>`.
+`unity-behavioral --backend Mono` and `--backend IL2CPP` execute the behavioral
+journeys. Reports were checked for success, empty failures, exact behavioral
+identities, backend markers, and player configuration; exit zero alone was not
+accepted. Logs, reports and package hashes:
+`tmp/full-code-quality-review/native/`.
