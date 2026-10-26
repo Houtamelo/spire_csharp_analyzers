@@ -12,6 +12,7 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Formatting;
 using Xunit;
 
 namespace Houtamelo.Spire.SourceGenerators.Tests.VariantPayloadConsumers;
@@ -28,6 +29,22 @@ public sealed class VariantPayloadConsumersTests : CodeFixTestBase
         "AddMissingArms_AcronymAndFactoryConflict",
         "AddMissingArms_KeywordAndNullable",
         "AddMissingArms_ExistingNestedPattern",
+    };
+
+    private static readonly string[] IndentationCases =
+    {
+        "Indentation_AddMissingArms_StatementOutdentedNamespace",
+        "Indentation_AddMissingArms_ExpressionOutdentedNamespace",
+        "Indentation_AddMissingArms_ExpressionOutdentedNamespaceNoTrailingComma",
+        "Indentation_AddMissingArms_EmptyExpressionOutdentedNamespace",
+        "Indentation_AddMissingArms_StatementOutdentedNamespaceCRLF",
+        "Indentation_AddMissingArms_StatementOutdentedNamespaceTabs",
+        "Indentation_AddMissingArms_StatementOutdentedNamespaceTrailingComment",
+        "Indentation_AddMissingArms_StatementIndentedNamespace",
+        "Indentation_AddMissingArms_ExpressionFileScopedNamespace",
+        "Indentation_AddMissingArms_StatementGlobalNamespace",
+        "Indentation_AddMissingArms_RecordStatementOutdentedNamespace",
+        "Indentation_AddMissingArms_EmptyExpressionOutdentedNamespaceTwoSpaces",
     };
 
     protected override string Category => "VariantPayloadConsumers";
@@ -60,6 +77,12 @@ public sealed class VariantPayloadConsumersTests : CodeFixTestBase
     public static IEnumerable<object[]> AddMissingCaseData()
     {
         foreach (var name in AddMissingCases)
+            yield return new object[] { name };
+    }
+
+    public static IEnumerable<object[]> IndentationCaseData()
+    {
+        foreach (var name in IndentationCases)
             yield return new object[] { name };
     }
 
@@ -102,6 +125,51 @@ public sealed class VariantPayloadConsumersTests : CodeFixTestBase
         }
     }
 
+    [Theory]
+    [MemberData(nameof(IndentationCaseData))]
+    public async Task AddMissingArmsPreservesExpectedIndentation(string caseName)
+    {
+        var before = File.ReadAllText(GetIndentationCasePath(caseName, "before.cs"));
+        var expected = File.ReadAllText(GetIndentationCasePath(caseName, "after.cs"));
+        var usesCrLf = caseName.EndsWith("CRLF", StringComparison.Ordinal);
+        var usesTabs = caseName.EndsWith("Tabs", StringComparison.Ordinal);
+        var indentationSize = caseName.EndsWith("TwoSpaces", StringComparison.Ordinal)
+            ? 2
+            : 4;
+        if (usesCrLf)
+        {
+            before = NormalizeLineEndings(before, "\r\n");
+            expected = NormalizeLineEndings(expected, "\r\n");
+        }
+
+        var actual = await ApplyFirstFix(
+            before,
+            usesCrLf ? "\r\n" : "\n",
+            usesTabs,
+            indentationSize);
+
+        Assert.Equal(expected, actual);
+
+        GeneratorTestHelper.RunGenerator(
+            actual,
+            out var compilation,
+            out var generatorDiagnostics,
+            path: "case.cs");
+        var diagnostics = generatorDiagnostics
+            .Concat(compilation.GetDiagnostics())
+            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+            .ToArray();
+        Assert.Empty(diagnostics);
+        using var output = new MemoryStream();
+        var emit = compilation.Emit(output);
+        Assert.True(
+            emit.Success,
+            string.Join(
+                Environment.NewLine,
+                emit.Diagnostics.Select(diagnostic =>
+                    $"{diagnostic.Id}: {diagnostic.GetMessage()}")));
+    }
+
     private static string GetCasePath(string caseName, string fileName)
         => Path.Combine(
             TestHarnessEnvironment.DataRoot,
@@ -110,7 +178,25 @@ public sealed class VariantPayloadConsumersTests : CodeFixTestBase
             caseName,
             fileName);
 
-    private async Task<string> ApplyFirstFix(string source)
+    private static string GetIndentationCasePath(string caseName, string fileName)
+        => Path.Combine(
+            TestHarnessEnvironment.DataRoot,
+            "ReviewRegressions",
+            "cases",
+            "AddMissingArmsIndentation",
+            caseName,
+            fileName);
+
+    private static string NormalizeLineEndings(string text, string lineEnding)
+        => text.Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace("\r", "\n", StringComparison.Ordinal)
+            .Replace("\n", lineEnding, StringComparison.Ordinal);
+
+    private async Task<string> ApplyFirstFix(
+        string source,
+        string lineEnding = "\n",
+        bool useTabs = false,
+        int indentationSize = 4)
     {
         GeneratorTestHelper.RunGenerator(
             source,
@@ -122,6 +208,12 @@ public sealed class VariantPayloadConsumersTests : CodeFixTestBase
             diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
 
         using var workspace = new AdhocWorkspace();
+        var options = workspace.Options
+            .WithChangedOption(FormattingOptions.NewLine, LanguageNames.CSharp, lineEnding)
+            .WithChangedOption(FormattingOptions.UseTabs, LanguageNames.CSharp, useTabs)
+            .WithChangedOption(FormattingOptions.TabSize, LanguageNames.CSharp, 4)
+            .WithChangedOption(FormattingOptions.IndentationSize, LanguageNames.CSharp, indentationSize);
+        workspace.TryApplyChanges(workspace.CurrentSolution.WithOptions(options));
         var projectId = ProjectId.CreateNewId();
         var solution = workspace.CurrentSolution
             .AddProject(projectId, "VariantPayloadCodeFix", "VariantPayloadCodeFix", LanguageNames.CSharp)
