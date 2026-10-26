@@ -213,7 +213,8 @@ public sealed class VariantPayloadConsumersTests : CodeFixTestBase
             .WithChangedOption(FormattingOptions.UseTabs, LanguageNames.CSharp, useTabs)
             .WithChangedOption(FormattingOptions.TabSize, LanguageNames.CSharp, 4)
             .WithChangedOption(FormattingOptions.IndentationSize, LanguageNames.CSharp, indentationSize);
-        workspace.TryApplyChanges(workspace.CurrentSolution.WithOptions(options));
+        // Configure the options consumed by Document.GetOptionsAsync.
+        Assert.True(workspace.TryApplyChanges(workspace.CurrentSolution.WithOptions(options)));
         var projectId = ProjectId.CreateNewId();
         var solution = workspace.CurrentSolution
             .AddProject(projectId, "VariantPayloadCodeFix", "VariantPayloadCodeFix", LanguageNames.CSharp)
@@ -232,8 +233,7 @@ public sealed class VariantPayloadConsumersTests : CodeFixTestBase
         }
 
         Assert.NotNull(userDocumentId);
-        Assert.True(workspace.TryApplyChanges(solution));
-        var project = workspace.CurrentSolution.GetProject(projectId)!;
+        var project = solution.GetProject(projectId)!;
         var compilation = (await project.GetCompilationAsync())!;
         var diagnostics = await compilation.WithAnalyzers(GetAnalyzers()).GetAnalyzerDiagnosticsAsync();
         var fixableIds = GetCodeFixes()
@@ -244,7 +244,7 @@ public sealed class VariantPayloadConsumersTests : CodeFixTestBase
             candidate.Location.SourceTree?.FilePath.EndsWith("case.cs", StringComparison.Ordinal) == true);
         Assert.NotNull(diagnostic);
 
-        var document = workspace.CurrentSolution.GetDocument(userDocumentId!)!;
+        var document = solution.GetDocument(userDocumentId!)!;
         var actions = new List<CodeAction>();
         var context = new CodeFixContext(
             document,
@@ -255,7 +255,10 @@ public sealed class VariantPayloadConsumersTests : CodeFixTestBase
         await provider.RegisterCodeFixesAsync(context);
         Assert.NotEmpty(actions);
         var operations = await actions[0].GetOperationsAsync(CancellationToken.None);
-        operations.OfType<ApplyChangesOperation>().Single().Apply(workspace, CancellationToken.None);
-        return (await workspace.CurrentSolution.GetDocument(userDocumentId!)!.GetTextAsync()).ToString();
+        var applyOperation = operations.OfType<ApplyChangesOperation>().Single();
+        // Inspect the code action's immutable result without depending on workspace application.
+        return (await applyOperation.ChangedSolution
+            .GetDocument(userDocumentId!)!
+            .GetTextAsync()).ToString();
     }
 }

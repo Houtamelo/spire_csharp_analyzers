@@ -46,6 +46,10 @@
           PackagePath="analyzers/dotnet/cs"
           Pack="true"
           Visible="false" />
+    <None Include="$(OutputPath)\Houtamelo.Spire.PatternAnalysis.dll"
+          PackagePath="analyzers/dotnet/cs"
+          Pack="true"
+          Visible="false" />
   </ItemGroup>
 
 </Project>

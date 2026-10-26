@@ -236,9 +236,10 @@ public sealed class KindEnumTests
         AssertNoGeneratorDiagnostics(generated.Diagnostics);
         AssertNoCompilationErrors(generated.Compilation);
 
-        using var workspace = CreateWorkspace(generated.Compilation, out var userDocument);
+        using var workspace = new AdhocWorkspace();
+        var workspaceState = CreateWorkspace(workspace, generated.Compilation);
         var analyzer = new SPIRE016InvalidEnforceInitializationEnumValueAnalyzer();
-        var initialDiagnostics = await AnalyzeWorkspaceAsync(workspace, analyzer);
+        var initialDiagnostics = await AnalyzeWorkspaceAsync(workspaceState.Solution, analyzer);
         var diagnostic = Assert.Single(initialDiagnostics.Where(
             candidate => candidate.Id == "SPIRE016"
                 && candidate.Location.SourceTree?.FilePath == "case.cs"));
@@ -246,7 +247,7 @@ public sealed class KindEnumTests
         var provider = new FromEnumCodeFix();
         var actions = new List<CodeAction>();
         var context = new CodeFixContext(
-            userDocument,
+            workspaceState.UserDocument,
             diagnostic,
             (action, _) => actions.Add(action),
             CancellationToken.None);
@@ -255,17 +256,18 @@ public sealed class KindEnumTests
 
         var operations = await action.GetOperationsAsync(CancellationToken.None);
         var applyChanges = Assert.Single(operations.OfType<ApplyChangesOperation>());
-        applyChanges.Apply(workspace, CancellationToken.None);
 
-        var changedDocument = workspace.CurrentSolution.GetDocument(userDocument.Id)!;
+        // Inspect the code action's immutable result without depending on workspace application.
+        var changedSolution = applyChanges.ChangedSolution;
+        var changedDocument = changedSolution.GetDocument(workspaceState.UserDocument.Id)!;
         var changedText = (await changedDocument.GetTextAsync()).ToString();
         Assert.Contains("SpireEnum<Command.Kind>.From(raw)", changedText);
 
-        var changedProject = workspace.CurrentSolution.GetProject(userDocument.Project.Id)!;
+        var changedProject = changedSolution.GetProject(workspaceState.UserDocument.Project.Id)!;
         var changedCompilation = (await changedProject.GetCompilationAsync())!;
         AssertNoCompilationErrors(changedCompilation);
 
-        var finalDiagnostics = await AnalyzeWorkspaceAsync(workspace, analyzer);
+        var finalDiagnostics = await AnalyzeWorkspaceAsync(changedSolution, analyzer);
         Assert.DoesNotContain(
             finalDiagnostics,
             candidate => candidate.Id == "SPIRE016"
@@ -401,11 +403,10 @@ public sealed class KindEnumTests
         return await withAnalyzers.GetAnalyzerDiagnosticsAsync();
     }
 
-    private static AdhocWorkspace CreateWorkspace(
-        Compilation compilation,
-        out Document userDocument)
+    private static WorkspaceState CreateWorkspace(
+        AdhocWorkspace workspace,
+        Compilation compilation)
     {
-        var workspace = new AdhocWorkspace();
         var projectId = ProjectId.CreateNewId();
         var solution = workspace.CurrentSolution
             .AddProject(projectId, "KindEnumTests", "KindEnumTests", LanguageNames.CSharp)
@@ -425,16 +426,16 @@ public sealed class KindEnumTests
         }
 
         Assert.NotNull(userDocumentId);
-        Assert.True(workspace.TryApplyChanges(solution));
-        userDocument = workspace.CurrentSolution.GetDocument(userDocumentId!)!;
-        return workspace;
+        return new WorkspaceState(
+            solution,
+            solution.GetDocument(userDocumentId!)!);
     }
 
     private static async Task<ImmutableArray<Microsoft.CodeAnalysis.Diagnostic>> AnalyzeWorkspaceAsync(
-        AdhocWorkspace workspace,
+        Solution solution,
         DiagnosticAnalyzer analyzer)
     {
-        var project = workspace.CurrentSolution.Projects.Single();
+        var project = solution.Projects.Single();
         var compilation = (await project.GetCompilationAsync())!;
         return await AnalyzeAsync(compilation, analyzer);
     }
@@ -449,4 +450,8 @@ public sealed class KindEnumTests
     private readonly record struct GeneratedResult(
         Compilation Compilation,
         ImmutableArray<Microsoft.CodeAnalysis.Diagnostic> Diagnostics);
+
+    private readonly record struct WorkspaceState(
+        Solution Solution,
+        Document UserDocument);
 }

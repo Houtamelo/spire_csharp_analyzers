@@ -138,8 +138,7 @@ public sealed class ReviewRegressionTests
         }
 
         Assert.NotNull(userDocumentId);
-        Assert.True(workspace.TryApplyChanges(solution));
-        var document = workspace.CurrentSolution.GetDocument(userDocumentId!)!;
+        var document = solution.GetDocument(userDocumentId!)!;
         var root = await document.GetSyntaxRootAsync();
         Assert.NotNull(root);
         var wildcard = Assert.Single(
@@ -155,9 +154,10 @@ public sealed class ReviewRegressionTests
         await new ExpandWildcardRefactoring().ComputeRefactoringsAsync(context);
         var action = Assert.Single(actions);
         var operations = await action.GetOperationsAsync(CancellationToken.None);
-        operations.OfType<ApplyChangesOperation>().Single().Apply(workspace, CancellationToken.None);
+        var applyOperation = operations.OfType<ApplyChangesOperation>().Single();
 
-        var changedDocument = workspace.CurrentSolution.GetDocument(userDocumentId!)!;
+        // Inspect the refactoring's immutable result without depending on workspace application.
+        var changedDocument = applyOperation.ChangedSolution.GetDocument(userDocumentId!)!;
         var fixedSource = (await changedDocument.GetTextAsync()).ToString();
         Assert.Contains("Result.Count", fixedSource, StringComparison.Ordinal);
         Assert.Contains("Result.Text", fixedSource, StringComparison.Ordinal);
@@ -203,8 +203,7 @@ public sealed class ReviewRegressionTests
         }
 
         Assert.NotNull(userDocumentId);
-        Assert.True(workspace.TryApplyChanges(solution));
-        var project = workspace.CurrentSolution.GetProject(projectId)!;
+        var project = solution.GetProject(projectId)!;
         var compilation = (await project.GetCompilationAsync())!;
         var diagnostics = await compilation
             .WithAnalyzers(ImmutableArray.Create<DiagnosticAnalyzer>(new TypeSafetyAnalyzer()))
@@ -212,7 +211,7 @@ public sealed class ReviewRegressionTests
         var diagnostic = Assert.Single(diagnostics.Where(item => item.Id == "SPIRE011"));
         Assert.Equal("int?", diagnostic.Properties["ExpectedType"]);
 
-        var document = workspace.CurrentSolution.GetDocument(userDocumentId!)!;
+        var document = solution.GetDocument(userDocumentId!)!;
         var actions = new List<CodeAction>();
         var context = new CodeFixContext(
             document,
@@ -222,9 +221,10 @@ public sealed class ReviewRegressionTests
         await new FixFieldTypeCodeFix().RegisterCodeFixesAsync(context);
         var action = Assert.Single(actions);
         var operations = await action.GetOperationsAsync(CancellationToken.None);
-        operations.OfType<ApplyChangesOperation>().Single().Apply(workspace, CancellationToken.None);
+        var applyOperation = operations.OfType<ApplyChangesOperation>().Single();
 
-        var changedDocument = workspace.CurrentSolution.GetDocument(userDocumentId!)!;
+        // Inspect the code action's immutable result without depending on workspace application.
+        var changedDocument = applyOperation.ChangedSolution.GetDocument(userDocumentId!)!;
         var fixedSource = (await changedDocument.GetTextAsync()).ToString();
         var fixedRoot = CSharpSyntaxTree.ParseText(fixedSource).GetRoot();
         Assert.Single(

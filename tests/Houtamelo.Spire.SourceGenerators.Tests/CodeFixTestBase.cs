@@ -65,14 +65,11 @@ public abstract class CodeFixTestBase
                 userDocId = docId;
         }
 
-        if (!workspace.TryApplyChanges(solution))
-            throw new InvalidOperationException("Failed to apply workspace changes");
-
         if (userDocId is null)
             throw new InvalidOperationException("User document 'case.cs' not found in compilation");
 
-        // Run analyzers on the workspace compilation
-        var project = workspace.CurrentSolution.GetProject(projectId)!;
+        // Run analyzers on the detached solution without mutating the workspace.
+        var project = solution.GetProject(projectId)!;
         var compilation = (await project.GetCompilationAsync())!;
 
         var withAnalyzers = compilation.WithAnalyzers(GetAnalyzers());
@@ -101,7 +98,7 @@ public abstract class CodeFixTestBase
         var provider = GetCodeFixes()
             .First(p => p.FixableDiagnosticIds.Contains(diagnostic.Id));
 
-        var document = workspace.CurrentSolution.GetDocument(userDocId)!;
+        var document = solution.GetDocument(userDocId)!;
         var actions = new List<CodeAction>();
         var context = new CodeFixContext(
             document,
@@ -118,10 +115,9 @@ public abstract class CodeFixTestBase
         // Apply first code action
         var operations = await actions[0].GetOperationsAsync(CancellationToken.None);
         var applyOp = operations.OfType<ApplyChangesOperation>().Single();
-        applyOp.Apply(workspace, CancellationToken.None);
 
-        // Get modified document text
-        var modifiedDoc = workspace.CurrentSolution.GetDocument(userDocId)!;
+        // Inspect the code action's immutable result without depending on workspace application.
+        var modifiedDoc = applyOp.ChangedSolution.GetDocument(userDocId)!;
         var modifiedText = (await modifiedDoc.GetTextAsync()).ToString();
 
         // Compare with expected output (NormalizeWhitespace needed because

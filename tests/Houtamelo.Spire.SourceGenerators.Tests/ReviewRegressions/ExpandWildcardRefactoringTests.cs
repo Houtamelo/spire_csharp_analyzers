@@ -371,9 +371,8 @@ public sealed class ExpandWildcardRefactoringTests
         }
 
         Assert.NotNull(userDocumentId);
-        Assert.True(workspace.TryApplyChanges(solution));
 
-        var document = workspace.CurrentSolution.GetDocument(userDocumentId!)!;
+        var document = solution.GetDocument(userDocumentId!)!;
         var root = await document.GetSyntaxRootAsync();
         Assert.NotNull(root);
 
@@ -391,9 +390,9 @@ public sealed class ExpandWildcardRefactoringTests
         var action = Assert.Single(actions);
         var operations = await action.GetOperationsAsync(CancellationToken.None);
         var applyOperation = Assert.Single(operations.OfType<ApplyChangesOperation>());
-        applyOperation.Apply(workspace, CancellationToken.None);
 
-        var changedDocument = workspace.CurrentSolution.GetDocument(userDocumentId!)!;
+        // Inspect the refactoring's immutable result without depending on workspace application.
+        var changedDocument = applyOperation.ChangedSolution.GetDocument(userDocumentId!)!;
         var changedSource = (await changedDocument.GetTextAsync()).ToString();
         return (actions.Count, changedSource);
     }

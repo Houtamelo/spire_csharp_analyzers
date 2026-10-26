@@ -86,13 +86,10 @@ public abstract class RefactoringTestBase
                 userDocId = docId;
         }
 
-        if (!workspace.TryApplyChanges(solution))
-            throw new InvalidOperationException("Failed to apply workspace changes");
-
         if (userDocId is null)
             throw new InvalidOperationException("User document 'case.cs' not found");
 
-        var document = workspace.CurrentSolution.GetDocument(userDocId)!;
+        var document = solution.GetDocument(userDocId)!;
 
         var actions = new List<CodeAction>();
         foreach (var provider in GetRefactoringProviders())
@@ -112,9 +109,9 @@ public abstract class RefactoringTestBase
 
         var operations = await actions[0].GetOperationsAsync(CancellationToken.None);
         var applyOp = operations.OfType<ApplyChangesOperation>().Single();
-        applyOp.Apply(workspace, CancellationToken.None);
 
-        var modifiedDoc = workspace.CurrentSolution.GetDocument(userDocId)!;
+        // Inspect the refactoring's immutable result without depending on workspace application.
+        var modifiedDoc = applyOp.ChangedSolution.GetDocument(userDocId)!;
         var modifiedText = (await modifiedDoc.GetTextAsync()).ToString();
 
         var actualTree = CSharpSyntaxTree.ParseText(modifiedText);
