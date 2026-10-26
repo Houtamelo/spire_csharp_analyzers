@@ -33,6 +33,18 @@ stays in the current files, while integral operations can implement discrete
 adjacency explicitly. A later generic refactor can remove duplication after
 the behavior is covered; it is not required for this fix.
 
+The internal NumericDomain test API should move to exact integral factories.
+Do not keep a double-to-integer compatibility layer or project exact integer
+sets back to double merely to preserve old unit-test construction syntax.
+Preserve their range and inclusivity assertions using BigInteger endpoints.
+
+The first implementation passed 34/35 integration cases but still missed the
+nullable-long gap: DecisionTreeBuilder accepted the natural null/non-null split
+without refining its numeric portion. Integral columns, including nullable
+wrappers, must be partitioned into disjoint atoms for every row constraint
+(intersection plus remainder). This also preserves numeric/boolean correlations
+when ranges overlap. Keep the legacy floating partition policy in this batch.
+
 ## Language and Roslyn facts
 
 * `IOperation.ConstantValue` exposes the evaluated constant as an `object` when

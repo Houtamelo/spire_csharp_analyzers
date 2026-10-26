@@ -62,6 +62,17 @@ internal static class DecisionTreeBuilder
         // Start with the column domain's natural split.
         var baseSplit = column.Domain.Split();
 
+        // Integral domains are discrete, so every row constraint must refine
+        // the existing atoms. This is especially important for nullable
+        // integrals: their natural split is {null} plus the whole numeric
+        // universe, and returning that split would make every numeric row
+        // appear to cover the whole non-null partition.
+        var constraintDomains = CollectConstraintDomains(matrix, colIdx);
+        if (IsIntegralNumericDomain(column.Domain))
+        {
+            return RefineIntegralPartitions(baseSplit, constraintDomains);
+        }
+
         // If the column domain splits into multiple partitions, use those.
         // This handles bool (2 partitions) and enum (N partitions) correctly.
         if (baseSplit.Length > 1)
@@ -69,8 +80,6 @@ internal static class DecisionTreeBuilder
 
         // Single partition (typically numeric universe or similar continuous domain).
         // Refine by collecting constraint domains from the rows to create finer splits.
-        var constraintDomains = CollectConstraintDomains(matrix, colIdx);
-
         if (constraintDomains.Length == 0)
         {
             // All rows are wildcards — the single partition suffices.
@@ -102,6 +111,51 @@ internal static class DecisionTreeBuilder
         return partitionBuilder.Count > 0
             ? partitionBuilder.ToImmutable()
             : baseSplit;
+    }
+
+    /// Refine an integral column into disjoint atoms by every row constraint.
+    /// Splitting each existing atom into its intersection and remainder keeps
+    /// nullable null partitions separate and preserves row correlations when
+    /// the matrix specializes later.
+    static ImmutableArray<IValueDomain> RefineIntegralPartitions(
+        ImmutableArray<IValueDomain> baseSplit,
+        ImmutableArray<IValueDomain> constraintDomains)
+    {
+        if (constraintDomains.Length == 0)
+            return baseSplit;
+
+        var atoms = baseSplit;
+        foreach (var constraintDomain in constraintDomains)
+        {
+            if (atoms.IsDefaultOrEmpty)
+                break;
+
+            var refined = ImmutableArray.CreateBuilder<IValueDomain>();
+            foreach (var atom in atoms)
+            {
+                var covered = atom.Intersect(constraintDomain);
+                if (!covered.IsEmpty)
+                    refined.Add(covered);
+
+                var remainder = atom.Subtract(constraintDomain);
+                if (!remainder.IsEmpty)
+                    refined.Add(remainder);
+            }
+
+            atoms = refined.ToImmutable();
+        }
+
+        return atoms;
+    }
+
+    static bool IsIntegralNumericDomain(IValueDomain domain)
+    {
+        if (domain is NumericDomain numeric)
+            return numeric.IsIntegral;
+
+        return domain is NullableDomain nullable
+            && nullable.Inner is NumericDomain innerNumeric
+            && innerNumeric.IsIntegral;
     }
 
     /// Collect distinct constraint domains from a column's cells.

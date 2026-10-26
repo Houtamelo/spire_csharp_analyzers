@@ -1,3 +1,4 @@
+using System.Numerics;
 using Houtamelo.Spire.PatternAnalysis.Domains;
 using Houtamelo.Spire.PatternAnalysis.Domains.Numeric;
 using Microsoft.CodeAnalysis;
@@ -25,6 +26,9 @@ public class NumericDomainTests
         var domain = NumericDomain.Universe(type);
         Assert.True(domain.IsUniverse);
         Assert.False(domain.IsEmpty);
+        Assert.Single(domain.IntegralIntervals.Intervals);
+        Assert.Equal(new BigInteger(int.MinValue), domain.IntegralIntervals.Intervals[0].Lo);
+        Assert.Equal(new BigInteger(int.MaxValue), domain.IntegralIntervals.Intervals[0].Hi);
     }
 
     [Fact]
@@ -34,6 +38,9 @@ public class NumericDomainTests
         var domain = NumericDomain.Universe(type);
         Assert.True(domain.IsUniverse);
         Assert.False(domain.IsEmpty);
+        Assert.Single(domain.IntegralIntervals.Intervals);
+        Assert.Equal(BigInteger.Zero, domain.IntegralIntervals.Intervals[0].Lo);
+        Assert.Equal(new BigInteger(byte.MaxValue), domain.IntegralIntervals.Intervals[0].Hi);
     }
 
     [Fact]
@@ -54,10 +61,9 @@ public class NumericDomainTests
         var universe = NumericDomain.Universe(type);
 
         // Subtract (30, int.MaxValue] — represents "> 30"
-        var greaterThan30 = new NumericDomain(
+        var greaterThan30 = NumericDomain.FromIntegralIntervals(
             type,
-            IntervalSet.Single(new Interval(30.0, int.MaxValue, false, true)),
-            int.MinValue, int.MaxValue);
+            IntegralIntervalSet.Single(new IntegralInterval(30, int.MaxValue, false, true)));
 
         var result = (NumericDomain)universe.Subtract(greaterThan30);
 
@@ -65,10 +71,10 @@ public class NumericDomainTests
         Assert.False(result.IsUniverse);
 
         // Result should be [int.MinValue, 30]
-        var intervals = result.Intervals;
+        var intervals = result.IntegralIntervals;
         Assert.Single(intervals.Intervals);
-        Assert.Equal((double)int.MinValue, intervals.Intervals[0].Lo);
-        Assert.Equal(30.0, intervals.Intervals[0].Hi);
+        Assert.Equal(new BigInteger(int.MinValue), intervals.Intervals[0].Lo);
+        Assert.Equal(new BigInteger(30), intervals.Intervals[0].Hi);
         Assert.True(intervals.Intervals[0].LoInclusive);
         Assert.True(intervals.Intervals[0].HiInclusive);
     }
@@ -80,10 +86,9 @@ public class NumericDomainTests
         var universe = NumericDomain.Universe(type);
 
         // Subtract [int.MinValue, 30] — represents "<= 30"
-        var leq30 = new NumericDomain(
+        var leq30 = NumericDomain.FromIntegralIntervals(
             type,
-            IntervalSet.Single(new Interval(int.MinValue, 30.0, true, true)),
-            int.MinValue, int.MaxValue);
+            IntegralIntervalSet.Single(new IntegralInterval(int.MinValue, 30, true, true)));
 
         var result = (NumericDomain)universe.Subtract(leq30);
 
@@ -91,10 +96,10 @@ public class NumericDomainTests
         Assert.False(result.IsUniverse);
 
         // Result should be [31, int.MaxValue] (normalized for integral type)
-        var intervals = result.Intervals;
+        var intervals = result.IntegralIntervals;
         Assert.Single(intervals.Intervals);
-        Assert.Equal(31.0, intervals.Intervals[0].Lo);
-        Assert.Equal((double)int.MaxValue, intervals.Intervals[0].Hi);
+        Assert.Equal(new BigInteger(31), intervals.Intervals[0].Lo);
+        Assert.Equal(new BigInteger(int.MaxValue), intervals.Intervals[0].Hi);
         Assert.True(intervals.Intervals[0].LoInclusive);
         Assert.True(intervals.Intervals[0].HiInclusive);
     }
@@ -107,18 +112,17 @@ public class NumericDomainTests
         var type = GetType(SpecialType.System_Int32);
 
         // (30, int.MaxValue] — represents "> 30"
-        var greaterThan30 = new NumericDomain(
+        var greaterThan30 = NumericDomain.FromIntegralIntervals(
             type,
-            IntervalSet.Single(new Interval(30.0, int.MaxValue, false, true)),
-            int.MinValue, int.MaxValue);
+            IntegralIntervalSet.Single(new IntegralInterval(30, int.MaxValue, false, true)));
 
         var result = (NumericDomain)greaterThan30.Complement();
 
         // Complement should be [int.MinValue, 30]
-        var intervals = result.Intervals;
+        var intervals = result.IntegralIntervals;
         Assert.Single(intervals.Intervals);
-        Assert.Equal((double)int.MinValue, intervals.Intervals[0].Lo);
-        Assert.Equal(30.0, intervals.Intervals[0].Hi);
+        Assert.Equal(new BigInteger(int.MinValue), intervals.Intervals[0].Lo);
+        Assert.Equal(new BigInteger(30), intervals.Intervals[0].Hi);
         Assert.True(intervals.Intervals[0].LoInclusive);
         Assert.True(intervals.Intervals[0].HiInclusive);
     }
@@ -132,21 +136,20 @@ public class NumericDomainTests
         var universe = NumericDomain.Universe(type);
 
         // [int.MinValue, 30]
-        var left = new NumericDomain(
+        var left = NumericDomain.FromIntegralIntervals(
             type,
-            IntervalSet.Single(new Interval(int.MinValue, 30.0, true, true)),
-            int.MinValue, int.MaxValue);
+            IntegralIntervalSet.Single(new IntegralInterval(int.MinValue, 30, true, true)));
 
         // Subtract left from universe should give (30, int.MaxValue]
         var right = (NumericDomain)universe.Subtract(left);
 
         // The right should be the complement: [31, int.MaxValue] (normalized for integral type)
         Assert.False(right.IsEmpty);
-        var rightIntervals = right.Intervals;
+        var rightIntervals = right.IntegralIntervals;
         Assert.Single(rightIntervals.Intervals);
-        Assert.Equal(31.0, rightIntervals.Intervals[0].Lo);
+        Assert.Equal(new BigInteger(31), rightIntervals.Intervals[0].Lo);
         Assert.True(rightIntervals.Intervals[0].LoInclusive);
-        Assert.Equal((double)int.MaxValue, rightIntervals.Intervals[0].Hi);
+        Assert.Equal(new BigInteger(int.MaxValue), rightIntervals.Intervals[0].Hi);
         Assert.True(rightIntervals.Intervals[0].HiInclusive);
     }
 
@@ -160,10 +163,9 @@ public class NumericDomainTests
 
         // Subtract the single point [30, 30] from the universe to create two disjoint intervals:
         // [int.MinValue, 30) U (30, int.MaxValue]
-        var point30 = new NumericDomain(
+        var point30 = NumericDomain.FromIntegralIntervals(
             type,
-            IntervalSet.Single(new Interval(30.0, 30.0, true, true)),
-            int.MinValue, int.MaxValue);
+            IntegralIntervalSet.Single(new IntegralInterval(30, 30, true, true)));
 
         var domain = (NumericDomain)universe.Subtract(point30);
 
@@ -199,24 +201,22 @@ public class NumericDomainTests
         var type = GetType(SpecialType.System_Int32);
 
         // [0, 50]
-        var a = new NumericDomain(
+        var a = NumericDomain.FromIntegralIntervals(
             type,
-            IntervalSet.Single(new Interval(0.0, 50.0, true, true)),
-            int.MinValue, int.MaxValue);
+            IntegralIntervalSet.Single(new IntegralInterval(0, 50, true, true)));
 
         // [30, 100]
-        var b = new NumericDomain(
+        var b = NumericDomain.FromIntegralIntervals(
             type,
-            IntervalSet.Single(new Interval(30.0, 100.0, true, true)),
-            int.MinValue, int.MaxValue);
+            IntegralIntervalSet.Single(new IntegralInterval(30, 100, true, true)));
 
         var result = (NumericDomain)a.Intersect(b);
 
         Assert.False(result.IsEmpty);
-        var intervals = result.Intervals;
+        var intervals = result.IntegralIntervals;
         Assert.Single(intervals.Intervals);
-        Assert.Equal(30.0, intervals.Intervals[0].Lo);
-        Assert.Equal(50.0, intervals.Intervals[0].Hi);
+        Assert.Equal(new BigInteger(30), intervals.Intervals[0].Lo);
+        Assert.Equal(new BigInteger(50), intervals.Intervals[0].Hi);
         Assert.True(intervals.Intervals[0].LoInclusive);
         Assert.True(intervals.Intervals[0].HiInclusive);
     }

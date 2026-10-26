@@ -258,15 +258,12 @@ public class DecisionTreeBuilderTests
     public void Numeric_complementary_ranges_exhaustive()
     {
         // int: [int.MinValue, 0] and (0, int.MaxValue]
-        var intMin = (double)int.MinValue;
-        var intMax = (double)int.MaxValue;
-
-        var leftRange = new NumericDomain(IntType,
-            IntervalSet.Single(new Interval(intMin, 0, true, true)),
-            intMin, intMax);
-        var rightRange = new NumericDomain(IntType,
-            IntervalSet.Single(new Interval(0, intMax, false, true)),
-            intMin, intMax);
+        var leftRange = NumericDomain.FromIntegralIntervals(
+            IntType,
+            IntegralIntervalSet.Single(new IntegralInterval(int.MinValue, 0, true, true)));
+        var rightRange = NumericDomain.FromIntegralIntervals(
+            IntType,
+            IntegralIntervalSet.Single(new IntegralInterval(0, int.MaxValue, false, true)));
 
         var column = new Column(Slot(0, IntType), NumericDomain.Universe(IntType));
 
@@ -286,15 +283,12 @@ public class DecisionTreeBuilderTests
     public void Numeric_gap_at_zero_reports_missing()
     {
         // int: [int.MinValue, 0) and (0, int.MaxValue] — missing exactly {0}
-        var intMin = (double)int.MinValue;
-        var intMax = (double)int.MaxValue;
-
-        var leftRange = new NumericDomain(IntType,
-            IntervalSet.Single(new Interval(intMin, 0, true, false)),
-            intMin, intMax);
-        var rightRange = new NumericDomain(IntType,
-            IntervalSet.Single(new Interval(0, intMax, false, true)),
-            intMin, intMax);
+        var leftRange = NumericDomain.FromIntegralIntervals(
+            IntType,
+            IntegralIntervalSet.Single(new IntegralInterval(int.MinValue, 0, true, false)));
+        var rightRange = NumericDomain.FromIntegralIntervals(
+            IntType,
+            IntegralIntervalSet.Single(new IntegralInterval(0, int.MaxValue, false, true)));
 
         var column = new Column(Slot(0, IntType), NumericDomain.Universe(IntType));
 

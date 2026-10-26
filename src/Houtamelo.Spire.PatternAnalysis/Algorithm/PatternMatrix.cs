@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Immutable;
-using System.Globalization;
 using System.Linq;
 using Houtamelo.Spire.PatternAnalysis.Domains;
-using Houtamelo.Spire.PatternAnalysis.Domains.Numeric;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
@@ -316,20 +314,19 @@ internal sealed class PatternMatrix
             }
         }
 
-        // Numeric constants
-        if (innerCell == null && effectiveDomain is NumericDomain && constantValue.Value is IConvertible convertible)
+        // Numeric constants. Keep Roslyn's typed ConstantValue intact until
+        // NumericDomain chooses its exact integral or legacy floating path.
+        if (innerCell == null && effectiveDomain is NumericDomain numericDomain)
         {
-            try
+            if (TryGetNumericConstant(value, numericDomain, out var numericValue) &&
+                numericDomain.TryCreatePoint(numericValue, out var point))
             {
-                var doubleVal = convertible.ToDouble(CultureInfo.InvariantCulture);
-                var point = new NumericDomain(effectiveDomain.Type,
-                    IntervalSet.Single(new Interval(doubleVal, doubleVal, true, true)),
-                    double.MinValue, double.MaxValue);
                 innerCell = new Cell.Constraint(point);
             }
-            catch
+            else
             {
-                // Conversion failed
+                // An unsupported typed numeric constant cannot prove coverage.
+                innerCell = new Cell.Constraint(numericDomain.EmptyLike());
             }
         }
 
@@ -1180,20 +1177,19 @@ internal sealed class PatternMatrix
             }
         }
 
-        // Numeric constants
-        if (innerCell == null && effectiveDomain is NumericDomain && constantValue.Value is IConvertible convertible)
+        // Numeric constants use the same typed-constant helper as traditional
+        // case labels and relational patterns.
+        if (innerCell == null && effectiveDomain is NumericDomain numericDomain)
         {
-            try
+            if (TryGetNumericConstant(value, numericDomain, out var numericValue) &&
+                numericDomain.TryCreatePoint(numericValue, out var point))
             {
-                var doubleVal = convertible.ToDouble(CultureInfo.InvariantCulture);
-                var point = new NumericDomain(effectiveDomain.Type,
-                    IntervalSet.Single(new Interval(doubleVal, doubleVal, true, true)),
-                    double.MinValue, double.MaxValue);
                 innerCell = new Cell.Constraint(point);
             }
-            catch
+            else
             {
-                // Conversion failed — fallback to wildcard
+                // An unsupported typed numeric constant cannot prove coverage.
+                innerCell = new Cell.Constraint(numericDomain.EmptyLike());
             }
         }
 
@@ -1229,43 +1225,24 @@ internal sealed class PatternMatrix
         var isNullable = domain is NullableDomain;
         var effectiveDomain = isNullable ? ((NullableDomain)domain).Inner : domain;
 
-        if (effectiveDomain is not NumericDomain)
+        if (effectiveDomain is not NumericDomain numericDomain)
             return Cell.Wildcard.Instance;
 
-        var constValue = relPattern.Value.ConstantValue;
-        if (!constValue.HasValue || constValue.Value is not IConvertible convertible)
-            return Cell.Wildcard.Instance;
-
-        double bound;
-        try
+        // Keep the typed Roslyn constant intact. Integral domains convert it
+        // directly to BigInteger; floating domains preserve the existing
+        // invariant-culture double conversion.
+        if (!TryGetNumericConstant(relPattern.Value, numericDomain, out var numericValue) ||
+            !numericDomain.TryCreateRange(numericValue, relPattern.OperatorKind, out var innerConstraint))
         {
-            bound = convertible.ToDouble(CultureInfo.InvariantCulture);
-        }
-        catch
-        {
-            return Cell.Wildcard.Instance;
-        }
+            var unsupported = numericDomain.EmptyLike();
+            if (isNullable)
+            {
+                return new Cell.Constraint(
+                    new NullableDomain(domain.Type, unsupported, hasNull: false));
+            }
 
-        Interval interval;
-        switch (relPattern.OperatorKind)
-        {
-            case BinaryOperatorKind.LessThan:
-                interval = new Interval(double.MinValue, bound, true, false);
-                break;
-            case BinaryOperatorKind.LessThanOrEqual:
-                interval = new Interval(double.MinValue, bound, true, true);
-                break;
-            case BinaryOperatorKind.GreaterThan:
-                interval = new Interval(bound, double.MaxValue, false, true);
-                break;
-            case BinaryOperatorKind.GreaterThanOrEqual:
-                interval = new Interval(bound, double.MaxValue, true, true);
-                break;
-            default:
-                return Cell.Wildcard.Instance;
+            return new Cell.Constraint(unsupported);
         }
-
-        var innerConstraint = new NumericDomain(effectiveDomain.Type, IntervalSet.Single(interval), double.MinValue, double.MaxValue);
 
         if (isNullable)
         {
@@ -1274,6 +1251,29 @@ internal sealed class PatternMatrix
         }
 
         return new Cell.Constraint(innerConstraint);
+    }
+
+    /// Preserve the operation's typed constant until NumericDomain dispatches
+    /// to exact integral or legacy floating arithmetic. Unsupported numeric
+    /// constants return false so callers can represent an empty constraint,
+    /// never a wildcard that would falsely prove exhaustiveness.
+    static bool TryGetNumericConstant(
+        IOperation value,
+        NumericDomain domain,
+        out object constant)
+    {
+        var constantValue = value.ConstantValue;
+        if (!constantValue.HasValue || constantValue.Value == null)
+        {
+            constant = null!;
+            return false;
+        }
+
+        constant = constantValue.Value;
+        if (domain.IsIntegral)
+            return NumericDomain.IsIntegralConstant(constant);
+
+        return constant is IConvertible;
     }
 
     static Cell ConvertBinaryPattern(IBinaryPatternOperation binaryPattern, IValueDomain domain)

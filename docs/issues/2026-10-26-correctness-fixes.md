@@ -116,4 +116,18 @@ case counts, and source baseline are unchanged. Evidence:
 `tmp/correctness-fixes-20261026/batch5-inliner-isolated-ready/` and
 `batch5-hint-metadata/`. Native execution remains in final validation.
 
-Batches 6–7 pending. Their regression matrices and staged test drafts are ready.
+Batch 6 complete: the eight fixed-width integral domains use exact BigInteger
+intervals and typed Roslyn constants. Closed discrete ranges preserve adjacency,
+extrema, negation, and gaps above 2^53. Nullable integral partitions and overlapping
+numeric/boolean rows refine to disjoint atoms. Floating representations and their
+existing policies remain separate. Internal unit callers now use exact factories
+rather than a lossy compatibility layer.
+
+Validation: 2,273 SDK tests passed across eight projects, zero skipped; all 77
+source controls unchanged. PatternAnalysis passes 401 tests, including 36 new
+integration cases and 26 interval tests. Its portable netstandard2.1 host builds
+with zero warnings/errors. Evidence:
+`tmp/correctness-fixes-20261026/batch6-integral-final/` and
+`batch6-integral-focused/`.
+
+Batch 7 pending, followed by final native and package validation.
