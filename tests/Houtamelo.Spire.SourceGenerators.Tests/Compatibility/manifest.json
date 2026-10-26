@@ -317,7 +317,7 @@
       "Input": "cases/Performance/Inlinable/action_arity0/input.cs",
       "Outputs": [
         {
-          "Hint": "Runner.Repeat.InlinableTwin.g.cs",
+          "Hint": "M_TestNs_Runner_Repeat_System_Int32_System_Action_.2ba50ad4e2e265435701cc7425926d98191d02270fa5544ff3ec56f62d7c71af.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-action_arity0/000-Runner.Repeat.InlinableTwin.g.cs.txt",
           "SourceSha256": "1f6226cd797b9e5e74270ee9c16a7aa04eebdc8c58c64442a105af46c963299e"
         }
@@ -329,7 +329,7 @@
       "Input": "cases/Performance/Inlinable/action_arity3/input.cs",
       "Outputs": [
         {
-          "Hint": "Runner.Run.InlinableTwin.g.cs",
+          "Hint": "M_TestNs_Runner_Run_System_Action_System_Int32_System_Int32_System_Int32__System.00401157b4b928fd7655c4f4c81ecb5e8f424d88a8c8653e34730208aeaccce9.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-action_arity3/000-Runner.Run.InlinableTwin.g.cs.txt",
           "SourceSha256": "cc714cf79e921a594b11ac2fe8cd586007a338cc537990689fddde9a223e0dc7"
         }
@@ -341,7 +341,7 @@
       "Input": "cases/Performance/Inlinable/action_arity8/input.cs",
       "Outputs": [
         {
-          "Hint": "Runner.Run.InlinableTwin.g.cs",
+          "Hint": "M_TestNs_Runner_Run_System_Action_System_Int32_System_Int32_System_Int32_System_.eae3ba8e4a794fc45888ba0d7cc4029c67d66036cb2b5d37658947a0ef0a69ea.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-action_arity8/000-Runner.Run.InlinableTwin.g.cs.txt",
           "SourceSha256": "8be7e99722ab578ba933ffd4d499118abf9349dd9dee2c3f5ed9db123e131055"
         }
@@ -353,7 +353,7 @@
       "Input": "cases/Performance/Inlinable/action_t_direct/input.cs",
       "Outputs": [
         {
-          "Hint": "ListExt.ForEach.InlinableTwin.g.cs",
+          "Hint": "M_TestNs_ListExt_ForEach__1_System_Collections_Generic_List___0__System_Action__.9c1d0ba402fc25e8389c28c20538bd3f8a665c0de473fa9931b4312a4539a583.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-action_t_direct/000-ListExt.ForEach.InlinableTwin.g.cs.txt",
           "SourceSha256": "6a5894e740f8d8acbe3d2c1a752875a2a034c51c07f11b2b83435b46f602cf4c"
         }
@@ -365,7 +365,7 @@
       "Input": "cases/Performance/Inlinable/alias_ternary/input.cs",
       "Outputs": [
         {
-          "Hint": "Aliases.Run.InlinableTwin.g.cs",
+          "Hint": "M_TestNs_Aliases_Run_System_Boolean_System_Int32_System_Action_System_Int32__.475c726adcfa40d7f4a54c42c0595e46c2894fb663ea12b667e7fcf7ad532a05.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-alias_ternary/000-Aliases.Run.InlinableTwin.g.cs.txt",
           "SourceSha256": "3ff6f40339f980d8af72d4c04ffae58ffa015afea29ef0282156f80b80a1baaa"
         }
@@ -377,7 +377,7 @@
       "Input": "cases/Performance/Inlinable/alias_transitive/input.cs",
       "Outputs": [
         {
-          "Hint": "Aliases.Run.InlinableTwin.g.cs",
+          "Hint": "M_TestNs_Aliases_Run_System_Int32_System_Action_System_Int32__.149f33c1183e9df94a418c1675f69cf8dda0ad3f35b0ca1787b26e38cfd443c6.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-alias_transitive/000-Aliases.Run.InlinableTwin.g.cs.txt",
           "SourceSha256": "e1ed382eaef3e625915ff1fa686b74ad522d7ee2453c8676ac873ea04cdec9c6"
         }
@@ -389,7 +389,7 @@
       "Input": "cases/Performance/Inlinable/alias_var/input.cs",
       "Outputs": [
         {
-          "Hint": "Aliases.Run.InlinableTwin.g.cs",
+          "Hint": "M_TestNs_Aliases_Run_System_Int32_System_Action_System_Int32__.149f33c1183e9df94a418c1675f69cf8dda0ad3f35b0ca1787b26e38cfd443c6.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-alias_var/000-Aliases.Run.InlinableTwin.g.cs.txt",
           "SourceSha256": "3173fb70403a96fbd0b7f6445b383b80922dc933ca066d9948c51113566fec5a"
         }
@@ -401,7 +401,7 @@
       "Input": "cases/Performance/Inlinable/func_r_arity0/input.cs",
       "Outputs": [
         {
-          "Hint": "Lazy.Get.InlinableTwin.g.cs",
+          "Hint": "M_TestNs_Lazy_Get__1_System_Func___0__.d557178ee0c4fdea64d233dff9b2b4234d3dfd7161c25182ddabc93088d174b5.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-func_r_arity0/000-Lazy.Get.InlinableTwin.g.cs.txt",
           "SourceSha256": "fbcadb28e2e05a25b4a34ac10a83c663459472ac87af752e876f09855648b3ce"
         }
@@ -413,7 +413,7 @@
       "Input": "cases/Performance/Inlinable/func_t_r_direct/input.cs",
       "Outputs": [
         {
-          "Hint": "ListExt.Map.InlinableTwin.g.cs",
+          "Hint": "M_TestNs_ListExt_Map__2_System_Collections_Generic_List___0__System_Func___0___1.66ad9156c14c0b5bcb6aed6536fc7f8948cf03e1a4cc91e04a6fc93db1dad88b.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-func_t_r_direct/000-ListExt.Map.InlinableTwin.g.cs.txt",
           "SourceSha256": "683c8c62798db8a7d4d086ea98dcf12ab385bfbda4036e003041241364127c4e"
         }
@@ -425,7 +425,7 @@
       "Input": "cases/Performance/Inlinable/multi_inlinable/input.cs",
       "Outputs": [
         {
-          "Hint": "Pipeline.Run.InlinableTwin.g.cs",
+          "Hint": "M_TestNs_Pipeline_Run__2___0_System_Func___0___0__System_Func___0___1__.5f19d99f02318f79a02519f55c3cddf97ae0e8796510a63afb5a1ce5effebac7.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-multi_inlinable/000-Pipeline.Run.InlinableTwin.g.cs.txt",
           "SourceSha256": "9672351ea62ed91bf8bf3a4d61b0681593cf679e0c75f8d264f54d3f385db4c6"
         }
@@ -437,7 +437,7 @@
       "Input": "cases/Performance/Inlinable/nonnull_strip_null_check/input.cs",
       "Outputs": [
         {
-          "Hint": "Notifier.Fire.InlinableTwin.g.cs",
+          "Hint": "M_TestNs_Notifier_Fire_System_Int32_System_Action_System_Int32__.b296d27f64598f592561ec42b0f2a0a2a67ae63eb2726369a8dad2a8abb67312.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-nonnull_strip_null_check/000-Notifier.Fire.InlinableTwin.g.cs.txt",
           "SourceSha256": "7f1d0d6a86276670e5f48e06ed6f839e53a6c5ff8fd48a0bc20343115db48ac6"
         }
@@ -449,7 +449,7 @@
       "Input": "cases/Performance/Inlinable/nullable_cond_invoke/input.cs",
       "Outputs": [
         {
-          "Hint": "Notifier.Fire.InlinableTwin.g.cs",
+          "Hint": "M_TestNs_Notifier_Fire_System_Int32_System_Action_System_Int32__.b296d27f64598f592561ec42b0f2a0a2a67ae63eb2726369a8dad2a8abb67312.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-nullable_cond_invoke/000-Notifier.Fire.InlinableTwin.g.cs.txt",
           "SourceSha256": "84d93e996b107f8ff9e83d366fe8ab1b5280701d8a37f4d65c96939ababf5619"
         }
@@ -461,7 +461,7 @@
       "Input": "cases/Performance/Inlinable/ref_readonly_host_parameter/input.cs",
       "Outputs": [
         {
-          "Hint": "Runner.Run.InlinableTwin.g.cs",
+          "Hint": "M_TestNs_Runner_Run_System_Int32__System_Action_.4d7c7f8e828f29a5cbcfb14ef4efa3f35eae2d50d84c7ba5ae21e9da0ce6578f.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-ref_readonly_host_parameter/000-Runner.Run.InlinableTwin.g.cs.txt",
           "SourceSha256": "edbe85671747c7a2ed2025419df964c2e41856c55873c5716faaa925b3a857b9"
         }
@@ -473,7 +473,7 @@
       "Input": "cases/Performance/InlinerStruct/generic_method/input.cs",
       "Outputs": [
         {
-          "Hint": "Samples.Log.InlinerStruct.g.cs",
+          "Hint": "M_TestNs_Samples_Log__1___0_.2601eb37232a0c79f08f5f2922d7ae217dd6e863256c03499e43c31c43d9c227.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-generic_method/000-Samples.Log.InlinerStruct.g.cs.txt",
           "SourceSha256": "3fe0d8ea31658ec823d60e0722a4ff6e8d6cc396fce93f8b32e952065cacb7ff"
         }
@@ -485,7 +485,7 @@
       "Input": "cases/Performance/InlinerStruct/generic_type/input.cs",
       "Outputs": [
         {
-          "Hint": "Box.Get.InlinerStruct.g.cs",
+          "Hint": "M_TestNs_Box_1_Get.36383573e707b5bdb437baa5cfe10be55914dca293fef9c9e8fcdbd6f05ad2dc.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-generic_type/000-Box.Get.InlinerStruct.g.cs.txt",
           "SourceSha256": "4c4143345fa0e669b0f12203684eaaf66b448a447b50772a60675fc0cf59ffeb"
         }
@@ -497,7 +497,7 @@
       "Input": "cases/Performance/InlinerStruct/instance_func_arity2/input.cs",
       "Outputs": [
         {
-          "Hint": "Calc.Mul.InlinerStruct.g.cs",
+          "Hint": "M_TestNs_Calc_Mul_System_Int32_System_Int32_.5c6f7ac00834065310a8b3f283d3d4df25a9362c32813fd2963f50bcc0bd3f6c.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-instance_func_arity2/000-Calc.Mul.InlinerStruct.g.cs.txt",
           "SourceSha256": "ecc4edb636e4f186773a43a4caf6d2f6e17bfb2b334dccdaa040259da0193ad9"
         }
@@ -509,7 +509,7 @@
       "Input": "cases/Performance/InlinerStruct/instance_void_arity1/input.cs",
       "Outputs": [
         {
-          "Hint": "Widget.Set.InlinerStruct.g.cs",
+          "Hint": "M_TestNs_Widget_Set_System_Int32_.a36eca25284730de0d34ba14ce4d989c7921143bb87e6672b00e1c72bff94b1a.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-instance_void_arity1/000-Widget.Set.InlinerStruct.g.cs.txt",
           "SourceSha256": "eda9936edf683aeee14842ec5775d422b6df454809ccda3719ca54295fb80716"
         }
@@ -521,7 +521,7 @@
       "Input": "cases/Performance/InlinerStruct/nested_types/input.cs",
       "Outputs": [
         {
-          "Hint": "Inner.Double.InlinerStruct.g.cs",
+          "Hint": "M_TestNs_Outer_Inner_Double_System_Int32_.2925e51d2353fbe5e7a51306e5370fc105e392577d5b64e991f40cb51dc266f2.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-nested_types/000-Inner.Double.InlinerStruct.g.cs.txt",
           "SourceSha256": "4549eac2d3079e725edd206100659c306a510c33b537e4e8cbabe8e4fa3d4900"
         }
@@ -533,7 +533,7 @@
       "Input": "cases/Performance/InlinerStruct/static_func_arity0/input.cs",
       "Outputs": [
         {
-          "Hint": "Samples.Zero.InlinerStruct.g.cs",
+          "Hint": "M_TestNs_Samples_Zero.c74dea7f6fbc8c56e01dbbc4e48dff680ffe24502ceb871537deec315a9a72fe.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-static_func_arity0/000-Samples.Zero.InlinerStruct.g.cs.txt",
           "SourceSha256": "06bafc2373673f8ca2b6c006b7cf5f0343162d60df5e995d54d9af02f885944f"
         }
@@ -545,7 +545,7 @@
       "Input": "cases/Performance/InlinerStruct/static_func_arity1/input.cs",
       "Outputs": [
         {
-          "Hint": "Samples.Double.InlinerStruct.g.cs",
+          "Hint": "M_TestNs_Samples_Double_System_Int32_.7607517f0abd8e6eb2c4bb2dfdc40c80690880b1bac4e58b703558d6d968e51e.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-static_func_arity1/000-Samples.Double.InlinerStruct.g.cs.txt",
           "SourceSha256": "2509f0b1601b2e81478c1a806abfa6e166a13d9f5f963c36105cafc2dfd216d7"
         }
@@ -557,7 +557,7 @@
       "Input": "cases/Performance/InlinerStruct/static_void_arity0/input.cs",
       "Outputs": [
         {
-          "Hint": "Samples.Run.InlinerStruct.g.cs",
+          "Hint": "M_TestNs_Samples_Run.11479b3fe047ee2259c1db0f69bd43d4bbb7928b66d2b55a0814b3d076e181b8.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-static_void_arity0/000-Samples.Run.InlinerStruct.g.cs.txt",
           "SourceSha256": "39839f582fe21bd243e644ccafa2da515bc8867d807f49eb71a2b4ce78d26bfb"
         }
@@ -569,7 +569,7 @@
       "Input": "cases/Performance/InlinerStruct/static_void_arity1/input.cs",
       "Outputs": [
         {
-          "Hint": "Samples.Log.InlinerStruct.g.cs",
+          "Hint": "M_TestNs_Samples_Log_System_String_.19abb4b08e115b3e7805194c022b611f93c49a5f257e222aa28b170d77da25d4.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-static_void_arity1/000-Samples.Log.InlinerStruct.g.cs.txt",
           "SourceSha256": "9f4a596a9cf7220f4cc2751980f0c701c1705fe836ad2f863a45fbfbaf550bd5"
         }
@@ -581,7 +581,7 @@
       "Input": "cases/Performance/InlinerStruct/static_void_arity3/input.cs",
       "Outputs": [
         {
-          "Hint": "Samples.Op.InlinerStruct.g.cs",
+          "Hint": "M_TestNs_Samples_Op_System_Int32_System_Int32_System_Int32_.04234c443160da03662dd7cd65dee6c977295cb2861eef2ca9a06067ef8b7217.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-static_void_arity3/000-Samples.Op.InlinerStruct.g.cs.txt",
           "SourceSha256": "31050c69ea73550bc0cfc97aa5416f347e29e250389b309a81c15d82cf2aac13"
         }
@@ -593,7 +593,7 @@
       "Input": "cases/Performance/InlinerStruct/static_void_arity8/input.cs",
       "Outputs": [
         {
-          "Hint": "Samples.Big.InlinerStruct.g.cs",
+          "Hint": "M_TestNs_Samples_Big_System_Int32_System_Int32_System_Int32_System_Int32_System_.3a653780ce5641ff793b65238ff5bb7d53ef84343fe09c3eb20aafe49ed18ad1.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-static_void_arity8/000-Samples.Big.InlinerStruct.g.cs.txt",
           "SourceSha256": "c0b00da13d603110f92324d079c06f8d6a2fdb528b6d6235d10815819af5d424"
         }

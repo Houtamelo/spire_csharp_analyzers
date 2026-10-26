@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Emit;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Performance.Model;
 using Microsoft.CodeAnalysis;
@@ -52,11 +53,55 @@ internal static class InlinerSymbolInfo
                 Keyword: GetTypeKeyword(current),
                 Name: current.Name,
                 TypeParameters: new EquatableArray<string>(
-                    current.TypeParameters.Select(tp => tp.Name).ToImmutableArray())));
+                    current.TypeParameters.Select(parameter => parameter.Name).ToImmutableArray()),
+                TypeParameterConstraints: BuildTypeParameterConstraints(current)));
             current = current.ContainingType;
         }
         chain.Reverse(); // outermost first
         return chain.ToImmutableArray();
+    }
+
+    internal static EquatableArray<string> BuildTypeParameterConstraints(INamedTypeSymbol type)
+        => BuildSemanticTypeParameterConstraints(type.TypeParameters);
+
+    internal static EquatableArray<string> BuildMethodTypeParameterConstraints(IMethodSymbol method)
+        => BuildSemanticTypeParameterConstraints(method.TypeParameters);
+
+    private static EquatableArray<string> BuildSemanticTypeParameterConstraints(
+        ImmutableArray<ITypeParameterSymbol> parameters)
+    {
+        var clauses = ImmutableArray.CreateBuilder<string>();
+        foreach (var parameter in parameters)
+        {
+            var constraints = new List<string>();
+            if (parameter.HasUnmanagedTypeConstraint)
+                constraints.Add("unmanaged");
+            else if (parameter.HasValueTypeConstraint)
+                constraints.Add("struct");
+            else if (parameter.HasReferenceTypeConstraint)
+                constraints.Add(parameter.ReferenceTypeConstraintNullableAnnotation == NullableAnnotation.Annotated
+                    ? "class?"
+                    : "class");
+            else if (parameter.HasNotNullConstraint)
+                constraints.Add("notnull");
+
+            constraints.AddRange(parameter.ConstraintTypes.Select(FormatConstraintType));
+            if (parameter.HasConstructorConstraint)
+                constraints.Add("new()");
+
+            if (constraints.Count > 0)
+                clauses.Add($"where {IdentifierUtility.Escape(parameter.Name)} : {string.Join(", ", constraints)}");
+        }
+
+        return new EquatableArray<string>(clauses.ToImmutable());
+    }
+
+    private static string FormatConstraintType(ITypeSymbol type)
+    {
+        return type.ToDisplayString(
+            SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+                SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions |
+                SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
     }
 
     internal static string GetTypeKeyword(INamedTypeSymbol type)

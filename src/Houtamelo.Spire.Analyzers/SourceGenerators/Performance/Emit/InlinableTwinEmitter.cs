@@ -22,23 +22,29 @@ internal static class InlinableTwinEmitter
         bool hasNamespace = !string.IsNullOrEmpty(decl.Namespace);
         if (hasNamespace)
         {
-            sb.AppendLine($"namespace {decl.Namespace}");
+            sb.AppendLine($"namespace {InlinerEmitterFormatting.EscapeQualifiedName(decl.Namespace)}");
             sb.OpenBrace();
         }
 
         // Outer containing types (outermost-first).
         foreach (var ct in decl.ContainingTypes)
         {
-            sb.AppendLine(DeclarationFormatting.FormatRawPartialTypeDeclaration(ct.AccessibilityKeyword, ct.Keyword, ct.Name, ct.TypeParameters));
+            sb.AppendLine(InlinerEmitterFormatting.FormatPartialTypeDeclaration(
+                ct.AccessibilityKeyword,
+                ct.Keyword,
+                ct.Name,
+                ct.TypeParameters));
+            InlinerEmitterFormatting.AppendConstraints(sb, ct.TypeParameterConstraints);
             sb.OpenBrace();
         }
 
         // Declaring type.
-        sb.AppendLine(DeclarationFormatting.FormatRawPartialTypeDeclaration(
+        sb.AppendLine(InlinerEmitterFormatting.FormatPartialTypeDeclaration(
             decl.DeclaringTypeAccessibility,
             decl.DeclaringTypeKeyword,
             decl.DeclaringTypeName,
             decl.DeclaringTypeParameters));
+        InlinerEmitterFormatting.AppendConstraints(sb, decl.DeclaringTypeParameterConstraints);
         sb.OpenBrace();
 
         EmitTwinMethod(sb, decl);
@@ -58,8 +64,8 @@ internal static class InlinableTwinEmitter
     {
         // Assemble generics: host generics + one per inlinable param.
         var allGenerics = new List<string>();
-        foreach (var g in decl.HostTypeParameters) allGenerics.Add(g);
-        foreach (var p in decl.InlinableParams) allGenerics.Add(p.GenericName);
+        foreach (var g in decl.HostTypeParameters) allGenerics.Add(IdentifierUtility.Escape(g));
+        foreach (var p in decl.InlinableParams) allGenerics.Add(IdentifierUtility.Escape(p.GenericName));
 
         var genericsStr = allGenerics.Count == 0 ? "" : "<" + string.Join(", ", allGenerics) + ">";
 
@@ -68,7 +74,7 @@ internal static class InlinableTwinEmitter
         var paramList = string.Join(", ", paramStrings);
 
         var staticKeyword = decl.IsStatic ? "static " : "";
-        var signature = $"{decl.Accessibility} {staticKeyword}{decl.ReturnType} {decl.MethodName}{genericsStr}({paramList})";
+        var signature = $"{decl.Accessibility} {staticKeyword}{decl.ReturnType} {IdentifierUtility.Escape(decl.MethodName)}{genericsStr}({paramList})";
 
         sb.AppendLine(signature);
 
@@ -80,7 +86,7 @@ internal static class InlinableTwinEmitter
         foreach (var p in decl.InlinableParams)
         {
             var iface = BuildInterface(p);
-            sb.AppendLine($"    where {p.GenericName} : struct, {iface}");
+            sb.AppendLine($"    where {IdentifierUtility.Escape(p.GenericName)} : struct, {iface}");
         }
 
         // Body: rewritten.
@@ -147,14 +153,14 @@ internal static class InlinableTwinEmitter
         foreach (var ip in decl.InlinableParams)
         {
             var nullable = ip.IsNullable ? "?" : "";
-            slots[ip.Position] = $"{ip.GenericName}{nullable} {ip.Name}";
+            slots[ip.Position] = $"{IdentifierUtility.Escape(ip.GenericName)}{nullable} {IdentifierUtility.Escape(ip.Name)}";
         }
         foreach (var op in decl.OtherParams)
         {
             var prefix = "";
             if (op.IsThis) prefix += "this ";
             if (!string.IsNullOrEmpty(op.RefKind)) prefix += op.RefKind + " ";
-            slots[op.Position] = $"{prefix}{op.Type} {op.Name}";
+            slots[op.Position] = $"{prefix}{op.Type} {IdentifierUtility.Escape(op.Name)}";
         }
         return slots.ToList();
     }
@@ -173,7 +179,5 @@ internal static class InlinableTwinEmitter
             return "global::Houtamelo.Spire.IActionInliner";
         return $"global::Houtamelo.Spire.IActionInliner<{string.Join(", ", typeArgs)}>";
     }
-
-
 
 }

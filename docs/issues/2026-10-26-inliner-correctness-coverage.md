@@ -68,12 +68,15 @@ the complete metadata-derived scheme along with every other inliner.
 | `keyword_method` | `[InlinerStruct]` on a method declared as `@class`; generated struct name and call remain legal. |
 | `keyword_declaring_type` | Method inside a contextual-keyword type such as `@event`; every generated type reference is escaped. |
 | `keyword_parameter` | Parameter named `@value`; generated interface and forwarding call preserve a legal source representation. |
+| `mixed_identifier_spelling` | A parameter declared as `@callback` or a Unicode escape is referenced as `callback`; semantic names drive lookup and emitted identifiers remain escaped where required. |
 | `keyword_generic_parameter` | Generic parameter named `@delegate`; constraints and all generated uses remain legal. |
 | `keyword_inlinable_host` | `[Inlinable]` method with keyword host/parameter names; twin signature and `Invoke` call compile. |
 | `same_method_name_different_namespaces` | Two `Alpha.Samples.Run`/`Beta.Samples.Run` declarations produce distinct hints. |
 | `same_method_name_nested_types` | `OuterA.Inner.Run` and `OuterB.Inner.Run` produce distinct hints. |
 | `same_sanitized_metadata_names` | Symbols whose namespace/type spellings differ only by characters sanitized for hint names still receive distinct deterministic hints. |
 | `generic_method_name_collision` | Generic and nongeneric hosts with the same simple method name do not overwrite generated files. |
+| `same_host_overloads` | Overloads with the same containing metadata path but different parameter signatures and generic arities receive distinct hints; a compiler-level public `RunInliner` collision remains a separate policy. |
+| `same_enclosing_name_different_arity` | `Inner` and `Inner<T>` use distinct containing metadata identities and hints. |
 
 ### Category C: generic constraints
 
@@ -82,6 +85,7 @@ the complete metadata-derived scheme along with every other inliner.
 | `generic_method_unmanaged` | Forwarder for `Transform<T>(T value) where T : unmanaged` emits the same constraint and compiles with an unmanaged instantiation. |
 | `generic_method_multiple_constraints` | `where T : class, IFoo, new()` (or the legal equivalent ordering) is copied exactly enough to compile and preserve semantics. |
 | `generic_method_notnull_interface` | `where T : notnull, IFoo` remains valid under nullable analysis. |
+| `shadowed_constraint_name` | A fully qualified constraint must keep its binding when a containing type parameter or nested type has the same simple name. |
 | `generic_containing_type_constraints` | Generated nested inliner inside `Box<T> where T : unmanaged, IMarker`; enclosing constraints remain valid in all generated references. |
 | `nested_generic_containing_types` | Multiple enclosing generic types with independent constraints retain their parameter lists and references. |
 | `inlinable_generic_host_constraints` | Generated twin adds its inliner type parameters without dropping constraints from the original generic host method. |
@@ -111,6 +115,14 @@ inputs into generated snapshots.
 | `SPIRE020_struct_name_collision` | Existing diagnostic for a user member collision. |
 | `SPIRE027_*` non-partial containing/declaring type | Existing diagnostic. |
 | `same_hint_after_qualification` | No diagnostic; complete metadata identity yields a unique hint without global collision bookkeeping. |
+| `same_public_name_overloads` | No generator exception/AD0001; generated public-name collisions, if any, remain ordinary compiler diagnostics under the existing policy. |
+
+Use Roslyn's documentation-comment method identity as the canonical input to
+SHA-256: it includes namespace, containing generic arity, method generic arity,
+and parameter signatures. Prefix the digest with a readable qualified name,
+sanitized to ASCII and capped at 80 characters, then add the emitter suffix.
+This keeps hints deterministic and filenames bounded without a compilation-wide
+collision table. Preserve the existing generated public type names.
 
 The hint-identity cases must assert both the generated hint inventory and the
 absence of duplicate generated source. The same metadata identity must map to
@@ -201,4 +213,9 @@ entire corpus as a shortcut.
 No test in this matrix changes the separate `InlinableBodyRewriter` scope,
 unsupported modifier diagnostics, public inliner interface arity, or generated
 runtime semantics beyond making previously valid source compile and execute.
+
+Preserve the existing expression-versus-block body formatting. Canonical
+constraint type names remain globally qualified; do not shorten them by guessing
+namespace lookup. Normalize identifier dictionary keys using semantic names /
+token ValueText without broadening alias traversal or changing `var` recognition.
 

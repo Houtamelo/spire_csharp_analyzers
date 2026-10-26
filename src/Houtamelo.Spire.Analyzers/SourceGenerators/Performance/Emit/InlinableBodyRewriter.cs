@@ -80,14 +80,14 @@ internal static class InlinableBodyRewriter
                 var variable = declaration.Variables[0];
                 var initializer = variable.Initializer;
                 if (initializer is null) continue;
-                var localName = variable.Identifier.Text;
+                var localName = variable.Identifier.ValueText;
                 if (names.ContainsKey(localName))
                     continue;
 
                 var value = initializer.Value;
                 if (value is IdentifierNameSyntax valueId)
                 {
-                    if (names.TryGetValue(valueId.Identifier.Text, out var isNullable))
+                    if (names.TryGetValue(valueId.Identifier.ValueText, out var isNullable))
                     {
                         names[localName] = isNullable;
                         changed = true;
@@ -97,8 +97,8 @@ internal static class InlinableBodyRewriter
                 {
                     if (cond.WhenTrue is IdentifierNameSyntax t && cond.WhenFalse is IdentifierNameSyntax f)
                     {
-                        if (names.TryGetValue(t.Identifier.Text, out var tNullable)
-                            && names.TryGetValue(f.Identifier.Text, out var fNullable))
+                        if (names.TryGetValue(t.Identifier.ValueText, out var tNullable)
+                            && names.TryGetValue(f.Identifier.ValueText, out var fNullable))
                         {
                             names[localName] = tNullable || fNullable;
                             changed = true;
@@ -122,7 +122,7 @@ internal static class InlinableBodyRewriter
         {
             var visited = (InvocationExpressionSyntax)base.VisitInvocationExpression(node)!;
 
-            if (visited.Expression is IdentifierNameSyntax id && _names.ContainsKey(id.Identifier.Text))
+            if (visited.Expression is IdentifierNameSyntax id && _names.ContainsKey(id.Identifier.ValueText))
             {
                 var invokeAccess = SyntaxFactory.MemberAccessExpression(
                     SyntaxKind.SimpleMemberAccessExpression,
@@ -139,7 +139,7 @@ internal static class InlinableBodyRewriter
             var visited = (ConditionalAccessExpressionSyntax)base.VisitConditionalAccessExpression(node)!;
 
             if (visited.Expression is IdentifierNameSyntax id
-                && _names.TryGetValue(id.Identifier.Text, out var isNullable))
+                && _names.TryGetValue(id.Identifier.ValueText, out var isNullable))
             {
                 if (!isNullable)
                 {

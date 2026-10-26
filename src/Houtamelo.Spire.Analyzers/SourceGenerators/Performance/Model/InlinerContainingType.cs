@@ -10,5 +10,6 @@ internal sealed record InlinerContainingType(
     string AccessibilityKeyword,
     string Keyword,
     string Name,
-    EquatableArray<string> TypeParameters
+    EquatableArray<string> TypeParameters,
+    EquatableArray<string> TypeParameterConstraints
 ) : IEquatable<InlinerContainingType>;

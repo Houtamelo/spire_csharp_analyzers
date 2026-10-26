@@ -21,6 +21,7 @@ internal sealed record InlinableHostDecl(
     string DeclaringTypeKeyword,
     string DeclaringTypeAccessibility,
     EquatableArray<string> DeclaringTypeParameters,
+    EquatableArray<string> DeclaringTypeParameterConstraints,
     EquatableArray<InlinerContainingType> ContainingTypes,
     EquatableArray<string> HostTypeParameters,
     EquatableArray<string> HostTypeParameterConstraints,
@@ -28,5 +29,6 @@ internal sealed record InlinableHostDecl(
     EquatableArray<HostParamInfo> OtherParams,
     string OriginalBody,
     EquatableArray<string> UsingDirectives,
+    string HintName,
     InlinerDiagnostic? Diagnostic
 ) : IEquatable<InlinableHostDecl>;

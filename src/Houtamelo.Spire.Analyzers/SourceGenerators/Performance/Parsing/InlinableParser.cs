@@ -77,16 +77,17 @@ internal static class InlinableParser
         var containingTypes = InlinerSymbolInfo.BuildContainingTypes(declaringType);
 
         var declaringTypeParameters = new EquatableArray<string>(
-            declaringType.TypeParameters.Select(tp => tp.Name).ToImmutableArray());
+            declaringType.TypeParameters.Select(parameter => parameter.Name).ToImmutableArray());
+        var declaringTypeParameterConstraints =
+            InlinerSymbolInfo.BuildTypeParameterConstraints(declaringType);
 
         var returnType = method.ReturnsVoid
             ? "void"
-            : method.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            : DisplayType(method.ReturnType);
 
         var hostTypeParameters = new EquatableArray<string>(
-            method.TypeParameters.Select(tp => tp.Name).ToImmutableArray());
-        var hostConstraints = new EquatableArray<string>(
-            BuildConstraints(mds).ToImmutableArray());
+            method.TypeParameters.Select(parameter => parameter.Name).ToImmutableArray());
+        var hostConstraints = InlinerSymbolInfo.BuildMethodTypeParameterConstraints(method);
 
         // Body text: block body or expression body.
         string bodyText;
@@ -131,6 +132,7 @@ internal static class InlinableParser
             DeclaringTypeKeyword: InlinerSymbolInfo.GetTypeKeyword(declaringType),
             DeclaringTypeAccessibility: InlinerSymbolInfo.AccessibilityToKeyword(declaringType.DeclaredAccessibility),
             DeclaringTypeParameters: declaringTypeParameters,
+            DeclaringTypeParameterConstraints: declaringTypeParameterConstraints,
             ContainingTypes: new EquatableArray<InlinerContainingType>(containingTypes),
             HostTypeParameters: hostTypeParameters,
             HostTypeParameterConstraints: hostConstraints,
@@ -138,8 +140,15 @@ internal static class InlinableParser
             OtherParams: new EquatableArray<HostParamInfo>(otherParams.ToImmutable()),
             OriginalBody: bodyText,
             UsingDirectives: new EquatableArray<string>(usings.ToImmutableArray()),
+            HintName: InlinerHintNaming.ForInlinableTwin(method),
             Diagnostic: diagnostic);
     }
+
+    private static string DisplayType(ITypeSymbol type)
+        => type.ToDisplayString(
+            SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+                SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions |
+                SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
 
     private static bool TryBuildInlinable(
         IParameterSymbol p,
@@ -173,7 +182,7 @@ internal static class InlinableParser
             return false;
 
         var typeArgs = named.TypeArguments
-            .Select(t => t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
+            .Select(DisplayType)
             .ToImmutableArray();
 
         string returnType = "";
@@ -261,23 +270,23 @@ internal static class InlinableParser
 
                 var initializer = variable.Initializer.Value;
                 var isAlias = initializer is IdentifierNameSyntax rhs &&
-                    trackedNames.Contains(rhs.Identifier.Text);
+                    trackedNames.Contains(rhs.Identifier.ValueText);
                 if (initializer is ConditionalExpressionSyntax conditional &&
                     conditional.WhenTrue is IdentifierNameSyntax whenTrue &&
                     conditional.WhenFalse is IdentifierNameSyntax whenFalse)
                 {
-                    isAlias = trackedNames.Contains(whenTrue.Identifier.Text) &&
-                        trackedNames.Contains(whenFalse.Identifier.Text);
+                    isAlias = trackedNames.Contains(whenTrue.Identifier.ValueText) &&
+                        trackedNames.Contains(whenFalse.Identifier.ValueText);
                 }
 
-                if (isAlias && trackedNames.Add(variable.Identifier.Text))
+                if (isAlias && trackedNames.Add(variable.Identifier.ValueText))
                     changed = true;
             }
         }
 
         foreach (var identifier in bodyRoot.DescendantNodes().OfType<IdentifierNameSyntax>())
         {
-            var name = identifier.Identifier.Text;
+            var name = identifier.Identifier.ValueText;
             if (!trackedNames.Contains(name) || IsInsideNameof(identifier))
                 continue;
 
@@ -327,15 +336,15 @@ internal static class InlinableParser
         if (parent is ConditionalExpressionSyntax aliasConditional &&
             aliasConditional.WhenTrue is IdentifierNameSyntax aliasWhenTrue &&
             aliasConditional.WhenFalse is IdentifierNameSyntax aliasWhenFalse &&
-            trackedNames.Contains(aliasWhenTrue.Identifier.Text) &&
-            trackedNames.Contains(aliasWhenFalse.Identifier.Text) &&
+            trackedNames.Contains(aliasWhenTrue.Identifier.ValueText) &&
+            trackedNames.Contains(aliasWhenFalse.Identifier.ValueText) &&
             aliasConditional.Parent is EqualsValueClauseSyntax aliasEqualsValue &&
             aliasEqualsValue.Parent is VariableDeclaratorSyntax aliasVariable &&
             aliasVariable.Parent is VariableDeclarationSyntax aliasDeclaration &&
             aliasDeclaration.Type is IdentifierNameSyntax aliasType &&
             aliasType.Identifier.Text == "var" &&
             aliasDeclaration.Variables.Count == 1 &&
-            trackedNames.Contains(aliasVariable.Identifier.Text))
+            trackedNames.Contains(aliasVariable.Identifier.ValueText))
         {
             return true;
         }
@@ -372,7 +381,7 @@ internal static class InlinableParser
             declaration.Type is IdentifierNameSyntax type &&
             type.Identifier.Text == "var" &&
             declaration.Variables.Count == 1 &&
-            trackedNames.Contains(variable.Identifier.Text))
+            trackedNames.Contains(variable.Identifier.ValueText))
         {
             return true;
         }
@@ -500,19 +509,10 @@ internal static class InlinableParser
 
         return new HostParamInfo(
             Name: p.Name,
-            Type: sourceType ?? p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+            Type: sourceType ?? DisplayType(p.Type),
             Position: position,
             RefKind: refKind,
             IsThis: isThis);
-    }
-
-
-    private static IEnumerable<string> BuildConstraints(MethodDeclarationSyntax mds)
-    {
-        foreach (var clause in mds.ConstraintClauses)
-        {
-            yield return clause.ToString().Trim();
-        }
     }
 
 

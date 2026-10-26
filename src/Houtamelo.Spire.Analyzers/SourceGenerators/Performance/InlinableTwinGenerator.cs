@@ -44,8 +44,7 @@ public sealed class InlinableTwinGenerator : IIncrementalGenerator
             }
 
             var source = InlinableTwinEmitter.Emit(decl);
-            var hint = $"{decl.DeclaringTypeName}.{decl.MethodName}.InlinableTwin.g.cs";
-            srcCtx.AddSource(hint, source);
+            srcCtx.AddSource(decl.HintName, source);
         });
     }
 

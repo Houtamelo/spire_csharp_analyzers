@@ -36,25 +36,26 @@ internal static class InlinerStructParser
         var declaringTypeKeyword = InlinerSymbolInfo.GetTypeKeyword(declaringType);
         var declaringTypeAccessibility = InlinerSymbolInfo.AccessibilityToKeyword(declaringType.DeclaredAccessibility);
         var declaringTypeParameters = new EquatableArray<string>(
-            declaringType.TypeParameters.Select(tp => tp.Name).ToImmutableArray());
+            declaringType.TypeParameters.Select(parameter => parameter.Name).ToImmutableArray());
+        var declaringTypeParameterConstraints =
+            InlinerSymbolInfo.BuildTypeParameterConstraints(declaringType);
 
         var isVoid = method.ReturnsVoid;
         var returnType = isVoid
             ? null
-            : method.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            : DisplayType(method.ReturnType);
 
         var parameters = new EquatableArray<InlinerParamInfo>(
             method.Parameters
                 .Select(p => new InlinerParamInfo(
                     p.Name,
-                    p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)))
+                    DisplayType(p.Type)))
                 .ToImmutableArray());
 
         var typeParameters = new EquatableArray<string>(
-            method.TypeParameters.Select(tp => tp.Name).ToImmutableArray());
+            method.TypeParameters.Select(parameter => parameter.Name).ToImmutableArray());
 
-        // Task 14 will populate constraints; leave empty for this slice.
-        var typeParameterConstraints = new EquatableArray<string>(ImmutableArray<string>.Empty);
+        var typeParameterConstraints = InlinerSymbolInfo.BuildMethodTypeParameterConstraints(method);
 
         var diagnostic = ValidateMethod(method, declaringType);
 
@@ -69,12 +70,20 @@ internal static class InlinerStructParser
             DeclaringTypeKeyword: declaringTypeKeyword,
             DeclaringTypeAccessibility: declaringTypeAccessibility,
             DeclaringTypeParameters: declaringTypeParameters,
+            DeclaringTypeParameterConstraints: declaringTypeParameterConstraints,
             ContainingTypes: new EquatableArray<InlinerContainingType>(containingTypes),
             TypeParameters: typeParameters,
             TypeParameterConstraints: typeParameterConstraints,
             Parameters: parameters,
+            HintName: InlinerHintNaming.ForInlinerStruct(method),
             Diagnostic: diagnostic);
     }
+
+    private static string DisplayType(ITypeSymbol type)
+        => type.ToDisplayString(
+            SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+                SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions |
+                SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
 
     private static InlinerDiagnostic? ValidateMethod(IMethodSymbol method, INamedTypeSymbol declaringType)
     {

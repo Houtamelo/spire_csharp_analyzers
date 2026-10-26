@@ -19,9 +19,11 @@ internal sealed record InlinerStructDecl(
     string DeclaringTypeKeyword,
     string DeclaringTypeAccessibility,
     EquatableArray<string> DeclaringTypeParameters,
+    EquatableArray<string> DeclaringTypeParameterConstraints,
     EquatableArray<InlinerContainingType> ContainingTypes,
     EquatableArray<string> TypeParameters,
     EquatableArray<string> TypeParameterConstraints,
     EquatableArray<InlinerParamInfo> Parameters,
+    string HintName,
     InlinerDiagnostic? Diagnostic
 ) : IEquatable<InlinerStructDecl>;

@@ -17,30 +17,37 @@ internal static class InlinerStructEmitter
         bool hasNamespace = !string.IsNullOrEmpty(decl.Namespace);
         if (hasNamespace)
         {
-            sb.AppendLine($"namespace {decl.Namespace}");
+            sb.AppendLine($"namespace {InlinerEmitterFormatting.EscapeQualifiedName(decl.Namespace)}");
             sb.OpenBrace();
         }
 
         // Outer containing types (outermost-first, already ordered in decl).
         foreach (var ct in decl.ContainingTypes)
         {
-            sb.AppendLine(DeclarationFormatting.FormatRawPartialTypeDeclaration(ct.AccessibilityKeyword, ct.Keyword, ct.Name, ct.TypeParameters));
+            sb.AppendLine(InlinerEmitterFormatting.FormatPartialTypeDeclaration(
+                ct.AccessibilityKeyword,
+                ct.Keyword,
+                ct.Name,
+                ct.TypeParameters));
+            InlinerEmitterFormatting.AppendConstraints(sb, ct.TypeParameterConstraints);
             sb.OpenBrace();
         }
 
         // Declaring type.
-        sb.AppendLine(DeclarationFormatting.FormatRawPartialTypeDeclaration(
+        sb.AppendLine(InlinerEmitterFormatting.FormatPartialTypeDeclaration(
             decl.DeclaringTypeAccessibility,
             decl.DeclaringTypeKeyword,
             decl.DeclaringTypeName,
             decl.DeclaringTypeParameters));
+        InlinerEmitterFormatting.AppendConstraints(sb, decl.DeclaringTypeParameterConstraints);
         sb.OpenBrace();
 
         // Inliner struct.
-        var methodGenerics = DeclarationFormatting.FormatRawTypeParameters(decl.TypeParameters);
-        var structName = $"{decl.MethodName}Inliner{methodGenerics}";
+        var methodGenerics = DeclarationFormatting.FormatEscapedTypeParameters(decl.TypeParameters);
+        var structName = $"{IdentifierUtility.Escape(IdentifierUtility.SerializedName(decl.MethodName) + "Inliner")}{methodGenerics}";
         var iface = BuildInterface(decl);
         sb.AppendLine($"{decl.Accessibility} readonly struct {structName} : {iface}");
+        InlinerEmitterFormatting.AppendConstraints(sb, decl.TypeParameterConstraints);
         sb.OpenBrace();
 
         // Invoke method.
@@ -93,7 +100,7 @@ internal static class InlinerStructEmitter
 
     private static (string Signature, string Body) BuildInvoke(InlinerStructDecl decl)
     {
-        var methodGenerics = DeclarationFormatting.FormatRawTypeParameters(decl.TypeParameters);
+        var methodGenerics = DeclarationFormatting.FormatEscapedTypeParameters(decl.TypeParameters);
         var parameters = ((IEnumerable<InlinerParamInfo>)decl.Parameters).ToList();
 
         if (decl.IsStatic)
@@ -104,9 +111,12 @@ internal static class InlinerStructEmitter
             var argList = string.Join(", ",
                 Enumerable.Range(1, parameters.Count).Select(i => $"a{i}"));
 
+            var declaringType = IdentifierUtility.Escape(decl.DeclaringTypeName)
+                + DeclarationFormatting.FormatEscapedTypeParameters(decl.DeclaringTypeParameters);
+            var methodName = IdentifierUtility.Escape(decl.MethodName);
             var call = string.IsNullOrEmpty(argList)
-                ? $"{decl.DeclaringTypeName}.{decl.MethodName}{methodGenerics}()"
-                : $"{decl.DeclaringTypeName}.{decl.MethodName}{methodGenerics}({argList})";
+                ? $"{declaringType}.{methodName}{methodGenerics}()"
+                : $"{declaringType}.{methodName}{methodGenerics}({argList})";
 
             return (paramList, call);
         }
@@ -121,8 +131,8 @@ internal static class InlinerStructEmitter
                 Enumerable.Range(1, parameters.Count).Select(i => $"a{i}"));
 
             var call = string.IsNullOrEmpty(argList)
-                ? $"instance.{decl.MethodName}{methodGenerics}()"
-                : $"instance.{decl.MethodName}{methodGenerics}({argList})";
+                ? $"instance.{IdentifierUtility.Escape(decl.MethodName)}{methodGenerics}()"
+                : $"instance.{IdentifierUtility.Escape(decl.MethodName)}{methodGenerics}({argList})";
 
             return (paramList, call);
         }
@@ -132,13 +142,18 @@ internal static class InlinerStructEmitter
     {
         var parts = new List<string>();
         if (!string.IsNullOrEmpty(decl.Namespace))
-            parts.Add(decl.Namespace);
+            parts.Add(InlinerEmitterFormatting.EscapeQualifiedName(decl.Namespace));
 
         foreach (var ct in decl.ContainingTypes)
-            parts.Add(ct.Name + DeclarationFormatting.FormatRawTypeParameters(ct.TypeParameters));
+        {
+            parts.Add(IdentifierUtility.Escape(ct.Name)
+                + DeclarationFormatting.FormatEscapedTypeParameters(ct.TypeParameters));
+        }
 
-        parts.Add(decl.DeclaringTypeName + DeclarationFormatting.FormatRawTypeParameters(decl.DeclaringTypeParameters));
+        parts.Add(IdentifierUtility.Escape(decl.DeclaringTypeName)
+            + DeclarationFormatting.FormatEscapedTypeParameters(decl.DeclaringTypeParameters));
 
         return "global::" + string.Join(".", parts);
     }
+
 }

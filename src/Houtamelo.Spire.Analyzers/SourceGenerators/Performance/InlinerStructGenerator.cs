@@ -30,8 +30,7 @@ public sealed class InlinerStructGenerator : IIncrementalGenerator
             }
 
             var source = InlinerStructEmitter.Emit(decl);
-            var hint = $"{decl.DeclaringTypeName}.{decl.MethodName}.InlinerStruct.g.cs";
-            srcCtx.AddSource(hint, source);
+            srcCtx.AddSource(decl.HintName, source);
         });
     }
 

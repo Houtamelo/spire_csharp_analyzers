@@ -43,6 +43,13 @@ concurrent SDK builds that toggle shared portable-host assets. Final validation
 includes package consumption, relevant Unity execution, generated-output review,
 and updating the existing UnityShowcase local package. No publishing or pushes.
 
+From batch 5 onward, full gates use a separate validation worktree. Live user
+edits added showcase assets outside the committed export inventory, causing five
+unrelated package checks in the live checkout. Validation copies the fix sources
+and tests with verified SHA-256 input hashes, retaining the committed showcase
+inventory. It changes neither the package checks nor the user's example/PENDING
+files. Evidence records the validation working directory and input manifest.
+
 ## Progress
 
 Batch 1 complete: the standalone analyzer package now includes PatternAnalysis.
@@ -95,4 +102,18 @@ Results: `docs/benchmark-results/MATCH_CORRECTED_SKEWED80_2026-10-26.md`.
 Evidence: `tmp/correctness-fixes-20261026/batch4-benchmark-final/` and
 `batch4-match-bdn/`.
 
-Batches 5–7 pending. Their regression matrices and staged test drafts are ready.
+Batch 5 complete: inliners escape semantic identifiers, retain generic
+constraints with canonical type binding, and normalize identifier matching
+without broadening alias traversal. Bounded hint names combine Roslyn method
+identity with SHA-256. Public generated names and existing body formatting stay
+stable. Eighteen new snapshot pairs, seven compile/execute checks, and ten native
+behavioral facts cover escaping, constraints, shadowing, and collisions.
+
+Validation: 2,211 SDK tests passed across eight projects, zero skipped, in the
+isolated checkout. All 77 source controls remain byte-identical; only the 24
+approved performance Hint fields changed. Their Expected paths, source hashes,
+case counts, and source baseline are unchanged. Evidence:
+`tmp/correctness-fixes-20261026/batch5-inliner-isolated-ready/` and
+`batch5-hint-metadata/`. Native execution remains in final validation.
+
+Batches 6–7 pending. Their regression matrices and staged test drafts are ready.
