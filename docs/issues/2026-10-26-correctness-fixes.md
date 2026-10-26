@@ -155,8 +155,8 @@ Native runtime validation passed on Unity 6000.5.6f1 Linux x64: Editor Mono
 executed 99 cases and the IL2CPP player executed 101 cases. Both executed all
 93 original behavioral facts, including the new flags and inliner regressions,
 with exact fact-name inventory checks and zero failures/skips. These runs used
-the frozen, verified batch-6 runtime snapshot; the completed batch-7 compiler
-engine will receive a separate full Unity compiler-harness run. Evidence:
+the frozen, verified batch-6 runtime snapshot. The completed compiler engine
+also passed the separate full Unity compiler-harness run below. Evidence:
 `tmp/correctness-fixes-20261026/native/` (XML, logs, runtime DLL hashes).
 
 The first complete compiler-host run executed all 2,208 expected portable case
@@ -169,4 +169,30 @@ retain FrameworkReferences. No assertions, identities, or cases were removed.
 The subsequent full SDK gate still passes all 2,337 tests, with 77 source
 controls unchanged (`final-native-host-corrected/`).
 
-Final compiler-host rerun and package validation remain pending.
+Final compiler-host rerun passed **2,311/2,311 actual Unity Editor Mono cases**,
+zero skipped. All **2,208 portable xUnit identities** matched independent SDK
+discovery, every discovered case executed, and all 93 behavioral fact identities
+executed. This includes the new exact-integer, nested-pattern, package-consumer,
+and real-process timeout regressions. Evidence: `native/harness.xml` and
+`native/harness.log` under `tmp/correctness-fixes-20261026/`.
+
+All three NuGet packages built successfully at the synchronized, unchanged
+version **4.7.6**. Packaged runtime/analyzer/codefix/dependency bytes matched
+Release outputs. An isolated executable consumer restored the main package from
+a local feed, generated and executed all three nested matching outcomes, rejected
+a missing `A.flag == false` arm with SPIRE009 for `'A'` and no AD0001, then
+executed again after restoration. The standalone package's four independent
+complete/incomplete consumers also passed in both SDK and Unity harness gates.
+
+The local package at `tmp/unity-package/com.houtamelo.spire` was rebuilt from the
+validated isolated sources. UnityShowcase's existing manifest resolves to that
+directory, and all four installed DLL hashes match Release outputs. The four
+live user-owned PENDING/showcase files retained their pre-installation hashes.
+No version bump, publishing, or push was performed.
+
+Production fix commits: `b04e56d`, `2fa399c`, `3fe29fe`, `3b992ee`, `1fa5b87`,
+`f4c9661`, `e246066`. Host-reference test correction: `a012296`. Final independent
+acceptance, package inventories/hashes, installed DLL hashes, and consumer logs:
+`tmp/correctness-fixes-20261026/final-verification.json`, `packages/`,
+`installed-package.json`, and `package-consumer/`. All seven approved fixes and
+their required validation are complete.
