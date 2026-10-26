@@ -389,9 +389,14 @@ public sealed class SourceGeneratorsNestedRecursiveSuppressorTests
     private static async Task<(
         CSharpCompilation Compilation,
         ImmutableArray<RoslynDiagnostic> OriginalDiagnostics,
-        ImmutableArray<RoslynDiagnostic> Diagnostics)> Analyze(string source)
+        ImmutableArray<RoslynDiagnostic> Diagnostics)> Analyze(
+        string source,
+        ImmutableArray<MetadataReference>? references = null)
     {
-        var refs = TestHarnessEnvironment.FrameworkReferences
+        // Semantic-only assertions use the framework/reference-pack set. Runtime
+        // execution callers pass RuntimeReferences so emitted metadata binds to
+        // the host runtime instead of an unrelated reference-pack assembly.
+        var refs = (references ?? TestHarnessEnvironment.FrameworkReferences)
             .Add(MetadataReference.CreateFromFile(
                 typeof(EnforceExhaustivenessAttribute).Assembly.Location))
             .Add(MetadataReference.CreateFromFile(
@@ -466,7 +471,9 @@ public sealed class SourceGeneratorsNestedRecursiveSuppressorTests
         string methodName,
         params object?[] args)
     {
-        var (compilation, _, _) = await Analyze(source);
+        var (compilation, _, _) = await Analyze(
+            source,
+            TestHarnessEnvironment.RuntimeReferences);
         using var stream = new MemoryStream();
         var emit = compilation.Emit(stream);
         Assert.True(emit.Success,

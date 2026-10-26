@@ -36,6 +36,12 @@ and **2,102 actual Unity Editor harness cases** passed with zero skipped;
 **77 fixed generated files remain byte-identical**. Behavior-changing defects
 below remain report-only, as required.
 
+Follow-up: the user subsequently approved the behavior corrections. The seven
+fix batches, their expanded integration coverage, corrected benchmark results,
+and current validation evidence are recorded in
+[the correctness follow-up](../issues/2026-10-26-correctness-fixes.md). The
+baseline findings and original review evidence below remain historical.
+
 ## Findings
 
 ## Highest-priority findings

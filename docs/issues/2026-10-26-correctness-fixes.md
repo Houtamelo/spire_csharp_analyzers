@@ -159,4 +159,14 @@ the frozen, verified batch-6 runtime snapshot; the completed batch-7 compiler
 engine will receive a separate full Unity compiler-harness run. Evidence:
 `tmp/correctness-fixes-20261026/native/` (XML, logs, runtime DLL hashes).
 
-Final compiler-host and package validation remain pending.
+The first complete compiler-host run executed all 2,208 expected portable case
+identities plus the behavioral/bridge cases. Its nine failures exposed two test
+boundaries: seven tooling checks ascended from a disposable project outside the
+isolated checkout into the live repository, and two new emitted snippets used
+CoreCLR tuple references on Mono. The disposable project now lives under its
+isolated root; execution snippets use RuntimeReferences while semantic checks
+retain FrameworkReferences. No assertions, identities, or cases were removed.
+The subsequent full SDK gate still passes all 2,337 tests, with 77 source
+controls unchanged (`final-native-host-corrected/`).
+
+Final compiler-host rerun and package validation remain pending.
