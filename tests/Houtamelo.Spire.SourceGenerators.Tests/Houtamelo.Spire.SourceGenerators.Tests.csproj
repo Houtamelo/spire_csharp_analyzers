@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/NestedRecursiveSources.cs" Link="Fixtures/NestedRecursiveSources.cs" />
     <Compile Remove="**/cases/**" />
     <None Include="**/cases/**" Exclude="bin/**;obj/**" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Unity/fixtures/**" CopyToOutputDirectory="PreserveNewest" />

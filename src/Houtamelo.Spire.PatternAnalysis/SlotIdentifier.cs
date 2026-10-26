@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 
 namespace Houtamelo.Spire.PatternAnalysis;
@@ -13,9 +14,23 @@ internal abstract class SlotIdentifier
         public ITypeSymbol Type { get; } = type;
     }
 
-    internal sealed class PropertySlot(IPropertySymbol property) : SlotIdentifier
+    internal sealed class PropertySlot : SlotIdentifier
     {
-        public IPropertySymbol Property { get; } = property;
+        public ImmutableArray<ISymbol> Path { get; }
+
+        // Existing DU helpers model direct properties. Nested paths expose
+        // their final property here for compatibility with those helpers.
+        public IPropertySymbol? Property => Path.Length > 0 ? Path[Path.Length - 1] as IPropertySymbol : null;
+
+        public PropertySlot(IPropertySymbol property)
+            : this(ImmutableArray.Create<ISymbol>(property))
+        {
+        }
+
+        public PropertySlot(ImmutableArray<ISymbol> path)
+        {
+            Path = path;
+        }
     }
 
     internal sealed class TupleSlot(int index, ITypeSymbol elementType) : SlotIdentifier

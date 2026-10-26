@@ -4,9 +4,12 @@ using Houtamelo.Spire.PatternAnalysis.Domains;
 namespace Houtamelo.Spire.PatternAnalysis;
 
 /// Result of exhaustiveness analysis on a switch expression/statement.
-internal readonly struct ExhaustivenessResult(ImmutableArray<MissingCase> missingCases)
+internal readonly struct ExhaustivenessResult(
+    ImmutableArray<MissingCase> missingCases,
+    bool isDeterminate)
 {
     public ImmutableArray<MissingCase> MissingCases { get; } = missingCases;
+    public bool IsDeterminate { get; } = isDeterminate;
 }
 
 /// A single combination of uncovered values across one or more slots.

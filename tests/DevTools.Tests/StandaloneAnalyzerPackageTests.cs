@@ -37,15 +37,61 @@ public sealed class StandaloneAnalyzerPackageTests
         AssertStandalonePackageContainsDependency(repositoryRoot, analyzerNupkg);
 
         CopyFrameworkPackagesToFeed(fixture.FeedPath);
-        var complete = await RunConsumerAsync(repositoryRoot, fixture, runtimeNupkg, version, complete: true);
-        Assert.True(complete.ExitCode == 0, CombinedOutput(complete));
-        Assert.DoesNotContain("AD0001", CombinedOutput(complete), StringComparison.Ordinal);
-        Assert.DoesNotContain("SPIRE009", CombinedOutput(complete), StringComparison.Ordinal);
+        await RunConsumerAsync(
+            repositoryRoot,
+            fixture,
+            runtimeNupkg,
+            version,
+            "kind-complete-consumer",
+            CompleteSource,
+            result =>
+            {
+                Assert.True(result.ExitCode == 0, CombinedOutput(result));
+                Assert.DoesNotContain("AD0001", CombinedOutput(result), StringComparison.Ordinal);
+                Assert.DoesNotContain("SPIRE009", CombinedOutput(result), StringComparison.Ordinal);
+            });
 
-        var incomplete = await RunConsumerAsync(repositoryRoot, fixture, runtimeNupkg, version, complete: false);
-        Assert.NotEqual(0, incomplete.ExitCode);
-        Assert.Contains("SPIRE009", CombinedOutput(incomplete), StringComparison.Ordinal);
-        Assert.DoesNotContain("AD0001", CombinedOutput(incomplete), StringComparison.Ordinal);
+        await RunConsumerAsync(
+            repositoryRoot,
+            fixture,
+            runtimeNupkg,
+            version,
+            "kind-incomplete-consumer",
+            IncompleteSource,
+            result =>
+            {
+                Assert.NotEqual(0, result.ExitCode);
+                Assert.Contains("SPIRE009", CombinedOutput(result), StringComparison.Ordinal);
+                Assert.DoesNotContain("AD0001", CombinedOutput(result), StringComparison.Ordinal);
+            });
+
+        await RunConsumerAsync(
+            repositoryRoot,
+            fixture,
+            runtimeNupkg,
+            version,
+            "nested-complete-consumer",
+            NestedCompleteSource,
+            result =>
+            {
+                Assert.True(result.ExitCode == 0, CombinedOutput(result));
+                Assert.DoesNotContain("AD0001", CombinedOutput(result), StringComparison.Ordinal);
+                Assert.DoesNotContain("SPIRE009", CombinedOutput(result), StringComparison.Ordinal);
+            });
+
+        await RunConsumerAsync(
+            repositoryRoot,
+            fixture,
+            runtimeNupkg,
+            version,
+            "nested-incomplete-consumer",
+            NestedIncompleteSource,
+            result =>
+            {
+                Assert.NotEqual(0, result.ExitCode);
+                Assert.Contains("SPIRE009", CombinedOutput(result), StringComparison.Ordinal);
+                Assert.DoesNotContain("AD0001", CombinedOutput(result), StringComparison.Ordinal);
+            });
     }
 
     private static void AssertStandalonePackageContainsDependency(string repositoryRoot, string packagePath)
@@ -63,14 +109,16 @@ public sealed class StandaloneAnalyzerPackageTests
         Assert.Equal(hash.ComputeHash(source), hash.ComputeHash(packaged));
     }
 
-    private static async Task<ProcessResult> RunConsumerAsync(
+    private static async Task RunConsumerAsync(
         string repositoryRoot,
         PackageFixture fixture,
         string runtimePackage,
         string version,
-        bool complete)
+        string name,
+        string source,
+        Action<ProcessResult> expect)
     {
-        var projectRoot = Path.Combine(fixture.RootPath, complete ? "complete-consumer" : "incomplete-consumer");
+        var projectRoot = Path.Combine(fixture.RootPath, name);
         Directory.CreateDirectory(projectRoot);
         var runtimePath = Path.Combine(projectRoot, "runtime", "Houtamelo.Spire.dll");
         Directory.CreateDirectory(Path.GetDirectoryName(runtimePath)!);
@@ -99,12 +147,13 @@ public sealed class StandaloneAnalyzerPackageTests
               </ItemGroup>
             </Project>
             """);
-        File.WriteAllText(Path.Combine(projectRoot, "Program.cs"), complete ? CompleteSource : IncompleteSource);
+        File.WriteAllText(Path.Combine(projectRoot, "Program.cs"), source);
 
         var dotnet = new ToolContext(repositoryRoot).Dotnet;
         var restore = await ProcessRunner.RunAsync(dotnet, new[] { "restore", "Consumer.csproj", "--nologo", "--tl:off", "--source", "../feed" }, projectRoot, ProcessTimeout, ProcessEnvironment());
         Assert.True(restore.ExitCode == 0, CombinedOutput(restore));
-        return await ProcessRunner.RunAsync(dotnet, new[] { "build", "Consumer.csproj", "-c", "Release", "--no-restore", "--nologo", "--tl:off" }, projectRoot, ProcessTimeout, ProcessEnvironment());
+        var build = await ProcessRunner.RunAsync(dotnet, new[] { "build", "Consumer.csproj", "-c", "Release", "--no-restore", "--nologo", "--tl:off" }, projectRoot, ProcessTimeout, ProcessEnvironment());
+        expect(build);
     }
 
     private static async Task<ProcessResult> PackAsync(string repositoryRoot, string packageName, string output)
@@ -211,6 +260,47 @@ public sealed class StandaloneAnalyzerPackageTests
             public static int Match(Command value) => value switch
             {
                 { kind: Command.Kind.A } => 1,
+            };
+        }
+        """;
+
+    private const string NestedCompleteSource = """
+        using Houtamelo.Spire;
+
+        [DiscriminatedUnion]
+        public partial struct Command
+        {
+            [Variant] public static partial Command A(bool flag);
+            [Variant] public static partial Command B();
+        }
+
+        public static class Consumer
+        {
+            public static int Match(Command value) => value switch
+            {
+                { kind: Command.Kind.A, a: { flag: true } } => 1,
+                { kind: Command.Kind.A, a: { flag: false } } => 2,
+                { kind: Command.Kind.B, b: var _ } => 3,
+            };
+        }
+        """;
+
+    private const string NestedIncompleteSource = """
+        using Houtamelo.Spire;
+
+        [DiscriminatedUnion]
+        public partial struct Command
+        {
+            [Variant] public static partial Command A(bool flag);
+            [Variant] public static partial Command B();
+        }
+
+        public static class Consumer
+        {
+            public static int Match(Command value) => value switch
+            {
+                { kind: Command.Kind.A, a: { flag: true } } => 1,
+                { kind: Command.Kind.B, b: var _ } => 3,
             };
         }
         """;

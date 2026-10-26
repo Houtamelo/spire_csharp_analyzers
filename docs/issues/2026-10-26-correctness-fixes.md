@@ -130,4 +130,33 @@ with zero warnings/errors. Evidence:
 `tmp/correctness-fixes-20261026/batch6-integral-final/` and
 `batch6-integral-focused/`.
 
-Batch 7 pending, followed by final native and package validation.
+Batch 7 complete: full member paths retain parent null/type constraints,
+including extended property syntax. Struct/record union payload restrictions
+remain correlated with their root discriminator. Unsupported operations retain
+an explicit uncertainty marker through specialization, so they cannot prove
+coverage or suppress compiler warnings. MissingVariants includes only root
+variant names. Numeric cross-column partitions are disjoint; negated empty
+regions retain correct set algebra. Nullable and non-nullable union matrix
+construction share one implementation.
+
+The initial focused run reproduced 14 failures out of 27 cases. Final coverage
+adds 27 direct checker cases and 37 real compiler/suppressor cases, including
+finite-domain execution comparisons, extended nullable paths, deconstruction,
+logical restrictions, and isolated package consumers. The full gate caught and
+prevented a proposed change to oblivious-reference nullability; the existing
+DomainResolver policy and its original regression remain intact.
+
+Validation: 2,337 SDK tests passed across eight projects, zero skipped; all 77
+source controls remain byte-identical. An independent final review found no
+remaining concrete false-proof path. Evidence:
+`tmp/correctness-fixes-20261026/batch7-nested-corrected-final/`.
+
+Native runtime validation passed on Unity 6000.5.6f1 Linux x64: Editor Mono
+executed 99 cases and the IL2CPP player executed 101 cases. Both executed all
+93 original behavioral facts, including the new flags and inliner regressions,
+with exact fact-name inventory checks and zero failures/skips. These runs used
+the frozen, verified batch-6 runtime snapshot; the completed batch-7 compiler
+engine will receive a separate full Unity compiler-harness run. Evidence:
+`tmp/correctness-fixes-20261026/native/` (XML, logs, runtime DLL hashes).
+
+Final compiler-host and package validation remain pending.

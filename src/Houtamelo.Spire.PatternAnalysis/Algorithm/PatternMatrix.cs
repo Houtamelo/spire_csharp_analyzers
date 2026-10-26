@@ -19,6 +19,14 @@ internal abstract class Cell
         public static readonly Wildcard Instance = new();
     }
 
+    /// A pattern operation the analyzer cannot model. It is deliberately
+    /// kept separate from Wildcard: unsupported syntax must never prove that
+    /// the covered set is exhaustive.
+    internal sealed class Unknown : Cell
+    {
+        public static readonly Unknown Instance = new();
+    }
+
     /// Matches a specific subset of the slot's domain.
     internal sealed class Constraint : Cell
     {
@@ -50,15 +58,44 @@ internal sealed class PatternMatrix
 {
     public ImmutableArray<ImmutableArray<Cell>> Rows { get; }
     public ImmutableArray<Column> Columns { get; }
+    /// Rows containing an unsupported operation. The marker is kept separate
+    /// from cells because specialization removes columns, including the cell
+    /// that carried the marker.
+    internal ImmutableArray<bool> UnknownRows { get; }
     public int RowCount => Rows.Length;
     public int ColumnCount => Columns.Length;
 
     public PatternMatrix(
         ImmutableArray<ImmutableArray<Cell>> rows,
-        ImmutableArray<Column> columns)
+        ImmutableArray<Column> columns,
+        ImmutableArray<bool> unknownRows = default)
     {
         Rows = rows;
         Columns = columns;
+        if (unknownRows.IsDefault)
+        {
+            var inferred = ImmutableArray.CreateBuilder<bool>(rows.Length);
+            foreach (var row in rows)
+            {
+                bool unknown = false;
+                foreach (var cell in row)
+                {
+                    if (cell is Cell.Unknown)
+                    {
+                        unknown = true;
+                        break;
+                    }
+                }
+
+                inferred.Add(unknown);
+            }
+
+            UnknownRows = inferred.MoveToImmutable();
+        }
+        else
+        {
+            UnknownRows = unknownRows;
+        }
     }
 
     /// Specialize: keep rows whose cell at columnIndex intersects the partition.
@@ -66,9 +103,11 @@ internal sealed class PatternMatrix
     public PatternMatrix Specialize(int columnIndex, IValueDomain partition)
     {
         var rowBuilder = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>();
+        var unknownBuilder = ImmutableArray.CreateBuilder<bool>(Rows.Length);
 
-        foreach (var row in Rows)
+        for (int rowIndex = 0; rowIndex < Rows.Length; rowIndex++)
         {
+            var row = Rows[rowIndex];
             var cell = row[columnIndex];
 
             bool keep;
@@ -80,6 +119,14 @@ internal sealed class PatternMatrix
             {
                 var intersection = constraint.MatchedValues.Intersect(partition);
                 keep = !intersection.IsEmpty;
+            }
+            else if (cell is Cell.Unknown)
+            {
+                // An unsupported cell may match this partition, but it does
+                // not itself cover it. Keep the marker so the decision tree
+                // can report an indeterminate result if no known row covers
+                // the resulting region.
+                keep = true;
             }
             else
             {
@@ -98,6 +145,7 @@ internal sealed class PatternMatrix
             }
 
             rowBuilder.Add(cellBuilder.MoveToImmutable());
+            unknownBuilder.Add(UnknownRows[rowIndex] || cell is Cell.Unknown);
         }
 
         // Build new columns with the specialized column removed
@@ -108,7 +156,10 @@ internal sealed class PatternMatrix
                 colBuilder.Add(Columns[c]);
         }
 
-        return new PatternMatrix(rowBuilder.ToImmutable(), colBuilder.MoveToImmutable());
+        return new PatternMatrix(
+            rowBuilder.ToImmutable(),
+            colBuilder.MoveToImmutable(),
+            unknownBuilder.ToImmutable());
     }
 
     // ─── Subject type resolution ────────────────────────────────────────
@@ -263,11 +314,11 @@ internal sealed class PatternMatrix
     {
         var value = clause.Value;
         if (value == null)
-            return Cell.Wildcard.Instance;
+            return Cell.Unknown.Instance;
 
         var constantValue = value.ConstantValue;
         if (!constantValue.HasValue)
-            return Cell.Wildcard.Instance;
+            return Cell.Unknown.Instance;
 
         // Reuse the same logic as ConvertConstantPattern by resolving the domain
         var domain = resolver.Resolve(subjectType);
@@ -280,7 +331,7 @@ internal sealed class PatternMatrix
                 var emptyInner = new EmptyDomain(nullableDomain.Inner.Type);
                 return new Cell.Constraint(new NullableDomain(domain.Type, emptyInner, hasNull: true));
             }
-            return Cell.Wildcard.Instance;
+            return new Cell.Constraint(new EmptyDomain(domain.Type));
         }
 
         // Unwrap nullable for non-null values
@@ -331,7 +382,7 @@ internal sealed class PatternMatrix
         }
 
         if (innerCell == null)
-            return Cell.Wildcard.Instance;
+            return Cell.Unknown.Instance;
 
         if (isNullable && innerCell is Cell.Constraint innerConstraint)
         {
@@ -366,7 +417,14 @@ internal sealed class PatternMatrix
         if (kindEnum != null)
         {
             if (isNullableValueType)
+            {
+                if (HasPropertyPatterns(patterns))
+                    return BuildNullableStructDUPropertyMatrix(subjectType, kindEnum, patterns, resolver);
                 return BuildNullableStructDUMatrix(subjectType, kindEnum, patterns, resolver);
+            }
+
+            if (HasPropertyPatterns(patterns))
+                return BuildStructDUPropertyMatrix(unwrapped, kindEnum, patterns, resolver);
             return BuildStructDUMatrix(unwrapped, kindEnum, patterns, resolver);
         }
 
@@ -380,7 +438,11 @@ internal sealed class PatternMatrix
         var resolved = resolver.Resolve(subjectType);
         var effectiveDomain = resolved is NullableDomain nd ? nd.Inner : resolved;
         if (effectiveDomain is EnforceExhaustiveDomain)
+        {
+            if (HasPropertyPatterns(patterns))
+                return BuildTypePropertyMatrix(subjectType, patterns, resolver, resolved);
             return BuildTypeDomainMatrix(subjectType, patterns, resolved);
+        }
 
         // Check if any arm uses property subpatterns → multi-column property matrix
         if (HasPropertyPatterns(patterns))
@@ -582,11 +644,33 @@ internal sealed class PatternMatrix
     {
         foreach (var pattern in patterns)
         {
-            if (pattern is IRecursivePatternOperation recursive
-                && !recursive.PropertySubpatterns.IsEmpty)
+            if (ContainsPropertyPattern(pattern))
                 return true;
         }
         return false;
+    }
+
+    static bool ContainsPropertyPattern(IPatternOperation pattern)
+    {
+        switch (pattern)
+        {
+            case IRecursivePatternOperation recursive:
+                if (!recursive.PropertySubpatterns.IsEmpty)
+                    return true;
+                foreach (var subpattern in recursive.DeconstructionSubpatterns)
+                {
+                    if (ContainsPropertyPattern(subpattern))
+                        return true;
+                }
+                return false;
+            case IBinaryPatternOperation binary:
+                return ContainsPropertyPattern(binary.LeftPattern)
+                    || ContainsPropertyPattern(binary.RightPattern);
+            case INegatedPatternOperation negated:
+                return ContainsPropertyPattern(negated.Pattern);
+            default:
+                return false;
+        }
     }
 
     /// Build a multi-column matrix from property patterns.
@@ -597,100 +681,277 @@ internal sealed class PatternMatrix
         ImmutableArray<IPatternOperation> patterns,
         DomainResolver resolver)
     {
-        // Collect all distinct property symbols mentioned across arms
-        var propertySet = new System.Collections.Generic.Dictionary<IPropertySymbol, int>(
-            SymbolEqualityComparer.Default);
+        return BuildPropertyMatrixCore(subjectType, patterns, resolver, resolver.Resolve(subjectType));
+    }
 
+    /// Builds a root column plus one column for every distinct property path.
+    /// Keeping the parent path as a column is what prevents a child property
+    /// from being considered when its containing reference is null or a
+    /// different runtime type.
+    static PatternMatrix BuildPropertyMatrixCore(
+        ITypeSymbol subjectType,
+        ImmutableArray<IPatternOperation> patterns,
+        DomainResolver resolver,
+        IValueDomain rootDomain)
+    {
+        var paths = new System.Collections.Generic.List<ImmutableArray<ISymbol>>();
         foreach (var pattern in patterns)
         {
-            if (pattern is not IRecursivePatternOperation recursive)
-                continue;
-
-            foreach (var propSub in recursive.PropertySubpatterns)
-            {
-                var prop = GetPropertyFromSubpattern(propSub);
-                if (prop != null && !propertySet.ContainsKey(prop))
-                    propertySet[prop] = propertySet.Count;
-            }
+            if (pattern is IRecursivePatternOperation recursive)
+                CollectPropertyPaths(recursive, ImmutableArray<ISymbol>.Empty, paths);
         }
 
-        if (propertySet.Count == 0)
+        var columns = ImmutableArray.CreateBuilder<Column>(paths.Count + 1);
+        columns.Add(new Column(new SlotIdentifier.RootSlot(subjectType), rootDomain));
+        foreach (var path in paths)
         {
-            // No properties found — fall back to single-column
-            var domain = resolver.Resolve(subjectType);
-            var slot = new SlotIdentifier.RootSlot(subjectType);
-            var column = new Column(slot, domain);
-            var rowBuilder2 = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>();
-            foreach (var pattern in patterns)
+            var member = path[path.Length - 1];
+            var memberType = member switch
             {
-                var cell = ConvertPattern(pattern, domain);
-                rowBuilder2.Add(ImmutableArray.Create(cell));
-            }
-            return new PatternMatrix(rowBuilder2.ToImmutable(), ImmutableArray.Create(column));
-        }
-
-        // Build columns from collected properties
-        var columns = ImmutableArray.CreateBuilder<Column>(propertySet.Count);
-        var propList = new IPropertySymbol[propertySet.Count];
-        foreach (var kvp in propertySet)
-            propList[kvp.Value] = kvp.Key;
-
-        for (int i = 0; i < propList.Length; i++)
-        {
-            var prop = propList[i];
-            var propDomain = resolver.Resolve(prop.Type);
-            var slot = new SlotIdentifier.PropertySlot(prop);
-            columns.Add(new Column(slot, propDomain));
+                IPropertySymbol property => property.Type,
+                IFieldSymbol field => field.Type,
+                _ => subjectType,
+            };
+            columns.Add(new Column(new SlotIdentifier.PropertySlot(path), resolver.Resolve(memberType)));
         }
 
         var cols = columns.MoveToImmutable();
-        var rowBuilder = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>();
-
+        var rows = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>(patterns.Length);
         foreach (var pattern in patterns)
-        {
-            var row = ConvertPropertyRow(pattern, cols, propList, propertySet, resolver);
-            rowBuilder.Add(row);
-        }
+            rows.Add(ConvertPropertyRow(pattern, cols, paths, resolver, isStructDU: false, rootDomain));
 
-        return new PatternMatrix(rowBuilder.ToImmutable(), cols);
+        return new PatternMatrix(rows.ToImmutable(), cols);
     }
 
-    /// Convert a single arm's pattern into a row of cells for a property matrix.
+    static void CollectPropertyPaths(
+        IRecursivePatternOperation recursive,
+        ImmutableArray<ISymbol> parent,
+        System.Collections.Generic.List<ImmutableArray<ISymbol>> paths)
+    {
+        foreach (var propSub in recursive.PropertySubpatterns)
+        {
+            var memberPath = GetMemberPath(propSub);
+            if (memberPath.IsDefaultOrEmpty)
+                continue;
+
+            var path = parent.AddRange(memberPath);
+            AddPathPrefixes(paths, path);
+
+            if (propSub.Pattern is IRecursivePatternOperation nested)
+                CollectPropertyPaths(nested, path, paths);
+        }
+    }
+
+    static bool ContainsPath(
+        System.Collections.Generic.List<ImmutableArray<ISymbol>> paths,
+        ImmutableArray<ISymbol> candidate)
+    {
+        foreach (var path in paths)
+        {
+            if (PathsEqual(path, candidate))
+                return true;
+        }
+
+        return false;
+    }
+
+    static void AddPathPrefixes(
+        System.Collections.Generic.List<ImmutableArray<ISymbol>> paths,
+        ImmutableArray<ISymbol> fullPath)
+    {
+        for (int length = 1; length <= fullPath.Length; length++)
+        {
+            var prefix = fullPath.Take(length).ToImmutableArray();
+            if (!ContainsPath(paths, prefix))
+                paths.Add(prefix);
+        }
+    }
+
+    static bool PathsEqual(ImmutableArray<ISymbol> left, ImmutableArray<ISymbol> right)
+    {
+        if (left.Length != right.Length)
+            return false;
+
+        for (int i = 0; i < left.Length; i++)
+        {
+            if (!SymbolEqualityComparer.Default.Equals(left[i], right[i]))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// Convert one arm into a row. Unknown recursive operations remain marked
+    /// as Unknown so the decision tree can avoid claiming proof.
     static ImmutableArray<Cell> ConvertPropertyRow(
         IPatternOperation pattern,
         ImmutableArray<Column> columns,
-        IPropertySymbol[] propList,
-        System.Collections.Generic.Dictionary<IPropertySymbol, int> propertySet,
-        DomainResolver resolver)
+        System.Collections.Generic.List<ImmutableArray<ISymbol>> paths,
+        DomainResolver resolver,
+        bool isStructDU,
+        IValueDomain rootDomain)
     {
-        // Discard/var/wildcard → all wildcards
-        if (pattern is IDiscardPatternOperation)
-            return WildcardRow(columns.Length);
+        var cells = ImmutableArray.CreateBuilder<Cell>(columns.Length);
+        for (int i = 0; i < columns.Length; i++)
+            cells.Add(Cell.Wildcard.Instance);
 
-        if (pattern is IDeclarationPatternOperation declPat && declPat.Syntax is VarPatternSyntax)
-            return WildcardRow(columns.Length);
+        if (pattern is IDiscardPatternOperation
+            || pattern is IDeclarationPatternOperation { Syntax: VarPatternSyntax })
+            return cells.MoveToImmutable();
+
+        cells[0] = ConvertRootPattern(pattern, rootDomain, isStructDU);
 
         if (pattern is IRecursivePatternOperation recursive)
         {
-            // Start with all wildcards
-            var cellBuilder = ImmutableArray.CreateBuilder<Cell>(columns.Length);
-            for (int i = 0; i < columns.Length; i++)
-                cellBuilder.Add(Cell.Wildcard.Instance);
-
-            // Fill in property subpatterns
-            foreach (var propSub in recursive.PropertySubpatterns)
-            {
-                var prop = GetPropertyFromSubpattern(propSub);
-                if (prop != null && propertySet.TryGetValue(prop, out int idx))
-                {
-                    cellBuilder[idx] = ConvertPattern(propSub.Pattern, columns[idx].Domain);
-                }
-            }
-
-            return cellBuilder.MoveToImmutable();
+            ApplyPropertySubpatterns(
+                recursive,
+                ImmutableArray<ISymbol>.Empty,
+                cells,
+                columns,
+                paths,
+                resolver,
+                isStructDU);
         }
 
-        return WildcardRow(columns.Length);
+        return cells.MoveToImmutable();
+    }
+
+    static Cell ConvertRootPattern(IPatternOperation pattern, IValueDomain rootDomain, bool isStructDU)
+    {
+        if (pattern is IConstantPatternOperation constant)
+            return ConvertConstantPattern(constant, rootDomain);
+
+        if (pattern is IDeclarationPatternOperation declaration)
+        {
+            if (declaration.Syntax is VarPatternSyntax)
+                return Cell.Wildcard.Instance;
+            return declaration.MatchedType is not null
+                ? ConvertTypePattern(declaration.MatchedType, rootDomain)
+                : Cell.Unknown.Instance;
+        }
+
+        if (pattern is ITypePatternOperation typePattern)
+            return ConvertTypePattern(typePattern.MatchedType, rootDomain);
+
+        if (pattern is IRecursivePatternOperation recursive)
+        {
+            if (!recursive.DeconstructionSubpatterns.IsEmpty)
+                return Cell.Unknown.Instance;
+
+            if (isStructDU)
+                return Cell.Wildcard.Instance;
+
+            if (recursive.MatchedType is not null)
+                return ConvertTypePattern(recursive.MatchedType, rootDomain);
+
+            // A property pattern on a nullable root proves that the root is
+            // non-null. For non-nullable roots this is simply the universe.
+            return NonNullCell(rootDomain);
+        }
+
+        if (pattern is IBinaryPatternOperation binary)
+            return ConvertBinaryPattern(binary, rootDomain);
+        if (pattern is INegatedPatternOperation negated)
+            return ConvertNegatedPattern(negated, rootDomain);
+
+        return ConvertPattern(pattern, rootDomain);
+    }
+
+    static Cell NonNullCell(IValueDomain domain)
+    {
+        if (domain is NullableDomain nullable)
+            return new Cell.Constraint(new NullableDomain(domain.Type, nullable.Inner, hasNull: false));
+        return Cell.Wildcard.Instance;
+    }
+
+    static void ApplyPropertySubpatterns(
+        IRecursivePatternOperation recursive,
+        ImmutableArray<ISymbol> parent,
+        ImmutableArray<Cell>.Builder cells,
+        ImmutableArray<Column> columns,
+        System.Collections.Generic.List<ImmutableArray<ISymbol>> paths,
+        DomainResolver resolver,
+        bool isStructDU)
+    {
+        foreach (var propSub in recursive.PropertySubpatterns)
+        {
+            var memberPath = GetMemberPath(propSub);
+            if (memberPath.IsDefaultOrEmpty)
+                continue;
+
+            if (isStructDU && parent.Length == 0 && GetMemberName(propSub.Member) == "kind")
+                continue;
+
+            var path = parent.AddRange(memberPath);
+            int index = FindPathIndex(paths, path);
+            if (index < 0)
+                continue;
+
+            // Extended property syntax (`Left.Flag`) has no nested
+            // recursive operation to establish that `Left` is non-null.
+            // Constrain every containing prefix before applying the leaf.
+            for (int prefixLength = 1; prefixLength < path.Length; prefixLength++)
+            {
+                var prefix = path.Take(prefixLength).ToImmutableArray();
+                int prefixIndex = FindPathIndex(paths, prefix);
+                if (prefixIndex < 0)
+                    continue;
+
+                var prefixDomain = columns[prefixIndex + 1].Domain;
+                cells[prefixIndex + 1] = IntersectCells(
+                    cells[prefixIndex + 1],
+                    NonNullCell(prefixDomain),
+                    prefixDomain);
+            }
+
+            var childDomain = columns[index + 1].Domain;
+            var childPattern = propSub.Pattern;
+            var childCell = ConvertNestedPattern(childPattern, childDomain);
+            cells[index + 1] = childCell;
+
+            if (childPattern is IRecursivePatternOperation nested)
+            {
+                // The containing value must exist before any leaf can match.
+                if (childCell is Cell.Wildcard && nested.MatchedType is null)
+                    cells[index + 1] = NonNullCell(childDomain);
+
+                ApplyPropertySubpatterns(
+                    nested,
+                    path,
+                    cells,
+                    columns,
+                    paths,
+                    resolver,
+                    isStructDU: false);
+            }
+        }
+    }
+
+    static Cell ConvertNestedPattern(IPatternOperation pattern, IValueDomain domain)
+    {
+        if (pattern is IRecursivePatternOperation recursive)
+        {
+            if (recursive.DeconstructionSubpatterns.Length > 0)
+                return Cell.Unknown.Instance;
+            if (recursive.MatchedType is not null)
+                return ConvertTypePattern(recursive.MatchedType, domain);
+            return NonNullCell(domain);
+        }
+
+        return ConvertPattern(pattern, domain);
+    }
+
+    static int FindPathIndex(
+        System.Collections.Generic.List<ImmutableArray<ISymbol>> paths,
+        ImmutableArray<ISymbol> path)
+    {
+        for (int i = 0; i < paths.Count; i++)
+        {
+            if (PathsEqual(paths[i], path))
+                return i;
+        }
+
+        return -1;
     }
 
     // ─── Struct DU matrix ─────────────────────────────────────────────────
@@ -707,13 +968,10 @@ internal sealed class PatternMatrix
         var slot = new SlotIdentifier.RootSlot(kindEnum);
         var column = new Column(slot, kindDomain);
 
-        // Detect majority pattern style to guide Kind extraction
-        var style = DetectStructDUStyle(patterns);
-
         var rowBuilder = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>();
         foreach (var pattern in patterns)
         {
-            var cell = ExtractStructDUKindCell(pattern, kindDomain, kindEnum, style);
+            var cell = ExtractStructDUKindCell(pattern, kindDomain, kindEnum);
             rowBuilder.Add(ImmutableArray.Create(cell));
         }
 
@@ -734,12 +992,10 @@ internal sealed class PatternMatrix
         var slot = new SlotIdentifier.RootSlot(nullableType);
         var column = new Column(slot, nullableKindDomain);
 
-        var style = DetectStructDUStyle(patterns);
-
         var rowBuilder = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>();
         foreach (var pattern in patterns)
         {
-            var cell = ConvertNullableStructDUPattern(pattern, nullableKindDomain, kindDomain, kindEnum, style);
+            var cell = ConvertNullableStructDUPattern(pattern, nullableKindDomain, kindDomain, kindEnum);
             rowBuilder.Add(ImmutableArray.Create(cell));
         }
 
@@ -752,8 +1008,7 @@ internal sealed class PatternMatrix
         IPatternOperation pattern,
         NullableDomain nullableKindDomain,
         EnumDomain kindDomain,
-        INamedTypeSymbol kindEnum,
-        StructDUStyle style)
+        INamedTypeSymbol kindEnum)
     {
         // Wildcard / var → covers everything (null + all variants)
         if (pattern is IDiscardPatternOperation)
@@ -787,41 +1042,29 @@ internal sealed class PatternMatrix
         // Binary `and` pattern: `not null and (Kind.X, ...)` — intersect both sides
         if (pattern is IBinaryPatternOperation binaryAnd && binaryAnd.OperatorKind == BinaryOperatorKind.And)
         {
-            var leftCell = ConvertNullableStructDUPattern(binaryAnd.LeftPattern, nullableKindDomain, kindDomain, kindEnum, style);
-            var rightCell = ConvertNullableStructDUPattern(binaryAnd.RightPattern, nullableKindDomain, kindDomain, kindEnum, style);
-
-            // Wildcards don't narrow: if one side is wildcard, return the other
-            if (leftCell is Cell.Wildcard)
-                return rightCell;
-            if (rightCell is Cell.Wildcard)
-                return leftCell;
-
-            // Both are constraints — intersect them
-            if (leftCell is Cell.Constraint lc && rightCell is Cell.Constraint rc)
-            {
-                var intersection = lc.MatchedValues.Intersect(rc.MatchedValues);
-                return intersection.IsEmpty ? new Cell.Constraint(intersection) : new Cell.Constraint(intersection);
-            }
-
-            return leftCell;
+            var leftCell = ConvertNullableStructDUPattern(binaryAnd.LeftPattern, nullableKindDomain, kindDomain, kindEnum);
+            var rightCell = ConvertNullableStructDUPattern(binaryAnd.RightPattern, nullableKindDomain, kindDomain, kindEnum);
+            return IntersectCells(leftCell, rightCell, nullableKindDomain);
         }
 
         // Binary `or` pattern — extract inner Kind cell and wrap in NullableDomain
         if (pattern is IBinaryPatternOperation binaryOr && binaryOr.OperatorKind == BinaryOperatorKind.Or)
         {
-            var innerOrCell = ConvertBinaryStructDUPattern(binaryOr, kindDomain, kindEnum, style);
-            if (innerOrCell is Cell.Constraint innerOrConstraint)
-                return new Cell.Constraint(new NullableDomain(nullableKindDomain.Type, innerOrConstraint.MatchedValues, hasNull: false));
-            return Cell.Wildcard.Instance;
+            var leftCell = ConvertNullableStructDUPattern(binaryOr.LeftPattern, nullableKindDomain, kindDomain, kindEnum);
+            var rightCell = ConvertNullableStructDUPattern(binaryOr.RightPattern, nullableKindDomain, kindDomain, kindEnum);
+            return UnionCells(leftCell, rightCell, nullableKindDomain);
         }
 
         // DU kind-matching patterns (deconstruct/property/constant) → wrap in non-null NullableDomain
-        var innerCell = ExtractStructDUKindCell(pattern, kindDomain, kindEnum, style);
+        var innerCell = ExtractStructDUKindCell(pattern, kindDomain, kindEnum);
         if (innerCell is Cell.Constraint innerConstraint)
             return new Cell.Constraint(new NullableDomain(nullableKindDomain.Type, innerConstraint.MatchedValues, hasNull: false));
 
-        // Wildcard from ExtractStructDUKindCell → treat as covering everything
-        return Cell.Wildcard.Instance;
+        if (innerCell is Cell.Unknown)
+            return Cell.Unknown.Instance;
+
+        // An unrestricted non-null recursive pattern does not match null.
+        return new Cell.Constraint(new NullableDomain(nullableKindDomain.Type, kindDomain, hasNull: false));
     }
 
     // ─── Record / EnforceExhaustive type domain matrix ────────────────────
@@ -847,6 +1090,141 @@ internal sealed class PatternMatrix
         return new PatternMatrix(rowBuilder.ToImmutable(), ImmutableArray.Create(column));
     }
 
+    static PatternMatrix BuildTypePropertyMatrix(
+        ITypeSymbol subjectType,
+        ImmutableArray<IPatternOperation> patterns,
+        DomainResolver resolver,
+        IValueDomain domain)
+        => BuildPropertyMatrixCore(subjectType, patterns, resolver, domain);
+
+    /// Struct DU property patterns have a Kind enum at the root and payload
+    /// members below it. The kind is kept as its own stable column so payload
+    /// leaves remain correlated with the selected variant.
+    static PatternMatrix BuildStructDUPropertyMatrix(
+        ITypeSymbol subjectType,
+        INamedTypeSymbol kindEnum,
+        ImmutableArray<IPatternOperation> patterns,
+        DomainResolver resolver)
+        => BuildStructDUPropertyMatrixCore(
+            subjectType,
+            kindEnum,
+            patterns,
+            resolver,
+            EnumDomain.Universe(kindEnum),
+            nullableRoot: false);
+
+    static PatternMatrix BuildStructDUPropertyMatrixCore(
+        ITypeSymbol subjectType,
+        INamedTypeSymbol kindEnum,
+        ImmutableArray<IPatternOperation> patterns,
+        DomainResolver resolver,
+        IValueDomain rootDomain,
+        bool nullableRoot)
+    {
+        var paths = new System.Collections.Generic.List<ImmutableArray<ISymbol>>();
+        foreach (var pattern in patterns)
+        {
+            if (pattern is IRecursivePatternOperation recursive)
+                CollectStructDUPropertyPaths(recursive, ImmutableArray<ISymbol>.Empty, paths);
+        }
+
+        var columns = ImmutableArray.CreateBuilder<Column>(paths.Count + 1);
+        columns.Add(new Column(new SlotIdentifier.RootSlot(rootDomain.Type), rootDomain));
+        foreach (var path in paths)
+        {
+            var member = path[path.Length - 1];
+            var memberType = member switch
+            {
+                IPropertySymbol property => property.Type,
+                IFieldSymbol field => field.Type,
+                _ => subjectType,
+            };
+            columns.Add(new Column(new SlotIdentifier.PropertySlot(path), resolver.Resolve(memberType)));
+        }
+
+        var cols = columns.MoveToImmutable();
+        var rows = ImmutableArray.CreateBuilder<ImmutableArray<Cell>>(patterns.Length);
+        foreach (var pattern in patterns)
+        {
+            var cells = ImmutableArray.CreateBuilder<Cell>(cols.Length);
+            for (int i = 0; i < cols.Length; i++)
+                cells.Add(Cell.Wildcard.Instance);
+
+            cells[0] = nullableRoot
+                ? ConvertNullableStructDUPropertyPattern(
+                    pattern,
+                    (NullableDomain)cols[0].Domain,
+                    (EnumDomain)((NullableDomain)cols[0].Domain).Inner,
+                    kindEnum)
+                : ExtractStructDUPropertyKindCell(
+                    pattern,
+                    (EnumDomain)cols[0].Domain,
+                    kindEnum);
+
+            // A logical pattern containing nested properties cannot be
+            // represented by the Kind-only extractor. Keep it indeterminate
+            // rather than silently dropping the payload restriction.
+            if (pattern is not IRecursivePatternOperation
+                && ContainsPropertyPattern(pattern))
+                cells[0] = Cell.Unknown.Instance;
+            else if (pattern is IRecursivePatternOperation recursivePattern
+                     && !recursivePattern.DeconstructionSubpatterns.IsEmpty
+                     && !recursivePattern.PropertySubpatterns.IsEmpty)
+                cells[0] = Cell.Unknown.Instance;
+
+            if (pattern is IRecursivePatternOperation recursive)
+            {
+                ApplyPropertySubpatterns(
+                    recursive,
+                    ImmutableArray<ISymbol>.Empty,
+                    cells,
+                    cols,
+                    paths,
+                    resolver,
+                    isStructDU: true);
+            }
+
+            rows.Add(cells.MoveToImmutable());
+        }
+
+        return new PatternMatrix(rows.ToImmutable(), cols);
+    }
+
+    static void CollectStructDUPropertyPaths(
+        IRecursivePatternOperation recursive,
+        ImmutableArray<ISymbol> parent,
+        System.Collections.Generic.List<ImmutableArray<ISymbol>> paths)
+    {
+        foreach (var propSub in recursive.PropertySubpatterns)
+        {
+            if (parent.Length == 0 && GetMemberName(propSub.Member) == "kind")
+                continue;
+
+            var memberPath = GetMemberPath(propSub);
+            if (memberPath.IsDefaultOrEmpty)
+                continue;
+
+            var path = parent.AddRange(memberPath);
+            AddPathPrefixes(paths, path);
+
+            if (propSub.Pattern is IRecursivePatternOperation nested)
+                CollectStructDUPropertyPaths(nested, path, paths);
+        }
+    }
+
+    static PatternMatrix BuildNullableStructDUPropertyMatrix(
+        ITypeSymbol nullableType,
+        INamedTypeSymbol kindEnum,
+        ImmutableArray<IPatternOperation> patterns,
+        DomainResolver resolver)
+        => BuildStructDUPropertyMatrixCore(
+            nullableType,
+            kindEnum,
+            patterns,
+            resolver,
+            NullableDomain.Universe(nullableType, EnumDomain.Universe(kindEnum)),
+            nullableRoot: true);
+
     /// Convert a pattern for a type-discriminated domain (record DU / enforce-exhaustive).
     /// Handles recursive patterns with MatchedType, type patterns, declaration patterns,
     /// constants (null), and wildcards.
@@ -862,14 +1240,17 @@ internal sealed class PatternMatrix
                     return Cell.Wildcard.Instance;
                 if (declPat.MatchedType != null)
                     return ConvertTypePattern(declPat.MatchedType, domain);
-                return Cell.Wildcard.Instance;
+                return Cell.Unknown.Instance;
 
             case IRecursivePatternOperation recursive:
                 // Record DU variant: `Option<int>.Some { Value: var v }` has MatchedType = Some
+                if (!recursive.DeconstructionSubpatterns.IsEmpty)
+                    return Cell.Unknown.Instance;
                 if (recursive.MatchedType != null)
                     return ConvertTypePattern(recursive.MatchedType, domain);
-                // Positional pattern without type narrowing — wildcard
-                return Cell.Wildcard.Instance;
+                // Positional/structural pattern without a modeled type
+                // narrowing cannot prove coverage here.
+                return Cell.Unknown.Instance;
 
             case ITypePatternOperation typePattern:
                 return ConvertTypePattern(typePattern.MatchedType, domain);
@@ -884,7 +1265,7 @@ internal sealed class PatternMatrix
                 return ConvertNegatedPattern(negPattern, domain);
 
             default:
-                return Cell.Wildcard.Instance;
+                return Cell.Unknown.Instance;
         }
     }
 
@@ -903,41 +1284,8 @@ internal sealed class PatternMatrix
             case BinaryOperatorKind.And:
                 return IntersectCells(left, right, domain);
             default:
-                return Cell.Wildcard.Instance;
+                return Cell.Unknown.Instance;
         }
-    }
-
-    enum StructDUStyle { Deconstruct, Property }
-
-    /// Scan patterns to detect whether deconstruct or property style dominates.
-    static StructDUStyle DetectStructDUStyle(ImmutableArray<IPatternOperation> patterns)
-    {
-        foreach (var pattern in patterns)
-        {
-            if (pattern is IRecursivePatternOperation recursive)
-            {
-                if (!recursive.DeconstructionSubpatterns.IsEmpty)
-                    return StructDUStyle.Deconstruct;
-
-                if (!recursive.PropertySubpatterns.IsEmpty && HasKindSubpattern(recursive))
-                    return StructDUStyle.Property;
-            }
-        }
-
-        // Default to property mode
-        return StructDUStyle.Property;
-    }
-
-    /// Check if a recursive pattern has a property subpattern for the 'kind' member.
-    static bool HasKindSubpattern(IRecursivePatternOperation recursive)
-    {
-        foreach (var propSub in recursive.PropertySubpatterns)
-        {
-            var memberName = GetMemberName(propSub.Member);
-            if (memberName == "kind")
-                return true;
-        }
-        return false;
     }
 
     /// Extract the member name from a property subpattern's Member operation.
@@ -950,12 +1298,66 @@ internal sealed class PatternMatrix
         return null;
     }
 
+    static Cell ExtractStructDUPropertyKindCell(
+        IPatternOperation pattern,
+        EnumDomain kindDomain,
+        INamedTypeSymbol kindEnum)
+    {
+        switch (pattern)
+        {
+            case IDiscardPatternOperation:
+                return Cell.Wildcard.Instance;
+            case IDeclarationPatternOperation { Syntax: VarPatternSyntax }:
+                return Cell.Wildcard.Instance;
+            case IRecursivePatternOperation recursive:
+                if (!recursive.DeconstructionSubpatterns.IsEmpty)
+                    return Cell.Unknown.Instance;
+                foreach (var propSub in recursive.PropertySubpatterns)
+                {
+                    if (GetMemberName(propSub.Member) == "kind")
+                        return ConvertPattern(propSub.Pattern, kindDomain);
+                }
+                return Cell.Wildcard.Instance;
+            case IBinaryPatternOperation:
+                // Logical combinations containing payload properties are
+                // intentionally left to the conservative unknown path.
+                return Cell.Unknown.Instance;
+            case IConstantPatternOperation constant:
+                return ConvertConstantPattern(constant, kindDomain);
+            default:
+                return Cell.Unknown.Instance;
+        }
+    }
+
+    static Cell ConvertNullableStructDUPropertyPattern(
+        IPatternOperation pattern,
+        NullableDomain nullableKindDomain,
+        EnumDomain kindDomain,
+        INamedTypeSymbol kindEnum)
+    {
+        if (pattern is IConstantPatternOperation constant
+            && constant.Value?.ConstantValue is { HasValue: true, Value: null })
+        {
+            return ConvertNullableStructDUPattern(
+                pattern,
+                nullableKindDomain,
+                kindDomain,
+                kindEnum);
+        }
+
+        var inner = ExtractStructDUPropertyKindCell(pattern, kindDomain, kindEnum);
+        if (inner is Cell.Constraint constraint)
+            return new Cell.Constraint(new NullableDomain(nullableKindDomain.Type, constraint.MatchedValues, hasNull: false));
+        if (inner is Cell.Unknown)
+            return Cell.Unknown.Instance;
+        return new Cell.Constraint(new NullableDomain(nullableKindDomain.Type, kindDomain, hasNull: false));
+    }
+
     /// Convert a single arm pattern to a Kind enum cell for a struct DU.
     static Cell ExtractStructDUKindCell(
         IPatternOperation pattern,
         EnumDomain kindDomain,
-        INamedTypeSymbol kindEnum,
-        StructDUStyle style)
+        INamedTypeSymbol kindEnum)
     {
         switch (pattern)
         {
@@ -966,17 +1368,17 @@ internal sealed class PatternMatrix
                 return Cell.Wildcard.Instance;
 
             case IBinaryPatternOperation binaryPat:
-                return ConvertBinaryStructDUPattern(binaryPat, kindDomain, kindEnum, style);
+                return ConvertBinaryStructDUPattern(binaryPat, kindDomain, kindEnum);
 
             case IRecursivePatternOperation recursive:
-                return ExtractKindFromRecursive(recursive, kindDomain, kindEnum, style);
+                return ExtractKindFromRecursive(recursive, kindDomain, kindEnum);
 
             case IConstantPatternOperation constPat:
                 // Direct Kind constant (unlikely at top level, but handle it)
                 return ConvertConstantPattern(constPat, kindDomain);
 
             default:
-                return Cell.Wildcard.Instance;
+                return Cell.Unknown.Instance;
         }
     }
 
@@ -984,12 +1386,17 @@ internal sealed class PatternMatrix
     static Cell ExtractKindFromRecursive(
         IRecursivePatternOperation recursive,
         EnumDomain kindDomain,
-        INamedTypeSymbol kindEnum,
-        StructDUStyle style)
+        INamedTypeSymbol kindEnum)
     {
         // Deconstruct: (Kind.Circle, ...) — element[0] is the Kind
         if (!recursive.DeconstructionSubpatterns.IsEmpty)
         {
+            for (int i = 1; i < recursive.DeconstructionSubpatterns.Length; i++)
+            {
+                if (!IsUnrestrictedPayloadPattern(recursive.DeconstructionSubpatterns[i]))
+                    return Cell.Unknown.Instance;
+            }
+
             var firstSub = recursive.DeconstructionSubpatterns[0];
             return ConvertPattern(firstSub, kindDomain);
         }
@@ -1001,7 +1408,17 @@ internal sealed class PatternMatrix
             {
                 var memberName = GetMemberName(propSub.Member);
                 if (memberName == "kind")
+                {
+                    foreach (var other in recursive.PropertySubpatterns)
+                    {
+                        if (ReferenceEquals(other, propSub))
+                            continue;
+                        if (!IsUnrestrictedPayloadPattern(other.Pattern))
+                            return Cell.Unknown.Instance;
+                    }
+
                     return ConvertPattern(propSub.Pattern, kindDomain);
+                }
             }
         }
 
@@ -1009,15 +1426,18 @@ internal sealed class PatternMatrix
         return Cell.Wildcard.Instance;
     }
 
+    static bool IsUnrestrictedPayloadPattern(IPatternOperation pattern)
+        => pattern is IDiscardPatternOperation
+            || pattern is IDeclarationPatternOperation { Syntax: VarPatternSyntax };
+
     /// Handle binary (or/and) patterns for struct DU Kind extraction.
     static Cell ConvertBinaryStructDUPattern(
         IBinaryPatternOperation binaryPat,
         EnumDomain kindDomain,
-        INamedTypeSymbol kindEnum,
-        StructDUStyle style)
+        INamedTypeSymbol kindEnum)
     {
-        var left = ExtractStructDUKindCell(binaryPat.LeftPattern, kindDomain, kindEnum, style);
-        var right = ExtractStructDUKindCell(binaryPat.RightPattern, kindDomain, kindEnum, style);
+        var left = ExtractStructDUKindCell(binaryPat.LeftPattern, kindDomain, kindEnum);
+        var right = ExtractStructDUKindCell(binaryPat.RightPattern, kindDomain, kindEnum);
 
         switch (binaryPat.OperatorKind)
         {
@@ -1026,7 +1446,7 @@ internal sealed class PatternMatrix
             case BinaryOperatorKind.And:
                 return IntersectCells(left, right, kindDomain);
             default:
-                return Cell.Wildcard.Instance;
+                return Cell.Unknown.Instance;
         }
     }
 
@@ -1059,13 +1479,15 @@ internal sealed class PatternMatrix
                 return ConvertTypePattern(typePattern.MatchedType, domain);
 
             case IRecursivePatternOperation:
-                // Structural decomposition — conservative wildcard for now.
-                // Nested tuples are handled by BuildTupleMatrix flattening.
-                return Cell.Wildcard.Instance;
+                // Recursive property/deconstruction patterns are expanded by
+                // the structural matrix builders. Reaching this fallback
+                // means the operation could not be modeled at this level.
+                return Cell.Unknown.Instance;
 
             default:
-                // Unknown pattern — conservative wildcard
-                return Cell.Wildcard.Instance;
+                // Unknown pattern — never treat unsupported syntax as a
+                // proven wildcard.
+                return Cell.Unknown.Instance;
         }
     }
 
@@ -1090,6 +1512,13 @@ internal sealed class PatternMatrix
         // Unwrap NullableDomain to check the inner domain
         var isNullable = domain is NullableDomain;
         var effectiveDomain = isNullable ? ((NullableDomain)domain).Inner : domain;
+
+        // A recursive property pattern commonly reports the containing type
+        // as MatchedType (for example `{ Child: { Flag: true } }`). This is
+        // not an unsupported type test; it simply proves that the containing
+        // value is non-null.
+        if (SymbolEqualityComparer.Default.Equals(matchedType, effectiveDomain.Type))
+            return isNullable ? NonNullCell(domain) : Cell.Wildcard.Instance;
 
         if (effectiveDomain is EnforceExhaustiveDomain exhaustiveDomain
             && matchedType is INamedTypeSymbol namedMatchedType)
@@ -1118,15 +1547,16 @@ internal sealed class PatternMatrix
             }
         }
 
-        // Fallback — conservative wildcard
-        return Cell.Wildcard.Instance;
+        // Fallback — the type is not part of a finite known hierarchy. Do not
+        // claim that an unsupported type pattern covers the whole domain.
+        return Cell.Unknown.Instance;
     }
 
     static Cell ConvertConstantPattern(IConstantPatternOperation constPattern, IValueDomain domain)
     {
         var value = constPattern.Value;
         if (value == null)
-            return Cell.Wildcard.Instance;
+            return Cell.Unknown.Instance;
 
         var constantValue = value.ConstantValue;
         if (!constantValue.HasValue)
@@ -1142,8 +1572,8 @@ internal sealed class PatternMatrix
                 return new Cell.Constraint(new NullableDomain(domain.Type, emptyInner, hasNull: true));
             }
 
-            // Null against a non-nullable domain — no-op wildcard
-            return Cell.Wildcard.Instance;
+            // Null cannot match a non-nullable domain.
+            return new Cell.Constraint(new EmptyDomain(domain.Type));
         }
 
         // Unwrap NullableDomain for non-null constant patterns
@@ -1194,7 +1624,7 @@ internal sealed class PatternMatrix
         }
 
         if (innerCell == null)
-            return Cell.Wildcard.Instance;
+            return Cell.Unknown.Instance;
 
         // Wrap back in NullableDomain if the column domain is nullable
         if (isNullable && innerCell is Cell.Constraint innerConstraint)
@@ -1226,7 +1656,7 @@ internal sealed class PatternMatrix
         var effectiveDomain = isNullable ? ((NullableDomain)domain).Inner : domain;
 
         if (effectiveDomain is not NumericDomain numericDomain)
-            return Cell.Wildcard.Instance;
+            return Cell.Unknown.Instance;
 
         // Keep the typed Roslyn constant intact. Integral domains convert it
         // directly to BigInteger; floating domains preserve the existing
@@ -1288,7 +1718,7 @@ internal sealed class PatternMatrix
             case BinaryOperatorKind.And:
                 return IntersectCells(left, right, domain);
             default:
-                return Cell.Wildcard.Instance;
+                return Cell.Unknown.Instance;
         }
     }
 
@@ -1307,22 +1737,27 @@ internal sealed class PatternMatrix
 
         var inner = ConvertPattern(negPattern.Pattern, domain);
 
+        if (inner is Cell.Unknown)
+            return Cell.Unknown.Instance;
+
         if (inner is Cell.Wildcard)
         {
-            // Complement of wildcard is empty — nothing matches.
-            // This is unusual; treat as wildcard to be conservative.
-            return Cell.Wildcard.Instance;
+            // Complement of a proven wildcard is the empty set.
+            return new Cell.Constraint(new EmptyDomain(domain.Type));
         }
 
         if (inner is Cell.Constraint constraint)
         {
+            if (constraint.MatchedValues is EmptyDomain)
+                return Cell.Wildcard.Instance;
+
             var complemented = constraint.MatchedValues.Complement();
             if (complemented.IsEmpty)
-                return Cell.Wildcard.Instance;
+                return new Cell.Constraint(new EmptyDomain(domain.Type));
             return new Cell.Constraint(complemented);
         }
 
-        return Cell.Wildcard.Instance;
+        return Cell.Unknown.Instance;
     }
 
     /// Union two cells: wildcard absorbs everything; otherwise union the domains.
@@ -1331,17 +1766,63 @@ internal sealed class PatternMatrix
         if (left is Cell.Wildcard || right is Cell.Wildcard)
             return Cell.Wildcard.Instance;
 
+        if (left is Cell.Unknown || right is Cell.Unknown)
+            return Cell.Unknown.Instance;
+
         if (left is Cell.Constraint leftC && right is Cell.Constraint rightC)
         {
-            // Union = complement of (complement(left) intersect complement(right))
-            var leftComp = leftC.MatchedValues.Complement();
-            var rightComp = rightC.MatchedValues.Complement();
-            var intersection = leftComp.Intersect(rightComp);
-            var union = intersection.Complement();
+            if (leftC.MatchedValues.IsEmpty)
+                return right;
+            if (rightC.MatchedValues.IsEmpty)
+                return left;
+
+            if (leftC.MatchedValues is NullableDomain leftNullable
+                && rightC.MatchedValues is NullableDomain rightNullable)
+            {
+                if (!TryUnionDomains(leftNullable.Inner, rightNullable.Inner, out var innerUnion))
+                    return Cell.Unknown.Instance;
+
+                return new Cell.Constraint(new NullableDomain(
+                    leftNullable.Type,
+                    innerUnion,
+                    leftNullable.HasNull || rightNullable.HasNull));
+            }
+
+            if (!TryUnionDomains(leftC.MatchedValues, rightC.MatchedValues, out var union))
+                return Cell.Unknown.Instance;
             return new Cell.Constraint(union);
         }
 
-        return Cell.Wildcard.Instance;
+        return Cell.Unknown.Instance;
+    }
+
+    static bool TryUnionDomains(
+        IValueDomain left,
+        IValueDomain right,
+        out IValueDomain union)
+    {
+        if (left.IsEmpty)
+        {
+            union = right;
+            return true;
+        }
+
+        if (right.IsEmpty)
+        {
+            union = left;
+            return true;
+        }
+
+        try
+        {
+            union = left.Complement().Intersect(right.Complement()).Complement();
+            return true;
+        }
+        catch (NotSupportedException)
+        {
+            union = left;
+            return false;
+        }
     }
 
     /// Intersect two cells: wildcard is identity; otherwise intersect the domains.
@@ -1352,6 +1833,9 @@ internal sealed class PatternMatrix
         if (right is Cell.Wildcard)
             return left;
 
+        if (left is Cell.Unknown || right is Cell.Unknown)
+            return Cell.Unknown.Instance;
+
         if (left is Cell.Constraint leftC && right is Cell.Constraint rightC)
         {
             var intersected = leftC.MatchedValues.Intersect(rightC.MatchedValues);
@@ -1361,14 +1845,30 @@ internal sealed class PatternMatrix
         return Cell.Wildcard.Instance;
     }
 
-    /// Extract the IPropertySymbol from a property subpattern's Member operation.
-    /// Member is an IOperation (IPropertyReferenceOperation or IFieldReferenceOperation),
-    /// not a symbol directly.
-    static IPropertySymbol? GetPropertyFromSubpattern(IPropertySubpatternOperation propSub)
+    /// Extract the full member path from a property subpattern. Extended
+    /// property syntax (`{ Left.Flag: true }`) stores the receiver chain in
+    /// the operation tree; retaining it prevents sibling leaves from aliasing.
+    static ImmutableArray<ISymbol> GetMemberPath(IPropertySubpatternOperation propSub)
     {
-        if (propSub.Member is IPropertyReferenceOperation propRef)
-            return propRef.Property;
+        var symbols = ImmutableArray.CreateBuilder<ISymbol>();
+        CollectMemberPath(propSub.Member, symbols);
+        return symbols.ToImmutable();
+    }
 
-        return null;
+    static void CollectMemberPath(
+        IOperation? operation,
+        ImmutableArray<ISymbol>.Builder symbols)
+    {
+        switch (operation)
+        {
+            case IPropertyReferenceOperation property:
+                CollectMemberPath(property.Instance, symbols);
+                symbols.Add(property.Property);
+                break;
+            case IFieldReferenceOperation field:
+                CollectMemberPath(field.Instance, symbols);
+                symbols.Add(field.Field);
+                break;
+        }
     }
 }

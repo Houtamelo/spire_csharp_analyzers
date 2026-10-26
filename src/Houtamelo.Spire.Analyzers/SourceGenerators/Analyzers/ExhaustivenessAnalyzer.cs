@@ -100,7 +100,7 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
         ExhaustivenessResult result,
         Location location)
     {
-        if (result.MissingCases.IsEmpty)
+        if (!result.IsDeterminate || result.MissingCases.IsEmpty)
             return;
 
         var missingNames = ExtractMissingVariantNames(result);
@@ -132,6 +132,11 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
         {
             foreach (var constraint in missingCase.Constraints)
             {
+                // Variant names come from the switch subject's root
+                // discriminator/type domain. Payload constraints may contain
+                // unrelated enums and must not be reported as union variants.
+                if (constraint.Slot is not SlotIdentifier.RootSlot)
+                    continue;
                 CollectNamesFromDomain(constraint.Remaining, names);
             }
         }

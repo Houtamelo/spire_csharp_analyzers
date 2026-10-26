@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using Houtamelo.Spire.PatternAnalysis.Domains;
 
 namespace Houtamelo.Spire.PatternAnalysis.Algorithm;
@@ -13,11 +14,14 @@ internal static class DecisionTreeBuilder
     public static ExhaustivenessResult Check(PatternMatrix matrix)
     {
         var missingCases = new List<MissingCase>();
-        CheckCore(matrix, ImmutableArray<SlotConstraint>.Empty, missingCases);
-        return new ExhaustivenessResult(missingCases.ToImmutableArray());
+        bool hasIndeterminateRegion = CheckCore(matrix, ImmutableArray<SlotConstraint>.Empty, missingCases);
+        return new ExhaustivenessResult(missingCases.ToImmutableArray(), !hasIndeterminateRegion);
     }
 
-    static void CheckCore(
+    /// Returns true when the current region can only be covered by an
+    /// unsupported row. Known rows are still allowed to prove that region
+    /// exhaustive, in which case the unknown row is irrelevant.
+    static bool CheckCore(
         PatternMatrix matrix,
         ImmutableArray<SlotConstraint> accumulated,
         List<MissingCase> missingCases)
@@ -28,12 +32,34 @@ internal static class DecisionTreeBuilder
         if (matrix.RowCount == 0)
         {
             ExpandMissingCases(matrix.Columns, 0, accumulated, missingCases, 0);
-            return;
+            return false;
         }
 
         // 2. Zero columns → every remaining row matches; the pattern space is covered.
         if (matrix.ColumnCount == 0)
-            return;
+        {
+            // A row with no unknown cells is a proven matching row. Unknown
+            // rows remain candidates, but cannot establish coverage by
+            // themselves.
+            for (int rowIndex = 0; rowIndex < matrix.Rows.Length; rowIndex++)
+            {
+                if (!matrix.UnknownRows[rowIndex])
+                    return false;
+            }
+
+            return true;
+        }
+
+        // A proven wildcard row covers the whole remaining product. This
+        // fast path also avoids expanding every nested leaf for a final `_`.
+        for (int rowIndex = 0; rowIndex < matrix.Rows.Length; rowIndex++)
+        {
+            if (matrix.UnknownRows[rowIndex]
+                || matrix.Rows[rowIndex].Any(cell => cell is not Cell.Wildcard))
+                continue;
+
+            return false;
+        }
 
         // 3. Pick the column with the smallest Split() count (fewest partitions).
         //    Ties broken by leftmost index.
@@ -44,12 +70,16 @@ internal static class DecisionTreeBuilder
         var partitions = ComputePartitions(matrix, colIdx, column);
 
         // 5. For each partition: record the constraint, specialize the matrix, and recurse.
+        bool indeterminate = false;
         foreach (var partition in partitions)
         {
             var constraint = new SlotConstraint(column.Slot, partition);
             var specialized = matrix.Specialize(colIdx, partition);
-            CheckCore(specialized, accumulated.Add(constraint), missingCases);
+            if (CheckCore(specialized, accumulated.Add(constraint), missingCases))
+                indeterminate = true;
         }
+
+        return indeterminate;
     }
 
     /// Compute the partitions for a column.
@@ -68,9 +98,9 @@ internal static class DecisionTreeBuilder
         // universe, and returning that split would make every numeric row
         // appear to cover the whole non-null partition.
         var constraintDomains = CollectConstraintDomains(matrix, colIdx);
-        if (IsIntegralNumericDomain(column.Domain))
+        if (IsNumericDomain(column.Domain))
         {
-            return RefineIntegralPartitions(baseSplit, constraintDomains);
+            return RefineNumericPartitions(baseSplit, constraintDomains);
         }
 
         // If the column domain splits into multiple partitions, use those.
@@ -113,11 +143,11 @@ internal static class DecisionTreeBuilder
             : baseSplit;
     }
 
-    /// Refine an integral column into disjoint atoms by every row constraint.
+    /// Refine a numeric column into disjoint atoms by every row constraint.
     /// Splitting each existing atom into its intersection and remainder keeps
-    /// nullable null partitions separate and preserves row correlations when
-    /// the matrix specializes later.
-    static ImmutableArray<IValueDomain> RefineIntegralPartitions(
+    /// nullable null partitions separate and preserves correlations between
+    /// numeric and other columns when the matrix specializes later.
+    static ImmutableArray<IValueDomain> RefineNumericPartitions(
         ImmutableArray<IValueDomain> baseSplit,
         ImmutableArray<IValueDomain> constraintDomains)
     {
@@ -148,14 +178,10 @@ internal static class DecisionTreeBuilder
         return atoms;
     }
 
-    static bool IsIntegralNumericDomain(IValueDomain domain)
+    static bool IsNumericDomain(IValueDomain domain)
     {
-        if (domain is NumericDomain numeric)
-            return numeric.IsIntegral;
-
-        return domain is NullableDomain nullable
-            && nullable.Inner is NumericDomain innerNumeric
-            && innerNumeric.IsIntegral;
+        return domain is NumericDomain
+            || domain is NullableDomain nullable && nullable.Inner is NumericDomain;
     }
 
     /// Collect distinct constraint domains from a column's cells.

@@ -51,7 +51,7 @@ public sealed class CS8509Suppressor : DiagnosticSuppressor
             // tuples, property patterns, type hierarchies, and nullable variants. Run it on every switch
             // and trust its verdict.
             var result = ExhaustivenessChecker.Check(context.Compilation, switchOp);
-            if (result.MissingCases.IsEmpty)
+            if (result.IsDeterminate && result.MissingCases.IsEmpty)
             {
                 var descriptor = diagnostic.Id == "CS8524" ? CS8524Descriptor : CS8509Descriptor;
                 context.ReportSuppression(

@@ -13,6 +13,12 @@ to a wildcard (`:1039-1072`, especially `:1064-1067`). For example,
 constraining `Inner.Flag`; a missing `Flag: false` arm can consequently look
 exhaustive.
 
+Two earlier dispatch paths need the same correction: struct unions currently
+use a Kind-only matrix, and enforced hierarchies/record unions use a type-only
+matrix. Both ignore additional payload/member restrictions. Preserve their root
+discriminator columns while adding property paths; repairing only the ordinary
+property builder would leave these false exhaustiveness results intact.
+
 The current domain model is already intended for structural cross-products:
 `StructuralDomain` stores `(SlotIdentifier, IValueDomain)` slots and splits the
 first non-universe slot (`src/Houtamelo.Spire.PatternAnalysis/Domains/StructuralDomain.cs:13-91`).
@@ -58,6 +64,13 @@ distinguish “unsupported/unknown” from “all values covered”.
    cases and no uncertainty (`CS8509Suppressor.cs:50-59`). Unknown rows should
    never be sufficient to prove exhaustiveness. Keep existing wildcard behavior
    for actual discard/`var` patterns only.
+
+   Unsupported rows contribute no proven coverage. If the supported rows alone
+   cover the universe, the result is still determinately exhaustive. Otherwise
+   mark the result indeterminate: consumers must not report speculative missing
+   arms as definite omissions or suppress compiler warnings. `MissingCases` may
+   be empty for an indeterminate result; emptiness alone is no longer proof.
+   Keep existing guard handling and avoid introducing a new diagnostic.
 
 The parent-column approach preserves correlations without redesigning the
 Maranget matrix: specialization on `Inner` removes the null/type-incompatible
