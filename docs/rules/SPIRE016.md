@@ -11,6 +11,11 @@
 
 Flags casts to `[EnforceInitialization]` enums when the resulting value may not correspond to a valid variant. Covers both integer-to-enum and enum-to-enum casts.
 
+The code fix preserves the source enum's underlying integer type, including
+`long` and `ulong`, when calling `SpireEnum<T>.From` or `FromFlags`.
+Flags conversion rejects values outside the target's underlying range. Zero
+requires a named zero member; negative values require an exact named member.
+
 Attributes derived from `[EnforceInitialization]` also opt in, including
 `[EnforceExhaustiveness]` on generated discriminated-union `Kind` enums.
 

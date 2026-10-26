@@ -58,16 +58,17 @@ public sealed class FromEnumCodeFix : CodeFixProvider
         var targetType = castExpr.Type;
         var operand = castExpr.Expression;
 
-        // For enum-to-enum casts, the operand is an enum value — wrap in (int) cast
-        // since SpireEnum<T>.From only accepts integer types.
+        // For enum-to-enum casts, the operand is an enum value — cast it to its
+        // underlying integer type since SpireEnum<T>.From only accepts integers.
         var model = await document.GetSemanticModelAsync(ct);
         if (model is not null)
         {
             var operandType = model.GetTypeInfo(operand, ct).Type;
-            if (operandType is { TypeKind: TypeKind.Enum })
+            if (operandType is INamedTypeSymbol { TypeKind: TypeKind.Enum } sourceEnum &&
+                sourceEnum.EnumUnderlyingType is { } underlyingType)
             {
                 operand = SyntaxFactory.CastExpression(
-                    SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.IntKeyword)),
+                    GetUnderlyingTypeSyntax(underlyingType),
                     operand.WithoutTrivia());
             }
         }
@@ -91,5 +92,26 @@ public sealed class FromEnumCodeFix : CodeFixProvider
 
         var newRoot = root.ReplaceNode(castExpr, invocation.WithTriviaFrom(castExpr));
         return document.WithSyntaxRoot(newRoot);
+    }
+
+    private static TypeSyntax GetUnderlyingTypeSyntax(ITypeSymbol type)
+    {
+        var keyword = type.SpecialType switch
+        {
+            SpecialType.System_SByte => SyntaxKind.SByteKeyword,
+            SpecialType.System_Byte => SyntaxKind.ByteKeyword,
+            SpecialType.System_Int16 => SyntaxKind.ShortKeyword,
+            SpecialType.System_UInt16 => SyntaxKind.UShortKeyword,
+            SpecialType.System_Int32 => SyntaxKind.IntKeyword,
+            SpecialType.System_UInt32 => SyntaxKind.UIntKeyword,
+            SpecialType.System_Int64 => SyntaxKind.LongKeyword,
+            SpecialType.System_UInt64 => SyntaxKind.ULongKeyword,
+            _ => SyntaxKind.None,
+        };
+
+        return keyword is not SyntaxKind.None
+            ? SyntaxFactory.PredefinedType(SyntaxFactory.Token(keyword))
+            : SyntaxFactory.ParseTypeName(
+                type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat));
     }
 }

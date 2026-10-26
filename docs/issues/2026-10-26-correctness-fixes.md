@@ -58,4 +58,15 @@ retaining all output and compilation assertions.
 Validation: 2,128 SDK tests passed, zero skipped; all 77 fixed generated-output
 controls unchanged. Evidence: `tmp/correctness-fixes-20261026/batch1-final/`.
 
-Batches 2–7 pending. Their regression matrices and staged test drafts are ready.
+Batch 2 complete: signed/unsigned flag inputs are range-checked, negative
+members use correctly typed validation, and raw declared bits plus zero-member
+metadata are cached. Enum-to-enum fixes preserve the source backing type. All
+eight backing types have integration coverage; fixed consumers execute both
+valid conversions and invalid-value rejection, including single-evaluation
+controls. Three new native facts cover the runtime paths.
+
+Validation: 2,152 SDK tests passed, zero skipped; all 77 fixed generated-output
+controls unchanged. Evidence: `tmp/correctness-fixes-20261026/batch2-enums-final/`.
+Unity execution of the new facts remains part of final validation.
+
+Batches 3–7 pending. Their regression matrices and staged test drafts are ready.

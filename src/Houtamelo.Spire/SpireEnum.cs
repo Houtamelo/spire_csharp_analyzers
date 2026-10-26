@@ -11,6 +11,11 @@ public static class SpireEnum<TEnum> where TEnum : struct, Enum
 {
     private static readonly TEnum[] AllValues = (TEnum[])Enum.GetValues(typeof(TEnum));
     private static readonly TypeCode UnderlyingTypeCode = Type.GetTypeCode(Enum.GetUnderlyingType(typeof(TEnum)));
+    private static readonly bool IsSignedUnderlying = ComputeIsSignedUnderlying();
+    private static readonly long SignedMinimum = ComputeSignedMinimum();
+    private static readonly ulong UnderlyingMaximum = ComputeUnderlyingMaximum();
+    private static readonly ulong AllNamedBits = ComputeAllNamedBits();
+    private static readonly bool HasZeroMember = ComputeHasZeroMember();
 
     /// <summary>
     /// Returns the first named member of <typeparamref name="TEnum"/>.
@@ -275,29 +280,105 @@ public static class SpireEnum<TEnum> where TEnum : struct, Enum
     private static bool IsValidFlagsCombination(long value)
     {
         if (value < 0)
-            return Enum.IsDefined(typeof(TEnum), value);
+            return IsDeclaredNegativeMember(value);
 
         return IsValidFlagsCombinationUlong((ulong)value);
     }
 
     private static bool IsValidFlagsCombinationUlong(ulong bits)
     {
-        ulong allNamedBits = 0;
-        bool hasZeroMember = false;
-
-        foreach (var member in AllValues)
-        {
-            ulong memberValue = Convert.ToUInt64(member);
-            if (memberValue == 0)
-                hasZeroMember = true;
-            else
-                allNamedBits |= memberValue;
-        }
+        if (!IsRepresentable(bits))
+            return false;
 
         if (bits == 0)
-            return hasZeroMember;
+            return HasZeroMember;
 
-        return (bits & ~allNamedBits) == 0;
+        return (bits & ~AllNamedBits) == 0;
+    }
+
+    private static bool IsDeclaredNegativeMember(long value)
+    {
+        if (!IsSignedUnderlying || !IsRepresentable(value))
+            return false;
+
+        // Enum.IsDefined must receive the actual underlying type. Passing a long
+        // to an int/short-backed enum throws instead of returning false.
+        return Enum.IsDefined(typeof(TEnum), ConvertToUnderlyingType(value));
+    }
+
+    private static bool IsRepresentable(long value)
+    {
+        if (value < 0)
+            return IsSignedUnderlying && value >= SignedMinimum;
+
+        return (ulong)value <= UnderlyingMaximum;
+    }
+
+    private static bool IsRepresentable(ulong value)
+        => value <= UnderlyingMaximum;
+
+    private static bool ComputeIsSignedUnderlying()
+        => UnderlyingTypeCode is TypeCode.SByte or TypeCode.Int16 or TypeCode.Int32 or TypeCode.Int64;
+
+    private static long ComputeSignedMinimum()
+        => UnderlyingTypeCode switch
+        {
+            TypeCode.SByte => sbyte.MinValue,
+            TypeCode.Int16 => short.MinValue,
+            TypeCode.Int32 => int.MinValue,
+            TypeCode.Int64 => long.MinValue,
+            _ => 0,
+        };
+
+    private static ulong ComputeUnderlyingMaximum()
+        => UnderlyingTypeCode switch
+        {
+            TypeCode.SByte => (ulong)sbyte.MaxValue,
+            TypeCode.Byte => byte.MaxValue,
+            TypeCode.Int16 => (ulong)short.MaxValue,
+            TypeCode.UInt16 => ushort.MaxValue,
+            TypeCode.Int32 => (ulong)int.MaxValue,
+            TypeCode.UInt32 => uint.MaxValue,
+            TypeCode.Int64 => long.MaxValue,
+            TypeCode.UInt64 => ulong.MaxValue,
+            _ => 0,
+        };
+
+    private static ulong ComputeAllNamedBits()
+    {
+        ulong bits = 0;
+        foreach (var member in AllValues)
+            bits |= GetRawBits(member);
+        return bits;
+    }
+
+    private static bool ComputeHasZeroMember()
+    {
+        foreach (var member in AllValues)
+        {
+            if (GetRawBits(member) == 0)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static ulong GetRawBits(TEnum value)
+    {
+        object boxed = value;
+        return UnderlyingTypeCode switch
+        {
+            TypeCode.SByte => unchecked((ulong)(byte)(sbyte)boxed),
+            TypeCode.Byte => (byte)boxed,
+            TypeCode.Int16 => unchecked((ulong)(ushort)(short)boxed),
+            TypeCode.UInt16 => (ushort)boxed,
+            TypeCode.Int32 => unchecked((ulong)(uint)(int)boxed),
+            TypeCode.UInt32 => (uint)boxed,
+            TypeCode.Int64 => unchecked((ulong)(long)boxed),
+            TypeCode.UInt64 => (ulong)boxed,
+            _ => throw new NotSupportedException(
+                $"Unsupported underlying type code '{UnderlyingTypeCode}' for enum '{typeof(TEnum).Name}'."),
+        };
     }
 
     // ── Underlying type conversion ──
@@ -328,4 +409,5 @@ public static class SpireEnum<TEnum> where TEnum : struct, Enum
                     $"Unsupported underlying type code '{UnderlyingTypeCode}' for enum '{typeof(TEnum).Name}'.");
         }
     }
+
 }
