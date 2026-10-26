@@ -69,4 +69,16 @@ Validation: 2,152 SDK tests passed, zero skipped; all 77 fixed generated-output
 controls unchanged. Evidence: `tmp/correctness-fixes-20261026/batch2-enums-final/`.
 Unity execution of the new facts remains part of final validation.
 
-Batches 3–7 pending. Their regression matrices and staged test drafts are ready.
+Batch 3 complete: one monotonic deadline covers process exit and both redirected
+streams. Cancellation stops awaiting inherited pipes independently of Mono's
+reader cancellation support. Owned Linux groups are killed after parent exit,
+cleanup is bounded, pending faults are observed, and log writes stop before
+disposal. Eleven real-process regressions cover normal/partial output,
+nonzero exit, inherited pipes, non-owned descendants, and hot stdout.
+
+Validation: 2,163 SDK tests passed, zero skipped; all 77 fixed generated-output
+controls unchanged. The portable core also builds with zero warnings/errors.
+Evidence: `tmp/correctness-fixes-20261026/batch3-process-final/` and
+`batch3-process-focused/`. Native host execution remains in final validation.
+
+Batches 4–7 pending. Their regression matrices and staged test drafts are ready.
