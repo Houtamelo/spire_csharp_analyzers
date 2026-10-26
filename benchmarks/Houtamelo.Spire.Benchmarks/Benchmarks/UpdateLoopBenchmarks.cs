@@ -59,6 +59,10 @@ public class UpdateLoopBenchmarks
             var value = values[index];
             switch (value.kind)
             {
+                case Types.EventBench.Kind.Point:
+                case Types.EventBench.Kind.Label:
+                case Types.EventBench.Kind.Error:
+                    break;
                 case Types.EventBench.Kind.Circle: sum += value.circle.radius; break;
                 case Types.EventBench.Kind.Rectangle: sum += value.rectangle.width * value.rectangle.height; break;
                 case Types.EventBench.Kind.Transform: sum += value.transform.x + value.transform.y; break;
@@ -77,6 +81,10 @@ public class UpdateLoopBenchmarks
             var value = values[index];
             switch (value.kind)
             {
+                case Types.EventAuto.Kind.Point:
+                case Types.EventAuto.Kind.Label:
+                case Types.EventAuto.Kind.Error:
+                    break;
                 case Types.EventAuto.Kind.Circle: sum += value.circle.radius; break;
                 case Types.EventAuto.Kind.Rectangle: sum += value.rectangle.width * value.rectangle.height; break;
                 case Types.EventAuto.Kind.Transform: sum += value.transform.x + value.transform.y; break;
@@ -95,6 +103,10 @@ public class UpdateLoopBenchmarks
             var value = values[index];
             switch (value.kind)
             {
+                case Types.EventTyped.Kind.Point:
+                case Types.EventTyped.Kind.Label:
+                case Types.EventTyped.Kind.Error:
+                    break;
                 case Types.EventTyped.Kind.Circle: sum += value.circle.radius; break;
                 case Types.EventTyped.Kind.Rectangle: sum += value.rectangle.width * value.rectangle.height; break;
                 case Types.EventTyped.Kind.Transform: sum += value.transform.x + value.transform.y; break;
@@ -113,6 +125,10 @@ public class UpdateLoopBenchmarks
             var value = values[index];
             switch (value.kind)
             {
+                case Types.EventShared.Kind.Point:
+                case Types.EventShared.Kind.Label:
+                case Types.EventShared.Kind.Error:
+                    break;
                 case Types.EventShared.Kind.Circle: sum += value.circle.radius; break;
                 case Types.EventShared.Kind.Rectangle: sum += value.rectangle.width * value.rectangle.height; break;
                 case Types.EventShared.Kind.Transform: sum += value.transform.x + value.transform.y; break;

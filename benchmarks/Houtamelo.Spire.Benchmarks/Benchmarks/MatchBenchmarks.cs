@@ -62,6 +62,8 @@ public class MatchBenchmarks
         {
             switch (value.kind)
             {
+                case Types.PhysicsBench.Kind.Idle:
+                    break;
                 case Types.PhysicsBench.Kind.Impulse:
                     value.impulse.Deconstruct(out var magnitude);
                     sum += magnitude;
@@ -103,6 +105,7 @@ public class MatchBenchmarks
         {
             switch (value.kind)
             {
+                case Types.PhysicsBench.Kind.Idle: break;
                 case Types.PhysicsBench.Kind.Impulse: sum += value.impulse.magnitude; break;
                 case Types.PhysicsBench.Kind.Position: sum += value.position.x + value.position.y; break;
                 case Types.PhysicsBench.Kind.Force: sum += value.force.fx * value.force.fy + value.force.fz; break;
@@ -122,6 +125,7 @@ public class MatchBenchmarks
         {
             switch (value.kind)
             {
+                case Types.PhysicsAuto.Kind.Idle: break;
                 case Types.PhysicsAuto.Kind.Impulse: sum += value.impulse.magnitude; break;
                 case Types.PhysicsAuto.Kind.Position: sum += value.position.x + value.position.y; break;
                 case Types.PhysicsAuto.Kind.Force: sum += value.force.fx * value.force.fy + value.force.fz; break;
@@ -141,6 +145,7 @@ public class MatchBenchmarks
         {
             switch (value.kind)
             {
+                case Types.PhysicsTyped.Kind.Idle: break;
                 case Types.PhysicsTyped.Kind.Impulse: sum += value.impulse.magnitude; break;
                 case Types.PhysicsTyped.Kind.Position: sum += value.position.x + value.position.y; break;
                 case Types.PhysicsTyped.Kind.Force: sum += value.force.fx * value.force.fy + value.force.fz; break;
@@ -160,6 +165,7 @@ public class MatchBenchmarks
         {
             switch (value.kind)
             {
+                case Types.PhysicsShared.Kind.Idle: break;
                 case Types.PhysicsShared.Kind.Impulse: sum += value.impulse.magnitude; break;
                 case Types.PhysicsShared.Kind.Position: sum += value.position.x + value.position.y; break;
                 case Types.PhysicsShared.Kind.Force: sum += value.force.fx * value.force.fy + value.force.fz; break;

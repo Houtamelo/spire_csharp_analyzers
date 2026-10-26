@@ -210,10 +210,17 @@ static class ArrayFiller
         }
     }
 
-    private static int PickVariant(Random random, Distribution distribution, int index, int count)
-        => distribution == Distribution.Skewed80 && random.NextDouble() >= 0.8
-            ? random.Next(1, count)
-            : index % count;
+    internal static int PickVariant(Random random, Distribution distribution, int index, int count)
+    {
+        if (count <= 0)
+            throw new ArgumentOutOfRangeException(nameof(count), count, "Variant count must be positive.");
+        if (count == 1)
+            return 0;
+        if (distribution == Distribution.Uniform)
+            return index % count;
+
+        return random.NextDouble() < 0.8 ? 0 : random.Next(1, count);
+    }
 
     private static string PickString(Random random) => Strings[random.Next(Strings.Length)];
 }

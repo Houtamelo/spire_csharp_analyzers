@@ -1,0 +1,375 @@
+{
+  "seed": 42,
+  "variants": [
+    "Idle",
+    "Impulse",
+    "Position",
+    "Force",
+    "Rotation",
+    "Spring",
+    "Gravity",
+    "Collision"
+  ],
+  "rows": [
+    {
+      "n": 1000,
+      "distribution": "Uniform",
+      "field": "_auto",
+      "counts": [
+        125,
+        125,
+        125,
+        125,
+        125,
+        125,
+        125,
+        125
+      ]
+    },
+    {
+      "n": 1000,
+      "distribution": "Uniform",
+      "field": "_explicitAuto",
+      "counts": [
+        125,
+        125,
+        125,
+        125,
+        125,
+        125,
+        125,
+        125
+      ]
+    },
+    {
+      "n": 1000,
+      "distribution": "Uniform",
+      "field": "_typed",
+      "counts": [
+        125,
+        125,
+        125,
+        125,
+        125,
+        125,
+        125,
+        125
+      ]
+    },
+    {
+      "n": 1000,
+      "distribution": "Uniform",
+      "field": "_shared",
+      "counts": [
+        125,
+        125,
+        125,
+        125,
+        125,
+        125,
+        125,
+        125
+      ]
+    },
+    {
+      "n": 1000,
+      "distribution": "Uniform",
+      "field": "_record",
+      "counts": [
+        125,
+        125,
+        125,
+        125,
+        125,
+        125,
+        125,
+        125
+      ]
+    },
+    {
+      "n": 1000,
+      "distribution": "Uniform",
+      "field": "_native",
+      "counts": [
+        125,
+        125,
+        125,
+        125,
+        125,
+        125,
+        125,
+        125
+      ]
+    },
+    {
+      "n": 1000,
+      "distribution": "Skewed80",
+      "field": "_auto",
+      "counts": [
+        795,
+        25,
+        31,
+        24,
+        30,
+        30,
+        35,
+        30
+      ]
+    },
+    {
+      "n": 1000,
+      "distribution": "Skewed80",
+      "field": "_explicitAuto",
+      "counts": [
+        795,
+        25,
+        31,
+        24,
+        30,
+        30,
+        35,
+        30
+      ]
+    },
+    {
+      "n": 1000,
+      "distribution": "Skewed80",
+      "field": "_typed",
+      "counts": [
+        795,
+        25,
+        31,
+        24,
+        30,
+        30,
+        35,
+        30
+      ]
+    },
+    {
+      "n": 1000,
+      "distribution": "Skewed80",
+      "field": "_shared",
+      "counts": [
+        795,
+        25,
+        31,
+        24,
+        30,
+        30,
+        35,
+        30
+      ]
+    },
+    {
+      "n": 1000,
+      "distribution": "Skewed80",
+      "field": "_record",
+      "counts": [
+        795,
+        25,
+        31,
+        24,
+        30,
+        30,
+        35,
+        30
+      ]
+    },
+    {
+      "n": 1000,
+      "distribution": "Skewed80",
+      "field": "_native",
+      "counts": [
+        795,
+        25,
+        31,
+        24,
+        30,
+        30,
+        35,
+        30
+      ]
+    },
+    {
+      "n": 100000,
+      "distribution": "Uniform",
+      "field": "_auto",
+      "counts": [
+        12500,
+        12500,
+        12500,
+        12500,
+        12500,
+        12500,
+        12500,
+        12500
+      ]
+    },
+    {
+      "n": 100000,
+      "distribution": "Uniform",
+      "field": "_explicitAuto",
+      "counts": [
+        12500,
+        12500,
+        12500,
+        12500,
+        12500,
+        12500,
+        12500,
+        12500
+      ]
+    },
+    {
+      "n": 100000,
+      "distribution": "Uniform",
+      "field": "_typed",
+      "counts": [
+        12500,
+        12500,
+        12500,
+        12500,
+        12500,
+        12500,
+        12500,
+        12500
+      ]
+    },
+    {
+      "n": 100000,
+      "distribution": "Uniform",
+      "field": "_shared",
+      "counts": [
+        12500,
+        12500,
+        12500,
+        12500,
+        12500,
+        12500,
+        12500,
+        12500
+      ]
+    },
+    {
+      "n": 100000,
+      "distribution": "Uniform",
+      "field": "_record",
+      "counts": [
+        12500,
+        12500,
+        12500,
+        12500,
+        12500,
+        12500,
+        12500,
+        12500
+      ]
+    },
+    {
+      "n": 100000,
+      "distribution": "Uniform",
+      "field": "_native",
+      "counts": [
+        12500,
+        12500,
+        12500,
+        12500,
+        12500,
+        12500,
+        12500,
+        12500
+      ]
+    },
+    {
+      "n": 100000,
+      "distribution": "Skewed80",
+      "field": "_auto",
+      "counts": [
+        79946,
+        2865,
+        2806,
+        2881,
+        2884,
+        2832,
+        2909,
+        2877
+      ]
+    },
+    {
+      "n": 100000,
+      "distribution": "Skewed80",
+      "field": "_explicitAuto",
+      "counts": [
+        79946,
+        2865,
+        2806,
+        2881,
+        2884,
+        2832,
+        2909,
+        2877
+      ]
+    },
+    {
+      "n": 100000,
+      "distribution": "Skewed80",
+      "field": "_typed",
+      "counts": [
+        79946,
+        2865,
+        2806,
+        2881,
+        2884,
+        2832,
+        2909,
+        2877
+      ]
+    },
+    {
+      "n": 100000,
+      "distribution": "Skewed80",
+      "field": "_shared",
+      "counts": [
+        79946,
+        2865,
+        2806,
+        2881,
+        2884,
+        2832,
+        2909,
+        2877
+      ]
+    },
+    {
+      "n": 100000,
+      "distribution": "Skewed80",
+      "field": "_record",
+      "counts": [
+        79946,
+        2865,
+        2806,
+        2881,
+        2884,
+        2832,
+        2909,
+        2877
+      ]
+    },
+    {
+      "n": 100000,
+      "distribution": "Skewed80",
+      "field": "_native",
+      "counts": [
+        79946,
+        2865,
+        2806,
+        2881,
+        2884,
+        2832,
+        2909,
+        2877
+      ]
+    }
+  ]
+}

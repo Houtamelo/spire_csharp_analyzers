@@ -9,6 +9,7 @@
     <Project Path="tests\DevTools.Tests\DevTools.Tests.csproj" />
     <Project Path="tests\Houtamelo.Spire.Analyzers.Tests\Houtamelo.Spire.Analyzers.Tests.csproj" />
     <Project Path="tests\Houtamelo.Spire.BehavioralTests\Spire.BehavioralTests.csproj" />
+    <Project Path="tests/Houtamelo.Spire.Benchmarks.Tests/Houtamelo.Spire.Benchmarks.Tests.csproj" />
     <Project Path="tests\Houtamelo.Spire.SourceGenerators.Tests\Houtamelo.Spire.SourceGenerators.Tests.csproj" />
     <Project Path="tests\Houtamelo.Spire.PatternAnalysis.Tests\Houtamelo.Spire.PatternAnalysis.Tests.csproj" />
     <Project Path="tests/UnityStructCatalog.Tests/UnityStructCatalog.Tests.csproj" />

@@ -81,4 +81,18 @@ controls unchanged. The portable core also builds with zero warnings/errors.
 Evidence: `tmp/correctness-fixes-20261026/batch3-process-final/` and
 `batch3-process-focused/`. Native host execution remains in final validation.
 
-Batches 4–7 pending. Their regression matrices and staged test drafts are ready.
+Batch 4 complete: Skewed80 now selects the first variant 80% of the time;
+Uniform preserves its cycle and payload RNG sequence. A dedicated test project
+covers all 17 fill representations, bounds, reproducibility, histograms, and
+equal results across the seven match methods. Explicit no-op switch arms fix
+fresh benchmark-build SPIRE015 errors while preserving the existing work.
+
+Validation: 2,176 SDK tests passed across eight projects, zero skipped; 77 fixed
+generated-output controls unchanged. All 14 affected Short measurements have
+valid statistics. All six N=1,000 datasets contain 795 Idle values; the larger
+control contains 79.946% Idle. Twelve historical artifacts remain byte-identical.
+Results: `docs/benchmark-results/MATCH_CORRECTED_SKEWED80_2026-10-26.md`.
+Evidence: `tmp/correctness-fixes-20261026/batch4-benchmark-final/` and
+`batch4-match-bdn/`.
+
+Batches 5–7 pending. Their regression matrices and staged test drafts are ready.
