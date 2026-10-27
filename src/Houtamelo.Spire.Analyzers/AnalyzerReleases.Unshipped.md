@@ -19,8 +19,8 @@ SPIRE008 | Correctness | Error | RuntimeHelpers.GetUninitializedObject on [Enfor
 SPIRE009 | Correctness | Error | Switch does not handle all variants of discriminated union
 SPIRE011 | Correctness | Error | Discriminated union pattern field type mismatch
 SPIRE012 | Correctness | Error | Discriminated union pattern field count mismatch
-SPIRE013 | Correctness | Error | Accessing another variant's field
-SPIRE014 | Correctness | Warning | Accessing variant field without kind guard
+SPIRE013 | Correctness | Error | Attempting to access mismatched variant data
+SPIRE014 | Correctness | Warning | Attempting to access variant data without checking 'kind'
 SPIRE015 | Correctness | Error | Switch does not handle all members of [EnforceExhaustiveness] enum
 SPIRE016 | Correctness | Error | Operation may produce invalid value of [EnforceInitialization] enum
 SPIRE_DU002 | SourceGeneration | Error | ref struct not supported for [DiscriminatedUnion]

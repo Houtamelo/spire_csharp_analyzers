@@ -12,6 +12,6 @@ public static class Consumer
     public static int Match(Result<int> result) => result switch
     {
         { kind: Result<int>.Kind.Ok, ok: { value: var value } } => value,
-        { kind: Result<int>.Kind.Error, error: { code: var code } } => throw new System.NotImplementedException()
+        { IsError: true, error: var (code) } => throw new System.NotImplementedException()
     };
 }

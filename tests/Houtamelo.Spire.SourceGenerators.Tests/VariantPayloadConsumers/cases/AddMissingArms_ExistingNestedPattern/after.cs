@@ -12,6 +12,6 @@ public static class Consumer
     public static float Match(Shape shape) => shape switch
     {
         { kind: Shape.Kind.Circle, circle: { radius: var radius } } => radius,
-        { kind: Shape.Kind.Rectangle, rectangle: { width: var width, height: var height } } => throw new System.NotImplementedException()
+        { IsRectangle: true, rectangle: var (width, height) } => throw new System.NotImplementedException()
     };
 }

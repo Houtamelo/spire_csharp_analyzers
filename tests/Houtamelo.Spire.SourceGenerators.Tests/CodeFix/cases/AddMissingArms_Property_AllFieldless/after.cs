@@ -15,7 +15,7 @@ namespace TestNs
         {
             { kind: Light.Kind.Red } => 1,
             { kind: Light.Kind.Yellow } => 2,
-            { kind: Light.Kind.Green } => throw new System.NotImplementedException()
+            { IsGreen: true } => throw new System.NotImplementedException()
         };
     }
 }

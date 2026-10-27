@@ -18,8 +18,8 @@ namespace TestNs
             return m switch
             {
                 { kind: Msg.Kind.Ping, ping: { seq: var s  } } => s,
-                { kind: Msg.Kind.Pong, pong: { seq: var seq  } } => throw new System.NotImplementedException(),
-                { kind: Msg.Kind.Close } => throw new System.NotImplementedException()
+                { IsPong: true, pong: var (seq) } => throw new System.NotImplementedException(),
+                { IsClose: true } => throw new System.NotImplementedException()
             };
         }
     }

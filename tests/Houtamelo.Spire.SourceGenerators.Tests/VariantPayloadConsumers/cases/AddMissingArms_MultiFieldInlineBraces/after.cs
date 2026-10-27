@@ -13,7 +13,7 @@ public static class Consumer
     public static string Match(GameplayCommand command) => command switch
     {
         { kind: GameplayCommand.Kind.Move, move: { angle: var angle, speed: var speed } } => $"{angle}:{speed}",
-        { kind: GameplayCommand.Kind.Speak, speak: { speech: var speech } } => throw new System.NotImplementedException(),
-        { kind: GameplayCommand.Kind.Idle } => throw new System.NotImplementedException()
+        { IsSpeak: true, speak: var (speech) } => throw new System.NotImplementedException(),
+        { IsIdle: true } => throw new System.NotImplementedException()
     };
 }

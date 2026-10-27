@@ -500,7 +500,8 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
             factory,
             scope,
             kindPrefix,
-            semanticModel);
+            semanticModel,
+            useVariantPredicate: true);
 
         return SyntaxFactory.SwitchExpressionArm(pattern, ThrowNotImplementedExpr());
     }
@@ -548,7 +549,8 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
             factory,
             scope,
             kindPrefix,
-            semanticModel);
+            semanticModel,
+            useVariantPredicate: true);
 
         // A newly inserted switch section has no surrounding formatter trivia.
         // Keep the opening brace free of line trivia; the case keyword below

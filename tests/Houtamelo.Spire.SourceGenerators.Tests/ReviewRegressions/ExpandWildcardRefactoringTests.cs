@@ -1,15 +1,18 @@
 using System;
+using System.Collections.Immutable;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Analyzers;
 using Houtamelo.Spire.CodeFixes;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeRefactorings;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
 
@@ -45,9 +48,13 @@ public sealed class ExpandWildcardRefactoringTests
         Assert.NotNull(result.ChangedSource);
         var changedSource = result.ChangedSource!;
 
+        Assert.Contains("alpha: { value: var alphaValue }", changedSource, StringComparison.Ordinal);
         Assert.Contains("{ kind: Choice.Kind.Beta", changedSource, StringComparison.Ordinal);
-        Assert.Contains("beta: { text: var text }", changedSource, StringComparison.Ordinal);
-        AssertCompilesAndEmits(changedSource, "struct-wildcard.cs");
+        Assert.Contains("beta: var (text)", changedSource, StringComparison.Ordinal);
+        await AssertCompilesAndEmits(
+            changedSource,
+            "struct-wildcard.cs",
+            assertExhaustiveness: true);
     }
 
     [Fact]
@@ -80,7 +87,10 @@ public sealed class ExpandWildcardRefactoringTests
 
         Assert.Contains("Result.Text", changedSource, StringComparison.Ordinal);
         Assert.Contains("=> \"other\"", changedSource, StringComparison.Ordinal);
-        AssertCompilesAndEmits(changedSource, "record-wildcard.cs");
+        await AssertCompilesAndEmits(
+            changedSource,
+            "record-wildcard.cs",
+            assertExhaustiveness: false);
     }
 
     [Fact]
@@ -113,7 +123,13 @@ public sealed class ExpandWildcardRefactoringTests
         var changedSource = result.ChangedSource!;
 
         Assert.Equal(2, CountOccurrences(changedSource, "=> \"fallback-body\""));
-        AssertCompilesAndEmits(changedSource, "wildcard-body.cs");
+        Assert.Contains("{ kind: Choice.Kind.Beta }", changedSource, StringComparison.Ordinal);
+        Assert.Contains("{ kind: Choice.Kind.Gamma }", changedSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("var (", changedSource, StringComparison.Ordinal);
+        await AssertCompilesAndEmits(
+            changedSource,
+            "wildcard-body.cs",
+            assertExhaustiveness: true);
     }
 
     [Fact]
@@ -149,8 +165,11 @@ public sealed class ExpandWildcardRefactoringTests
         Assert.NotNull(result.ChangedSource);
         var changedSource = result.ChangedSource!;
 
-        Assert.Contains("some: { value: var value2 }", changedSource, StringComparison.Ordinal);
-        AssertCompilesAndEmits(changedSource, "capture-collision.cs");
+        Assert.Contains("some: var (value2)", changedSource, StringComparison.Ordinal);
+        await AssertCompilesAndEmits(
+            changedSource,
+            "capture-collision.cs",
+            assertExhaustiveness: true);
     }
 
     [Fact]
@@ -182,7 +201,11 @@ public sealed class ExpandWildcardRefactoringTests
         var changedSource = result.ChangedSource!;
 
         Assert.Contains("Option<T>.Kind.Some", changedSource, StringComparison.Ordinal);
-        AssertCompilesAndEmits(changedSource, "generic-wildcard.cs");
+        Assert.Contains("some: var (value)", changedSource, StringComparison.Ordinal);
+        await AssertCompilesAndEmits(
+            changedSource,
+            "generic-wildcard.cs",
+            assertExhaustiveness: true);
     }
 
     [Fact]
@@ -403,7 +426,10 @@ public sealed class ExpandWildcardRefactoringTests
             .Single(pattern => pattern.Parent is SwitchExpressionArmSyntax)
             .Span;
 
-    private static void AssertCompilesAndEmits(string source, string path)
+    private static async Task AssertCompilesAndEmits(
+        string source,
+        string path,
+        bool assertExhaustiveness)
     {
         GeneratorTestHelper.RunGenerator(
             source,
@@ -412,6 +438,27 @@ public sealed class ExpandWildcardRefactoringTests
             path: path);
         GeneratorTestHelper.AssertNoGeneratorDiagnostics(generatorDiagnostics);
         GeneratorTestHelper.AssertNoCompilationErrors(compilation);
+
+        if (assertExhaustiveness)
+        {
+            var diagnostics = await compilation
+                .WithAnalyzers(ImmutableArray.Create<DiagnosticAnalyzer>(
+                    new ExhaustivenessAnalyzer(),
+                    new CS8509Suppressor(),
+                    new TypeSafetyAnalyzer()))
+                .GetAllDiagnosticsAsync();
+            var invalidDiagnostics = diagnostics
+                .Where(diagnostic =>
+                    diagnostic.Id == "SPIRE009" ||
+                    (!diagnostic.IsSuppressed &&
+                        (diagnostic.Id == "CS8509" || diagnostic.Id == "CS8524")))
+                .ToArray();
+            Assert.True(
+                invalidDiagnostics.Length == 0,
+                $"Expanded source '{path}' still has exhaustiveness diagnostics:\n" +
+                string.Join("\n", invalidDiagnostics.Select(diagnostic =>
+                    $"{diagnostic.Id}: {diagnostic.GetMessage()}")));
+        }
 
         using var stream = new MemoryStream();
         var emit = compilation.Emit(stream);

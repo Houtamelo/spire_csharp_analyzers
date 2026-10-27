@@ -15,7 +15,7 @@ class Consumer
     int Match(Command command) => command switch
     {
         { kind: Command.Kind.Move, move: { speed: var speed } } => (int)speed,
-        { kind: Command.Kind.Pause, pause: { ticks: var ticks } } => throw new System.NotImplementedException(),
-        { kind: Command.Kind.Stop } => throw new System.NotImplementedException()
+        { IsPause: true, pause: var (ticks) } => throw new System.NotImplementedException(),
+        { IsStop: true } => throw new System.NotImplementedException()
     };
 }

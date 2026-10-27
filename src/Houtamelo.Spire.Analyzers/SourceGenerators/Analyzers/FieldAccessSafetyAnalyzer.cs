@@ -4,6 +4,7 @@ using System.Linq;
 using Houtamelo.Spire.PatternAnalysis;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -75,29 +76,13 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
         // Walk parent chain to find a guard and extract guarded variants
         var guardResult = FindGuard(fieldRefOp, info);
 
-        if (!guardResult.HasGuard)
-        {
-            // No guard found — report SPIRE014
-            ctx.ReportDiagnostic(Diagnostic.Create(
-                AnalyzerDescriptors.SPIRE014_UnguardedFieldAccess,
-                fieldRefOp.Syntax.GetLocation(),
-                field.Name));
-            return;
-        }
-
-        // Every possible guarded variant must expose this member. An
-        // intersection is insufficient when a guard covers multiple kinds.
-        if (guardResult.GuardedVariants.All(owningVariants.Contains))
-            return; // Correct variant — no diagnostic
-
-        // Wrong variant — report SPIRE013
-        var guardedDisplay = string.Join(", ", guardResult.GuardedVariants);
-        ctx.ReportDiagnostic(Diagnostic.Create(
-            AnalyzerDescriptors.SPIRE013_WrongVariantFieldAccess,
+        ReportAccessDiagnostic(
+            ctx,
             fieldRefOp.Syntax.GetLocation(),
             field.Name,
-            string.Join(" or ", owningVariants),
-            guardedDisplay));
+            owningVariants,
+            guardResult,
+            info);
     }
 
     private static void AnalyzePropertyReference(OperationAnalysisContext ctx, INamedTypeSymbol duAttr)
@@ -130,25 +115,65 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
 
         var guardResult = FindGuard(propRefOp, info);
 
+        ReportAccessDiagnostic(
+            ctx,
+            propRefOp.Syntax.GetLocation(),
+            property.Name,
+            owningVariants,
+            guardResult,
+            info);
+    }
+
+    private static void ReportAccessDiagnostic(
+        OperationAnalysisContext ctx,
+        Location location,
+        string memberName,
+        ImmutableHashSet<string> owningVariants,
+        GuardResult guardResult,
+        UnionTypeInfo info)
+    {
+        var owningVariant = info.VariantNames.FirstOrDefault(owningVariants.Contains)
+            ?? owningVariants.First();
+
         if (!guardResult.HasGuard)
         {
             ctx.ReportDiagnostic(Diagnostic.Create(
                 AnalyzerDescriptors.SPIRE014_UnguardedFieldAccess,
-                propRefOp.Syntax.GetLocation(),
-                property.Name));
+                location,
+                memberName,
+                owningVariant));
             return;
         }
 
+        // Every possible guarded variant must expose this member. An
+        // intersection is insufficient when a guard covers multiple kinds.
         if (guardResult.GuardedVariants.All(owningVariants.Contains))
             return;
 
-        var guardedDisplay = string.Join(", ", guardResult.GuardedVariants);
+        var guardedVariants = OrderedVariants(guardResult.GuardedVariants, info);
+        var guardedDisplay = string.Join(
+            " or ",
+            guardedVariants.Select(variant => $"'kind={variant}'"));
+        var help = guardedVariants.Count == 1
+            ? $"Within this scope, only the field '{VariantNaming.AccessorName(guardedVariants[0], info.VariantNames)}' contains valid data."
+            : "Check 'kind' again before accessing variant data; this scope can contain more than one variant.";
+
         ctx.ReportDiagnostic(Diagnostic.Create(
             AnalyzerDescriptors.SPIRE013_WrongVariantFieldAccess,
-            propRefOp.Syntax.GetLocation(),
-            property.Name,
-            string.Join(" or ", owningVariants),
-            guardedDisplay));
+            location,
+            memberName,
+            owningVariant,
+            guardedDisplay,
+            help));
+    }
+
+    private static List<string> OrderedVariants(
+        ImmutableHashSet<string> variants,
+        UnionTypeInfo info)
+    {
+        return info.VariantNames
+            .Where(variants.Contains)
+            .ToList();
     }
 
     private static bool HasEditorBrowsableNever(ISymbol symbol)
@@ -291,14 +316,32 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
                     }
 
                 case IConditionalOperation conditional:
-                    if (IsInWhenTrueBranch(memberRefOp, conditional) &&
-                        ConditionReferencesUnionVariable(conditional.Condition, memberRefOp) &&
-                        !HasMutationBefore(memberRefOp, conditional.WhenTrue, memberRefOp))
+                    if (ConditionReferencesUnionVariable(conditional.Condition, memberRefOp, info))
                     {
-                        var variants = ExtractVariantsFromCondition(conditional.Condition, info);
-                        var guard = GuardResult.WithVariants(variants);
-                        if (guard.HasGuard)
-                            return guard;
+                        if (IsInWhenTrueBranch(memberRefOp, conditional) &&
+                            !HasMutationBefore(memberRefOp, conditional.WhenTrue, memberRefOp))
+                        {
+                            var variants = ExtractVariantsFromCondition(conditional.Condition, info);
+                            var guard = GuardResult.WithVariants(variants);
+                            if (guard.HasGuard)
+                                return guard;
+                        }
+                        else if (IsInWhenFalseBranch(memberRefOp, conditional) &&
+                                 conditional.WhenFalse is not null &&
+                                 !HasMutationBefore(memberRefOp, conditional.WhenFalse, memberRefOp) &&
+                                 IsDiscriminatorOnlyCondition(conditional.Condition, info))
+                        {
+                            var trueVariants = ExtractVariantsFromCondition(conditional.Condition, info);
+                            if (trueVariants.Count == 0)
+                                break;
+
+                            var variants = info.VariantNames
+                                .Where(variant => !trueVariants.Contains(variant))
+                                .ToList();
+                            var guard = GuardResult.WithVariants(variants);
+                            if (guard.HasGuard)
+                                return guard;
+                        }
                         break;
                     }
                     break;
@@ -355,21 +398,20 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
                 break;
 
             if (operation is not IConditionalOperation conditional ||
-                !ConditionReferencesUnionVariable(conditional.Condition, memberReference) ||
+                !ConditionReferencesUnionVariable(conditional.Condition, memberReference, info) ||
                 !AllPathsTerminate(conditional.WhenTrue))
             {
                 continue;
             }
 
-            var variants = new List<string>();
-            if (conditional.Condition is IBinaryOperation binary &&
-                binary.OperatorKind == BinaryOperatorKind.NotEquals)
-            {
-                // The exiting branch is the `!=` branch. The following code
-                // therefore runs only for the excluded, equal variant.
-                TryExtractKindVariant(binary.LeftOperand, info, variants);
-                TryExtractKindVariant(binary.RightOperand, info, variants);
-            }
+            var exitedVariants = ExtractVariantsFromCondition(conditional.Condition, info);
+            if (exitedVariants.Count == 0 ||
+                !IsDiscriminatorOnlyCondition(conditional.Condition, info))
+                continue;
+
+            var variants = info.VariantNames
+                .Where(variant => !exitedVariants.Contains(variant))
+                .ToList();
             if (variants.Count > 0 &&
                 !HasMutationAfterGuard(block, conditional, memberReference))
                 return GuardResult.WithVariants(variants);
@@ -613,6 +655,17 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
     {
         var variants = new List<string>();
 
+        if (info.IsStructUnion && info.KindEnumType?.ContainingType is { } unionType &&
+            GeneratedVariantPredicate.TryGetConditionVariants(
+                condition,
+                unionType,
+                info.VariantNames,
+                out var generatedVariants))
+        {
+            variants.AddRange(generatedVariants);
+            return variants;
+        }
+
         switch (condition)
         {
             case IIsPatternOperation isPattern:
@@ -644,6 +697,151 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
         }
 
         return variants;
+    }
+
+    private static bool IsDiscriminatorOnlyCondition(
+        IOperation condition,
+        UnionTypeInfo info)
+    {
+        if (info.IsStructUnion && info.KindEnumType?.ContainingType is { } unionType &&
+            GeneratedVariantPredicate.TryGetConditionVariants(
+                condition,
+                unionType,
+                info.VariantNames,
+                out _))
+        {
+            return true;
+        }
+
+        if (condition is IUnaryOperation { OperatorKind: UnaryOperatorKind.Not } unary)
+            return IsDiscriminatorOnlyCondition(unary.Operand, info);
+
+        if (condition is IBinaryOperation binary &&
+            binary.OperatorKind is BinaryOperatorKind.Equals or BinaryOperatorKind.NotEquals)
+        {
+            var left = new List<string>();
+            TryExtractKindVariant(binary.LeftOperand, info, left);
+            var right = new List<string>();
+            TryExtractKindVariant(binary.RightOperand, info, right);
+            return left.Count > 0 || right.Count > 0;
+        }
+
+        if (condition is IIsPatternOperation isPattern)
+            return IsDiscriminatorOnlyPattern(isPattern.Pattern, info);
+
+        return false;
+    }
+
+    private static bool IsDiscriminatorOnlyPattern(
+        IPatternOperation pattern,
+        UnionTypeInfo info)
+    {
+        if (pattern is not IRecursivePatternOperation recursive)
+            return false;
+
+        if (!recursive.DeconstructionSubpatterns.IsEmpty)
+        {
+            if (recursive.DeconstructionSubpatterns.Length == 0)
+                return false;
+
+            var kindVariants = new List<string>();
+            ExhaustivenessChecker.CollectVariants(
+                recursive.DeconstructionSubpatterns[0],
+                info.KindEnumType,
+                info.VariantNames,
+                info.VariantTypes,
+                info.IsStructUnion,
+                kindVariants);
+            if (kindVariants.Count == 0)
+                return false;
+
+            for (var index = 1; index < recursive.DeconstructionSubpatterns.Length; index++)
+            {
+                if (!IsUnrestrictedPayloadPattern(recursive.DeconstructionSubpatterns[index]))
+                    return false;
+            }
+            return true;
+        }
+
+        if (recursive.PropertySubpatterns.IsEmpty)
+            return false;
+
+        var foundDiscriminator = false;
+        foreach (var propertySubpattern in recursive.PropertySubpatterns)
+        {
+            if (propertySubpattern.Member is IPropertyReferenceOperation propertyReference &&
+                propertyReference.Property.Name == "kind" ||
+                propertySubpattern.Member is IFieldReferenceOperation fieldReference &&
+                fieldReference.Field.Name == "kind")
+            {
+                var kindVariants = new List<string>();
+                ExhaustivenessChecker.CollectVariants(
+                    propertySubpattern.Pattern,
+                    info.KindEnumType,
+                    info.VariantNames,
+                    info.VariantTypes,
+                    info.IsStructUnion,
+                    kindVariants);
+                if (kindVariants.Count == 0)
+                    return false;
+                foundDiscriminator = true;
+                continue;
+            }
+
+            if (info.IsStructUnion && info.KindEnumType?.ContainingType is { } unionType &&
+                GeneratedVariantPredicate.TryGetPropertyPatternVariants(
+                    propertySubpattern,
+                    unionType,
+                    info.VariantNames,
+                    out _))
+            {
+                foundDiscriminator = true;
+                continue;
+            }
+
+            if (!IsUnrestrictedPayloadPattern(propertySubpattern.Pattern))
+                return false;
+        }
+
+        return foundDiscriminator;
+    }
+
+    private static bool IsUnrestrictedPayloadPattern(IPatternOperation pattern)
+    {
+        if (pattern is IDiscardPatternOperation ||
+            pattern is IDeclarationPatternOperation { Syntax: VarPatternSyntax })
+        {
+            return true;
+        }
+
+        if (pattern is not IRecursivePatternOperation recursive ||
+            recursive.Syntax is not ParenthesizedVariableDesignationSyntax ||
+            recursive.DeconstructionSubpatterns.IsEmpty ||
+            recursive.InputType is not { IsValueType: true } inputType ||
+            inputType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+        {
+            return false;
+        }
+
+        foreach (var subpattern in recursive.DeconstructionSubpatterns)
+        {
+            if (subpattern is IDiscardPatternOperation &&
+                subpattern.Syntax is DiscardDesignationSyntax)
+            {
+                continue;
+            }
+
+            if (subpattern is IDeclarationPatternOperation declaration &&
+                declaration.MatchedType is null &&
+                declaration.Syntax is SingleVariableDesignationSyntax)
+            {
+                continue;
+            }
+
+            return false;
+        }
+
+        return true;
     }
 
     /// Tries to resolve an operation to a Kind enum constant and map it to a variant name.
@@ -689,9 +887,27 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
         return false;
     }
 
+    private static bool IsInWhenFalseBranch(IOperation fieldRef, IConditionalOperation conditional)
+    {
+        if (conditional.WhenFalse is null)
+            return false;
+
+        var current = fieldRef;
+        while (current is not null && current != conditional)
+        {
+            if (current == conditional.WhenFalse)
+                return true;
+            current = current.Parent;
+        }
+        return false;
+    }
+
     /// Checks whether the condition references the same union variable as the member access.
     /// Handles: is-pattern (s is { kind: Kind.Circle }), kind comparison (s.kind == Kind.Circle).
-    private static bool ConditionReferencesUnionVariable(IOperation condition, IOperation memberRef)
+    private static bool ConditionReferencesUnionVariable(
+        IOperation condition,
+        IOperation memberRef,
+        UnionTypeInfo info)
     {
         var targetInstance = memberRef switch
         {
@@ -712,11 +928,35 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
                 binary.OperatorKind == BinaryOperatorKind.NotEquals:
                 // Check if either side is a .kind access on the same variable
                 return IsKindAccessOnSameVariable(binary.LeftOperand, targetInstance) ||
-                       IsKindAccessOnSameVariable(binary.RightOperand, targetInstance);
+                       IsKindAccessOnSameVariable(binary.RightOperand, targetInstance) ||
+                       IsGeneratedPredicateOnSameVariable(binary.LeftOperand, targetInstance, info) ||
+                       IsGeneratedPredicateOnSameVariable(binary.RightOperand, targetInstance, info);
+
+            case IUnaryOperation unary when unary.OperatorKind == UnaryOperatorKind.Not:
+                return IsGeneratedPredicateOnSameVariable(unary.Operand, targetInstance, info);
+
+            case IPropertyReferenceOperation propertyReference:
+                return IsGeneratedPredicateOnSameVariable(propertyReference, targetInstance, info);
 
             default:
                 return false;
         }
+    }
+
+    private static bool IsGeneratedPredicateOnSameVariable(
+        IOperation operation,
+        IOperation targetInstance,
+        UnionTypeInfo info)
+    {
+        if (!info.IsStructUnion || info.KindEnumType?.ContainingType is not { } unionType)
+            return false;
+
+        return GeneratedVariantPredicate.ReferencesGeneratedProperty(
+            operation,
+            unionType,
+            info.VariantNames,
+            targetInstance,
+            ReferenceSameVariable);
     }
 
     /// Checks whether an operation is a .kind field/property access on the same variable.
@@ -742,6 +982,14 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
     /// Compares two operations to determine if they reference the same variable.
     private static bool ReferenceSameVariable(IOperation a, IOperation b)
     {
+        while (a is IConversionOperation conversionA)
+            a = conversionA.Operand;
+        while (b is IConversionOperation conversionB)
+            b = conversionB.Operand;
+
+        if (ReferenceEquals(a, b))
+            return true;
+
         // Both are local references to the same local
         if (a is ILocalReferenceOperation localA &&
             b is ILocalReferenceOperation localB)
@@ -756,13 +1004,30 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
             return SymbolEqualityComparer.Default.Equals(paramA.Parameter, paramB.Parameter);
         }
 
-        // Both are field references to the same field (e.g., this.field)
+        if (a is IInstanceReferenceOperation instanceA &&
+            b is IInstanceReferenceOperation instanceB)
+        {
+            return instanceA.ReferenceKind == instanceB.ReferenceKind;
+        }
+
+        // Instance fields with the same declaration are equivalent only when
+        // their receivers are equivalent as well: first.command differs from
+        // second.command even though both use the same field symbol.
         if (a is IFieldReferenceOperation fieldA &&
             b is IFieldReferenceOperation fieldB)
         {
-            return SymbolEqualityComparer.Default.Equals(fieldA.Field, fieldB.Field);
+            return SymbolEqualityComparer.Default.Equals(fieldA.Field, fieldB.Field) &&
+                   ReferenceSameReceiver(fieldA.Instance, fieldB.Instance);
         }
 
         return false;
+    }
+
+    private static bool ReferenceSameReceiver(IOperation? a, IOperation? b)
+    {
+        if (a is null || b is null)
+            return a is null && b is null;
+
+        return ReferenceSameVariable(a, b);
     }
 }

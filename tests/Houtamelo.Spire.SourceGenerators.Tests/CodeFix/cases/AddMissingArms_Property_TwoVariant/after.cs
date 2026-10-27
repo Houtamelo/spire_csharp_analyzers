@@ -13,7 +13,7 @@ namespace TestNs
         int Test(Result r) => r switch
         {
             { kind: Result.Kind.Ok, ok: { value: var v  } } => v,
-            { kind: Result.Kind.Err, err: { message: var message  } } => throw new System.NotImplementedException()
+            { IsErr: true, err: var (message) } => throw new System.NotImplementedException()
         };
     }
 }

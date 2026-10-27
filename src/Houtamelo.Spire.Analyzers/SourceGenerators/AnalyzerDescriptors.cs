@@ -29,19 +29,30 @@ internal static class AnalyzerDescriptors
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    // Keep the actionable help on separate lines in the user-facing diagnostic.
+#pragma warning disable RS1032
     public static readonly DiagnosticDescriptor SPIRE013_WrongVariantFieldAccess = new(
         id: "SPIRE013",
-        title: "Accessing another variant's field",
-        messageFormat: "'{0}' belongs to variant '{1}', not '{2}'",
+        title: "Attempting to access mismatched variant data",
+        messageFormat:
+            "The field '{0}' only contains valid data when 'kind={1}', " +
+            "but within this scope, it is statically known that {2}.\n" +
+            "Help: {3}",
         category: "Correctness",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor SPIRE014_UnguardedFieldAccess = new(
         id: "SPIRE014",
-        title: "Accessing variant field without kind guard",
-        messageFormat: "Accessing variant field '{0}' without a kind guard",
+        title: "Attempting to access variant data without checking 'kind'",
+        messageFormat:
+            "The field '{0}' only contains valid data when 'kind={1}', " +
+            "but within this scope, the value of 'kind' is unknown.\n" +
+            "Help 1: Check if 'kind={1}' before accessing the field '{0}'.\n" +
+            "Help 2: If you are absolutely sure that 'kind={1}', you can suppress " +
+            "this diagnostic with `#pragma warning disable SPIRE014`.",
         category: "Correctness",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
+#pragma warning restore RS1032
 }

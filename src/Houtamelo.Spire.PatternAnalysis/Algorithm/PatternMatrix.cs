@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Houtamelo.Spire.PatternAnalysis.Domains;
@@ -932,7 +933,15 @@ internal sealed class PatternMatrix
         if (pattern is IRecursivePatternOperation recursive)
         {
             if (recursive.DeconstructionSubpatterns.Length > 0)
-                return Cell.Unknown.Instance;
+            {
+                // Generated variant payloads are non-nullable value types, so
+                // a flat `var (...)` designation only captures values and does
+                // not restrict which payload instance can match. Keep other
+                // positional/deconstruction forms indeterminate.
+                return IsUnrestrictedValueDeconstruction(recursive)
+                    ? NonNullCell(domain)
+                    : Cell.Unknown.Instance;
+            }
             if (recursive.MatchedType is not null)
                 return ConvertTypePattern(recursive.MatchedType, domain);
             return NonNullCell(domain);
@@ -1121,11 +1130,21 @@ internal sealed class PatternMatrix
         IValueDomain rootDomain,
         bool nullableRoot)
     {
+        var variantNames = kindEnum.GetMembers()
+            .OfType<IFieldSymbol>()
+            .Where(field => field.HasConstantValue)
+            .Select(field => field.Name)
+            .ToImmutableArray();
         var paths = new System.Collections.Generic.List<ImmutableArray<ISymbol>>();
         foreach (var pattern in patterns)
         {
             if (pattern is IRecursivePatternOperation recursive)
-                CollectStructDUPropertyPaths(recursive, ImmutableArray<ISymbol>.Empty, paths);
+                CollectStructDUPropertyPaths(
+                    recursive,
+                    ImmutableArray<ISymbol>.Empty,
+                    paths,
+                    kindEnum.ContainingType,
+                    variantNames);
         }
 
         var columns = ImmutableArray.CreateBuilder<Column>(paths.Count + 1);
@@ -1155,11 +1174,15 @@ internal sealed class PatternMatrix
                     pattern,
                     (NullableDomain)cols[0].Domain,
                     (EnumDomain)((NullableDomain)cols[0].Domain).Inner,
-                    kindEnum)
+                    kindEnum,
+                    kindEnum.ContainingType,
+                    variantNames)
                 : ExtractStructDUPropertyKindCell(
                     pattern,
                     (EnumDomain)cols[0].Domain,
-                    kindEnum);
+                    kindEnum,
+                    kindEnum.ContainingType,
+                    variantNames);
 
             // A logical pattern containing nested properties cannot be
             // represented by the Kind-only extractor. Keep it indeterminate
@@ -1193,12 +1216,24 @@ internal sealed class PatternMatrix
     static void CollectStructDUPropertyPaths(
         IRecursivePatternOperation recursive,
         ImmutableArray<ISymbol> parent,
-        System.Collections.Generic.List<ImmutableArray<ISymbol>> paths)
+        System.Collections.Generic.List<ImmutableArray<ISymbol>> paths,
+        ITypeSymbol subjectType,
+        ImmutableArray<string> variantNames)
     {
         foreach (var propSub in recursive.PropertySubpatterns)
         {
             if (parent.Length == 0 && GetMemberName(propSub.Member) == "kind")
                 continue;
+
+            if (parent.Length == 0 &&
+                GeneratedVariantPredicate.TryGetPropertyPatternVariants(
+                    propSub,
+                    (INamedTypeSymbol)subjectType,
+                    variantNames,
+                    out _))
+            {
+                continue;
+            }
 
             var memberPath = GetMemberPath(propSub);
             if (memberPath.IsDefaultOrEmpty)
@@ -1208,7 +1243,7 @@ internal sealed class PatternMatrix
             AddPathPrefixes(paths, path);
 
             if (propSub.Pattern is IRecursivePatternOperation nested)
-                CollectStructDUPropertyPaths(nested, path, paths);
+                CollectStructDUPropertyPaths(nested, path, paths, subjectType, variantNames);
         }
     }
 
@@ -1301,7 +1336,9 @@ internal sealed class PatternMatrix
     static Cell ExtractStructDUPropertyKindCell(
         IPatternOperation pattern,
         EnumDomain kindDomain,
-        INamedTypeSymbol kindEnum)
+        INamedTypeSymbol kindEnum,
+        ITypeSymbol subjectType,
+        ImmutableArray<string> variantNames)
     {
         switch (pattern)
         {
@@ -1312,11 +1349,35 @@ internal sealed class PatternMatrix
             case IRecursivePatternOperation recursive:
                 if (!recursive.DeconstructionSubpatterns.IsEmpty)
                     return Cell.Unknown.Instance;
+                ImmutableHashSet<string>? allowed = null;
+                bool foundDiscriminator = false;
                 foreach (var propSub in recursive.PropertySubpatterns)
                 {
                     if (GetMemberName(propSub.Member) == "kind")
-                        return ConvertPattern(propSub.Pattern, kindDomain);
+                    {
+                        var kindCell = ConvertPattern(propSub.Pattern, kindDomain);
+                        if (kindCell is Cell.Constraint kindConstraint &&
+                            kindConstraint.MatchedValues is EnumDomain kindValues)
+                        {
+                            IntersectAllowed(
+                                ref allowed,
+                                kindValues.Members.Select(member => member.Name));
+                            foundDiscriminator = true;
+                        }
+                    }
+                    else if (GeneratedVariantPredicate.TryGetPropertyPatternVariants(
+                                 propSub,
+                                 (INamedTypeSymbol)subjectType,
+                                 variantNames,
+                                 out var predicateVariants))
+                    {
+                        IntersectAllowed(ref allowed, predicateVariants);
+                        foundDiscriminator = true;
+                    }
                 }
+
+                if (foundDiscriminator)
+                    return CreateKindConstraint(kindDomain, kindEnum, allowed!);
                 return Cell.Wildcard.Instance;
             case IBinaryPatternOperation:
                 // Logical combinations containing payload properties are
@@ -1329,11 +1390,42 @@ internal sealed class PatternMatrix
         }
     }
 
+    static Cell CreateKindConstraint(
+        EnumDomain kindDomain,
+        INamedTypeSymbol kindEnum,
+        IEnumerable<string> allowedNames)
+    {
+        var allowed = new HashSet<string>(allowedNames, StringComparer.Ordinal);
+        var selected = kindEnum.GetMembers()
+            .OfType<IFieldSymbol>()
+            .Where(field => field.HasConstantValue && allowed.Contains(field.Name))
+            .ToImmutableHashSet<IFieldSymbol>(SymbolEqualityComparer.Default);
+        return new Cell.Constraint(new EnumDomain(
+            kindDomain.Type,
+            selected,
+            kindDomain.Members));
+    }
+
+    static void IntersectAllowed(
+        ref ImmutableHashSet<string>? allowed,
+        IEnumerable<string> values)
+    {
+        if (allowed is null)
+        {
+            allowed = values.ToImmutableHashSet(StringComparer.Ordinal);
+            return;
+        }
+
+        allowed = allowed.Intersect(values, StringComparer.Ordinal).ToImmutableHashSet(StringComparer.Ordinal);
+    }
+
     static Cell ConvertNullableStructDUPropertyPattern(
         IPatternOperation pattern,
         NullableDomain nullableKindDomain,
         EnumDomain kindDomain,
-        INamedTypeSymbol kindEnum)
+        INamedTypeSymbol kindEnum,
+        ITypeSymbol subjectType,
+        ImmutableArray<string> variantNames)
     {
         if (pattern is IConstantPatternOperation constant
             && constant.Value?.ConstantValue is { HasValue: true, Value: null })
@@ -1345,7 +1437,12 @@ internal sealed class PatternMatrix
                 kindEnum);
         }
 
-        var inner = ExtractStructDUPropertyKindCell(pattern, kindDomain, kindEnum);
+        var inner = ExtractStructDUPropertyKindCell(
+            pattern,
+            kindDomain,
+            kindEnum,
+            subjectType,
+            variantNames);
         if (inner is Cell.Constraint constraint)
             return new Cell.Constraint(new NullableDomain(nullableKindDomain.Type, constraint.MatchedValues, hasNull: false));
         if (inner is Cell.Unknown)
@@ -1428,7 +1525,42 @@ internal sealed class PatternMatrix
 
     static bool IsUnrestrictedPayloadPattern(IPatternOperation pattern)
         => pattern is IDiscardPatternOperation
-            || pattern is IDeclarationPatternOperation { Syntax: VarPatternSyntax };
+            || pattern is IDeclarationPatternOperation { Syntax: VarPatternSyntax }
+            || pattern is IRecursivePatternOperation recursive
+                && IsUnrestrictedValueDeconstruction(recursive);
+
+    static bool IsUnrestrictedValueDeconstruction(IRecursivePatternOperation recursive)
+    {
+        if (recursive.Syntax is not ParenthesizedVariableDesignationSyntax
+            || recursive.DeconstructionSubpatterns.IsEmpty
+            || recursive.InputType is not { IsValueType: true } inputType
+            || inputType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+        {
+            return false;
+        }
+
+        foreach (var subpattern in recursive.DeconstructionSubpatterns)
+        {
+            if (subpattern is IDiscardPatternOperation
+                && subpattern.Syntax is DiscardDesignationSyntax)
+            {
+                continue;
+            }
+
+            if (subpattern is IDeclarationPatternOperation declaration
+                && declaration.MatchedType is null
+                && declaration.Syntax is SingleVariableDesignationSyntax)
+            {
+                continue;
+            }
+
+            // Nested designations and typed, constant, or restricted
+            // positional patterns are not proven to cover the payload.
+            return false;
+        }
+
+        return true;
+    }
 
     /// Handle binary (or/and) patterns for struct DU Kind extraction.
     static Cell ConvertBinaryStructDUPattern(

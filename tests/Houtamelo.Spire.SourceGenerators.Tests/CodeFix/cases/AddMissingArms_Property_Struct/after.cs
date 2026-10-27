@@ -15,7 +15,7 @@ namespace TestNs
         {
             { kind: Shape.Kind.Circle, circle: { radius: var r  } } => 1,
             { kind: Shape.Kind.Rectangle, rectangle: { width: var w, height: var h  } } => 2,
-            { kind: Shape.Kind.Square, square: { sideLength: var sideLength  } } => throw new System.NotImplementedException()
+            { IsSquare: true, square: var (sideLength) } => throw new System.NotImplementedException()
         };
     }
 }

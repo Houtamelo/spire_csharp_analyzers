@@ -18,9 +18,9 @@ class Consumer
         {
             case { kind: Command.Kind.Move, move: { speed: var speed } }:
                 return (int)speed; // keep existing comment
-            case { kind: Command.Kind.Pause, pause: { ticks: var ticks } }:
+            case { IsPause: true, pause: var (ticks) }:
                 throw new System.NotImplementedException();
-            case { kind: Command.Kind.Stop }:
+            case { IsStop: true }:
                 throw new System.NotImplementedException();
         }
 

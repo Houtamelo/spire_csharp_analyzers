@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using Houtamelo.Spire.PatternAnalysis.Algorithm;
 using Houtamelo.Spire.PatternAnalysis.Resolution;
 using Microsoft.CodeAnalysis;
@@ -130,17 +131,47 @@ internal static class ExhaustivenessChecker
                 kindEnumType, variantNames, variantTypes, isStructUnion, variants);
         }
 
-        // Struct union: Property pattern — find kind member
+        // Struct union: Property pattern — combine kind and generated
+        // Is{Variant} constraints. Payload subpatterns do not affect the
+        // discriminator set here; the matrix tracks those separately.
         if (!recursive.PropertySubpatterns.IsEmpty)
         {
+            HashSet<string>? allowed = null;
+            bool foundDiscriminator = false;
             foreach (var propSub in recursive.PropertySubpatterns)
             {
                 if (IsKindMember(propSub))
                 {
-                    return CollectVariants(
+                    var kindVariants = new List<string>();
+                    var kindWildcard = CollectVariants(
                         propSub.Pattern,
-                        kindEnumType, variantNames, variantTypes, isStructUnion, variants);
+                        kindEnumType, variantNames, variantTypes, isStructUnion, kindVariants);
+                    if (kindWildcard)
+                        continue;
+
+                    if (kindVariants.Count > 0)
+                    {
+                        IntersectAllowed(ref allowed, kindVariants);
+                        foundDiscriminator = true;
+                    }
                 }
+                else if (isStructUnion &&
+                         GeneratedVariantPredicate.TryGetPropertyPatternVariants(
+                             propSub,
+                             kindEnumType?.ContainingType!,
+                             variantNames,
+                             out var predicateVariants))
+                {
+                    IntersectAllowed(ref allowed, predicateVariants);
+                    foundDiscriminator = true;
+                }
+            }
+
+            if (foundDiscriminator)
+            {
+                if (allowed is not null)
+                    variants.AddRange(allowed);
+                return false;
             }
         }
 
@@ -230,6 +261,19 @@ internal static class ExhaustivenessChecker
         if (propSub.Member is IFieldReferenceOperation fieldRef)
             return fieldRef.Field.Name == "kind";
         return false;
+    }
+
+    private static void IntersectAllowed(
+        ref HashSet<string>? allowed,
+        IEnumerable<string> values)
+    {
+        if (allowed is null)
+        {
+            allowed = new HashSet<string>(values, System.StringComparer.Ordinal);
+            return;
+        }
+
+        allowed.IntersectWith(values);
     }
 
     /// For record unions, resolves a matched type to a variant name.

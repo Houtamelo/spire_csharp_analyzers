@@ -13,8 +13,8 @@ class Consumer
 {
   int Match(Command command) => command switch
   {
-    { kind: Command.Kind.Move, move: { speed: var speed } } => throw new System.NotImplementedException(),
-    { kind: Command.Kind.Stop } => throw new System.NotImplementedException()
+    { IsMove: true, move: var (speed) } => throw new System.NotImplementedException(),
+    { IsStop: true } => throw new System.NotImplementedException()
   };
 }
 }

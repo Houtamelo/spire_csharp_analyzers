@@ -13,15 +13,19 @@ Switch expressions and statements on discriminated union types must handle every
 
 Applies to struct unions with variant payload patterns and record unions with
 type patterns. Positional deconstruction belongs to the payload accessor.
+Generated `IsVariant: true` property patterns and the corresponding `kind`
+patterns are equivalent. `IsVariant: false` excludes that variant and covers the
+remaining variants; payload restrictions still limit the arm's coverage.
 
 ### Code fix
 
 "Add missing variant arms" — generates arms for each uncovered variant with `throw new NotImplementedException()` as the body.
 
-New struct arms use nested property patterns under the variant accessor.
-Every field uses `field: var local`, preserving its static type and matching
-null. Local captures
-are uniquified against the enclosing scope. Record/class generation is unchanged.
+New struct arms use the shorter predicate and deconstruct the variant payload:
+`{ IsRectangle: true, rectangle: var (width, height) }`. Fieldless arms use
+`{ IsPoint: true }`. Captures preserve factory parameter order and accept null
+field values. Local names are uniquified against the enclosing scope. Existing
+arms and record/class generation are unchanged.
 
 ## Examples
 
@@ -51,7 +55,7 @@ int Area(Shape s) => s switch
 {
     { kind: Shape.Kind.Circle, circle: { radius: var r } } => (int)(Math.PI * r * r),
     { kind: Shape.Kind.Square, square: { sideLength: var x } } => x * x,
-    { kind: Shape.Kind.Rectangle, rectangle: { width: var width, height: var height } } => (int)(width * height),
+    { IsRectangle: true, rectangle: var (width, height) } => (int)(width * height),
 };
 ```
 

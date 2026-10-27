@@ -13,7 +13,7 @@ public static class Consumer
     public static int Match(Naming value) => value switch
     {
         { kind: Naming.Kind.Idle } => 0,
-        { kind: Naming.Kind.run, run_value: { value: var value1 } } => throw new System.NotImplementedException(),
-        { kind: Naming.Kind.HTTPRequest, httpRequest: { url: var url } } => throw new System.NotImplementedException()
+        { Isrun: true, run_value: var (value1) } => throw new System.NotImplementedException(),
+        { IsHTTPRequest: true, httpRequest: var (url) } => throw new System.NotImplementedException()
     };
 }

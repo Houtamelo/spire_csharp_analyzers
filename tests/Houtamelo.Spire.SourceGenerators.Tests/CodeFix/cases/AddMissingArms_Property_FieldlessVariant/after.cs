@@ -15,7 +15,7 @@ namespace TestNs
         {
             { kind: Token.Kind.Ident, ident: { name: var n  } } => 1,
             { kind: Token.Kind.Number, number: { value: var v  } } => 2,
-            { kind: Token.Kind.Eof } => throw new System.NotImplementedException()
+            { IsEof: true } => throw new System.NotImplementedException()
         };
     }
 }

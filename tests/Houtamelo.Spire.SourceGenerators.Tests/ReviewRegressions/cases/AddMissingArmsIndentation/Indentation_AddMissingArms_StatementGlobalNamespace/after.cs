@@ -15,7 +15,7 @@ class Consumer
         {
             case { kind: Command.Kind.Move, move: { speed: var speed } }:
                 return (int)speed;
-            case { kind: Command.Kind.Stop }:
+            case { IsStop: true }:
                 throw new System.NotImplementedException();
         }
 

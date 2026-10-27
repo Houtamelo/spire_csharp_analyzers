@@ -42,8 +42,8 @@ The normal NuGet build is maintained on `main`.
 | [SPIRE010](docs/rules/SPIRE010.md) | Expand wildcard to explicit variant arms (refactoring)                          |
 | [SPIRE011](docs/rules/SPIRE011.md) | Discriminated union pattern field type mismatch                                 |
 | [SPIRE012](docs/rules/SPIRE012.md) | Discriminated union pattern field count mismatch                                |
-| [SPIRE013](docs/rules/SPIRE013.md) | Accessing another variant's field                                               |
-| [SPIRE014](docs/rules/SPIRE014.md) | Accessing variant field without kind guard                                      |
+| [SPIRE013](docs/rules/SPIRE013.md) | Attempting to access mismatched variant data                                    |
+| [SPIRE014](docs/rules/SPIRE014.md) | Attempting to access variant data without checking 'kind'                       |
 | [SPIRE015](docs/rules/SPIRE015.md) | Exhaustive enum switch                                                          |
 | [SPIRE016](docs/rules/SPIRE016.md) | Cast to `[EnforceInitialization]` enum may produce invalid variant              |
 
@@ -56,6 +56,8 @@ The source generator provides:
 - Property-pattern and `Deconstruct` support for `switch`.
 - Optional JSON serialization (System.Text.Json, Newtonsoft.Json).
 - Exhaustive switch checking (SPIRE009) and field access safety (SPIRE011-014).
+- Generated `IsVariant` predicates and `kind` checks both establish variant guards;
+  **Add missing variant arms** uses the shorter `IsVariant: true` property pattern.
 - Overlapping unmanaged payloads, configurable reference storage, and record unions.
 
 Define a struct union with `[DiscriminatedUnion]`:

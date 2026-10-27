@@ -75,7 +75,7 @@ public sealed class SingleValueCaseRegressionTests
     }
 
     [Fact]
-    public async Task SingleValueCase_RejectsWrongVariantField()
+    public async Task SingleValueCase_WrongVariantDiagnosticContract()
     {
         var diagnostics = await Analyze("""
             using Houtamelo.Spire;
@@ -84,17 +84,17 @@ public sealed class SingleValueCaseRegressionTests
             partial struct Command
             {
                 [Variant] public static partial Command Move(int destination);
-                [Variant] public static partial Command Rotate(float angle);
+                [Variant] public static partial Command ApplyEffect(int effect);
             }
 
             static class Reader
             {
-                public static float Read(Command command)
+                public static int Read(Command command)
                 {
                     switch (command.kind)
                     {
                         case Command.Kind.Move:
-                            return command.rotate.angle;
+                            return command.applyEffect.effect;
                         default:
                             return 0;
                     }
@@ -104,6 +104,19 @@ public sealed class SingleValueCaseRegressionTests
 
         var diagnostic = Assert.Single(diagnostics);
         Assert.Equal("SPIRE013", diagnostic.Id);
+        Assert.Equal(
+            "Attempting to access mismatched variant data",
+            diagnostic.Descriptor.Title.ToString());
+        Assert.Equal(
+            "The field 'applyEffect' only contains valid data when 'kind=ApplyEffect', " +
+                "but within this scope, it is statically known that 'kind=Move'.\n" +
+                "Help: Within this scope, only the field 'move' contains valid data.",
+            diagnostic.GetMessage());
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Equal("single-value-case.cs", diagnostic.Location.SourceTree?.FilePath);
+        Assert.Equal(
+            "command.applyEffect",
+            diagnostic.Location.SourceTree?.GetText().ToString(diagnostic.Location.SourceSpan));
     }
 
     [Fact]

@@ -17,9 +17,9 @@ namespace TestNs
         {
             { kind: Cmd.Kind.Start, start: { delay: var d  } } => 1,
             { kind: Cmd.Kind.Pause, pause: { duration: var dur  } } => 3,
-            { kind: Cmd.Kind.Stop } => throw new System.NotImplementedException(),
-            { kind: Cmd.Kind.Resume } => throw new System.NotImplementedException(),
-            { kind: Cmd.Kind.Reset, reset: { reason: var reason  } } => throw new System.NotImplementedException()
+            { IsStop: true } => throw new System.NotImplementedException(),
+            { IsResume: true } => throw new System.NotImplementedException(),
+            { IsReset: true, reset: var (reason) } => throw new System.NotImplementedException()
         };
     }
 }

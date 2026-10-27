@@ -1,4 +1,4 @@
-# SPIRE013: Accessing another variant's field
+# SPIRE013: Attempting to access mismatched variant data
 
 | Property    | Value        |
 |-------------|--------------|
@@ -13,6 +13,13 @@ Code reads a variant accessor (for example, `shape.circle`) while the kind guard
 indicates a different active variant. Inactive unmanaged payload views may read
 overlaid values; shared managed slots may fail a cast or unbox. Always guard
 the accessor with its own variant.
+
+Generated `IsVariant` checks are equivalent to comparisons on `kind`, including
+negation, boolean comparisons, and property patterns. A negative check can leave
+multiple possible variants and does not prove a particular alternative.
+
+The diagnostic names the accessed field, its required `kind`, and the kind known
+within the current scope. It also identifies the valid accessor when one is known.
 
 ## Examples
 

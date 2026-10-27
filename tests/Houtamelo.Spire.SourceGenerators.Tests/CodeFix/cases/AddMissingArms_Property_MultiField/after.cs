@@ -14,8 +14,8 @@ namespace TestNs
         int Test(Vec v) => v switch
         {
             { kind: Vec.Kind.V2, v2: { x: var a, y: var b  } } => 2,
-            { kind: Vec.Kind.V3, v3: { x: var x, y: var y, z: var z  } } => throw new System.NotImplementedException(),
-            { kind: Vec.Kind.V4, v4: { x: var x, y: var y, z: var z, w: var w  } } => throw new System.NotImplementedException()
+            { IsV3: true, v3: var (x, y, z) } => throw new System.NotImplementedException(),
+            { IsV4: true, v4: var (x, y, z, w) } => throw new System.NotImplementedException()
         };
     }
 }

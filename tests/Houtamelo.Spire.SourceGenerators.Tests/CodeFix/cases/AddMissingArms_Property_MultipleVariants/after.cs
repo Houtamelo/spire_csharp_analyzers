@@ -14,8 +14,8 @@ namespace TestNs
         int Test(Shape s) => s switch
         {
             { kind: Shape.Kind.Circle, circle: { radius: var r  } } => 1,
-            { kind: Shape.Kind.Rectangle, rectangle: { width: var width, height: var height  } } => throw new System.NotImplementedException(),
-            { kind: Shape.Kind.Square, square: { sideLength: var sideLength  } } => throw new System.NotImplementedException()
+            { IsRectangle: true, rectangle: var (width, height) } => throw new System.NotImplementedException(),
+            { IsSquare: true, square: var (sideLength) } => throw new System.NotImplementedException()
         };
     }
 }

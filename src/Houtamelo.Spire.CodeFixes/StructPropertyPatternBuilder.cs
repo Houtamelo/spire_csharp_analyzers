@@ -34,41 +34,43 @@ internal static class StructPropertyPatternBuilder
         IMethodSymbol? factory,
         SyntaxNode scope,
         string kindPrefix,
-        SemanticModel semanticModel)
+        SemanticModel semanticModel,
+        bool useVariantPredicate = false)
     {
         variantName = NormalizeIdentifier(variantName);
 
         var subpatterns = new List<SubpatternSyntax>
         {
             SyntaxFactory.Subpattern(
-                SyntaxFactory.NameColon(SyntaxFactory.IdentifierName("kind")),
-                SyntaxFactory.ConstantPattern(BuildKindExpression(kindPrefix, variantName)))
+                SyntaxFactory.NameColon(
+                    SyntaxFactory.IdentifierName(
+                        EscapeIdentifier(useVariantPredicate ? "Is" + variantName : "kind"))),
+                SyntaxFactory.ConstantPattern(useVariantPredicate
+                    ? SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression)
+                    : BuildKindExpression(kindPrefix, variantName)))
         };
 
         if (factory is not null)
         {
             var usedNames = CollectEnclosingNames(scope, semanticModel);
             var accessorName = ResolveAccessorName(subjectType, variantName);
-            var fieldSubpatterns = new List<SubpatternSyntax>();
+            var captureDesignations = new List<VariableDesignationSyntax>();
             foreach (var parameter in factory.Parameters)
             {
                 var captureName = MakeUniqueName(parameter.Name, usedNames);
                 usedNames.Add(captureName);
 
-                fieldSubpatterns.Add(SyntaxFactory.Subpattern(
-                    SyntaxFactory.NameColon(
-                        SyntaxFactory.IdentifierName(EscapeIdentifier(parameter.Name))),
-                    SyntaxFactory.VarPattern(
-                        SyntaxFactory.SingleVariableDesignation(
-                            SyntaxFactory.Identifier(EscapeIdentifier(captureName))))));
+                captureDesignations.Add(
+                    SyntaxFactory.SingleVariableDesignation(
+                        SyntaxFactory.Identifier(EscapeIdentifier(captureName))));
             }
 
-            if (fieldSubpatterns.Count > 0)
+            if (captureDesignations.Count > 0)
             {
-                var payloadPattern = SyntaxFactory.RecursivePattern()
-                    .WithPropertyPatternClause(
-                        SyntaxFactory.PropertyPatternClause(
-                            SyntaxFactory.SeparatedList(fieldSubpatterns)));
+                var payloadPattern = SyntaxFactory.VarPattern(
+                    SyntaxFactory.ParenthesizedVariableDesignation(
+                        SyntaxFactory.SeparatedList<VariableDesignationSyntax>(
+                            captureDesignations)));
                 subpatterns.Add(SyntaxFactory.Subpattern(
                     SyntaxFactory.NameColon(
                         SyntaxFactory.IdentifierName(EscapeIdentifier(accessorName))),

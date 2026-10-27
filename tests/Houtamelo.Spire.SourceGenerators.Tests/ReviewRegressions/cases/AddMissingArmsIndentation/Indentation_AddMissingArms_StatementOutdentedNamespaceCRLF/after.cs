@@ -19,9 +19,9 @@ class Consumer
             case { kind: Message.Kind.Ping, ping: { sequence: var sequence } }:
                 _ = sequence;
                 break;
-            case { kind: Message.Kind.Close }:
+            case { IsClose: true }:
                 throw new System.NotImplementedException();
-            case { kind: Message.Kind.Flush, flush: { reason: var reason } }:
+            case { IsFlush: true, flush: var (reason) }:
                 throw new System.NotImplementedException();
         }
     }

@@ -6,28 +6,31 @@ execution tests. Native Unity validation is recorded in [the Unity guide](unity.
 
 ## Struct-union code-fix arms
 
-Both **Add missing variant arms** and **Expand wildcard** generate property
-patterns for struct unions. Field captures always use `property_name: var name`,
-accepting null and non-null values without shared positional-output boxing:
+**Add missing variant arms** generates an `IsVariant: true` check and deconstructs
+the selected variant payload. **Expand wildcard** retains its existing `kind`
+patterns. Both pattern forms are supported by analysis. Captures follow factory
+parameter order and accept both null and non-null field values:
 
 ```cs
 switch (command)
 {
-    case { kind: GameplayCommand.Kind.Idle }:
+    case { IsIdle: true }:
         throw new System.NotImplementedException();
-    case { kind: GameplayCommand.Kind.Move, destination: var destination, speed: var speed }:
+    case { IsMove: true, move: var (destination, speed) }:
         throw new System.NotImplementedException();
-    case { kind: GameplayCommand.Kind.Speak, speech: var speech }:
+    case { IsSpeak: true, speak: var (speech) }:
         throw new System.NotImplementedException();
-    case { kind: GameplayCommand.Kind.ApplyEffect, effect: var effect }:
+    case { IsApplyEffect: true, applyEffect: var (effect) }:
         throw new System.NotImplementedException();
 }
 ```
 
-Incompatible same-name fields use variant-qualified properties, such as
-`count_value: var value`; compatible reference-nullability differences share one
-conservatively nullable property. Record/class union APIs and generated arms
-retain their existing behavior. See [the approved collision and pattern rules](designs/2026-10-10-struct-union-field-collisions.md).
+Capture names avoid enclosing locals and parameters; accessor names retain the
+`_value` suffix when needed to avoid a factory-name conflict. Existing user arms
+and record/class union arms retain their current form. See
+[the deconstruction coverage](issues/2026-10-26-pending-deconstruction-coverage.md).
+Predicate guards, exhaustiveness, and the shorter codefix output are covered in
+[the predicate coverage](issues/2026-10-26-is-variant-analysis-and-codefix-coverage.md).
 
 ## Implementation-member visibility
 

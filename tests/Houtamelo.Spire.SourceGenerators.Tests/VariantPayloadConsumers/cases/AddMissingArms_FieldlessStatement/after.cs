@@ -15,7 +15,7 @@ public static class Consumer
         {
             case { kind: Command.Kind.Run, run: { speed: var speed } }:
                 return (int)speed;
-            case { kind: Command.Kind.Stop }:
+            case { IsStop: true }:
                 throw new System.NotImplementedException();
         }
 

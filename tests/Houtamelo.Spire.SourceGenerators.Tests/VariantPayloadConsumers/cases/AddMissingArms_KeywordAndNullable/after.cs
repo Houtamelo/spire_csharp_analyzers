@@ -12,6 +12,6 @@ public static class Consumer
     public static string Match(EventCommand command) => command switch
     {
         { kind: EventCommand.Kind.Idle } => "idle",
-        { kind: EventCommand.Kind.Event, @event: { @event: var @event } } => throw new System.NotImplementedException()
+        { IsEvent: true, @event: var (@event) } => throw new System.NotImplementedException()
     };
 }

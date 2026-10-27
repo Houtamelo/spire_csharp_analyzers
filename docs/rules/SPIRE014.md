@@ -1,4 +1,4 @@
-# SPIRE014: Accessing variant field without kind guard
+# SPIRE014: Attempting to access variant data without checking 'kind'
 
 | Property    | Value        |
 |-------------|--------------|
@@ -10,11 +10,17 @@
 ## Description
 
 Code reads a variant accessor (for example, `shape.circle`) without checking
-the active variant through a switch, if-pattern, or equality check on `kind`.
+the active variant through a switch, if-pattern, equality check on `kind`, or
+generated `IsVariant` predicate.
 An inactive accessor can read unrelated unmanaged storage or fail a shared-slot
 cast. A captured payload's fields are ordinary fields and need no further guard.
 
-Accessing the `kind` field itself is always safe and does not trigger this diagnostic.
+Accessing `kind` or a generated `IsVariant` predicate is always safe and does not
+trigger this diagnostic. Checks must refer to the same union value; assigning a
+new value invalidates a previous guard.
+
+The diagnostic names the required kind check and shows how to suppress SPIRE014
+when that check is guaranteed by external logic.
 
 ## Examples
 
@@ -39,17 +45,17 @@ void Bad(Shape s)
 ```csharp
 void Ok(Shape s)
 {
-    if (s.kind == Shape.Kind.Circle)
+    if (s.IsCircle)
     {
-        var r = s.circle.radius;  // guarded by kind check
+        var r = s.circle.radius;  // equivalent to checking s.kind == Shape.Kind.Circle
     }
 }
 
 // Also fine: switch expression/statement arms
 double Area(Shape s) => s switch
 {
-    { kind: Shape.Kind.Circle, circle: { radius: var r } } => Math.PI * r * r,
-    { kind: Shape.Kind.Square, square: { sideLength: var x } } => x * x,
+    { IsCircle: true, circle: var (r) } => Math.PI * r * r,
+    { IsSquare: true, square: var (x) } => x * x,
 };
 ```
 

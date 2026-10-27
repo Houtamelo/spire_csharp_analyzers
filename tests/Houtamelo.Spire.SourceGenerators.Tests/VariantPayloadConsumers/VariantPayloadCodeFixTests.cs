@@ -22,13 +22,16 @@ public sealed class VariantPayloadConsumersTests : CodeFixTestBase
     private static readonly string[] AddMissingCases =
     {
         "AddMissingArms_FieldedExpression",
+        "AddMissingArms_FieldedStatement",
         "AddMissingArms_FieldlessStatement",
         "AddMissingArms_MultiFieldInlineBraces",
         "AddMissingArms_Generic",
         "AddMissingArms_NestedUnion",
         "AddMissingArms_AcronymAndFactoryConflict",
         "AddMissingArms_KeywordAndNullable",
+        "AddMissingArms_UnderscoreParameter",
         "AddMissingArms_ExistingNestedPattern",
+        "AddMissingArms_ExistingIsPattern",
     };
 
     private static readonly string[] IndentationCases =
@@ -53,7 +56,8 @@ public sealed class VariantPayloadConsumersTests : CodeFixTestBase
         => ImmutableArray.Create<DiagnosticAnalyzer>(
             new ExhaustivenessAnalyzer(),
             new CS8509Suppressor(),
-            new TypeSafetyAnalyzer());
+            new TypeSafetyAnalyzer(),
+            new FieldAccessSafetyAnalyzer());
 
     protected override ImmutableArray<CodeFixProvider> GetCodeFixes()
         => ImmutableArray.Create<CodeFixProvider>(
@@ -88,24 +92,13 @@ public sealed class VariantPayloadConsumersTests : CodeFixTestBase
 
     [Theory]
     [MemberData(nameof(AfterCases))]
-    public void ExpectedAfterSourceCompilesThroughTheGenerator(string caseName)
+    public async Task ExpectedAfterSourceCompilesThroughTheGenerator(string caseName)
     {
         var source = File.ReadAllText(GetCasePath(caseName, "after.cs"));
-        GeneratorTestHelper.RunGenerator(
+        await AssertGeneratedSourceCompilesAndEmits(
             source,
-            out var compilation,
-            out var generatorDiagnostics,
-            path: "case.cs");
-
-        var errors = generatorDiagnostics
-            .Concat(compilation.GetDiagnostics())
-            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
-            .ToArray();
-        Assert.True(
-            errors.Length == 0,
-            $"Expected after-source '{caseName}' did not compile:\n" +
-            string.Join("\n", errors.Select(diagnostic =>
-                $"{diagnostic.Id}: {diagnostic.GetMessage()}")));
+            caseName,
+            assertExhaustiveness: AddMissingCases.Contains(caseName));
     }
 
     [Theory]
@@ -113,8 +106,14 @@ public sealed class VariantPayloadConsumersTests : CodeFixTestBase
     public async Task AppliedAddMissingArmsKeepVariantPatternsInline(string caseName)
     {
         var source = File.ReadAllText(GetCasePath(caseName, "before.cs"));
+        var expected = File.ReadAllText(GetCasePath(caseName, "after.cs"));
         var fixedSource = await ApplyFirstFix(source);
 
+        Assert.True(
+            GeneratorTestHelper.AreStructurallyEquivalent(fixedSource, expected),
+            $"Applied code fix for '{caseName}' did not match after.cs.\n" +
+            $"=== EXPECTED ===\n{expected}\n\n=== ACTUAL ===\n{fixedSource}");
+        Assert.Contains("Is", fixedSource, StringComparison.Ordinal);
         Assert.DoesNotMatch("case\\s*\\r?\\n\\s*\\{", fixedSource);
         var root = CSharpSyntaxTree.ParseText(fixedSource).GetRoot();
         foreach (var clause in root.DescendantNodes()
@@ -123,6 +122,11 @@ public sealed class VariantPayloadConsumersTests : CodeFixTestBase
             Assert.DoesNotContain("\n", clause.ToFullString());
             Assert.DoesNotContain("\r", clause.ToFullString());
         }
+
+        await AssertGeneratedSourceCompilesAndEmits(
+            fixedSource,
+            caseName,
+            assertExhaustiveness: true);
     }
 
     [Theory]
@@ -150,24 +154,12 @@ public sealed class VariantPayloadConsumersTests : CodeFixTestBase
 
         Assert.Equal(expected, actual);
 
-        GeneratorTestHelper.RunGenerator(
+        await AssertGeneratedSourceCompilesAndEmits(
             actual,
-            out var compilation,
-            out var generatorDiagnostics,
-            path: "case.cs");
-        var diagnostics = generatorDiagnostics
-            .Concat(compilation.GetDiagnostics())
-            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
-            .ToArray();
-        Assert.Empty(diagnostics);
-        using var output = new MemoryStream();
-        var emit = compilation.Emit(output);
-        Assert.True(
-            emit.Success,
-            string.Join(
-                Environment.NewLine,
-                emit.Diagnostics.Select(diagnostic =>
-                    $"{diagnostic.Id}: {diagnostic.GetMessage()}")));
+            caseName,
+            assertExhaustiveness: !caseName.EndsWith(
+                "RecordStatementOutdentedNamespace",
+                StringComparison.Ordinal));
     }
 
     private static string GetCasePath(string caseName, string fileName)
@@ -260,5 +252,48 @@ public sealed class VariantPayloadConsumersTests : CodeFixTestBase
         return (await applyOperation.ChangedSolution
             .GetDocument(userDocumentId!)!
             .GetTextAsync()).ToString();
+    }
+
+    private async Task AssertGeneratedSourceCompilesAndEmits(
+        string source,
+        string caseName,
+        bool assertExhaustiveness)
+    {
+        GeneratorTestHelper.RunGenerator(
+            source,
+            out var compilation,
+            out var generatorDiagnostics,
+            path: "case.cs");
+        GeneratorTestHelper.AssertNoGeneratorDiagnostics(generatorDiagnostics);
+        GeneratorTestHelper.AssertNoCompilationErrors(compilation);
+
+        if (assertExhaustiveness)
+        {
+            var diagnostics = await compilation
+                .WithAnalyzers(GetAnalyzers())
+                .GetAllDiagnosticsAsync();
+            var invalidDiagnostics = diagnostics
+                .Where(diagnostic =>
+                    diagnostic.Id == "SPIRE009" ||
+                    diagnostic.Id == "SPIRE013" ||
+                    diagnostic.Id == "SPIRE014" ||
+                    (!diagnostic.IsSuppressed &&
+                        (diagnostic.Id == "CS8509" || diagnostic.Id == "CS8524")))
+                .ToArray();
+            Assert.True(
+                invalidDiagnostics.Length == 0,
+                $"Generated source '{caseName}' still has exhaustiveness diagnostics:\n" +
+                string.Join("\n", invalidDiagnostics.Select(diagnostic =>
+                    $"{diagnostic.Id}: {diagnostic.GetMessage()}")));
+        }
+
+        using var output = new MemoryStream();
+        var emit = compilation.Emit(output);
+        Assert.True(
+            emit.Success,
+            string.Join(
+                Environment.NewLine,
+                emit.Diagnostics.Select(diagnostic =>
+                    $"{diagnostic.Id}: {diagnostic.GetMessage()}")));
     }
 }
