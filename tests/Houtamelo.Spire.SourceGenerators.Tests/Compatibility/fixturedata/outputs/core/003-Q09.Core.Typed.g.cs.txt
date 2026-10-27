@@ -99,7 +99,6 @@ public static class TypedTypes {
             [global::System.Runtime.InteropServices.FieldOffset(0)]
             internal Value __value;
 
-            [@StructLayout(LayoutKind.Auto)]
             internal struct Value {
                 internal int value;
             }

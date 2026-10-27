@@ -198,7 +198,6 @@ public partial class Q09UnityPrivateContainer {
                 [global::System.Runtime.InteropServices.FieldOffset(0)]
                 [@NonSerialized] internal @new __new;
 
-                [@StructLayout(LayoutKind.Auto)]
                 internal struct @new {
                     [@NonSerialized] internal int @class;
                 }

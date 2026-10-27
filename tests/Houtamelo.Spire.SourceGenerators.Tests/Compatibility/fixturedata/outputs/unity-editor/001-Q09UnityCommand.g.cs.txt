@@ -240,7 +240,6 @@ public static class Q09UnityCommandTypes {
             [global::System.Runtime.InteropServices.FieldOffset(0)]
             [@NonSerialized] internal Move __move;
 
-            [@StructLayout(LayoutKind.Auto)]
             internal struct Move {
                 [@NonSerialized] internal global::UnityEngine.Vector3 position;
             }

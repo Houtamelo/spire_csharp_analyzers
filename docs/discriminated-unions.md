@@ -50,14 +50,15 @@ Accessors use camelCase, including leading acronyms (`HTTPRequest` becomes
 `httpRequest`). If that name matches any variant factory, the accessor receives
 one `_value` suffix. Other name collisions use ordinary C# compiler diagnostics.
 
-Guard an accessor with its corresponding kind. SPIRE013/014 diagnose incorrect
-or unguarded access. SPIRE009 checks exhaustiveness, and the missing-arm code fix
-generates nested payload property patterns. A captured payload's getters need
-no further kind guard.
+Guard an accessor with its corresponding kind or generated `IsVariant` predicate.
+SPIRE013/014 diagnose incorrect or unguarded access. SPIRE009 checks exhaustiveness,
+and the missing-arm code fix generates `IsVariant: true` with payload
+deconstruction. A captured payload's getters need no further kind guard.
 
 Variant accessors also assert the expected kind before reading their storage.
-Unity-serialized unions use `UnityEngine.Debug.Assert` (`UNITY_ASSERTIONS`);
-standalone unions use `System.Diagnostics.Debug.Assert` (`DEBUG`). When the
+Compilations with a usable Unity assertion API use `UnityEngine.Debug.Assert`
+(`UNITY_ASSERTIONS`); other hosts use `System.Diagnostics.Debug.Assert` (`DEBUG`).
+Nonserialized Unity unions use constant messages compatible with Burst. When the
 corresponding symbol is absent, the check and diagnostic message are omitted.
 
 The generated `Kind` enum carries `[EnforceExhaustiveness]`. Standalone switches
@@ -73,8 +74,8 @@ excludes null.
 
 ## Storage
 
-Concrete unmanaged fields are grouped by variant in runtime-laid-out
-`LayoutKind.Auto` helpers. A nongeneric explicit-layout helper overlays those
+Concrete unmanaged fields are grouped by variant in helpers with the C# compiler's
+default sequential layout. A nongeneric explicit-layout helper overlays those
 groups at offset zero. These helpers live under `ShapeTypes.Fields.Unmanaged`,
 with managed slots in `ShapeTypes.Fields.Managed`. The generator calculates no sizes, offsets within a
 payload, or alignment tables. It requires neither unsafe code nor an Unsafe DLL.
@@ -175,6 +176,13 @@ Mutable `[Serializable]` struct unions receive generated Unity callbacks and
 drawers when Unity references are present. Public payloads are reused through
 one shared generic managed-reference wrapper. See [Unity](unity.md) for field
 eligibility, serialization, and Editor behavior.
+
+Unity serialization is incompatible with an unmanaged Burst/ECS representation:
+the generated serialization cache is a managed reference even when every variant
+field is unmanaged. If both representations are needed, manually declare a
+serializable authoring union and a separate runtime union without `[Serializable]`,
+then convert or bake between them. Runtime variants must contain only types
+supported by Burst; unmanaged alone does not establish Burst compatibility.
 
 | Rule | Purpose |
 |---|---|

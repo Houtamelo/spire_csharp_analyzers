@@ -74,7 +74,9 @@ internal sealed record UnionDeclaration(
     /// Whether the union type has type parameters.
     bool IsGeneric,
     /// Whether the complete union symbol has System.SerializableAttribute.
-    bool IsUnitySerializable = false
+    bool IsUnitySerializable = false,
+    /// Whether UnityEngine.Debug.Assert(bool, string) is available in the compilation.
+    bool UseUnityAssertions = false
 ) : IEquatable<UnionDeclaration>
 {
     public ReferenceStorage ReferenceStorage { get; init; } = ReferenceStorage.Auto;

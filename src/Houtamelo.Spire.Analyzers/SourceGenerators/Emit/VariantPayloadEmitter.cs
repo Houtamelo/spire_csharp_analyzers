@@ -6,8 +6,8 @@ using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 namespace Houtamelo.Spire.Analyzers.SourceGenerators.Emit;
 
 /// Emits one public payload struct per variant and the union's runtime storage.
-/// Concrete unmanaged payloads retain runtime-selected layout; generation does
-/// not calculate user type sizes or alignments.
+/// Concrete unmanaged payloads use the compiler's default sequential layout;
+/// generation does not calculate user type sizes or alignments.
 internal static class VariantPayloadEmitter
 {
     public static string Emit(UnionDeclaration union)
@@ -100,7 +100,6 @@ internal static class VariantPayloadEmitter
             foreach (var entry in layout.UnmanagedVariants)
             {
                 sb.EnsureBlankLine();
-                sb.AppendLine($"[{structLayout}({layoutKind}.Auto)]");
                 sb.AppendLine($"internal struct {IdentifierUtility.Escape(entry.TypeName)}");
                 sb.OpenBrace();
                 foreach (var field in entry.Fields)
@@ -418,17 +417,20 @@ internal static class VariantPayloadEmitter
             sb.AppendLine($"[{editorBrowsable}({editorBrowsableState}.Never)]");
             if (layout.RequiresNullabilitySuppression(variant))
                 sb.AppendLine("#pragma warning disable CS8619, CS8620 // Nullable annotations are erased; this is a direct typed-slot read.");
-            var debugType = union.EmitUnitySerialization
+            var debugType = union.UseUnityAssertions
                 ? "global::UnityEngine.Debug"
                 : "global::System.Diagnostics.Debug";
             var variantDisplayName = IdentifierUtility.SerializedName(variant.Name);
             var message = CSharpStringLiteral.EscapeContent(
-                $"Accessing the `{variantDisplayName}` variant's fields is only allowed when `kind == Kind.{variantDisplayName}`. Actual kind: {{this._kind}}");
+                $"Accessing the `{variantDisplayName}` variant's fields is only allowed when `kind == Kind.{variantDisplayName}`");
+            var assertMessage = union.UseUnityAssertions && !union.EmitUnitySerialization
+                ? CSharpStringLiteral.Quote(message)
+                : $"$\"{message}. Actual kind: {{this._kind}}\"";
             sb.AppendLine($"public readonly {payloadType} {IdentifierUtility.Escape(propertyName)}");
             sb.OpenBrace();
             sb.AppendLine("get");
             sb.OpenBrace();
-            sb.AppendLine($"{debugType}.Assert(this._kind == Kind.{IdentifierUtility.Escape(variant.Name)}, $\"{message}\");");
+            sb.AppendLine($"{debugType}.Assert(this._kind == Kind.{IdentifierUtility.Escape(variant.Name)}, {assertMessage});");
             sb.AppendLine($"return new {payloadType}({string.Join(", ", values)});");
             sb.CloseBrace();
             sb.CloseBrace();

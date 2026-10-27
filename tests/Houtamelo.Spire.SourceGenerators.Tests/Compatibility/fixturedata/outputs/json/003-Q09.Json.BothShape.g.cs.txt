@@ -73,7 +73,6 @@ public static class BothShapeTypes {
             [global::System.Runtime.InteropServices.FieldOffset(0)]
             internal Line __line;
 
-            [@StructLayout(LayoutKind.Auto)]
             internal struct Line {
                 internal int start;
                 internal int end;

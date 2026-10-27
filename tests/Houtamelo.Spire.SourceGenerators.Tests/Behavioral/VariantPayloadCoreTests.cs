@@ -120,17 +120,34 @@ public sealed class VariantPayloadCoreTests
     }
 
     [Fact]
-    public void ConcreteUnmanagedFieldsUseAutoPayloadHelpersWithoutSizeCatalog()
+    public void ConcreteUnmanagedFieldsUseCompilerDefaultSequentialPayloadHelpers()
     {
         var generated = Generate(UnmanagedSource());
         AssertNoErrors(generated);
 
         Assert.Contains("StructLayout", generated.GeneratedSource);
-        Assert.Contains("LayoutKind.Auto", generated.GeneratedSource);
+        Assert.DoesNotContain("LayoutKind.Auto", generated.GeneratedSource);
+        Assert.Contains("LayoutKind.Explicit", generated.GeneratedSource);
         Assert.Contains("FieldOffset", generated.GeneratedSource);
         Assert.DoesNotContain("KnownSize", generated.GeneratedSource);
         Assert.DoesNotContain("sizeof(", generated.GeneratedSource);
         Assert.DoesNotContain("Pack =", generated.GeneratedSource);
+
+        var assembly = EmitAndLoad(generated.OutputCompilation);
+        AssertCompilerDefaultSequentialPayloadHelpers(assembly, "GeometryTypes");
+
+        var union = assembly.GetType("Geometry", throwOnError: true)!;
+        var positionType = assembly.GetType("Position", throwOnError: true)!;
+        var position = Activator.CreateInstance(positionType)!;
+        positionType.GetField("x")!.SetValue(position, 1.5f);
+        positionType.GetField("y")!.SetValue(position, -2.25f);
+
+        var value = union.GetMethod("Point")!.Invoke(null, new object[] { position, 7 })!;
+        var payload = union.GetProperty("point")!.GetValue(value)!;
+        var payloadPosition = payload.GetType().GetProperty("position")!.GetValue(payload)!;
+        Assert.Equal(1.5f, positionType.GetField("x")!.GetValue(payloadPosition));
+        Assert.Equal(-2.25f, positionType.GetField("y")!.GetValue(payloadPosition));
+        Assert.Equal(7, payload.GetType().GetProperty("count")!.GetValue(payload));
     }
 
     [Fact]
@@ -415,6 +432,8 @@ public sealed class VariantPayloadCoreTests
     {
         var generated = Generate(GenericSource());
         AssertNoErrors(generated);
+        Assert.DoesNotContain("LayoutKind.Auto", generated.GeneratedSource);
+        Assert.Contains("LayoutKind.Explicit", generated.GeneratedSource);
 
         var option = generated.OutputCompilation.GetTypeByMetadataName("Option`1")!;
         var payload = generated.OutputCompilation.GetTypeByMetadataName("OptionTypes1+Variants+Some`1")!;
@@ -424,6 +443,7 @@ public sealed class VariantPayloadCoreTests
         Assert.True(payload.TypeParameters[0].HasValueTypeConstraint);
 
         var assembly = EmitAndLoad(generated.OutputCompilation);
+        AssertCompilerDefaultSequentialPayloadHelpers(assembly, "OptionTypes1");
         var closed = assembly.GetType("Option`1")!.MakeGenericType(typeof(int));
         var value = closed.GetMethod("Some")!.Invoke(null, new object[] { 42, 1.5f })!;
         var payloadValue = closed.GetProperty("some")!.GetValue(value)!;
@@ -985,6 +1005,32 @@ public sealed class VariantPayloadCoreTests
             .ToArray();
         Assert.NotEmpty(explicitHelpers);
         Assert.All(explicitHelpers, helper => Assert.True(helper.IsUnmanagedType, helper.Name));
+    }
+
+    private static void AssertCompilerDefaultSequentialPayloadHelpers(
+        Assembly assembly,
+        string typesName)
+    {
+        var overlay = assembly.GetType($"{typesName}+Fields+Unmanaged", throwOnError: true)!;
+        Assert.True(overlay.IsExplicitLayout, overlay.FullName);
+        Assert.False(overlay.IsAutoLayout, overlay.FullName);
+
+        var offsets = overlay.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+            .Select(field => System.Runtime.InteropServices.Marshal.OffsetOf(overlay, field.Name).ToInt32())
+            .ToArray();
+        Assert.NotEmpty(offsets);
+        Assert.All(offsets, offset => Assert.Equal(0, offset));
+
+        var payloadHelpers = overlay.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic)
+            .Where(type => type.IsValueType)
+            .ToArray();
+        Assert.NotEmpty(payloadHelpers);
+        Assert.All(payloadHelpers, helper =>
+        {
+            Assert.True(helper.IsLayoutSequential, helper.FullName);
+            Assert.False(helper.IsAutoLayout, helper.FullName);
+            Assert.False(helper.IsExplicitLayout, helper.FullName);
+        });
     }
 
     private static bool ContainsInstruction(MethodInfo method, OpCode target)

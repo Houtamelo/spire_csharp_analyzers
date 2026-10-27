@@ -13,6 +13,7 @@ internal static class UnionParser
 {
     private const string UnitySerializeReferenceAttributeMetadataName =
         "Houtamelo.Spire.UnitySerializeReferenceAttribute";
+    private const string UnityDebugMetadataName = "UnityEngine.Debug";
 
     public static UnionDeclaration? Parse(
         GeneratorAttributeSyntaxContext ctx,
@@ -27,6 +28,7 @@ internal static class UnionParser
         var rawConfig = ReadAttributeArgs(ctx.Attributes);
         var isGeneric = typeSymbol.TypeParameters.Length > 0;
         var isUnitySerializable = UnitySerializationValidation.HasSerializableAttribute(typeSymbol);
+        var useUnityAssertions = HasUsableUnityDebugAssert(ctx.SemanticModel.Compilation);
         var unitySerializeReferenceAttribute = ctx.SemanticModel.Compilation.GetTypeByMetadataName(
             UnitySerializeReferenceAttributeMetadataName);
 
@@ -188,11 +190,26 @@ internal static class UnionParser
             HasInitProperties: false,
             RawConfig: rawConfig,
             IsGeneric: isGeneric,
-            IsUnitySerializable: isUnitySerializable)
+            IsUnitySerializable: isUnitySerializable,
+            UseUnityAssertions: useUnityAssertions)
         {
             ReferenceStorage = ResolveReferenceStorage(rawConfig.ReferenceStorage),
             TypeParameterConstraints = new EquatableArray<string>(GetTypeParameterConstraints(typeSymbol)),
         };
+    }
+
+    private static bool HasUsableUnityDebugAssert(Compilation compilation)
+    {
+        var debugType = compilation.GetTypeByMetadataName(UnityDebugMetadataName);
+        return debugType?.GetMembers("Assert")
+            .OfType<IMethodSymbol>()
+            .Any(method =>
+                method.IsStatic &&
+                method.DeclaredAccessibility == Accessibility.Public &&
+                method.ReturnsVoid &&
+                method.Parameters.Length == 2 &&
+                method.Parameters[0].Type.SpecialType == SpecialType.System_Boolean &&
+                method.Parameters[1].Type.SpecialType == SpecialType.System_String) == true;
     }
 
     /// Re-resolves sentinel values using global config.

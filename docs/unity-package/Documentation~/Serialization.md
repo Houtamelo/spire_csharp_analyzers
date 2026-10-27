@@ -1,5 +1,12 @@
 # Unity serialization
 
+Known limitation for Burst and ECS: serialization adds a managed-reference cache,
+so a serializable union cannot also be unmanaged runtime data. Manually declare a
+separate union without `[Serializable]` when you need a Burst-compatible version,
+and convert or bake from the authoring union. Use only Burst-supported fields in
+the runtime type; removing `[SerializeField]` from a consumer does not remove the
+cache from a serializable union type.
+
 Apply `[Serializable]` to a mutable struct union. All reference-storage modes
 support the same generated serialization payload and Inspector workflow. Unity
 decides which variant parameter types it can serialize. Readonly structs and

@@ -73,7 +73,6 @@ public static class StjShapeTypes {
             [global::System.Runtime.InteropServices.FieldOffset(0)]
             internal Circle __circle;
 
-            [@StructLayout(LayoutKind.Auto)]
             internal struct Circle {
                 internal double value;
             }

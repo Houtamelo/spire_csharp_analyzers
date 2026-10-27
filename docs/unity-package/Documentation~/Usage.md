@@ -20,10 +20,12 @@ With two or more payload fields,
 use positional patterns inside the accessor pattern. There is no union-level
 deconstruction or flat field-property API.
 
-Variant accessors also assert the expected kind. Unity-serialized unions use
-`UnityEngine.Debug.Assert` (`UNITY_ASSERTIONS`); other unions use
-`System.Diagnostics.Debug.Assert` (`DEBUG`). The check and message are omitted
-when the corresponding symbol is absent.
+Variant accessors also assert the expected kind. When the compiler host provides
+Unity's assertion API, they use `UnityEngine.Debug.Assert` (`UNITY_ASSERTIONS`);
+other hosts use `System.Diagnostics.Debug.Assert` (`DEBUG`). The check and
+message are omitted when the corresponding symbol is absent. Nonserialized
+Unity unions use a constant assertion message so their accessors can compile
+with Burst.
 
 Payloads live under a sibling types container (`ResultTypes.Variants.Success`).
 The container matches the union's accessibility; `Variants` and its payloads are
@@ -36,6 +38,14 @@ Concrete unmanaged fields overlap in per-variant runtime-laid-out helpers.
 Generic-dependent fields remain typed outside the overlay. No unsafe code,
 manual size catalog, or additional Unsafe DLL is required. A union itself can
 be generic, but may not be nested in a generic containing type (SPIRE_DU018).
+
+For Burst jobs and unmanaged ECS components, use only Burst-supported unmanaged
+payload fields and omit `[Serializable]`. Unity serialization adds a managed
+cache reference. If both forms are needed, manually declare a separate
+serializable authoring union and convert it to the runtime union.
+Prefer exhaustive switch statements in Burst code: a switch expression can
+emit an unsupported boxed unmatched-value exception path even when Spire proves
+that every declared variant is covered.
 
 | Reference storage | Behavior |
 |---|---|

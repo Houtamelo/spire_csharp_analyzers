@@ -118,13 +118,11 @@ public static class CompatSharedTypes {
             [global::System.Runtime.InteropServices.FieldOffset(0)]
             internal Batch __batch;
 
-            [@StructLayout(LayoutKind.Auto)]
             internal struct Position {
                 internal float x;
                 internal float y;
             }
 
-            [@StructLayout(LayoutKind.Auto)]
             internal struct Batch {
                 internal int count;
                 internal double duration;
