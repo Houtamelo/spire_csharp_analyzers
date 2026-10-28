@@ -51,6 +51,9 @@ public partial class Q09UnityPrivateContainer {
             return new @event(Kind.Empty, unmanagedFields, managedFields);
         }
 
+        public static implicit operator @event(global::Q09UnityPrivateContainer.eventTypes.Variants.@new variant) => @new(variant.@class, variant.@event);
+        public static implicit operator @event(global::Q09UnityPrivateContainer.eventTypes.Variants.Empty variant) => Empty();
+
         [@EditorBrowsable(EditorBrowsableState.Never)]
         public readonly global::Q09UnityPrivateContainer.eventTypes.Variants.@new new_value {
             get {

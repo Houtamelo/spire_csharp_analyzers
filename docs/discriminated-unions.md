@@ -42,13 +42,25 @@ The union exposes `kind`, `IsCircle`/`IsRectangle`/`IsPoint`, factories, and pay
 accessors `circle`/`rectangle`/`point`. Ordinary struct unions implement
 `IDiscriminatedUnion<Shape.Kind>`; ref struct unions expose these members without
 the interface, so their generated declarations also work before C# 13.
-Accessors return payload copies. Use the union
-factory to construct a replacement with changed values. There are no flat
+Accessors return payload copies. Use a union factory or convert a new payload
+to construct a replacement with changed values. There are no flat
 field properties or union-level `Deconstruct` overloads.
+
+Public variant factories generate implicit conversions from their payload structs
+to the union. Each conversion forwards the payload's fields to its matching factory:
+
+```csharp
+Shape shape = new ShapeTypes.Variants.Circle(5.0);
+Shape FromPayload(ShapeTypes.Variants.Rectangle rectangle) => rectangle;
+```
+
+Non-public factories receive no conversion operator, preserving their construction
+accessibility. Serialization-only former-name payload aliases receive no operator.
 
 Accessors use camelCase, including leading acronyms (`HTTPRequest` becomes
 `httpRequest`). If that name matches any variant factory, the accessor receives
-one `_value` suffix. Other name collisions use ordinary C# compiler diagnostics.
+one `_value` suffix. Generated using aliases are scoped inside the union's named
+namespace when present. Other name collisions use ordinary C# compiler diagnostics.
 
 Guard an accessor with its corresponding kind or generated `IsVariant` predicate.
 SPIRE013/014 diagnose incorrect or unguarded access. SPIRE009 checks exhaustiveness,

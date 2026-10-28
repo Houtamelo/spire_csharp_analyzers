@@ -59,6 +59,10 @@ public partial struct Q09UnityCommand : global::Houtamelo.Spire.IDiscriminatedUn
         return new Q09UnityCommand(Kind.Empty, unmanagedFields, managedFields);
     }
 
+    public static implicit operator Q09UnityCommand(Variants.Move variant) => Move(variant.position, variant.label);
+    public static implicit operator Q09UnityCommand(Variants.ObjectRef variant) => ObjectRef(variant.texture);
+    public static implicit operator Q09UnityCommand(Variants.Empty variant) => Empty();
+
     [@EditorBrowsable(EditorBrowsableState.Never)]
     public readonly Variants.Move move {
         get {

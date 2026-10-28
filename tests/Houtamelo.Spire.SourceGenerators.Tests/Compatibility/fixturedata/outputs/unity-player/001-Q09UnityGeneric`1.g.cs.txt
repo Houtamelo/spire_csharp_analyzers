@@ -44,6 +44,9 @@ public partial struct Q09UnityGeneric<T> : global::Houtamelo.Spire.IDiscriminate
         return new Q09UnityGeneric<T>(Kind.None, storage0);
     }
 
+    public static implicit operator Q09UnityGeneric<T>(Variants.Some<T> variant) => Some(variant.value);
+    public static implicit operator Q09UnityGeneric<T>(Variants.None<T> variant) => None();
+
     [@EditorBrowsable(EditorBrowsableState.Never)]
     public readonly Variants.Some<T> some {
         get {

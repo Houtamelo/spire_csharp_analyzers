@@ -2,6 +2,7 @@
   "Baseline": "46ac18b",
   "ProductionBuild": "Clean Release source build completed with 0 warnings and 0 errors before compatibility verification.",
   "CaptureMethod": "One-shot baseline generator-driver capture before emitter refactors; core/record/JSON/performance/benchmark bytes are in tmp/full-code-quality-review/batch2/raw and the expanded Unity bytes are in tmp/full-code-quality-review/batch2/raw-unity-expanded.",
+  "ApprovedChange": "The core, JSON struct, Unity base-union, and benchmark union fixtures include hand-authored public payload-to-union implicit conversion operators; affected hashes reflect that approved contract. Namespaced union fixtures also place generated aliases inside their namespace block.",
   "NewlinePolicy": "Compare exact UTF-8 source after normalizing CRLF or CR to LF only.",
   "Cases": [
     {
@@ -12,22 +13,22 @@
         {
           "Hint": "Q09.Core.Auto.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/core/000-Q09.Core.Auto.g.cs.txt",
-          "SourceSha256": "83d622cc1d648e95714b66625d1ff5b48962d198a62566151c5576b19cf2815c"
+          "SourceSha256": "480d111d97b7d62c6732d1f8662ac594b3fc4962193eb9fe108629aff3dd27a6"
         },
         {
           "Hint": "Q09.Core.Container.event\u00601.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/core/001-Q09.Core.Container.event\u00601.g.cs.txt",
-          "SourceSha256": "2d507f8ef301f21610835dd63d8a62fb8eeb76c0e033aca8a6c344e191d7e896"
+          "SourceSha256": "d43833ff0ab06ca79dd5c847d1dc119570fb15ae8f54fcad0a4e81782bf854e6"
         },
         {
           "Hint": "Q09.Core.Shared\u00601.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/core/002-Q09.Core.Shared\u00601.g.cs.txt",
-          "SourceSha256": "7d4f3141c0480432d7f10e06ba9434a4bb38e787cc4a96d99ebb89e5552fc02d"
+          "SourceSha256": "153a8743999db744e9b7e72b005e1b8470d9b760e33c1b5a332dea05565e61c4"
         },
         {
           "Hint": "Q09.Core.Typed.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/core/003-Q09.Core.Typed.g.cs.txt",
-          "SourceSha256": "f259091eebfbaf375b4897adefa11b177c8d17357bbb1887ff17f307daf35150"
+          "SourceSha256": "fc9e2a3f985429b0e3141d40c572f5cfaccf811a92cc22465278a1cd7f5ae8f4"
         }
       ]
     },
@@ -81,7 +82,7 @@
         {
           "Hint": "Q09.Json.BothShape.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/json/003-Q09.Json.BothShape.g.cs.txt",
-          "SourceSha256": "8859f98fa4fdeb72c7827b6a036634d446f515f501bd31a904c5e54d09d8dabb"
+          "SourceSha256": "0c542845d1d8612904d113428ea3e77ae40983281b31ba2fc4649a1d06e462b3"
         },
         {
           "Hint": "Q09.Json.NsjOption\u00601.Nsj.g.cs",
@@ -96,7 +97,7 @@
         {
           "Hint": "Q09.Json.NsjOption\u00601.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/json/006-Q09.Json.NsjOption\u00601.g.cs.txt",
-          "SourceSha256": "c59b96371dd56b2b6a6ede60fabb6ab8bb3e36ae0b244201ca406ed38d5dcd2d"
+          "SourceSha256": "32e3144a632c9b1e3f358cdc837300052a99f64456943263fee4e89f29d581a1"
         },
         {
           "Hint": "Q09.Json.SchemaShape\u00601.Nsj.g.cs",
@@ -131,7 +132,7 @@
         {
           "Hint": "Q09.Json.StjShape.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/json/013-Q09.Json.StjShape.g.cs.txt",
-          "SourceSha256": "1334ab9efdf93525bc9e3dcdfad5ac33bfc9c8813268604a453355f2f87c9df6"
+          "SourceSha256": "4ebfd3c9d062c587eb06b841efb2ca6390cd6ba486c0a8ddcd5f4ad11b5f3d7a"
         }
       ]
     },
@@ -143,17 +144,17 @@
         {
           "Hint": "Q09UnityCommand.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-player/000-Q09UnityCommand.g.cs.txt",
-          "SourceSha256": "b2c602af78424e2fee8b7eb0a0e73fba9e272ab305bb44b90a287adad370b959"
+          "SourceSha256": "42ab738f37e4dfa79ea5c5864d55196da8e52cba3d2c3fd4d4dbfbb994af6bd8"
         },
         {
           "Hint": "Q09UnityGeneric`1.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-player/001-Q09UnityGeneric`1.g.cs.txt",
-          "SourceSha256": "7b18f57abd9d74a262c5c2a872dfee0b315113298bea5b77f1ed37682fe3306f"
+          "SourceSha256": "0a8564b0aa56c331262044af67e244025b8350c2c2fb4820e910657b3ac33592"
         },
         {
           "Hint": "Q09UnityPrivateContainer.event.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-player/002-Q09UnityPrivateContainer.event.g.cs.txt",
-          "SourceSha256": "9a04f9c170a6d15d56eb129d541b2438cbae769f43c44596cc36d7200455c893"
+          "SourceSha256": "8b90b2855a471c6fd64af3d405b2b2379f6716f684f87d09a22290cb9fd63700"
         },
         {
           "Hint": "Spire.UnitySerializationSupport.generated.cs",
@@ -175,7 +176,7 @@
         {
           "Hint": "Q09UnityCommand.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-editor/001-Q09UnityCommand.g.cs.txt",
-          "SourceSha256": "b2c602af78424e2fee8b7eb0a0e73fba9e272ab305bb44b90a287adad370b959"
+          "SourceSha256": "42ab738f37e4dfa79ea5c5864d55196da8e52cba3d2c3fd4d4dbfbb994af6bd8"
         },
         {
           "Hint": "Q09UnityGeneric`1.UnityDrawer.g.cs",
@@ -185,7 +186,7 @@
         {
           "Hint": "Q09UnityGeneric`1.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-editor/003-Q09UnityGeneric`1.g.cs.txt",
-          "SourceSha256": "7b18f57abd9d74a262c5c2a872dfee0b315113298bea5b77f1ed37682fe3306f"
+          "SourceSha256": "0a8564b0aa56c331262044af67e244025b8350c2c2fb4820e910657b3ac33592"
         },
         {
           "Hint": "Q09UnityPrivateContainer.event.UnityDrawer.g.cs",
@@ -195,7 +196,7 @@
         {
           "Hint": "Q09UnityPrivateContainer.event.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-editor/005-Q09UnityPrivateContainer.event.g.cs.txt",
-          "SourceSha256": "9a04f9c170a6d15d56eb129d541b2438cbae769f43c44596cc36d7200455c893"
+          "SourceSha256": "8b90b2855a471c6fd64af3d405b2b2379f6716f684f87d09a22290cb9fd63700"
         },
         {
           "Hint": "Spire.UnityDrawerSupport.generated.cs",
@@ -227,7 +228,7 @@
         {
           "Hint": "CompatAuto.Bench.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/benchmark/002-CompatAuto.Bench.g.cs.txt",
-          "SourceSha256": "0995b569044c97d82f861a4312a8db95a525f94c939100c25ecf8afe2190618f"
+          "SourceSha256": "af6b9f4c1baade9d18ef4646d5b36d442f8f52cbbae876a892bf42372fe22773"
         },
         {
           "Hint": "CompatAuto.BenchDecl.g.cs",
@@ -247,7 +248,7 @@
         {
           "Hint": "CompatInput.Bench.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/benchmark/006-CompatInput.Bench.g.cs.txt",
-          "SourceSha256": "d0c4fc88e4b6e8f1884341556daae281944a87a2ab1477845f72c475f680d8d4"
+          "SourceSha256": "10aae04efc299b194a9ac52bcc9496034416e150d8318f422b6d55b26d19e2e3"
         },
         {
           "Hint": "CompatRecord.Bench.g.cs",
@@ -272,7 +273,7 @@
         {
           "Hint": "CompatShared.Bench.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/benchmark/011-CompatShared.Bench.g.cs.txt",
-          "SourceSha256": "58fb0c3f66c0a2bb6dd2460b3bc7f2f099b6a97de43e91f31dde62f7d5cba838"
+          "SourceSha256": "39009a355b1ff619b36c05fd41f420e61e7bb4b0493f20f28a9f5d241b4bf390"
         },
         {
           "Hint": "CompatShared.BenchDecl.g.cs",
@@ -292,7 +293,7 @@
         {
           "Hint": "CompatTyped.Bench.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/benchmark/015-CompatTyped.Bench.g.cs.txt",
-          "SourceSha256": "ec042c0470e48793bf299367ab11badba56735f7c947beeec85cdb7bb2116a3b"
+          "SourceSha256": "143ff18411920b0d42c46f9559bbd5eb8ea1e7165cfe3feda0f1066e990d9796"
         },
         {
           "Hint": "CompatTyped.BenchDecl.g.cs",
