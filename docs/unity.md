@@ -170,8 +170,10 @@ types container (`ResultTypes.Variants.Success`). One generic wrapper
 declaration is shared per compilation. Runtime storage is excluded from
 serialization. A recognized payload identifies the variant even if `_kind`
 disagrees. Generated callbacks rebuild the union through its factories,
-and a generated editor drawer provides a variant selector and active fields
-in UI Toolkit and IMGUI. Each compilation with serialized union drawers receives
+and a generated editor drawer displays the `Kind` selector and active fields as siblings
+inside a foldout titled with the serialized field's display name in UI Toolkit
+and IMGUI. Its expansion state follows Unity's serialized property.
+Each compilation with serialized union drawers receives
 one shared Editor helper and a small registration class with metadata for each
 union. Each immutable variant entry groups its identifier, current payload type,
 optional former payload type, and fields. Drawer entry points are inherited from

@@ -63,30 +63,50 @@ internal abstract class __SpireUnityPropertyDrawer : PropertyDrawer {
     }
 
     public override VisualElement CreatePropertyGUI(SerializedProperty property) {
-        var root = new VisualElement();
-        root.name = "__SpireUnionProperty";
+        var root = new Foldout {
+            name = "__SpireUnionProperty",
+            text = property.displayName,
+            value = property.isExpanded,
+        };
         var binding = new VisualTreeBinding(this, root, property);
+        root.RegisterValueChangedCallback(change => {
+            if (change.target != root)
+                return;
+            var actual = FindActualProperty(binding);
+            if (actual != null)
+                actual.isExpanded = change.newValue;
+        });
         RebuildVisualTree(binding);
         return root;
     }
 
     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
         EditorGUI.BeginProperty(position, label, property);
+        var previousIndent = EditorGUI.indentLevel;
         try {
+            var header = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
+            property.isExpanded = EditorGUI.Foldout(header, property.isExpanded, label, true);
+            if (!property.isExpanded)
+                return;
+            var headerHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
+            position.y += headerHeight;
+            position.height -= headerHeight;
+            EditorGUI.indentLevel++;
+            var kindLabel = new GUIContent("Kind");
             if (property.serializedObject.isEditingMultipleObjects) {
-                DrawActualProperty(position, property, label);
+                DrawActualProperty(position, property, kindLabel);
                 return;
             }
 
             var state = GetImmediatePreview(property);
             if (state is null) {
-                DrawActualProperty(position, property, label);
+                DrawActualProperty(position, property, kindLabel);
                 return;
             }
 
             var preview = state.SerializedObject.FindProperty("Payload");
             if (preview is null) {
-                DrawActualProperty(position, property, label);
+                DrawActualProperty(position, property, kindLabel);
                 return;
             }
 
@@ -94,7 +114,7 @@ internal abstract class __SpireUnityPropertyDrawer : PropertyDrawer {
             var kindHeight = EditorGUIUtility.singleLineHeight;
             var kindRect = new Rect(position.x, position.y, position.width, kindHeight);
             EditorGUI.BeginChangeCheck();
-            var selected = DrawPreviewKind(kindRect, preview, label, index, ResolveKindType(property));
+            var selected = DrawPreviewKind(kindRect, preview, kindLabel, index, ResolveKindType(property));
             var kindChanged = EditorGUI.EndChangeCheck();
             if (kindChanged && selected >= 0 && selected < Metadata.Variants.Count) {
                 ReplaceWithVariant(preview, selected, false, ResolveUnionType(property));
@@ -104,32 +124,55 @@ internal abstract class __SpireUnityPropertyDrawer : PropertyDrawer {
 
             preview = state.SerializedObject.FindProperty("Payload") ?? preview;
             var payload = FindPayload(preview);
-            var y = position.y + kindHeight + EditorGUIUtility.standardVerticalSpacing;
-            if (payload is not null) {
-                var payloadHeight = EditorGUI.GetPropertyHeight(payload, GUIContent.none, true);
-                var payloadRect = new Rect(position.x, y, position.width, payloadHeight);
-                EditorGUI.PropertyField(payloadRect, payload, GUIContent.none, true);
-            }
+            if (payload is not null)
+                DrawPayloadFields(new Rect(position.x, position.y + kindHeight, position.width, position.height - kindHeight), payload);
 
             if (kindChanged || state.SerializedObject.hasModifiedProperties) {
                 state.SerializedObject.ApplyModifiedPropertiesWithoutUndo();
                 CommitImmediatePreview(property, state);
             }
         } finally {
+            EditorGUI.indentLevel = previousIndent;
             EditorGUI.EndProperty();
         }
     }
 
     public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
-        var index = ReadKindIndex(property);
         var height = EditorGUIUtility.singleLineHeight;
+        if (!property.isExpanded)
+            return height;
+        height += EditorGUIUtility.standardVerticalSpacing + EditorGUIUtility.singleLineHeight;
+        var index = ReadKindIndex(property);
         if (index < 0 || index >= Metadata.Variants.Count)
             return height;
         var payload = FindPayload(property);
         if (payload == null)
             return height;
-        height += EditorGUIUtility.standardVerticalSpacing + EditorGUI.GetPropertyHeight(payload, GUIContent.none, true);
+        foreach (var field in PayloadFields(payload))
+            height += EditorGUIUtility.standardVerticalSpacing + EditorGUI.GetPropertyHeight(field, true);
         return height;
+    }
+
+    static IEnumerable<SerializedProperty> PayloadFields(SerializedProperty payload) {
+        var field = payload.Copy();
+        var childDepth = payload.depth + 1;
+        if (!field.NextVisible(true))
+            yield break;
+        while (field.depth == childDepth) {
+            yield return field.Copy();
+            if (!field.NextVisible(false))
+                yield break;
+        }
+    }
+
+    static void DrawPayloadFields(Rect position, SerializedProperty payload) {
+        var y = position.y;
+        foreach (var field in PayloadFields(payload)) {
+            y += EditorGUIUtility.standardVerticalSpacing;
+            var height = EditorGUI.GetPropertyHeight(field, true);
+            EditorGUI.PropertyField(new Rect(position.x, y, position.width, height), field, true);
+            y += height;
+        }
     }
 
     sealed class VisualTreeState {
@@ -179,11 +222,8 @@ internal abstract class __SpireUnityPropertyDrawer : PropertyDrawer {
 
         if (payload is null)
             return;
-        var payloadY = position.y + kindHeight + EditorGUIUtility.standardVerticalSpacing;
-        var payloadHeight = EditorGUI.GetPropertyHeight(payload, GUIContent.none, true);
-        var payloadRect = new Rect(position.x, payloadY, position.width, payloadHeight);
         EditorGUI.BeginChangeCheck();
-        EditorGUI.PropertyField(payloadRect, payload, GUIContent.none, true);
+        DrawPayloadFields(new Rect(position.x, position.y + kindHeight, position.width, position.height - kindHeight), payload);
         if (EditorGUI.EndChangeCheck())
             SynchronizeRuntimeValue(property.serializedObject.FindProperty(property.propertyPath) ?? property);
     }
@@ -1288,9 +1328,10 @@ internal abstract class __SpireUnityPropertyDrawer : PropertyDrawer {
         var kindType = ResolveKindType(FindActualProperty(binding) ?? property);
         if (kindType is not null && kindType.IsEnum) {
             var enumValue = (Enum)Enum.ToObject(kindType, index >= 0 ? index : 0);
-            var enumField = new EnumField("Variant", enumValue) {
+            var enumField = new EnumField("Kind", enumValue) {
                 showMixedValue = index == MixedKindIndex,
             };
+            enumField.AddToClassList(BaseField<Enum>.alignedFieldUssClassName);
             enumField.RegisterValueChangedCallback(change => {
                 if (generation != binding.VisualTreeGeneration || enumField.parent != root)
                     return;
@@ -1305,8 +1346,9 @@ internal abstract class __SpireUnityPropertyDrawer : PropertyDrawer {
             foreach (var variant in Metadata.Variants)
                 choices.Add(variant.Ident);
             var popup = new PopupField<string>(choices, index >= 0 ? index : 0) {
-                label = "Variant",
+                label = "Kind",
             };
+            popup.AddToClassList(BaseField<string>.alignedFieldUssClassName);
             if (index == MixedKindIndex)
                 popup.showMixedValue = true;
             popup.RegisterValueChangedCallback(change => {
@@ -1323,9 +1365,11 @@ internal abstract class __SpireUnityPropertyDrawer : PropertyDrawer {
             return;
         if (payload == null)
             return;
-        var payloadField = new PropertyField(payload, payload.displayName);
-        payloadField.Bind(property.serializedObject);
-        root.Add(payloadField);
+        foreach (var field in PayloadFields(payload)) {
+            var fieldControl = new PropertyField(field, field.displayName);
+            fieldControl.Bind(property.serializedObject);
+            root.Add(fieldControl);
+        }
         RegisterChangeCallbacks(binding, root);
         if (root.panel != null) EditorApplication.delayCall += binding.OnDelayedControlRefresh;
         CapturePayloadSnapshot(binding);

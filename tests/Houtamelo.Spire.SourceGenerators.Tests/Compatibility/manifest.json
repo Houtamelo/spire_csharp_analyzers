@@ -201,7 +201,7 @@
         {
           "Hint": "Spire.UnityDrawerSupport.generated.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-editor/006-Spire.UnityDrawerSupport.generated.cs.txt",
-          "SourceSha256": "f93f7a292d621a8cd9713ebf3b21c1f3c52432754c5f5b8f53b9ff9d0f6b528e"
+          "SourceSha256": "4dea96e7a486608e12e06f1a33fafbe9cf40307148e6385eaf2f7b017cc8ab52"
         },
         {
           "Hint": "Spire.UnitySerializationSupport.generated.cs",

@@ -454,18 +454,35 @@ namespace Spire.UnityVariantPayloadCore
             var hasInspectorElement = false;
             _window!.Root.Query<InspectorElement>().ForEach(_ => hasInspectorElement = true);
             Require(hasInspectorElement, "The probe did not use a native InspectorElement.");
+            RunCase("KindAndPayloadColumnsAlign_Speak", () => _window.RequireAlignedFieldColumns("command", "speech"));
+            var commandRoot = _window.FindUnionRootFoldout("command");
+            var copiedLeftRoot = _window.FindUnionRootFoldout("copiedLeft");
+            Require(commandRoot != null && copiedLeftRoot != null,
+                "Named union root Foldouts were not registered for sibling union fields.");
+            Require(commandRoot!.text == _window.Serialized.FindProperty("command")!.displayName,
+                "The command union root Foldout did not use the actual SerializedProperty display name.");
+            Require(copiedLeftRoot!.text == _window.Serialized.FindProperty("copiedLeft")!.displayName,
+                "The copiedLeft union root Foldout did not use the actual SerializedProperty display name.");
+            Require(string.IsNullOrEmpty((commandRoot as IBindable)?.bindingPath),
+                "The union root Foldout must not bind its expansion boolean directly to the union property.");
             Require(HasGeneratedDrawerFor<InspectorCommand>(),
                 "TypeCache did not discover a CustomPropertyDrawer for InspectorCommand.");
             Require(_window.FindTextField("command", "speech") != null,
                 "The generated drawer did not expose the public payload.value.speech control.");
             Require(_window.FindKindSelector("command") != null,
                 "The generated drawer did not expose the native serialized kind selector.");
+            Require(_window.KindSelectorLabel("command") == "Kind",
+                "The generated union selector must be labelled Kind.");
             var kindChoices = _window.KindChoices("command");
             Require(kindChoices.Length == 4 &&
                 kindChoices.All(choice => new[] { "Idle", "Speak", "Move", "ManagedRefNode" }.Contains(choice, StringComparer.Ordinal)),
                 "The native kind selector contained a non-variant or missing choice: " + string.Join(",", kindChoices));
             Require(_window.IsPayloadValuePropertyAvailable("command", "speech"),
                 "_serializedPayload.value.speech was not a native relative SerializedProperty path.");
+            Require(!_window.HasSyntheticValueControl("command"),
+                "The generated Inspector still rendered a synthetic Payload.value control.");
+            Require(_window.ImmediatePayloadFieldCount("command") == 1,
+                "The Speak payload field was not rendered as a direct sibling of Kind.");
             _window.RequireBoundControlsEditable("command");
 
             if (_asset.command.kind != InspectorCommand.Kind.Speak)
@@ -484,6 +501,46 @@ namespace Spire.UnityVariantPayloadCore
                 "A generated preview parent disabled one or more native payload controls.");
             _window.RequirePreviewHideFlagsDoNotDisableEditing();
             Observe("native InspectorElement + PropertyField;payload.value=speech;kind=Speak;yaml/id/undo=stable");
+            CheckNamedRootFoldoutState(commandRoot);
+        }
+
+        private static void CheckNamedRootFoldoutState(Foldout commandRoot)
+        {
+            Require(_window != null && _asset != null, "The Inspector window or asset was unavailable.");
+            var commandProperty = _window!.Serialized.FindProperty("command");
+            Require(commandProperty != null, "The command SerializedProperty was unavailable.");
+            var beforeYaml = ReadAssetText(AssetPath);
+            var beforeCommand = _asset!.command;
+
+            commandRoot.value = false;
+            _window.Serialized.Update();
+            Require(!commandProperty!.isExpanded, "Collapsing the union root Foldout did not persist isExpanded on the actual SerializedProperty.");
+            Require(commandRoot.contentContainer.style.display == DisplayStyle.None,
+                "Collapsing the union root Foldout did not hide its Variant/value controls.");
+            Require(_asset.command.kind == beforeCommand.kind && ReadAssetText(AssetPath) == beforeYaml,
+                "Collapsing the union root Foldout mutated union data.");
+
+            commandRoot.value = true;
+            _window.Serialized.Update();
+            Require(commandProperty.isExpanded, "Reopening the union root Foldout did not restore isExpanded on the actual SerializedProperty.");
+            Require(commandRoot.contentContainer.style.display != DisplayStyle.None,
+                "Reopening the union root Foldout did not restore its Variant/value controls.");
+
+            Require(_window.SetKind("command", "Move"), "The command union could not select Move for root Foldout rebuild coverage.");
+            var rebuiltRoot = _window.FindUnionRootFoldout("command");
+            Require(rebuiltRoot != null && rebuiltRoot.value,
+                "The named root Foldout did not retain expansion through a variant rebuild.");
+            Require(_asset.command.kind == InspectorCommand.Kind.Move,
+                "The variant rebuild did not update the actual command union.");
+
+            _asset.command = beforeCommand;
+            EditorUtility.SetDirty(_asset);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.ImportAsset(AssetPath, ImportAssetOptions.ForceUpdate);
+            _window.RebindUi(_asset);
+            var reboundProperty = _window.Serialized.FindProperty("command");
+            Require(reboundProperty != null && reboundProperty.isExpanded,
+                "The command union expansion state was not retained through SerializedObject rebind.");
         }
 
         private static void StartGenericBinding()
@@ -524,6 +581,8 @@ namespace Spire.UnityVariantPayloadCore
             var selector = _window.FindKindSelector("generic");
             Require(selector is EnumField,
                 "The closed-generic union kind selector was not a native EnumField.");
+            Require(_window.KindSelectorLabel("generic") == "Kind",
+                "The closed-generic union selector must be labelled Kind.");
             var enumField = (EnumField)selector!;
             Require(enumField.value != null,
                 "The closed-generic EnumField did not have a runtime enum value.");
@@ -673,7 +732,8 @@ namespace Spire.UnityVariantPayloadCore
             _window.Serialized.Update();
             if (_asset.command.kind == InspectorCommand.Kind.Move &&
                 _window.FindFloatField("command", "speed") != null &&
-                _window.FindVector2Field("command", "destination") != null)
+                _window.FindVector2Field("command", "destination") != null &&
+                _window.AreFieldBoundsReady("command", "speed", "destination"))
             {
                 RunCase("KindSelectorSwitchesVariant", () =>
                 {
@@ -682,6 +742,11 @@ namespace Spire.UnityVariantPayloadCore
                     Require(_window.FindFloatField("command", "speed") != null &&
                         _window.FindVector2Field("command", "destination") != null,
                         "Selecting Move did not bind its public payload fields.");
+                    Require(!_window.HasSyntheticValueControl("command"),
+                        "The Move Inspector still rendered a synthetic Payload.value control.");
+                    Require(_window.ImmediatePayloadFieldCount("command") == 2,
+                        "The Move payload fields were not rendered as direct siblings of Kind.");
+                    _window.RequireAlignedFieldColumns("command", "speed", "destination");
                 });
                 _phase = (int)Phase.UiSelectIdle;
                 _waitFrames = 0;
@@ -725,6 +790,10 @@ namespace Spire.UnityVariantPayloadCore
                     Require(_window.FindTextField("command", "speech") == null &&
                         _window.FindFloatField("command", "speed") == null,
                         "The fieldless Idle variant kept stale payload controls.");
+                    Require(!_window.HasSyntheticValueControl("command"),
+                        "The fieldless Idle Inspector rendered a synthetic Payload.value control.");
+                    Require(_window.ImmediatePayloadFieldCount("command") == 0,
+                        "The fieldless Idle Inspector rendered a synthetic payload row.");
                     Observe("fieldless=Idle;synthetic-fields=false;structural-rebuild=true");
                 });
                 Require(_window.SetKind("command", "Move"),
@@ -1515,6 +1584,19 @@ namespace Spire.UnityVariantPayloadCore
             Require(_imguiWindow != null && _asset != null, "The IMGUI probe window was unavailable.");
             Require(_imguiWindow.LastPropertyHeight > 0f && _imguiWindow.LastPropertyRect.width > 0f,
                 "The generated IMGUI drawer did not report a rendered property rect.");
+            var imguiProperty = _imguiWindow.Serialized.FindProperty("command");
+            Require(imguiProperty != null, "The IMGUI command SerializedProperty was unavailable.");
+            var originalExpanded = imguiProperty!.isExpanded;
+            imguiProperty.isExpanded = false;
+            var collapsedHeight = EditorGUI.GetPropertyHeight(imguiProperty, true);
+            imguiProperty.isExpanded = true;
+            var expandedHeight = EditorGUI.GetPropertyHeight(imguiProperty, true);
+            imguiProperty.isExpanded = originalExpanded;
+            Require(collapsedHeight <= EditorGUIUtility.singleLineHeight + 0.1f,
+                "The collapsed IMGUI union did not reduce to its root foldout line.");
+            Require(expandedHeight > collapsedHeight,
+                "The expanded IMGUI union did not include its Kind and payload rows.");
+            CheckImguiHeightContract();
             Require(HasGeneratedDrawerFor<InspectorCommand>(),
                 "TypeCache did not discover the generated InspectorCommand drawer for IMGUI.");
             if (_asset.command.kind != InspectorCommand.Kind.Speak)
@@ -1526,6 +1608,50 @@ namespace Spire.UnityVariantPayloadCore
             Require(SerializedPayloadId(_imguiWindow.Serialized, "command") == _imguiWindow.InitialPayloadId,
                 "The IMGUI read-only repaint changed the active managed-reference ID.");
             Observe("actual EditorGUI.PropertyField/OnGUI repaint;drawer-discovered=true;read-only host stable");
+        }
+
+        private static void CheckImguiHeightContract()
+        {
+            Require(_imguiWindow != null && _asset != null, "The IMGUI height fixture was unavailable.");
+            try
+            {
+                var heightPath = AssetFolder + "/InspectorHeightProbe.asset";
+                var heightProbe = ScriptableObject.CreateInstance<InspectorCommandAsset>();
+                heightProbe.command = InspectorCommand.Idle();
+                AssetDatabase.CreateAsset(heightProbe, heightPath);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.ImportAsset(heightPath, ImportAssetOptions.ForceUpdate);
+                var persistedProbe = AssetDatabase.LoadAssetAtPath<InspectorCommandAsset>(heightPath);
+                var heightSerialized = new SerializedObject(persistedProbe);
+                heightSerialized.Update();
+                var idle = heightSerialized.FindProperty("command");
+                Require(idle != null, "The fieldless IMGUI command property was unavailable.");
+                idle!.isExpanded = true;
+                var expectedFieldless = EditorGUIUtility.singleLineHeight +
+                    EditorGUIUtility.standardVerticalSpacing + EditorGUIUtility.singleLineHeight;
+                Require(Math.Abs(EditorGUI.GetPropertyHeight(idle, true) - expectedFieldless) < 0.1f,
+                    "The fieldless IMGUI union height included a synthetic payload row.");
+
+                persistedProbe!.command = InspectorCommand.Speak("height");
+                EditorUtility.SetDirty(persistedProbe);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.ImportAsset(heightPath, ImportAssetOptions.ForceUpdate);
+                heightSerialized = new SerializedObject(AssetDatabase.LoadAssetAtPath<InspectorCommandAsset>(heightPath));
+                heightSerialized.Update();
+                var speak = heightSerialized.FindProperty("command");
+                var speech = speak?.FindPropertyRelative("_serializedPayload")?.FindPropertyRelative("value")?.FindPropertyRelative("_speech");
+                Require(speak != null && speech != null, "The simple IMGUI payload field was unavailable.");
+                speak!.isExpanded = true;
+                var expectedSimple = EditorGUIUtility.singleLineHeight +
+                    EditorGUIUtility.standardVerticalSpacing + EditorGUIUtility.singleLineHeight +
+                    EditorGUIUtility.standardVerticalSpacing + EditorGUI.GetPropertyHeight(speech!, GUIContent.none, true);
+                Require(Math.Abs(EditorGUI.GetPropertyHeight(speak, true) - expectedSimple) < 0.1f,
+                    "The simple IMGUI union height did not contain exactly Kind and its direct payload field.");
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(AssetFolder + "/InspectorHeightProbe.asset");
+            }
         }
 
         private static void StartImguiEdit()
@@ -1972,7 +2098,8 @@ namespace Spire.UnityVariantPayloadCore
             public VisualElement Root => rootVisualElement;
             public SerializedObject Serialized => _serialized ?? throw new InvalidOperationException("SerializedObject is unavailable.");
             public bool UiReady => !_imgui && rootVisualElement.panel != null &&
-                FindTextField("command", "speech") != null && FindKindSelector("command") != null;
+                FindTextField("command", "speech") != null && FindKindSelector("command") != null &&
+                AreFieldBoundsReady("command", "speech");
             public bool ImguiRepainted => _imguiRepainted;
             public int KeyboardControl => _imguiKeyboardControl;
             public float LastPropertyHeight => _lastPropertyHeight;
@@ -1999,7 +2126,7 @@ namespace Spire.UnityVariantPayloadCore
                     name = "spire-native-inspector",
                 };
                 rootVisualElement.Add(_inspector);
-                AddNativePropertyFields(rootVisualElement);
+                AddNativePropertyFields(_inspector);
                 minSize = new Vector2(780f, 640f);
                 titleContent = new GUIContent("Spire Inspector Fixture");
             }
@@ -2026,7 +2153,7 @@ namespace Spire.UnityVariantPayloadCore
                 {
                     name = "spire-direct-property-generic",
                 };
-                rootVisualElement.Add(directField);
+                _inspector.Add(directField);
                 directField.Bind(_serialized);
                 minSize = new Vector2(560f, 220f);
                 titleContent = new GUIContent("Spire Closed Generic Inspector Fixture");
@@ -2047,7 +2174,7 @@ namespace Spire.UnityVariantPayloadCore
                     name = "spire-native-multi-object-inspector",
                 };
                 rootVisualElement.Add(_inspector);
-                AddNativePropertyFields(rootVisualElement);
+                AddNativePropertyFields(_inspector);
                 minSize = new Vector2(780f, 640f);
                 titleContent = new GUIContent("Spire Inspector Multi-Object Fixture");
             }
@@ -2106,7 +2233,9 @@ namespace Spire.UnityVariantPayloadCore
                     ";binding=" + ((element as IBindable)?.bindingPath ?? "<none>") +
                     ";panel=" + (element.panel != null) +
                     ";enabled=" + element.enabledInHierarchy +
-                    ";visible=" + element.visible;
+                    ";visible=" + element.visible +
+                    ";worldBound=" + element.worldBound +
+                    ";classes=" + string.Join(",", element.GetClasses());
             }
 
             public string DescribeFloatField(FloatField? field)
@@ -2160,6 +2289,53 @@ namespace Spire.UnityVariantPayloadCore
                 return found;
             }
 
+            public bool AreFieldBoundsReady(string owner, params string[] fieldNames)
+            {
+                var selector = FindKindSelector(owner);
+                if (selector == null || selector.worldBound.width <= 0f)
+                    return false;
+                foreach (var fieldName in fieldNames)
+                {
+                    var field = FindTextField(owner, fieldName) as VisualElement ??
+                        FindFloatField(owner, fieldName) as VisualElement ??
+                        FindVector2Field(owner, fieldName) as VisualElement;
+                    if (field == null || field.worldBound.width <= 0f)
+                        return false;
+                }
+                return true;
+            }
+
+            public void RequireAlignedFieldColumns(string owner, params string[] fieldNames)
+            {
+                var selector = FindKindSelector(owner);
+                Require(selector != null, "Kind selector was unavailable for layout alignment: " + owner);
+                Require(selector!.GetFirstAncestorOfType<InspectorElement>() != null,
+                    "Kind selector was not attached under a native InspectorElement: " + DescribeElement(selector));
+                var kindLabel = selector!.Q<Label>();
+                var kindInput = selector.Q<VisualElement>(className: "unity-base-field__input");
+                Require(kindLabel != null && kindInput != null && kindLabel.worldBound.width > 0f && kindInput.worldBound.width > 0f,
+                    "Kind selector layout was unavailable: " + DescribeElement(selector));
+                foreach (var fieldName in fieldNames)
+                {
+                    var field = FindTextField(owner, fieldName) as VisualElement ??
+                        FindFloatField(owner, fieldName) as VisualElement ??
+                        FindVector2Field(owner, fieldName) as VisualElement;
+                    Require(field != null, "Payload field was unavailable for layout alignment: " + fieldName);
+                    Require(field!.GetFirstAncestorOfType<InspectorElement>() != null,
+                        "Payload field was not attached under a native InspectorElement: " + DescribeElement(field));
+                    var label = field.Q<Label>();
+                    var input = field.Q<VisualElement>(className: "unity-base-field__input");
+                    var details = "kind=" + DescribeElement(selector) + ";kindLabel=" + DescribeElement(kindLabel) +
+                        ";kindInput=" + DescribeElement(kindInput) + ";field=" + DescribeElement(field) +
+                        ";fieldLabel=" + DescribeElement(label) + ";fieldInput=" + DescribeElement(input);
+                    Require(label != null && input != null && label.worldBound.width > 0f && input.worldBound.width > 0f,
+                        "Payload field layout was unavailable: " + details);
+                    Require(Math.Abs(kindLabel!.worldBound.x - label!.worldBound.x) <= 1f &&
+                        Math.Abs(kindInput!.worldBound.x - input!.worldBound.x) <= 1f,
+                        "Kind and payload field columns were not aligned within 1px: " + details);
+                }
+            }
+
             public VisualElement? FindKindSelector(string owner)
             {
                 VisualElement? found = null;
@@ -2174,6 +2350,44 @@ namespace Spire.UnityVariantPayloadCore
                         element.GetType().Name.StartsWith("PopupField", StringComparison.Ordinal);
                     if (isNativeSelector && (isKindBinding || IsInOwnerProperty(element, owner)))
                         found = element;
+                });
+                return found;
+            }
+
+            public string KindSelectorLabel(string owner)
+            {
+                var selector = FindKindSelector(owner);
+                if (selector == null)
+                    return string.Empty;
+                var labelProperty = selector.GetType().GetProperty("label", BindingFlags.Instance | BindingFlags.Public);
+                if (labelProperty?.GetValue(selector, null) is string label)
+                    return label;
+                return selector.Q<Label>()?.text ?? string.Empty;
+            }
+
+            public Foldout? FindUnionRootFoldout(string owner)
+            {
+                Foldout? found = null;
+                rootVisualElement.Query<Foldout>().ForEach(foldout =>
+                {
+                    if (found != null || !string.Equals(foldout.name, "__SpireUnionProperty", StringComparison.Ordinal))
+                        return;
+                    var ownerField = foldout.GetFirstAncestorOfType<PropertyField>();
+                    var ownerBinding = (ownerField as IBindable)?.bindingPath;
+                    var matchesOwner = string.Equals(ownerBinding, owner, StringComparison.Ordinal) ||
+                        (!string.IsNullOrEmpty(ownerBinding) && ownerBinding.EndsWith("." + owner, StringComparison.Ordinal));
+                    foldout.contentContainer.Query<VisualElement>().ForEach(child =>
+                    {
+                        if (matchesOwner)
+                            return;
+                        var binding = (child as IBindable)?.bindingPath;
+                        if (!string.IsNullOrEmpty(binding) &&
+                            (binding.Contains(owner + ".", StringComparison.Ordinal) ||
+                                binding.Contains(owner + "_", StringComparison.Ordinal)))
+                            matchesOwner = true;
+                    });
+                    if (matchesOwner)
+                        found = foldout;
                 });
                 return found;
             }
@@ -2264,6 +2478,45 @@ namespace Spire.UnityVariantPayloadCore
                 return value?.FindPropertyRelative("_" + fieldName) != null;
             }
 
+            public bool HasSyntheticValueControl(string owner)
+            {
+                var root = FindUnionRootFoldout(owner);
+                if (root == null)
+                    return false;
+                var found = false;
+                root.contentContainer.Query<VisualElement>().ForEach(element =>
+                {
+                    if (found || element is not PropertyField && element is not Foldout)
+                        return;
+                    var path = (element as IBindable)?.bindingPath;
+                    if (string.Equals(path, owner + "._serializedPayload.value", StringComparison.Ordinal) ||
+                        string.Equals(path, owner + ".Payload.value", StringComparison.Ordinal) ||
+                        string.Equals(path, "Payload.value", StringComparison.Ordinal) ||
+                        (!string.IsNullOrEmpty(path) &&
+                            (path.EndsWith("._serializedPayload.value", StringComparison.Ordinal) ||
+                                path.EndsWith(".Payload.value", StringComparison.Ordinal))))
+                        found = true;
+                });
+                return found;
+            }
+
+            public int ImmediatePayloadFieldCount(string owner)
+            {
+                var root = FindUnionRootFoldout(owner);
+                if (root == null)
+                    return 0;
+                return root.contentContainer.Children()
+                    .OfType<PropertyField>()
+                    .Count(field =>
+                    {
+                        var path = (field as IBindable)?.bindingPath;
+                        return !string.IsNullOrEmpty(path) &&
+                            (path.Contains("._serializedPayload.value.", StringComparison.Ordinal) ||
+                                path.Contains(".Payload.value.", StringComparison.Ordinal) ||
+                                path.StartsWith("Payload.value.", StringComparison.Ordinal));
+                    });
+            }
+
             public VisualElement? FindDrawerTree(string owner)
             {
                 var field = FindTextField(owner, "speech") as VisualElement;
@@ -2316,6 +2569,16 @@ namespace Spire.UnityVariantPayloadCore
             public bool ExpandGeneratedPayloadFoldouts()
             {
                 var expanded = false;
+                rootVisualElement.Query<Foldout>().ForEach(foldout =>
+                {
+                    if (!string.Equals(foldout.name, "__SpireUnionProperty", StringComparison.Ordinal))
+                        return;
+                    if (!foldout.value)
+                    {
+                        foldout.value = true;
+                        expanded = true;
+                    }
+                });
                 rootVisualElement.Query<Foldout>().ForEach(foldout =>
                 {
                     var path = (foldout as IBindable)?.bindingPath;
