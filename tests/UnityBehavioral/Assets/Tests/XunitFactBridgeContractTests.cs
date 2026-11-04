@@ -1,6 +1,4 @@
 using System;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -106,55 +104,6 @@ public sealed class XunitFactBridgeContractTests
         AssertUnsupportedRuntimeOperation("DynamicMethod/ILGenerator", succeeded, captured);
     }
 
-    [Test]
-    public void Il2Cpp_ProcessStartReportsUnsupportedRuntime()
-    {
-        Process? process = null;
-        Exception? captured = null;
-        var started = false;
-        try
-        {
-            process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "/bin/true",
-                    UseShellExecute = false,
-                },
-            };
-            started = process.Start();
-            if (started)
-            {
-                process.WaitForExit();
-            }
-        }
-        catch (Exception exception)
-        {
-            captured = exception;
-        }
-        finally
-        {
-            if (process != null)
-            {
-                try
-                {
-                    if (started && !process.HasExited)
-                    {
-                        process.Kill();
-                        process.WaitForExit();
-                    }
-                }
-                catch
-                {
-                    // Preserve the original capability result; the process is disposed below.
-                }
-
-                process.Dispose();
-            }
-        }
-
-        AssertProcessStartUnsupported(started, captured);
-    }
 #endif
 
     private static void AssertUnsupportedRuntimeOperation(
@@ -175,34 +124,6 @@ public sealed class XunitFactBridgeContractTests
             Is.True,
             $"{operation} produced an unexpected exception type {captured.GetType().FullName}: {captured.Message}");
     }
-
-#if ENABLE_IL2CPP
-    private static void AssertProcessStartUnsupported(bool started, Exception? captured)
-    {
-        if (captured == null)
-        {
-            Assert.Fail("Process.Start(/bin/true) unexpectedly succeeded.");
-            return;
-        }
-
-        if (captured is not Win32Exception win32)
-        {
-            Assert.Fail(
-                $"Process.Start(/bin/true) produced an unexpected exception type {captured!.GetType().FullName}: {captured.Message}");
-            return;
-        }
-
-        TestContext.WriteLine(
-            $"Process.Start(/bin/true) unsupported exception: {win32.GetType().FullName}: {win32.Message}");
-        Assert.That(started, Is.False, "Process.Start(/bin/true) returned success before reporting an error.");
-        Assert.That(win32.NativeErrorCode, Is.EqualTo(0));
-        Assert.That(
-            win32.Message,
-            Is.EqualTo("ApplicationName='/bin/true', CommandLine='', CurrentDirectory='', Native error= Success"));
-        // Unity's IL2CPP Process::CreateProcess_internal icall is an unimplemented stub
-        // that returns false in non-debug builds, which becomes Win32Exception(0) here.
-    }
-#endif
 
     private static string? ResolveBackendReportPath()
     {

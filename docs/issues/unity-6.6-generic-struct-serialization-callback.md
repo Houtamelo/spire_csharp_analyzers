@@ -1,5 +1,19 @@
 # Unity 6.6 generic struct serialization callback regression
 
+November 3 comparison: the original engine repro and the preserved Spire
+generic-reference-union probe pass on `7000.0.0a12` with CoreCLR, including a
+fresh-process union asset read. The same inputs still crash on 6000.6.5f1 with
+Mono. See the [Unity 7 results](../reviews/2026-11-03-unity-7-serialization-recheck.md).
+
+November 2 recheck: the current payload representation passes 126 native Editor
+write checks and 87 fresh-process read checks on `6000.6.5f1`. The isolated
+`UnityGenericUnion<int>` round trip also passes, but `UnityGenericUnion<string>`
+still crashes during `AssetDatabase.CreateAsset`, after managed preparation
+succeeds. The identical string probe passes on `6000.5.6f1`. See the
+[current-package results](../reviews/2026-11-02-unity-6.6-serialization-recheck.md).
+The October investigation below records the original engine repro; its outcome
+does not mean that every current Spire serialization case fails on 6.6.
+
 Investigated October 10, 2026, on Linux x86_64. A project without Spire reproduces
 the Editor serialization crash in `6000.6.5f1` (`3ff58d469c8a`), while identical
 callback source saves and reloads successfully in `6000.5.6f1` (`0e0577a1a2ac`).
