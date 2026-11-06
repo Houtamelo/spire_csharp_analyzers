@@ -1,46 +1,34 @@
-# A1. Choosing layouts through a real workload
+# A1. Understanding union storage through a real workload
 
 An optional technical follow-up: measure construction, matching, and copying in
-Unity before choosing a union representation. Let the measurements determine
-which comparisons deserve screen time.
+Unity, then explain the generated unmanaged overlay and reference-slot policies.
+The old public Layout strategies have been removed; historical benchmark tables
+do not describe the current representation.
 
-## Example and feature grouping
+Use [BurstPathTracerSpire](../../examples/BurstPathTracerSpire/README.md) for an
+unmanaged workload and the cooking/connection examples for managed fields.
+Material variants show which parameters belong together and how the maximum
+active payload affects storage. The runtime union needs no unsafe-code setting
+or Unsafe DLL.
 
-Boss Room's
-[ActionRequestData](https://github.com/Unity-Technologies/com.unity.multiplayer.samples.coop/blob/1299ba4fc97d83b634e7d32a86c438ba668d7f9c/Assets/Scripts/Gameplay/Action/Input/ActionRequestData.cs)
-holds position, direction, targets, an amount, and action-control flags. It is a
-candidate source for an internal typed command workload, but also implements
-Netcode serialization. Preserve the wire representation and adapt at its boundary;
-Spire does not generate that networking integration.
+1. Show the relevant gameplay/rendering workload and record its existing profile.
+2. Inspect the generated per-variant unmanaged helpers and explicit offset-zero
+   overlay. Helpers use the compiler's default sequential layout.
+3. Measure construction, processing, and copying independently, keeping workload
+   size and observable outputs equivalent.
+4. Explain ReferenceStorage.Typed, Shared, and Auto using an actual managed-data
+   case. Typed reuses compatible types; Shared uses object slots and can box
+   managed structs. Auto compares slot counts after reuse.
+5. Show `case { IsVariant: true, variant: var (fields) }:` matching. Avoid attributing costs from
+   callbacks, logging, collections, or JSON to the union itself.
+6. Choose a representation for the measured case and explain its tradeoff.
 
-Group Additive, Overlap, UnsafeOverlap, BoxedFields, BoxedTuple, property patterns,
-and positional-pattern boxing. Explain generic support and runtime requirements
-only when they affect the measured example.
+Warm up the workload. Keep Editor Mono, Burst, and player backend measurements
+separate. Burst runtime data must contain only supported unmanaged fields and
+cannot use the generated Unity serialization cache; authoring needs a separately
+declared union when both forms are required.
 
-## Demonstration sequence
-
-1. Show the real action path and choose a workload that matters to gameplay.
-2. Record its existing allocation and timing profile before refactoring.
-3. Compare equivalent commands under candidate layouts, with the same payloads,
-   operation count, and observable results.
-4. Isolate construction, matching, and copying. Compare property matching with
-   positional matching rather than attributing all costs to storage.
-5. Inspect generated storage to explain the measurements and select a layout.
-6. Replay the actual action path with the selected representation.
-
-## Preparation and recording evidence
-
-Warm up the workload and separate command costs from networking, UI, collection
-growth, and serialization callbacks. Keep Editor Mono and player results separate;
-measure IL2CPP independently if it appears in the video.
-
-Ordinary Overlap boxes composite value types such as Vector3 in its current
-storage classification. It has no Unsafe dependency and excludes generic unions.
-UnsafeOverlap keeps those values in typed slots but requires the Unsafe API and
-unsafe-code configuration. Both assign storage by resolved field name; neither
-is guaranteed to use only the largest variant's footprint.
-
-Do not present desktop benchmarks, Additive, or UnsafeOverlap as a universal Unity
-performance result. See [layouts](../discriminated-unions.md#layout-strategies)
-and [Unity requirements](../unity.md). This episode needs a separately validated
-demo adaptation before filming.
+Native execution markers and pixel comparison establish compatibility and
+correctness, not a speedup. Record timing and allocation evidence before including
+performance claims. See [current storage](../discriminated-unions.md#storage) and
+[integration evidence](../reviews/2026-10-27-spire-demo-integration.md).

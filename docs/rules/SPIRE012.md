@@ -10,7 +10,7 @@
 ## Description
 
 A positional pattern inside a variant payload accessor provides the wrong
-number of field bindings. Count payload fields only; the union's `kind` is a
+number of field bindings. Count payload fields only; the `IsVariant: true` check is a
 separate property pattern.
 
 ## Examples
@@ -27,8 +27,8 @@ partial struct Shape
 
 var result = s switch
 {
-    { kind: Shape.Kind.Circle, circle: { radius: var r } } => 1,
-    { kind: Shape.Kind.Rectangle, rectangle: (float w, float h, float extra) } => 2, // SPIRE012
+    { IsCircle: true, circle: var (r) } => 1,
+    { IsRectangle: true, rectangle: (float w, float h, float extra) } => 2, // SPIRE012
 };
 ```
 
@@ -37,8 +37,8 @@ var result = s switch
 ```csharp
 var result = s switch
 {
-    { kind: Shape.Kind.Circle, circle: { radius: var r } } => 1,
-    { kind: Shape.Kind.Rectangle, rectangle: (float w, float h) } => 2,
+    { IsCircle: true, circle: var (r) } => 1,
+    { IsRectangle: true, rectangle: var (w, h) } => 2,
 };
 ```
 

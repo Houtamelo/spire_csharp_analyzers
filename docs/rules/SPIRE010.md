@@ -19,25 +19,26 @@ No diagnostic is reported — wildcards are valid. The refactoring appears in th
 ```csharp
 string Describe(Shape s) => s switch
 {
-    { kind: Shape.Kind.Circle, circle: { radius: var r } } => $"circle r={r}",
+    { IsCircle: true, circle: var (r) } => $"circle r={r}",
     _ => "other",  // cursor here → lightbulb offers "Replace wildcard with explicit variants"
 };
 ```
 
-### After refactoring
+### Equivalent explicit handling
 
 ```csharp
 string Describe(Shape s) => s switch
 {
-    { kind: Shape.Kind.Circle, circle: { radius: var r } } => $"circle r={r}",
-    { kind: Shape.Kind.Rectangle, rectangle: { width: var width, height: var height } } => "other",
-    { kind: Shape.Kind.Square, square: { sideLength: var sideLength } } => "other",
+    { IsCircle: true, circle: var (r) } => $"circle r={r}",
+    { IsRectangle: true, rectangle: var (width, height) } => "other",
+    { IsSquare: true, square: var (sideLength) } => "other",
 };
 ```
 
 The wildcard's original expression (`"other"`) is preserved for each generated arm.
 
-Every new struct arm uses a nested property pattern with `field: var local`
-captures under its variant accessor. This matches null and preserves the field's
-static type. Capture names are uniquified against the enclosing scope.
+The example uses the canonical predicate and payload deconstruction style.
+The refactoring currently emits equivalent `kind` checks with nested
+`field: var local` captures. These captures match null and preserve static
+field types; local names are uniquified against the enclosing scope.
 Record/class generation is unchanged.

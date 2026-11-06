@@ -1,14 +1,15 @@
+// Diagnostic exercises; uncomment one block at a time.
 // using UnityEngine;
 //
 // namespace Houtamelo.Spire.Showcase;
 //
 // static class UseCasesExamples {
 //     static void Command(GameplayCommand command) {
-//         if (command is { kind: GameplayCommand.Kind.ApplyEffect, applyEffect: var apply }) {
-//             Debug.Log($"ApplyEffect: {apply.effect}");
+//         if (command is { IsApplyEffect: true, applyEffect: var (effect) }) {
+//             Debug.Log($"ApplyEffect: {effect}");
 //         }
 //
-//         if (command is { kind: GameplayCommand.Kind.Move }) {
+//         if (command is { IsMove: true }) {
 //             var applyEffect = command.applyEffect; // SPIRE013
 //         }
 //
@@ -34,46 +35,46 @@
 //
 //         // No diagnostics
 //         switch (command) {
-//             case { kind: GameplayCommand.Kind.Idle }:
+//             case { IsIdle: true }:
 //                 throw new System.NotImplementedException();
-//             case { kind: GameplayCommand.Kind.Teleport, teleport: var (target, duration) }:
+//             case { IsTeleport: true, teleport: var (target, duration) }:
 //                 throw new System.NotImplementedException();
-//             case { kind: GameplayCommand.Kind.Move, move: { destination: var destination, speed: var speed } }:
+//             case { IsMove: true, move: var (destination, speed) }:
 //                 throw new System.NotImplementedException();
-//             case { kind: GameplayCommand.Kind.Speak, speak: { speech: var speech } }:
+//             case { IsSpeak: true, speak: var (speech) }:
 //                 throw new System.NotImplementedException();
-//             case { kind: GameplayCommand.Kind.ApplyEffect, applyEffect: { effect: var effect } }:
-//                 throw new System.NotImplementedException();
-//         }
-//
-//         switch (command) {
-//             case { kind: GameplayCommand.Kind.Idle, teleport: var teleport }: // SPIRE013
-//                 throw new System.NotImplementedException();
-//             case { kind: GameplayCommand.Kind.Teleport, teleport: { target: var target, duration: var duration } }:
-//                 throw new System.NotImplementedException();
-//             case { kind: GameplayCommand.Kind.Move, move: { destination: var destination, speed: var speed }, speak: var speak }: // SPIRE013
-//                 throw new System.NotImplementedException();
-//             case { kind: GameplayCommand.Kind.Speak, speak: { speech: var speech } }:
-//                 throw new System.NotImplementedException();
-//             case { kind: GameplayCommand.Kind.ApplyEffect, applyEffect: { effect: var effect } }:
+//             case { IsApplyEffect: true, applyEffect: var (effect) }:
 //                 throw new System.NotImplementedException();
 //         }
 //
 //         switch (command) {
-//             case { kind: GameplayCommand.Kind.Idle }:
+//             case { IsIdle: true, teleport: var teleport }: // SPIRE013
 //                 throw new System.NotImplementedException();
-//             case { kind: GameplayCommand.Kind.Teleport }: {
+//             case { IsTeleport: true, teleport: var (target, duration) }:
+//                 throw new System.NotImplementedException();
+//             case { IsMove: true, move: var (destination, speed), speak: var speak }: // SPIRE013
+//                 throw new System.NotImplementedException();
+//             case { IsSpeak: true, speak: var (speech) }:
+//                 throw new System.NotImplementedException();
+//             case { IsApplyEffect: true, applyEffect: var (effect) }:
+//                 throw new System.NotImplementedException();
+//         }
+//
+//         switch (command) {
+//             case { IsIdle: true }:
+//                 throw new System.NotImplementedException();
+//             case { IsTeleport: true }: {
 //                 var teleport = command.teleport; // No diagnostics
 //                 var move = command.move; // SPIRE013
 //             }
 //             break;
-//             case { kind: GameplayCommand.Kind.Move, move: { destination: var destination, speed: var speed } }:
+//             case { IsMove: true, move: var (destination, speed) }:
 //                 throw new System.NotImplementedException();
-//             case { kind: GameplayCommand.Kind.Speak, speak: { speech: var speech } }:
+//             case { IsSpeak: true, speak: var (speech) }:
 //                 throw new System.NotImplementedException();
-//             case { kind: GameplayCommand.Kind.ApplyEffect, applyEffect: { effect: Effect effect } }:
+//             case { IsApplyEffect: true, applyEffect: { effect: Effect effect } }:
 //                 throw new System.NotImplementedException();
-//             case { kind: GameplayCommand.Kind.ApplyEffect, applyEffect: { effect: null } }:
+//             case { IsApplyEffect: true, applyEffect: { effect: null } }:
 //                 throw new System.NotImplementedException();
 //         }
 //
@@ -92,15 +93,15 @@
 //         }
 //
 //         switch (command) {
-//             case { kind: GameplayCommand.Kind.Idle }:
+//             case { IsIdle: true }:
 //                 throw new System.NotImplementedException();
-//             case { kind: GameplayCommand.Kind.Teleport }:
+//             case { IsTeleport: true }:
 //                 throw new System.NotImplementedException();
-//             case { kind: GameplayCommand.Kind.Move, move: { destination: var destination, speed: var speed } }:
+//             case { IsMove: true, move: var (destination, speed) }:
 //                 throw new System.NotImplementedException();
-//             case { kind: GameplayCommand.Kind.Speak, speak: { speech: var speech } }:
+//             case { IsSpeak: true, speak: var (speech) }:
 //                 throw new System.NotImplementedException();
-//             case { kind: GameplayCommand.Kind.ApplyEffect, applyEffect: { effect: null } }:
+//             case { IsApplyEffect: true, applyEffect: { effect: null } }:
 //                 throw new System.NotImplementedException();
 //             // Diagnostic: case `effect: not null` is not handled.
 //         }

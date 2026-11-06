@@ -77,8 +77,8 @@ partial struct Shape
 
 int Area(Shape s) => s switch
 {
-    { kind: Shape.Kind.Circle, circle: { radius: var r } } => (int)(Math.PI * r * r),
-    { kind: Shape.Kind.Square, square: { sideLength: var x } } => x * x,
+    { IsCircle: true, circle: var (r) } => (int)(Math.PI * r * r),
+    { IsSquare: true, square: var (x) } => x * x,
     // SPIRE009: missing 'Rectangle'
 };
 ```
@@ -88,8 +88,8 @@ int Area(Shape s) => s switch
 ```csharp
 int Area(Shape s) => s switch
 {
-    { kind: Shape.Kind.Circle, circle: { radius: var r } } => (int)(Math.PI * r * r),
-    { kind: Shape.Kind.Square, square: { sideLength: var x } } => x * x,
+    { IsCircle: true, circle: var (r) } => (int)(Math.PI * r * r),
+    { IsSquare: true, square: var (x) } => x * x,
     { IsRectangle: true, rectangle: var (width, height) } => (int)(width * height),
 };
 ```

@@ -34,11 +34,12 @@ repository and are not submodules. They are excluded from publication. The first
 two retain local Git history with no GitHub remote; Playground remains untouched.
 A fresh clone of Spire will not contain these local projects.
 
-Package preparation currently requires the local `UnityShowcase` project: its
-`sample-files.txt` and authored assets supply the optional UPM showcase sample.
-Keep it available when running package or example preparation. This requirement
-also applies to packaging in a fresh checkout; the sample has no public checkout
-source while the project remains local-only.
+Package preparation exports the sample from the tracked
+[`tests/UnityPackageSample`](../tests/UnityPackageSample/README.md) fixture, using
+its `sample-files.txt` inventory and authored assets. It does not require any of
+the local-only projects. Changes to the interactive UnityShowcase project do not
+automatically change the sample delivered to customers; update the tracked
+fixture for that.
 
 ## Preparation
 

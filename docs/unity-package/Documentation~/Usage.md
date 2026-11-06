@@ -1,23 +1,24 @@
 # Using unions and utilities
 
 Struct variants are static partial factories. Generated `kind` identifies the
-active variant; a variant accessor returns its public payload struct:
+active variant; a variant accessor returns its public payload struct. Use the
+canonical predicate and payload deconstruction pattern to match it:
 
 ```cs
 static string Describe(Result result) => result switch
 {
-    { kind: Result.Kind.Success, success: { value: var value } } => value.ToString(),
-    { kind: Result.Kind.Failure, failure: { message: var message } } => message,
+    { IsSuccess: true, success: var (value) } => value.ToString(),
+    { IsFailure: true, failure: var (message) } => message,
 };
 ```
 
-Spire checks exhaustiveness and guarded accessor use. Rider's quick fix adds
-missing arms. Property patterns with `var` preserve nulls; declaration patterns
+Spire checks exhaustiveness and guarded accessor use. The IDE quick fix adds
+missing arms in this style. Deconstruction with `var` preserves nulls; declaration patterns
 such as `string message` exclude null. Payloads are non-partial structs with
 private `_`-prefixed fields, public getter-only properties, constructors, and
 typed `Deconstruct` methods. Construct changed values through the union factory.
-With two or more payload fields,
-use positional patterns inside the accessor pattern. There is no union-level
+Use `var (field)` for one payload field and `var (first, second)` for multiple
+fields. Fieldless variants need only `IsVariant: true`. There is no union-level
 deconstruction or flat field-property API.
 
 Variant accessors also assert the expected kind. When the compiler host provides

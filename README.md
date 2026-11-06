@@ -63,7 +63,8 @@ The source generator provides:
 - Optional JSON serialization (System.Text.Json, Newtonsoft.Json).
 - Exhaustive switch checking (SPIRE009) and field access safety (SPIRE011-014).
 - Generated `IsVariant` predicates and `kind` checks both establish variant guards;
-  **Add missing variant arms** uses the shorter `IsVariant: true` property pattern.
+  **Add missing variant arms** uses the canonical predicate and payload
+  deconstruction pattern: `{ IsVariant: true, variant: var (fields) }`.
 - Overlapping unmanaged payloads, configurable reference storage, and record unions.
 
 Define a struct union with `[DiscriminatedUnion]`:
@@ -85,20 +86,21 @@ Construct and match:
 ```csharp
 Shape shape = Shape.Circle(5.0);
 
-// Property pattern
+// Generated predicate and payload deconstruction
 var area = shape switch
 {
-    { kind: Shape.Kind.Circle, circle: { radius: var r } } => Math.PI * r * r,
-    { kind: Shape.Kind.Square, square: { side: var s } } => s * s,
-    { kind: Shape.Kind.Point }                 => 0,
+    { IsCircle: true, circle: var (r) } => Math.PI * r * r,
+    { IsSquare: true, square: var (s) } => s * s,
+    { IsPoint: true } => 0,
 };
 
 ```
 
-Each accessor returns a sibling payload struct (`ShapeCircle`, `ShapeSquare`,
-`ShapePoint`) with getter-only properties and a typed `Deconstruct`. Payloads with two or
-more fields support positional patterns inside the accessor pattern. Accessors
-replace flat field properties and union-level deconstruction.
+Each accessor returns a payload struct under `ShapeTypes.Variants` with
+getter-only properties and a typed `Deconstruct`. Use `var (field)` for one
+field and `var (first, second)` for multiple fields. Fieldless arms need only
+`IsVariant: true`. Accessors replace flat field properties and union-level
+deconstruction.
 
 Record types are also supported:
 

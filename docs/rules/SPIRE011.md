@@ -32,8 +32,8 @@ partial struct Shape
 
 var result = s switch
 {
-    { kind: Shape.Kind.Circle, circle: { radius: string bad } } => 1, // SPIRE011
-    { kind: Shape.Kind.Square, square: { sideLength: var x } } => 2,
+    { IsCircle: true, circle: { radius: string bad } } => 1, // SPIRE011
+    { IsSquare: true, square: var (x) } => 2,
 };
 ```
 
@@ -42,8 +42,8 @@ var result = s switch
 ```csharp
 var result = s switch
 {
-    { kind: Shape.Kind.Circle, circle: { radius: var r } } => 1,
-    { kind: Shape.Kind.Square, square: { sideLength: var x } } => 2,
+    { IsCircle: true, circle: var (r) } => 1,
+    { IsSquare: true, square: var (x) } => 2,
 };
 ```
 

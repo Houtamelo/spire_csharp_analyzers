@@ -20,9 +20,9 @@ public partial struct Shape
 Shape shape = Shape.Circle(5.0);
 double area = shape switch
 {
-    { kind: Shape.Kind.Circle, circle: { radius: var r } } => Math.PI * r * r,
-    { kind: Shape.Kind.Rectangle, rectangle: (var w, var h) } => w * h,
-    { kind: Shape.Kind.Point } => 0,
+    { IsCircle: true, circle: var (r) } => Math.PI * r * r,
+    { IsRectangle: true, rectangle: var (w, h) } => w * h,
+    { IsPoint: true } => 0,
 };
 ```
 
@@ -64,8 +64,10 @@ namespace when present. Other name collisions use ordinary C# compiler diagnosti
 
 Guard an accessor with its corresponding kind or generated `IsVariant` predicate.
 SPIRE013/014 diagnose incorrect or unguarded access. SPIRE009 checks exhaustiveness,
-and the missing-arm code fix generates `IsVariant: true` with payload
-deconstruction. A captured payload's getters need no further kind guard.
+and the missing-arm code fix generates the canonical predicate and payload
+deconstruction pattern: `{ IsVariant: true, variant: var (fields) }`. Prefix
+it with `case` in a switch statement. Fieldless variants need only the predicate.
+A captured payload's getters need no further kind guard.
 
 Variant accessors also assert the expected kind before reading their storage.
 Compilations with a usable Unity assertion API use `UnityEngine.Debug.Assert`
@@ -78,11 +80,11 @@ on `Shape.Kind` are checked by SPIRE015, including when the enum is passed
 separately from its union. Its integer conversions follow SPIRE016 and the
 `SpireEnum<T>.From` code fix.
 
-Use property patterns for a one-field payload: C# treats `(var radius)` as a
-parenthesized pattern rather than positional deconstruction. With two or more
-fields, positional patterns use the generated typed `Deconstruct` directly.
-`var` captures preserve nulls; a declaration pattern such as `string text`
-excludes null.
+Use `circle: var (radius)` for a one-field payload and
+`rectangle: var (width, height)` for multiple fields. Both invoke the generated
+`Deconstruct`. The spelling `(var radius)` is a parenthesized pattern instead
+of deconstruction. `var` captures preserve nulls; a declaration pattern such as
+`string text` excludes null.
 
 ## Storage
 

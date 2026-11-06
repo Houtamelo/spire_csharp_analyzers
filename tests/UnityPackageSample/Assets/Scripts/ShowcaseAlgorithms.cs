@@ -7,9 +7,9 @@ namespace Houtamelo.Spire.Showcase {
 
 public static partial class ShowcaseAlgorithms {
     public static float Area(Shape shape) => shape switch {
-        { kind: Shape.Kind.Circle, circle: { radius: var radius } } => Mathf.PI * radius * radius,
-        { kind: Shape.Kind.Rectangle, rectangle: { width: var width, height: var height } } => width * height,
-        { kind: Shape.Kind.Point } => 0,
+        { IsCircle: true, circle: var (radius) } => Mathf.PI * radius * radius,
+        { IsRectangle: true, rectangle: var (width, height) } => width * height,
+        { IsPoint: true } => 0,
     };
 
     public static ActorMode ReadMode(int value) => SpireEnum<ActorMode>.From(value);

@@ -35,7 +35,7 @@ partial struct Shape
 
 double Bad(Shape s) => s switch
 {
-    { kind: Shape.Kind.Circle } => s.square.sideLength, // SPIRE013: square belongs to Square
+    { IsCircle: true, circle: var (radius) } => s.square.sideLength, // SPIRE013: square belongs to Square
     _ => 0,
 };
 ```
@@ -45,8 +45,8 @@ double Bad(Shape s) => s switch
 ```csharp
 double Ok(Shape s) => s switch
 {
-    { kind: Shape.Kind.Circle } => s.circle.radius,
-    { kind: Shape.Kind.Square } => s.square.sideLength,
+    { IsCircle: true, circle: var (radius) } => radius,
+    { IsSquare: true, square: var (sideLength) } => sideLength,
     _ => 0,
 };
 ```

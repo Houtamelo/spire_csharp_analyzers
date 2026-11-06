@@ -16,8 +16,10 @@ Propose a struct `StepAction` union for the three choices. Keep shared dialogue,
 actor, and quest progress data on the existing host. Preserve GiveItem's current
 meaning: deliver an inventory item to the quest, rather than reward the player.
 
-Group `[DiscriminatedUnion]`, `[Variant]`, generated factories, `kind`, typed
-properties, and exhaustive property patterns. Start with `Layout.Additive`.
+Group `[DiscriminatedUnion]`, `[Variant]`, generated factories, `IsVariant`
+predicates, typed payload accessors, and exhaustive deconstruction patterns.
+Use `case { IsVariant: true, variant: var (fields) }:` throughout the walkthrough.
+Use the default storage policy.
 Introduce serialization only enough to keep the example playable; episode 3
 explains the authoring workflow.
 
@@ -27,7 +29,8 @@ explains the authoring workflow.
 2. Inspect the enum, the associated fields, and their consumer. Explain why each
    choice needs different data and why shared data stays outside the union.
 3. Declare the three variants and inspect the generated API in Rider.
-4. Replace the enum-based handler with property patterns using `var` captures.
+4. Replace the enum-based handler with `IsVariant: true` patterns and payload
+   deconstruction using `var` captures.
 5. Construct objectives through their factories. Compare the required arguments
    with the former enum-plus-fields representation.
 6. Replay the same quest, including the case where the required item is absent.

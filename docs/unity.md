@@ -172,11 +172,11 @@ and recompiles the saved edit in Unity. It uses the `SpireValidation` experiment
 profile. See the [runner instructions](../tools/VisualStudioIntegrationTestDriver/README.md)
 for prerequisites, reports, and repeat runs.
 
-## Examples and tracked projects
+## Examples and test fixtures
 
-[UnityShowcase](../examples/UnityShowcase/README.md) is a complete tracked Unity
-project with a saved scene and preset asset. Build the local package, then open
-`examples/UnityShowcase` in Unity Hub. It demonstrates union authoring,
+The local-only `examples/UnityShowcase` project has a saved scene and preset
+asset. It is ignored by the parent repository and is not required for packaging.
+When available, build the local package, then open it in Unity Hub. It demonstrates union authoring,
 generic results, managed-reference fields, rename aliases, enum checks,
 LINQ filtering, and generated inliners. Its EditMode tests include native asset
 persistence and a Play Mode smoke test of the scene.

@@ -76,11 +76,11 @@ public sealed class ShowcaseController: MonoBehaviour {
         GUILayout.Label($"Mode: {Mode}   Health: {Health}   Position: {Position}   Command speed: {LastSpeed}");
         GUILayout.Label($"Speech: {LastMessage}");
         GUILayout.Label($"Move commands in queue (OfKind): {ShowcaseAlgorithms.CountMoves(preset.commands)}");
-        GUILayout.Label($"Shape area (property patterns): {ShowcaseAlgorithms.Area(preset.shape):0.##}");
+        GUILayout.Label($"Shape area (payload deconstruction): {ShowcaseAlgorithms.Area(preset.shape):0.##}");
         var result = preset.result;
-        if (result is { kind: OperationResult<int>.Kind.Success, success: { value: var value } })
+        if (result is { IsSuccess: true, success: var (value) })
             GUILayout.Label($"Generic result: Success({value})");
-        else if (result is { kind: OperationResult<int>.Kind.Failure, failure: { error: var error } })
+        else if (result is { IsFailure: true, failure: var (error) })
             GUILayout.Label($"Generic result: Failure({error})");
 
         GUILayout.Label(
