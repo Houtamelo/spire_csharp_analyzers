@@ -470,6 +470,6 @@ public static class SpireWindowsHandleInheritance
     public void Dispose()
     {
         try { KillOwnedProcessesAsync().GetAwaiter().GetResult(); }
-        finally { if (Directory.Exists(Root)) Directory.Delete(Root, recursive: true); }
+        finally { TestDirectories.DeleteOwned(Root); }
     }
 }

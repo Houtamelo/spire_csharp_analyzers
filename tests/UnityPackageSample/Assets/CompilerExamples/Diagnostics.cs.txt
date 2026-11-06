@@ -1,0 +1,25 @@
+using Houtamelo.Spire;
+using Houtamelo.Spire.Showcase;
+
+// These snippets are intentionally excluded from compilation. Paste one into a
+// scratch script in Rider to inspect the corresponding diagnostic or quick fix.
+
+namespace Houtamelo.Spire.Showcase.CompilerExamples
+{
+    public static class BrokenExamples
+    {
+        // SPIRE016: integer casts can create unnamed enum values.
+        public static ActorMode ReadInvalidMode() => (ActorMode)0;
+        // Rider fix: SpireEnum<ActorMode>.From(0), which rejects this invalid input.
+
+        // SPIRE015: this switch omits the Acting member of an exhaustive enum.
+        public static string Describe(ActorMode mode) => mode switch
+        {
+            ActorMode.Idle => "Idle",
+        };
+
+        // SPIRE014: a variant-specific field is accessed without establishing its kind.
+        public static float ReadRadius(Shape shape) => shape.circle.radius;
+        // Prefer a guarded property pattern, as demonstrated by ShowcaseAlgorithms.Area.
+    }
+}

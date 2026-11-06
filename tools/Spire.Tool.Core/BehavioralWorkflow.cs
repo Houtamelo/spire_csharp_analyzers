@@ -12,6 +12,7 @@ public static class BehavioralWorkflow
 
     public static async Task<int> PrepareAsync(ToolContext context, string project, string configuration, bool build, string? editor = null, string backend = "Mono")
     {
+        project = context.RequireOutsideExamples(project);
         ValidateBackend(backend);
         var player = backend == "IL2CPP";
         project = FileOps.Disposable(project, context.PathOf("tests/UnityBehavioral"), ".spire-unity-behavioral", Marker);
@@ -36,7 +37,7 @@ public static class BehavioralWorkflow
             var source = dll;
             if (name == "Newtonsoft.Json.dll" && editor != null)
             {
-                source = Path.Combine(Path.GetDirectoryName(FileOps.FullPath(editor))!, "Data/Managed/Newtonsoft.Json.dll");
+                source = Path.Combine(Path.GetDirectoryName(FileOps.FullPath(editor))!, "Data", "Managed", "Newtonsoft.Json.dll");
                 FileOps.RequireFile(source);
                 editorDependencies[name] = new JsonObject { ["source"] = source, ["sha256"] = FileOps.Hash(source) };
             }
@@ -125,7 +126,7 @@ public static class BehavioralWorkflow
         if (prepareOnly) return 0;
         var report = Path.Combine(project, backend == "IL2CPP" ? "il2cpp-behavioral-results.xml" : "behavioral-results.xml");
         var log = Path.Combine(project, "unity-behavioral.log");
-        Console.WriteLine("Backend: " + backend + (backend == "IL2CPP" ? " (StandaloneLinux64 player)" : " (EditMode)"));
+        Console.WriteLine("Backend: " + backend + (backend == "IL2CPP" ? " (" + ToolContext.StandaloneTarget + " player)" : " (EditMode)"));
         var result = backend == "IL2CPP"
             ? await UnityRunner.PlayerTestsAsync(context, project, editor, Assembly, report, log, timeout).ConfigureAwait(false)
             : await UnityRunner.TestsAsync(context, project, editor, Assembly, report, log, timeout).ConfigureAwait(false);
@@ -159,7 +160,7 @@ internal static class UnityRunner
     internal static Task<ProcessResult> PlayerTestsAsync(ToolContext context, string project, string editor, string assemblies, string report, string log, TimeSpan timeout)
         => RunWithDisplayAsync(project, FileOps.FullPath(editor), new[]
         {
-            "-batchmode", "-nographics", "-projectPath", project, "-runTests", "-testPlatform", "StandaloneLinux64",
+            "-batchmode", "-nographics", "-projectPath", project, "-runTests", "-testPlatform", ToolContext.StandaloneTarget,
             "-testSettingsFile", Path.Combine(project, "il2cpp-test-settings.json"), "-assemblyNames", assemblies,
             "-testResults", report, "-logFile", log, "-playerHeartbeatTimeout", "600",
         }, project, timeout, displayLog: log + ".xvfb.log");
@@ -186,7 +187,11 @@ internal static class UnityRunner
         Directory.CreateDirectory(giCache);
         arguments = arguments.Concat(new[] { "-giCustomCacheLocation", giCache });
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                arguments = arguments.Concat(new[] { "-force-d3d11" });
             return await ProcessRunner.RunAsync(executable, arguments, workingDirectory, timeout, environment, ownProcessGroup: true).ConfigureAwait(false);
+        }
 
         return await VirtualDisplay.RunAsync(project, displayLog, async displayName =>
         {

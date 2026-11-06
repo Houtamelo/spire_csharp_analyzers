@@ -43,7 +43,7 @@ public static class HarnessWorkflow
 
     public static async Task PrepareAsync(ToolContext context, string project, string editor, string configuration, bool build, bool probe = false)
     {
-        project = FileOps.FullPath(project);
+        project = context.RequireOutsideExamples(project);
         var marker = Path.Combine(project, ".spire-unity-behavioral");
         if (File.Exists(marker) && File.ReadAllText(marker) == BehavioralWorkflow.Marker)
             FileOps.Archive(project, (probe ? new[] { "compiler-probe-results.xml", "unity-compiler-probe.log" } : new[]
@@ -105,11 +105,19 @@ public static class HarnessWorkflow
             foreach (var source in Directory.EnumerateFiles(sourceRoot, "*.cs", SearchOption.AllDirectories))
                 if (!FileOps.Relative(sourceRoot, source).Split('/').Any(part => part == "bin" || part == "obj")) sources.Add(FileOps.Input(context.Root, source));
         }
-        var packs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget/packages/microsoft.netcore.app.ref");
-        var referenceSource = Directory.Exists(packs) ? Directory.EnumerateDirectories(packs, "8*")
+        var packages = Environment.GetEnvironmentVariable("NUGET_PACKAGES") ??
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget/packages");
+        var dotnetRoot = Environment.GetEnvironmentVariable("DOTNET_ROOT");
+        if (string.IsNullOrEmpty(dotnetRoot) && Path.IsPathRooted(context.Dotnet))
+            dotnetRoot = Path.GetDirectoryName(context.Dotnet);
+        if (string.IsNullOrEmpty(dotnetRoot) && System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+            dotnetRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "dotnet");
+        var packRoots = new[] { Path.Combine(packages, "microsoft.netcore.app.ref"),
+            string.IsNullOrEmpty(dotnetRoot) ? "" : Path.Combine(dotnetRoot, "packs/Microsoft.NETCore.App.Ref") };
+        var referenceSource = packRoots.Where(Directory.Exists).SelectMany(packs => Directory.EnumerateDirectories(packs, "8*"))
             .Select(path => new { Path = Path.Combine(path, "ref/net8.0"), Version = Version.TryParse(Path.GetFileName(path), out var version) ? version : new Version() })
-            .Where(item => Directory.Exists(item.Path)).OrderBy(item => item.Version).LastOrDefault()?.Path : null;
-        if (referenceSource == null) throw new InvalidOperationException("The .NET 8 reference pack is missing; restore the normal test suite first.");
+            .Where(item => Directory.Exists(item.Path)).OrderBy(item => item.Version).LastOrDefault()?.Path;
+        if (referenceSource == null) throw new InvalidOperationException("The .NET 8 reference pack is missing; install its SDK or restore the normal test suite first.");
         var references = Path.Combine(project, "ReferenceAssemblies/net8.0");
         FileOps.ResetDirectory(references);
         foreach (var path in Directory.EnumerateFiles(referenceSource, "*.dll")) File.Copy(path, Path.Combine(references, Path.GetFileName(path)), true);
@@ -119,10 +127,12 @@ public static class HarnessWorkflow
         BehavioralWorkflow.AddReferences(Path.Combine(harness, HarnessAssembly + ".asmdef"), Directory.EnumerateFiles(dependencies, "*.dll").Select(Path.GetFileName)!);
         var discovery = Path.Combine(project, "expected-harness-discovery.json");
         var result = await ProcessRunner.RunAsync(context.Dotnet, new[] { "run", "--project", context.PathOf("tools/UnityHarnessManifest/UnityHarnessManifest.csproj"),
-            "-c", configuration, "--", context.Root, configuration, discovery }, context.Root, TimeSpan.FromMinutes(10)).ConfigureAwait(false);
+            "-c", configuration, "-p:EnableSourceControlManagerQueries=false", "--", context.Root, configuration, discovery }, context.Root, TimeSpan.FromMinutes(10),
+            new Dictionary<string, string?> { ["SPIRE_UNITY_TEST_REFERENCE_ROOT"] = references }).ConfigureAwait(false);
         result.EnsureSuccess("Discover original xUnit cases");
         Console.Write(result.StandardOutput);
-        var baseline = FileOps.ReadObject(discovery)["cases"]!.AsArray();
+        var manifest = FileOps.ReadObject(discovery);
+        var baseline = manifest["cases"]!.AsArray();
         var counts = new JsonObject();
         foreach (var assembly in Suites) counts[assembly] = baseline.Count(item => item!["assembly"]!.GetValue<string>() == assembly);
         var referenceInputs = new JsonArray();
@@ -130,8 +140,13 @@ public static class HarnessWorkflow
             referenceInputs.Add(new JsonObject { ["name"] = Path.GetFileName(path), ["sha256"] = FileOps.Hash(path) });
         FileOps.WriteJson(Path.Combine(project, "harness-inputs.json"), new JsonObject
         {
-            ["expectedCounts"] = counts, ["inputs"] = sources, ["referenceSource"] = referenceSource,
-            ["dependencies"] = dependencyInputs, ["references"] = referenceInputs,
+            ["expectedCounts"] = counts,
+            ["platform"] = manifest["platform"]!.DeepClone(),
+            ["platformExclusions"] = manifest["platformExclusions"]!.DeepClone(),
+            ["inputs"] = sources,
+            ["referenceSource"] = referenceSource,
+            ["dependencies"] = dependencyInputs,
+            ["references"] = referenceInputs,
         });
     }
 
@@ -150,8 +165,11 @@ public static class HarnessWorkflow
         {
             ["SPIRE_UNITY_TEST_DATA_ROOT"] = Path.Combine(project, "TestData"),
             ["SPIRE_UNITY_TEST_REFERENCE_ROOT"] = Path.Combine(project, "ReferenceAssemblies/net8.0"),
-            ["SPIRE_UNITY_TEST_ASSEMBLIES"] = string.Join(";", Suites), ["SPIRE_UNITY_TEST_DISCOVERY_PATH"] = Path.Combine(project, "harness-discovery.json"),
-            ["SPIRE_UNITY_TEST_CONFIGURATION"] = configuration, ["SPIRE_UNITY_TEST_REPOSITORY_ROOT"] = context.Root, ["SPIRE_UNITY_EDITOR"] = FileOps.FullPath(editor),
+            ["SPIRE_UNITY_TEST_ASSEMBLIES"] = string.Join(";", Suites),
+            ["SPIRE_UNITY_TEST_DISCOVERY_PATH"] = Path.Combine(project, "harness-discovery.json"),
+            ["SPIRE_UNITY_TEST_CONFIGURATION"] = configuration,
+            ["SPIRE_UNITY_TEST_REPOSITORY_ROOT"] = context.Root,
+            ["SPIRE_UNITY_EDITOR"] = FileOps.FullPath(editor),
         };
         var result = await UnityRunner.TestsAsync(context, project, editor, probe ? ProbeAssembly : HarnessAssembly + ";" + BehavioralWorkflow.Assembly,
             report, log, timeout, environment).ConfigureAwait(false);
@@ -161,8 +179,10 @@ public static class HarnessWorkflow
         var complete = cases.Length != 0;
         if (!probe)
         {
-            var actual = FileOps.ReadObject(Path.Combine(project, "harness-discovery.json"))["cases"]!.AsArray();
-            var expected = FileOps.ReadObject(Path.Combine(project, "expected-harness-discovery.json"))["cases"]!.AsArray();
+            var actualManifest = FileOps.ReadObject(Path.Combine(project, "harness-discovery.json"));
+            var expectedManifest = FileOps.ReadObject(Path.Combine(project, "expected-harness-discovery.json"));
+            var actual = actualManifest["cases"]!.AsArray();
+            var expected = expectedManifest["cases"]!.AsArray();
             string[] Values(JsonArray values, string field) => values.Select(item => item![field]!.GetValue<string>()).OrderBy(value => value, StringComparer.Ordinal).ToArray();
             var identitiesMatch = Values(expected, "identity").SequenceEqual(Values(actual, "identity"));
             var executed = Values(actual, "displayName").SequenceEqual(cases.Where(element => ((string?)element.Attribute("classname") ?? "").EndsWith("XunitReflectionNUnitRunner", StringComparison.Ordinal))
@@ -171,8 +191,18 @@ public static class HarnessWorkflow
                 .Select(element => (string?)element.Attribute("name") ?? "").Where(name => name.StartsWith("Spire.BehavioralTests.Tests.", StringComparison.Ordinal)).OrderBy(value => value, StringComparer.Ordinal));
             var counts = FileOps.ReadObject(Path.Combine(project, "harness-inputs.json"))["expectedCounts"]!.AsObject();
             var countsMatch = counts.All(item => actual.Count(value => value!["assembly"]!.GetValue<string>() == item.Key) == item.Value!.GetValue<int>());
-            complete &= identitiesMatch && executed && factsMatch && countsMatch;
+            var actualExclusions = actualManifest["platformExclusions"]!.AsArray();
+            var expectedExclusions = expectedManifest["platformExclusions"]!.AsArray();
+            var platformsMatch = actualManifest["platform"]!.GetValue<string>() == expectedManifest["platform"]!.GetValue<string>();
+            string[] ExclusionKeys(JsonArray values) => values.Select(item => string.Join("\0", new[]
+                { item!["identity"]!.GetValue<string>(), item["requiredPlatform"]!.GetValue<string>(), item["reason"]!.GetValue<string>() }))
+                .OrderBy(value => value, StringComparer.Ordinal).ToArray();
+            var exclusionsMatch = ExclusionKeys(expectedExclusions).SequenceEqual(ExclusionKeys(actualExclusions));
+            var disjoint = !Values(actual, "identity").Intersect(Values(actualExclusions, "identity"), StringComparer.Ordinal).Any();
+            complete &= identitiesMatch && executed && factsMatch && countsMatch && platformsMatch && exclusionsMatch && disjoint;
             Console.WriteLine("Exact .NET/Unity case identity match: " + identitiesMatch);
+            Console.WriteLine("Exact .NET/Unity platform exclusions match: " + (platformsMatch && exclusionsMatch && disjoint));
+            Console.WriteLine("Explicitly platform-inapplicable cases: " + actualExclusions.Count);
             Console.WriteLine("All discovered cases executed: " + executed);
             Console.WriteLine("All original behavioral cases executed: " + factsMatch);
         }

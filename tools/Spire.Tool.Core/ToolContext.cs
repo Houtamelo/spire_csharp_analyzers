@@ -14,15 +14,37 @@ public sealed class ToolContext
     public string Dotnet => Environment.GetEnvironmentVariable("SPIRE_DOTNET_HOST")
                             ?? Environment.GetEnvironmentVariable("DOTNET_HOST_PATH") ?? "dotnet";
     public string PathOf(string relative) => Path.Combine(Root, relative.Replace('/', Path.DirectorySeparatorChar));
+    internal string RequireOutsideExamples(string path)
+    {
+        var examples = Path.Combine(Root, "examples");
+        var comparison = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        void Check(string candidate)
+        {
+            if (string.Equals(candidate, examples, comparison) ||
+                candidate.StartsWith(examples + Path.DirectorySeparatorChar, comparison))
+                throw new InvalidOperationException("Validation inputs and outputs must stay outside the repository examples directory.");
+        }
+
+        var full = Path.GetFullPath(path);
+        Check(full);
+        full = FileOps.FullPath(full);
+        Check(full);
+        return full;
+    }
     public static string DefaultEditor => Environment.GetEnvironmentVariable("SPIRE_UNITY_EDITOR")
-        ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Unity/Hub/Editor/6000.5.6f1/Editor/Unity");
+        ?? (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Unity/Hub/Editor/6000.5.6f1/Editor/Unity.exe")
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Unity/Hub/Editor/6000.5.6f1/Editor/Unity"));
+    public static string StandaloneTarget => RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+        ? "StandaloneWindows64" : "StandaloneLinux64";
     public static string DefaultRider => Environment.GetEnvironmentVariable("SPIRE_RIDER_ROOT")
         ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local/share/JetBrains/Toolbox/apps/rider-2");
 
     public async Task BuildAsync(string project, string configuration, params string[] extra)
     {
         var result = await ProcessRunner.RunAsync(Dotnet,
-            new[] { "build", PathOf(project), "-c", configuration, "--nologo" }.Concat(extra), Root,
+            new[] { "build", PathOf(project), "-c", configuration, "--nologo", "-p:EnableSourceControlManagerQueries=false" }.Concat(extra), Root,
             TimeSpan.FromMinutes(10), environment: new Dictionary<string, string?>
             {
                 // Shared MSBuild nodes can outlive test hosts and leave nested CLI builds waiting.

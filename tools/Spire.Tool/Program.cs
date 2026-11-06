@@ -15,9 +15,9 @@ try
         Console.WriteLine("unity-integration: --graphics --method NAME");
         Console.WriteLine("unity-union-core: builds Mono and IL2CPP players; --method NAME --graphics select Editor validation");
         Console.WriteLine("unity-behavioral, unity-harness, unity-asmdefs: --prepare-only");
-        Console.WriteLine("unity-behavioral: --backend Mono|IL2CPP (Mono runs in EditMode; IL2CPP builds a Linux player)");
+        Console.WriteLine("unity-behavioral: --backend Mono|IL2CPP (Mono runs in EditMode; IL2CPP builds a standalone player for the host platform)");
         Console.WriteLine("unity-harness: --probe");
-        Console.WriteLine("unity-asmdefs: --rider PATH");
+        Console.WriteLine("unity-asmdefs: --rider PATH | --visual-studio PATH");
         Console.WriteLine("jetbrains: --rider PATH --cli PATH --stage all|inspect|quick-fix|recompile");
         Console.WriteLine("hook [SessionStart|Stop|SessionEnd]: read the event JSON from standard input");
         return 0;
@@ -58,7 +58,8 @@ try
         case "unity-harness":
             return await HarnessWorkflow.RunAsync(context, Project("unity-compiler-tests"), editor, configuration, build, prepare, options.Flag("probe"), timeout);
         case "unity-asmdefs":
-            return await AsmdefWorkflow.RunAsync(context, Project("unity-asmdefs"), editor, rider, configuration, build, prepare, timeout);
+            return await AsmdefWorkflow.RunAsync(context, Project("unity-asmdefs"), editor, rider, configuration, build, prepare, timeout,
+                options.Flag("visual-studio") ? options.Value("visual-studio", "") : null);
         case "jetbrains":
             var stage = options.Value("stage", "all");
             if (stage is not ("all" or "inspect" or "quick-fix" or "recompile")) throw new ArgumentException("Invalid JetBrains stage: " + stage);
@@ -103,7 +104,7 @@ internal sealed class Options
     {
         var options = new Options();
         var flags = new HashSet<string>(new[] { "help", "no-build", "prepare-only", "graphics", "probe" }, StringComparer.Ordinal);
-        var values = new HashSet<string>(new[] { "root", "configuration", "editor", "project", "output", "timeout", "rider", "cli", "stage", "method", "backend", "package", "baseline" }, StringComparer.Ordinal);
+        var values = new HashSet<string>(new[] { "root", "configuration", "editor", "project", "output", "timeout", "rider", "visual-studio", "cli", "stage", "method", "backend", "package", "baseline" }, StringComparer.Ordinal);
         for (var index = 0; index < args.Length; index++)
         {
             var argument = args[index];

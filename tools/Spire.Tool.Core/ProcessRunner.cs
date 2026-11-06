@@ -136,10 +136,14 @@ public static class ProcessRunner
         pumpCancellation.Cancel();
         cancellationSignal.TrySetResult(true);
         TryKill(process, ownProcessGroup);
-        DisposeReader(stdoutReader);
-        DisposeReader(stderrReader);
-        if (completion != null)
-            await ObserveWithinAsync(completion, CleanupTimeout).ConfigureAwait(false);
+        // Windows Mono can block stream disposal behind an inherited pipe's pending
+        // read even after the parent exits. Include closure in the bounded cleanup.
+        var stdoutClosure = Task.Run(() => DisposeReader(stdoutReader));
+        var stderrClosure = Task.Run(() => DisposeReader(stderrReader));
+        var cleanup = completion == null
+            ? Task.WhenAll(stdoutClosure, stderrClosure)
+            : Task.WhenAll(completion, stdoutClosure, stderrClosure);
+        await ObserveWithinAsync(cleanup, CleanupTimeout).ConfigureAwait(false);
     }
 
     private static async Task<string> PumpAsync(

@@ -95,6 +95,13 @@ namespace Spire.UnityAsmdefIntegration
             RiderVerification.Begin();
         }
 
+        /// <summary>Runs the shared compiler and conversion checks after a Visual Studio Quick Action.</summary>
+        public static void VerifyVisualStudioFix()
+        {
+            Environment.SetEnvironmentVariable("SPIRE_IDE_TEST_PROVIDER", "VisualStudio");
+            RiderVerification.Begin();
+        }
+
         private static void BeginBaselineCompilation()
         {
             RequestCompilation(forceRefresh: true);
@@ -536,6 +543,17 @@ namespace Spire.UnityAsmdefIntegration
 
         private static void GenerateSolution()
         {
+            var visualStudio = Environment.GetEnvironmentVariable("SPIRE_VISUAL_STUDIO");
+            if (!string.IsNullOrEmpty(visualStudio))
+            {
+                Unity.CodeEditor.CodeEditor.SetExternalScriptEditor(visualStudio);
+                var current = Unity.CodeEditor.CodeEditor.CurrentEditor;
+                if (current.GetType().FullName != "Microsoft.Unity.VisualStudio.Editor.VisualStudioEditor")
+                    throw new InvalidOperationException("The Visual Studio Unity project generator was not selected.");
+                current.SyncAll();
+                RecordGeneratedSolution();
+                return;
+            }
             var riderType = AppDomain.CurrentDomain.GetAssemblies()
                 .Select(assembly => assembly.GetType("Packages.Rider.Editor.RiderScriptEditor", throwOnError: false))
                 .FirstOrDefault(type => type != null);
@@ -550,8 +568,14 @@ namespace Spire.UnityAsmdefIntegration
 
             syncSolution.Invoke(null, null);
 
+            RecordGeneratedSolution();
+        }
+
+        private static void RecordGeneratedSolution()
+        {
             var projectRoot = ProjectPath(string.Empty);
-            var solutions = Directory.GetFiles(projectRoot, "*.sln", SearchOption.TopDirectoryOnly);
+            var solutions = Directory.GetFiles(projectRoot, "*", SearchOption.TopDirectoryOnly)
+                .Where(path => Path.GetExtension(path) is ".sln" or ".slnx").ToArray();
             if (solutions.Length == 0)
                 throw new InvalidOperationException("CurrentEditor.SyncAll produced no solution file.");
 

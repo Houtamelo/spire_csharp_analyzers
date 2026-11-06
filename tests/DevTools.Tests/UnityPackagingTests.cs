@@ -277,7 +277,9 @@ public sealed class UnityPackagingTests
     {
         var readme = File.ReadAllText(Path.Combine(outputPath, "README.md"));
 
-        Assert.Contains("Rider is the verified IDE workflow", readme, StringComparison.Ordinal);
+        Assert.Contains("Rider and Visual Studio Community", readme, StringComparison.Ordinal);
+        Assert.Contains("Linux and Windows x64", readme, StringComparison.Ordinal);
+        Assert.Contains("representative IDE Quick Action", readme, StringComparison.Ordinal);
         Assert.Contains("Unity 6000.6.5f1", readme, StringComparison.Ordinal);
         Assert.Contains("generic unions with reference-type arguments", readme, StringComparison.Ordinal);
         Assert.Contains("Unity 2020 will not work", readme, StringComparison.Ordinal);

@@ -246,8 +246,7 @@ public sealed class LifecycleHookTests
 
         public void Dispose()
         {
-            if (Directory.Exists(Root))
-                Directory.Delete(Root, recursive: true);
+            TestDirectories.DeleteOwned(Root);
         }
     }
 

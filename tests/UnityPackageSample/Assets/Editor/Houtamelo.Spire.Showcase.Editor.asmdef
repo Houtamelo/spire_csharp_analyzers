@@ -1,0 +1,10 @@
+{
+  "name": "Houtamelo.Spire.Showcase.Editor",
+  "rootNamespace": "Houtamelo.Spire.Showcase.Editor",
+  "references": [
+    "Houtamelo.Spire.Showcase",
+    "Unity.RenderPipelines.Universal.Runtime",
+    "Unity.RenderPipelines.Core.Runtime"
+  ],
+  "includePlatforms": ["Editor"]
+}

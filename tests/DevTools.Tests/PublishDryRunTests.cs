@@ -90,7 +90,9 @@ public sealed class PublishDryRunTests
         {
             StartInfo = new ProcessStartInfo
             {
-                FileName = "bash",
+                FileName = Path.DirectorySeparatorChar == '\\'
+                    ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Git", "bin", "bash.exe")
+                    : "bash",
                 WorkingDirectory = workingDirectory,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,

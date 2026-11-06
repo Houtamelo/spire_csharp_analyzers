@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -158,6 +159,12 @@ public sealed class UnityHarnessRunnerTests
     [Fact]
     public async Task RunUnity_TimeoutKillsTheRealChildProcessBeforeRethrowing()
     {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            await RunWindowsTimeoutFixtureAsync();
+            return;
+        }
+
         var repositoryRoot = FindRepositoryRoot();
         using var fixture = HarnessFixture.Create(repositoryRoot);
         var childScript = Path.Combine(fixture.Root, "run-child.sh");
@@ -185,6 +192,29 @@ public sealed class UnityHarnessRunnerTests
             () => File.Exists(pidFile) && !IsProcessRunning(int.Parse(File.ReadAllText(pidFile))),
             TimeSpan.FromSeconds(3)),
             "Timed out child survived process-group cleanup.");
+    }
+
+    private static async Task RunWindowsTimeoutFixtureAsync()
+    {
+        using var fixture = WindowsProcessFixture.Create();
+        using var process = fixture.StartParent("live");
+        await fixture.WaitForParentReadyAsync();
+        var childPid = fixture.ChildPid;
+        var completion = ProcessRunner.CompleteAsync(process, TimeSpan.FromMilliseconds(300));
+        try
+        {
+            var exception = await Record.ExceptionAsync(async () => await completion.ConfigureAwait(false));
+            Assert.IsType<TimeoutException>(exception);
+            Assert.True(
+                await fixture.WaitUntilAsync(() => !WindowsProcessFixture.IsRunning(childPid), TimeSpan.FromSeconds(5)),
+                $"Timed out Windows child process {childPid} survived tree cleanup.");
+        }
+        finally
+        {
+            ProcessRunner.Kill(process);
+            await fixture.KillOwnedProcessesAsync();
+            await ObserveCompletionAsync(completion);
+        }
     }
 
     private static void AssertPreparedHarness(string projectPath)
@@ -410,6 +440,16 @@ public sealed class UnityHarnessRunnerTests
         catch (InvalidOperationException)
         {
             return false;
+        }
+    }
+
+    private static async Task ObserveCompletionAsync(Task<ProcessResult> completion)
+    {
+        var winner = await Task.WhenAny(completion, Task.Delay(TimeSpan.FromSeconds(5))).ConfigureAwait(false);
+        if (winner == completion)
+        {
+            try { await completion.ConfigureAwait(false); }
+            catch (Exception) { }
         }
     }
 

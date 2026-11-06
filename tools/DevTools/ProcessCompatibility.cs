@@ -18,6 +18,11 @@ internal static class ProcessCompatibility
     public static void AddArgument(ProcessStartInfo info, string argument)
     {
 #if SPIRE_UNITY_TEST_HOST
+        if (Path.DirectorySeparatorChar == '\\' && argument.Length > 0 && argument.All(character => !char.IsWhiteSpace(character) && character != '"'))
+        {
+            info.Arguments += (info.Arguments.Length == 0 ? "" : " ") + argument;
+            return;
+        }
         var text = new StringBuilder("\"");
         var slashes = 0;
         foreach (var character in argument)
@@ -52,6 +57,19 @@ internal static class ProcessCompatibility
     public static void KillTree(Process process)
     {
 #if SPIRE_UNITY_TEST_HOST
+        if (Path.DirectorySeparatorChar == '\\' && !process.HasExited)
+        {
+            // Mono lacks Kill(entireProcessTree); taskkill owns only this guest process tree.
+            using var killer = Process.Start(new ProcessStartInfo
+            {
+                FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "taskkill.exe"),
+                Arguments = "/PID " + process.Id.ToString(CultureInfo.InvariantCulture) + " /T /F",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            });
+            if (killer == null || !killer.WaitForExit(5000))
+                throw new InvalidOperationException("Could not complete Windows process-tree termination.");
+        }
         if (Directory.Exists("/proc"))
         {
             var children = Directory.EnumerateDirectories("/proc")

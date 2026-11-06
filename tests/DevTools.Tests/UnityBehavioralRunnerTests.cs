@@ -622,12 +622,12 @@ public sealed class UnityBehavioralRunnerTests
             Path.Combine(repositoryRoot, "docs", "rules"),
             Path.Combine(isolatedRoot, "docs", "rules"));
         CopyDirectory(
-            Path.Combine(repositoryRoot, "examples", "UnityShowcase", "Assets"),
-            Path.Combine(isolatedRoot, "examples", "UnityShowcase", "Assets"));
+            Path.Combine(repositoryRoot, "tests", "UnityPackageSample", "Assets"),
+            Path.Combine(isolatedRoot, "tests", "UnityPackageSample", "Assets"));
         CopyFile(
             repositoryRoot,
             isolatedRoot,
-            "examples/UnityShowcase/sample-files.txt");
+            "tests/UnityPackageSample/sample-files.txt");
         foreach (var name in new[]
                  {
                      "Houtamelo.Spire",

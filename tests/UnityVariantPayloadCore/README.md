@@ -1,7 +1,7 @@
 # Unity variant-payload core fixture
 
 This fixture validates the generated runtime representation in Unity 6000.5.6f1
-on both Linux player backends. The `unity-union-core` tool command builds both
+on Linux and Windows with both player backends. The `unity-union-core` tool command builds both
 players through:
 
 ```sh
@@ -33,6 +33,9 @@ Builds/VariantPayloadCore/IL2CPP/VariantPayloadCore.x86_64
 The backend directories are intentionally separate. Unity writes backend runtime
 files beside the executable, so placing Mono and IL2CPP outputs in one directory
 causes one build to overwrite the other backend's data.
+On Windows the executable suffix is `.exe`; the builder selects
+`StandaloneWindows64` instead of `StandaloneLinux64`. Current Windows results
+are recorded in the [Windows validation report](../../docs/reviews/2026-11-04-windows-unity-validation.md).
 
 Before either player build, the editor method prepares the canonical serialized
 union fixtures under `Assets/Resources/SerializedUnionPayloadCore`. The player
@@ -148,6 +151,11 @@ SPIRE_UNITY_NATIVE_INPUT=1 dotnet run -c Release --project tools/Spire.Tool -- \
 The Linux runner creates a private Xvfb display. The opt-in input helper queues
 XTest events there; it does nothing without the flag and a display. This avoids
 Unity 6000.5.6f1 blocking inside synchronous `EditorWindow.SendEvent(MouseDown)`.
+Windows uses native pointer/keyboard events on the signed-in guest desktop,
+requires foreground Unity ownership, and rejects target points belonging to
+another process. Close guest firewall prompts and other overlapping dialogs
+before running. Windows Unity Mono can report `UserInteractive=false` even on
+this visible desktop, so availability uses actual foreground-window ownership.
 The current Linux rendered runs pass 18 cases and 204 checks on both
 2023.2.22f1 and 6000.5.6f1, and 17 cases with 192 checks on 2022.3.62f3. Only
 the unsupported closed-generic Inspector serialization case is not applicable

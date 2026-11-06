@@ -6,6 +6,8 @@ public static class IntegrationWorkflow
 {
     public static async Task<int> RunAsync(ToolContext context, string project, string editor, string configuration, bool build, bool graphics, string method, TimeSpan timeout, string fixtureRelativePath = "tests/UnityIntegration")
     {
+        project = context.RequireOutsideExamples(project);
+        context.RequireOutsideExamples(context.PathOf(fixtureRelativePath));
         FileOps.RequireFile(editor);
         var fixture = context.PathOf(fixtureRelativePath);
         project = FileOps.Disposable(project, fixture, ".spire-unity-integration", "Spire generated-code integration fixture\n");

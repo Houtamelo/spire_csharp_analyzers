@@ -22,12 +22,12 @@ See the [current-package recheck](reviews/2026-11-05-unity-2022-2023-current-val
 Unity 2021's Roslyn 3.9 compiler cannot load the current Roslyn 4.3 extensions.
 
 The `unity-6000` compiler extensions target the Roslyn 4.3 API baseline. Native validation
-covers Editor Mono and Linux IL2CPP runtime tests on 6000.5.6f1; player
+covers Editor Mono, Linux IL2CPP, and Windows Mono/IL2CPP runtime tests on 6000.5.6f1; player
 serialization and stripping coverage are detailed below. The normal NuGet build
 remains on `main`. Other Unity versions and player platforms require separate
-validation. Rider is the verified IDE workflow. The quick fixes use standard
-Roslyn providers; Visual Studio Community compatibility is expected, with
-end-to-end Unity integration still to be validated.
+validation. Rider and Visual Studio Community have verified IDE workflows,
+including one representative live Quick Action and subsequent Unity recompilation.
+See the [Windows validation evidence](reviews/2026-11-04-windows-unity-validation.md).
 
 Unity now marks [6.5 end of life](https://discussions.unity.com/t/unity-6-5-is-now-available/1723176).
 This guide records compatibility evidence; a maintained release baseline remains
@@ -46,9 +46,23 @@ and options. `Spire.Tool.Core` targets .NET Standard 2.1 so the same preparation
 contracts can be tested in Editor Mono. The SDK, installed Editor, and Rider/JDK
 requirements of their respective workflows remain unchanged.
 
+Automated tests and acceptance workflows use inputs under `tests/` and run in
+disposable projects under `tmp/`. Package sample inputs and customer project
+settings belong to [`tests/UnityPackageSample`](../tests/UnityPackageSample/README.md).
+They do not depend on the interactive `examples/` tree. Validation project and
+package output paths inside that tree are rejected before modification.
+Test project references and validation subprocess builds disable Source Link's
+Git queries, which otherwise inspect example submodules. Direct production
+builds retain their normal source-control metadata policy.
+
 On Linux, Unity commands automatically start an isolated `Xvfb` display and stop
 it when Unity exits. Install `Xvfb` before running these workflows. Diagnostics
 are written beside each Unity log as `*.xvfb.log`.
+
+Windows commands use the signed-in guest desktop and Direct3D 11. The default
+Editor path is under `%ProgramFiles%\Unity\Hub\Editor\6000.5.6f1`;
+`SPIRE_UNITY_EDITOR` overrides it. Native input is opt-in and confined to the
+foreground Unity process. Run rendered checks with other guest dialogs closed.
 
 ## Install
 
@@ -146,6 +160,18 @@ it also disables source generators. Rider discovers analyzer DLL references and
 supports external analyzer quick fixes. See
 [Rider's Roslyn analyzer documentation](https://www.jetbrains.com/help/rider/Using_NET_Compiler_Analyzers.html).
 
+For Windows Visual Studio Community, run:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\VisualStudioIntegrationTestDriver\Run-Windows.ps1
+```
+
+This prepares Unity-generated Visual Studio projects, requires live diagnostics,
+invokes the IDE's actual Spire Quick Action, resolves a source-generated symbol,
+and recompiles the saved edit in Unity. It uses the `SpireValidation` experimental
+profile. See the [runner instructions](../tools/VisualStudioIntegrationTestDriver/README.md)
+for prerequisites, reports, and repeat runs.
+
 ## Examples and tracked projects
 
 [UnityShowcase](../examples/UnityShowcase/README.md) is a complete tracked Unity
@@ -158,8 +184,9 @@ persistence and a Play Mode smoke test of the scene.
 The existing projects under `tests/UnityIntegration`, `tests/UnityBehavioral`, and
 `tests/UnityAsmdefIntegration` are tracked test fixtures. Their CLI runners copy
 the fixture contents into disposable projects under `tmp/`, add the built package
-and any test dependencies, and run there. The showcase can instead be opened and
-tested directly; its authored assets and settings are retained in Git.
+and any test dependencies, and run there. Automated package/sample validation
+uses `tests/UnityPackageSample`; edits to this interactive showcase do not change
+test inputs or exported sample assets.
 
 ## Serialize a union
 
@@ -326,6 +353,9 @@ invoked explicitly. On Unity 2022, only the unsupported closed-generic Inspector
 serialization case is marked not applicable.
 On Linux the runner creates a private Xvfb display. The explicit input flag
 enables XTest keyboard/pointer events on that display for the IMGUI checks.
+On Windows, set `$env:SPIRE_UNITY_NATIVE_INPUT = '1'` before the same command;
+the helper sends native Windows input only while Unity owns the foreground and
+the target field's screen position.
 
 The same fixture provides separate native asset phases, each run in its own
 Editor process through `unity-union-core --method`:
@@ -338,7 +368,7 @@ Write creates persisted data, Read verifies fresh-process reconstruction and
 unchanged saves, and Recovery exercises invalid/null/missing/former payloads.
 See [the fixture README](../tests/UnityVariantPayloadCore/README.md) for reports.
 
-Build both release Linux x64 players with High stripping:
+Build both release x64 players with High stripping for the Editor's host platform:
 
 ```sh
 dotnet run -c Release --project tools/Spire.Tool -- unity-union-core --timeout 1200
@@ -349,6 +379,8 @@ dotnet run -c Release --project tools/Spire.Tool -- unity-union-core --timeout 1
 build, player exit zero, the expected backend, and every runtime assertion.
 Compiler-only Spire DLLs must be absent from player assemblies. Reflection-based
 behavioral test linker roots are separate from this production-stripping check.
+Windows outputs use `.exe`; Linux outputs use `.x86_64`. Neither platform's
+execution substitutes for testing the other.
 
 The earlier loading/stripping investigation is preserved in the
 [native-loading report](issues/unity-il2cpp-opaque-managed-reference-slots.md).
@@ -428,8 +460,11 @@ A Unity Test Framework adapter executes their existing xUnit assertions; the
 normal .NET test projects retain their default targets and runner.
 
 Independent xUnit discovery provides a case identity baseline. Unity must
-discover and execute every baseline case, and every original behavioral method,
-with no failures or skips. Results, discovery manifests, source/reference hashes,
+discover and execute every applicable baseline case, and every original behavioral
+method, with no failures or skips. Explicit Linux/Windows requirements are recorded
+separately; the independent exporter and Unity bridge must agree on each excluded
+identity and its reason. Ordinary skipped facts still fail discovery. See the
+[platform coverage contract](test-platforms.md). Results, discovery manifests, source/reference hashes,
 and dependency origins are saved in `tmp/unity-compiler-tests`; previous runs are
 archived under `TestResults`.
 

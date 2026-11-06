@@ -22,7 +22,7 @@ public sealed class ProcessRunnerCorrectnessTests
             Shell,
             ShellArguments(
                 "printf 'stdout-line\\n'; printf 'stderr-line\\n' >&2; exit 37",
-                windowsCommand: "echo stdout-line & echo stderr-line 1>&2 & exit /b 37"),
+                windowsCommand: "echo stdout-line&echo stderr-line>&2&exit /b 37"),
             fixture.Root,
             TimeSpan.FromSeconds(5));
 
@@ -40,7 +40,7 @@ public sealed class ProcessRunnerCorrectnessTests
             Shell,
             ShellArguments(
                 "printf 'partial-stdout'; printf 'partial-stderr' >&2; exit 0",
-                windowsCommand: "set /p =partial-stdout<nul & set /p =partial-stderr 1>&2<nul & exit /b 0"),
+                windowsCommand: "set /p =partial-stdout<nul&set /p =partial-stderr>&2<nul&exit /b 0"),
             fixture.Root);
 
         var result = await ProcessRunner.CompleteAsync(
@@ -73,7 +73,7 @@ public sealed class ProcessRunnerCorrectnessTests
         Assert.Empty(result.StandardError);
     }
 
-    [Fact]
+    [LinuxFact]
     public async Task CompleteAsync_HotStdoutStillHonorsTheDeadline()
     {
         RequireLinuxProcessFixtures();
@@ -102,7 +102,7 @@ public sealed class ProcessRunnerCorrectnessTests
         }
     }
 
-    [Fact]
+    [LinuxFact]
     public async Task CompleteAsync_TimeoutCoversStdoutHeldByExitedParent()
     {
         await AssertTimeoutWhenExitedParentKeepsPipeOpenAsync(
@@ -110,7 +110,7 @@ public sealed class ProcessRunnerCorrectnessTests
             "stdout");
     }
 
-    [Fact]
+    [LinuxFact]
     public async Task CompleteAsync_TimeoutCoversStderrHeldByExitedParent()
     {
         await AssertTimeoutWhenExitedParentKeepsPipeOpenAsync(
@@ -118,7 +118,7 @@ public sealed class ProcessRunnerCorrectnessTests
             "stderr");
     }
 
-    [Fact]
+    [LinuxFact]
     public async Task CompleteAsync_TimeoutCoversBothPipesHeldByExitedParent()
     {
         await AssertTimeoutWhenExitedParentKeepsPipeOpenAsync(
@@ -126,7 +126,7 @@ public sealed class ProcessRunnerCorrectnessTests
             "both");
     }
 
-    [Fact]
+    [LinuxFact]
     public async Task CompleteAsync_TimeoutKillsAnOwnedLiveProcessGroup()
     {
         RequireLinuxProcessFixtures();
@@ -160,7 +160,7 @@ public sealed class ProcessRunnerCorrectnessTests
         }
     }
 
-    [Fact]
+    [LinuxFact]
     public async Task CompleteAsync_TimeoutPreservesOutputCapturedBeforeKill()
     {
         RequireLinuxProcessFixtures();
@@ -194,7 +194,7 @@ public sealed class ProcessRunnerCorrectnessTests
         }
     }
 
-    [Fact]
+    [LinuxFact]
     public async Task CompleteAsync_NonOwnedExitedParentStillHonorsTheDeadline()
     {
         RequireLinuxProcessFixtures();
@@ -233,7 +233,7 @@ public sealed class ProcessRunnerCorrectnessTests
         }
     }
 
-    [Fact]
+    [LinuxFact]
     public async Task RunAsync_NonOwnedExitedParentHoldingStdoutTimesOutBeforeManualChildCleanup()
     {
         RequireLinuxProcessFixtures();

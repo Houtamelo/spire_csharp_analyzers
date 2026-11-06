@@ -29,6 +29,7 @@ public static class FileSystemTools
         ProcessCompatibility.WaitForExit(process, TimeSpan.FromSeconds(5));
         if (process.ExitCode != 0 || string.IsNullOrEmpty(RepoRoot))
             throw new InvalidOperationException("Failed to resolve git repo root.");
+        RepoRoot = Path.GetFullPath(RepoRoot);
     }
 
     /// Returns resolved absolute path. Sets error non-null on failure.
@@ -42,7 +43,9 @@ public static class FileSystemTools
 
         resolved = Path.GetFullPath(resolved);
 
-        if (!resolved.StartsWith(RepoRoot + Path.DirectorySeparatorChar) && resolved != RepoRoot)
+        var comparison = Path.DirectorySeparatorChar == '\\' ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        var prefix = RepoRoot.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal) ? RepoRoot : RepoRoot + Path.DirectorySeparatorChar;
+        if (!resolved.StartsWith(prefix, comparison) && !string.Equals(resolved, RepoRoot, comparison))
         {
             error = $"Error: path '{input}' resolves to '{resolved}' which is outside repo root '{RepoRoot}'.";
             return false;

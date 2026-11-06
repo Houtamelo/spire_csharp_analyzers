@@ -14,6 +14,7 @@ public static class PackageWorkflow
 
     public static async Task<string> BuildAsync(ToolContext context, string output, string configuration, bool build)
     {
+        output = context.RequireOutsideExamples(output);
         var versions = new[] { "Houtamelo.Spire", "Houtamelo.Spire.Analyzers", "Houtamelo.Spire.CodeFixes" }
             .Select(name => XDocument.Load(context.PathOf("src/" + name + "/" + name + ".csproj"))
                 .Root?.Element("PropertyGroup")?.Element("Version")?.Value).Distinct().ToArray();
@@ -30,7 +31,6 @@ public static class PackageWorkflow
             var relative = item.Folder + "/" + item.Name + ".dll";
             expected.UnionWith(new[] { relative, relative + ".meta", item.Folder + ".meta" });
         }
-        output = FileOps.FullPath(output);
         if (Directory.Exists(output))
         {
             var unexpected = Directory.EnumerateFiles(output, "*", SearchOption.AllDirectories)
@@ -103,8 +103,8 @@ public static class PackageWorkflow
                 ? "docs/rules/" + Path.GetFileName(relative)
                 : "docs/unity-package/Documentation~/" + relative);
 
-        const string sampleRoot = "examples/UnityShowcase/Assets/";
-        var inventory = context.PathOf("examples/UnityShowcase/sample-files.txt");
+        const string sampleRoot = "tests/UnityPackageSample/Assets/";
+        var inventory = context.PathOf("tests/UnityPackageSample/sample-files.txt");
         FileOps.RequireFile(inventory);
         foreach (var relative in ReadInventory(inventory))
             Add("Samples~/Showcase/" + relative, sampleRoot + relative);

@@ -15,8 +15,11 @@ namespace Spire.UnityVariantPayloadCore
     public static class CorePlayerBuild
     {
         private const string ScenePath = "Assets/VariantPayloadCorePlayer.unity";
-        private const string MonoExecutable = "Builds/VariantPayloadCore/Mono/VariantPayloadCore.x86_64";
-        private const string Il2CppExecutable = "Builds/VariantPayloadCore/IL2CPP/VariantPayloadCore.x86_64";
+        private static string MonoExecutable => "Builds/VariantPayloadCore/Mono/VariantPayloadCore" + ExecutableExtension;
+        private static string Il2CppExecutable => "Builds/VariantPayloadCore/IL2CPP/VariantPayloadCore" + ExecutableExtension;
+        private static string ExecutableExtension => Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : ".x86_64";
+        private static BuildTarget PlayerTarget => Application.platform == RuntimePlatform.WindowsEditor
+            ? BuildTarget.StandaloneWindows64 : BuildTarget.StandaloneLinux64;
         private const string ReportPath = "unity-core-build-report.json";
 
         public static void BuildPlayers()
@@ -82,7 +85,7 @@ namespace Spire.UnityVariantPayloadCore
                 {
                     scenes = new[] { ScenePath },
                     locationPathName = result.executablePath,
-                    target = BuildTarget.StandaloneLinux64,
+                    target = PlayerTarget,
                     options = BuildOptions.CleanBuildCache | BuildOptions.StrictMode,
                 });
                 result.status = build.summary.result == BuildResult.Succeeded ? "pass" : "fail";

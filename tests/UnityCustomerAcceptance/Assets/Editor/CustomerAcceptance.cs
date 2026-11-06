@@ -28,7 +28,7 @@ namespace Spire.UnityCustomerAcceptance
         private const string BaselineSnapshotName = "customer-baseline.json";
         private const string StageName = "Library/customer-acceptance-stage.json";
         private const int MaximumOperationSeconds = 120;
-        private const int MaximumPolls = 6000;
+        private const int PackageReplacementGraceSeconds = 2;
 
         private static AcceptanceReport? _report;
         private static AcceptanceStage? _stage;
@@ -94,6 +94,22 @@ namespace Spire.UnityCustomerAcceptance
             }
 
             BeginCapture();
+        }
+
+        public static void VerifyPollingTimeout()
+        {
+            StartOperation("VerifyPollingTimeout");
+            Require(TryResolveSampleRoot() is null, "Polling regression requires a clean project without the sample.");
+            _stage = NewStage("sample-import", "sample-import-pending", "");
+            for (var index = 0; index < 6002 && !_exitRequested; index++)
+                Poll();
+            if (_exitRequested)
+                return;
+            _report!.checks.Add("PASS More than 6000 Editor updates do not exhaust the time budget.");
+            _stage!.startedUtcTicks = DateTime.UtcNow.AddSeconds(-MaximumOperationSeconds - 1).Ticks;
+            Poll();
+            if (!_exitRequested)
+                Fail("An expired polling deadline did not fail.");
         }
 
         public static void ImportSample()
@@ -214,8 +230,7 @@ namespace Spire.UnityCustomerAcceptance
             if (_exitRequested || _stage is null || _report is null)
                 return;
 
-            if (DateTime.UtcNow.Ticks - _stage.startedUtcTicks > TimeSpan.FromSeconds(MaximumOperationSeconds).Ticks ||
-                _stage.polls++ > MaximumPolls)
+            if (DateTime.UtcNow.Ticks - _stage.startedUtcTicks > TimeSpan.FromSeconds(MaximumOperationSeconds).Ticks)
             {
                 Fail("Timed out while waiting for " + _stage.operation + ". " + _stage.lastError);
                 return;
@@ -285,7 +300,7 @@ namespace Spire.UnityCustomerAcceptance
                 // After a domain reload the AddRequest object is lost. Give Unity a short
                 // grace window to finish replacing an older local package before reporting
                 // a definitive path mismatch.
-                if (_stage!.polls < 120)
+                if (DateTime.UtcNow.Ticks - _stage!.startedUtcTicks < TimeSpan.FromSeconds(PackageReplacementGraceSeconds).Ticks)
                 {
                     _stage.lastError = "Registered package still points to " + _report.resolvedPackage;
                     SaveStageAndReport();
@@ -473,12 +488,13 @@ namespace Spire.UnityCustomerAcceptance
         {
             Require(TryGetMember(preset, "selectedCommand", out var selectedCommand), "ShowcasePreset.selectedCommand is missing.");
             Require(selectedCommand is not null, "ShowcasePreset.selectedCommand is null.");
+            var selectedMove = ReadPayload(selectedCommand!, "move");
 
             var snapshot = new RuntimeSnapshot
             {
                 selectedKind = ReadKind(selectedCommand!),
-                selectedDestination = ReadVector2(selectedCommand!, "destination"),
-                selectedSpeed = ReadFloat(selectedCommand!, "speed"),
+                selectedDestination = ReadVector2(selectedMove, "destination"),
+                selectedSpeed = ReadFloat(selectedMove, "speed"),
             };
 
             Require(TryGetMember(preset, "commands", out var commandsValue), "ShowcasePreset.commands is missing.");
@@ -489,9 +505,9 @@ namespace Spire.UnityCustomerAcceptance
 
             Require(commands.Count >= 6, "ShowcasePreset.commands has fewer than six authored entries.");
             Require(commands[3] is not null && commands[4] is not null, "The managed-reference command entries are null.");
-            Require(TryGetMember(commands[3]!, "effect", out var firstEffect), "ApplyEffect.effect is missing.");
-            Require(TryGetMember(commands[4]!, "effect", out var secondEffect), "ApplyEffect.effect is missing.");
-            Require(TryGetMember(commands[5]!, "effect", out var nullEffect), "ApplyEffect.effect is missing.");
+            Require(TryGetMember(ReadPayload(commands[3]!, "applyEffect"), "effect", out var firstEffect), "ApplyEffect.effect is missing.");
+            Require(TryGetMember(ReadPayload(commands[4]!, "applyEffect"), "effect", out var secondEffect), "ApplyEffect.effect is missing.");
+            Require(TryGetMember(ReadPayload(commands[5]!, "applyEffect"), "effect", out var nullEffect), "ApplyEffect.effect is missing.");
             snapshot.effectType = firstEffect?.GetType().FullName ?? "";
             snapshot.effectAmount = firstEffect is null ? 0 : ReadInt(firstEffect, "amount");
             snapshot.sharedManagedEffect = ReferenceEquals(firstEffect, secondEffect);
@@ -794,7 +810,6 @@ namespace Spire.UnityCustomerAcceptance
             if (_stage is not null)
             {
                 _stage.stage = _stage.stage.Trim();
-                _stage.polls = Math.Max(_stage.polls, 0);
                 Directory.CreateDirectory(Path.GetDirectoryName(StageFile) ?? ProjectRoot);
                 File.WriteAllText(StageFile, JsonUtility.ToJson(_stage, true));
                 if (_report is not null)
@@ -898,6 +913,13 @@ namespace Spire.UnityCustomerAcceptance
         {
             Require(TryGetMember(value, name, out var member) && member is Vector2, "Generated Move payload has no Vector2 " + name + " member.");
             return (Vector2)member!;
+        }
+
+        private static object ReadPayload(object union, string variant)
+        {
+            Require(TryGetMember(union, variant, out var payload) && payload is not null,
+                "Generated union has no " + variant + " payload accessor.");
+            return payload!;
         }
 
         private static float ReadFloat(object value, string name)
@@ -1005,7 +1027,6 @@ namespace Spire.UnityCustomerAcceptance
             public string requestedPackage = "";
             public string lastError = "";
             public long startedUtcTicks;
-            public int polls;
         }
 
         [Serializable]

@@ -7,11 +7,11 @@ using UnityEngine;
 namespace Spire.UnityVariantPayloadCore
 {
     /// <summary>
-    /// Queues pointer and keyboard input through XTest for Linux Editor tests.
+    /// Queues pointer and keyboard input through the Linux or Windows desktop.
     ///
     /// This helper is deliberately opt-in. It does nothing unless
-    /// <c>SPIRE_UNITY_NATIVE_INPUT=1</c> and <c>DISPLAY</c> are both present,
-    /// and the current Unity editor is running on Linux.
+    /// <c>SPIRE_UNITY_NATIVE_INPUT=1</c>. Linux also requires <c>DISPLAY</c>;
+    /// Windows requires the current Unity process to own the foreground window.
     /// </summary>
     public static class NativeInspectorInput
     {
@@ -27,12 +27,14 @@ namespace Spire.UnityVariantPayloadCore
         private static bool _disabled;
 
         /// <summary>
-        /// Gets whether an opted-in XTest display connection can be opened.
+        /// Gets whether opted-in native input is available for this Editor.
         /// </summary>
         public static bool IsAvailable
         {
             get
             {
+                if (Application.platform == RuntimePlatform.WindowsEditor)
+                    return WindowsInspectorInput.IsAvailable;
                 lock (Sync)
                     return TryEnsureDisplay(out _, out _);
             }
@@ -44,6 +46,8 @@ namespace Spire.UnityVariantPayloadCore
         /// </summary>
         public static bool QueueMove(int screenX, int screenY)
         {
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+                return WindowsInspectorInput.QueueMove(screenX, screenY);
             lock (Sync)
             {
                 if (!TryEnsureDisplay(out IntPtr display, out int screen))
@@ -71,6 +75,8 @@ namespace Spire.UnityVariantPayloadCore
         /// </summary>
         public static bool QueueButton(uint button, bool pressed)
         {
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+                return WindowsInspectorInput.QueueButton(button, pressed);
             if (button == 0)
                 return false;
 
@@ -107,7 +113,9 @@ namespace Spire.UnityVariantPayloadCore
         /// Queues a complete button click without waiting for an editor tick.
         /// </summary>
         public static bool QueueClick(uint button = 1)
-            => QueueButton(button, pressed: true) && QueueButton(button, pressed: false);
+            => Application.platform == RuntimePlatform.WindowsEditor
+                ? WindowsInspectorInput.QueueClick(button)
+                : QueueButton(button, pressed: true) && QueueButton(button, pressed: false);
 
         /// <summary>
         /// Resolves an X11 keysym such as <c>x</c> or <c>BackSpace</c>, then
@@ -115,6 +123,8 @@ namespace Spire.UnityVariantPayloadCore
         /// </summary>
         public static bool QueueKeystroke(string keysym)
         {
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+                return WindowsInspectorInput.QueueKeystroke(keysym);
             if (string.IsNullOrEmpty(keysym))
                 return false;
 

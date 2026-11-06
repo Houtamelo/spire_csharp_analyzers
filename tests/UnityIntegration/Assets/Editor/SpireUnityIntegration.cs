@@ -27,7 +27,10 @@ namespace Spire.UnityIntegration
         private const string TexturePath = AssetFolder + "/UnityIntegrationTexture.asset";
         private const string ScenePath = AssetFolder + "/UnityIntegrationPlayer.unity";
         private const string BuildReportPath = AssetFolder + "/unity-integration-player-build-report.json";
-        private const string BuildRelativePath = "Builds/UnityIntegrationPlayer/SpireUnityIntegration.x86_64";
+        private static string BuildRelativePath => "Builds/UnityIntegrationPlayer/SpireUnityIntegration" +
+            (Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : ".x86_64");
+        private static BuildTarget PlayerTarget => Application.platform == RuntimePlatform.WindowsEditor
+            ? BuildTarget.StandaloneWindows64 : BuildTarget.StandaloneLinux64;
 
         [MenuItem("Spire/Run Unity 6000 integration")]
         public static void Run()
@@ -61,78 +64,11 @@ namespace Spire.UnityIntegration
                 WriteReport(report);
             }
 
-    private static void RunPluginImportChecks(IntegrationReport report)
-        {
-            Check(report, "RuntimeAndCompilerPluginPlatforms", () =>
-            {
-                const string package = "Packages/com.houtamelo.spire/";
-                var runtime = AssetImporter.GetAtPath(package + "Runtime/Houtamelo.Spire.dll") as PluginImporter;
-                Require(runtime != null, "The runtime DLL importer was not found.");
-                Require(runtime!.GetCompatibleWithAnyPlatform(), "The runtime DLL was not enabled for Any Platform.");
-                Require(runtime.GetCompatibleWithEditor(), "The runtime DLL was not enabled for Editor.");
-                Require(!runtime.GetExcludeFromAnyPlatform(BuildTarget.StandaloneLinux64) &&
-                    PluginImporter.GetImporters(BuildTarget.StandaloneLinux64)
-                        .Any(importer => importer.assetPath == runtime.assetPath),
-                    "The runtime DLL was not enabled for Linux players.");
-                foreach (var name in new[] { "Houtamelo.Spire.Analyzers", "Houtamelo.Spire.PatternAnalysis", "Houtamelo.Spire.CodeFixes" })
-                {
-                    var compiler = AssetImporter.GetAtPath(package + "Analyzers/" + name + ".dll") as PluginImporter;
-                    Require(compiler != null && !compiler.GetCompatibleWithAnyPlatform() &&
-                        !compiler.GetCompatibleWithEditor() &&
-                        !compiler.GetCompatibleWithPlatform(BuildTarget.StandaloneLinux64),
-                        "Compiler-only DLL was enabled as a runtime plugin: " + name);
-                }
-            });
+            EditorApplication.Exit(report.status == "pass" ? 0 : 1);
         }
 
-        private static string DescribeSerializedPaths(SerializedObject serialized, string prefix)
-        {
-            var paths = new List<string>();
-            using var iterator = serialized.FindProperty(prefix);
-            if (iterator == null)
-                return "<missing>";
-            for (var visited = 0; visited < 128 && iterator.Next(true); visited++)
-            {
-                if (!iterator.propertyPath.StartsWith(prefix + ".", StringComparison.Ordinal))
-                    break;
-                paths.Add(iterator.propertyPath);
-            }
-            return string.Join(", ", paths);
-        }
-
-        private static void RunChangeEventFocusChecks(IntegrationReport report)
-        {
-            Check(report, "ChangeEventFocusCompatibility", () =>
-            {
-                var support = typeof(UnityShapeSerializable).Assembly.GetType(
-                    "Houtamelo.Spire.Generated.__SpireUnityPropertyDrawer", throwOnError: true)!;
-                var suppress = support.GetMethod("SuppressChangeEventFocus", BindingFlags.Static | BindingFlags.NonPublic);
-                Require(suppress != null, "The change-event focus compatibility helper was not emitted.");
-                var processed = typeof(UnityEngine.UIElements.EventBase).GetProperty(
-                    "processedByFocusController", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                Require(processed != null, "The event's focus-processing state was not found.");
-
-                using (var change = UnityEngine.UIElements.ChangeEvent<int>.GetPooled(1, 2))
-                {
-                    Require(!(bool)processed!.GetValue(change)!, "A fresh change event was already processed.");
-                    var controller = new UnityEngine.UIElements.FocusController(null);
-                    suppress!.Invoke(null, new object[] { controller, change });
-                    Require((bool)processed.GetValue(change)!, "A handled change event could still change focus.");
-                }
-
-                using (var unattached = UnityEngine.UIElements.ChangeEvent<int>.GetPooled(2, 3))
-                {
-                    suppress!.Invoke(null, new object[] { null!, unattached });
-                    Require(!(bool)processed!.GetValue(unattached)!, "An event without a focus controller was changed.");
-                }
-            });
-        }
-
-        EditorApplication.Exit(report.status == "pass" ? 0 : 1);
-    }
-
-    public static void BuildPlayer()
-        => BuildPlayer(ScriptingImplementation.Mono2x, UnityIntegrationFixtureProfile.BaselineOnly);
+        public static void BuildPlayer()
+            => BuildPlayer(ScriptingImplementation.Mono2x, UnityIntegrationFixtureProfile.BaselineOnly);
 
         public static void BuildIl2CppPlayer()
             => BuildPlayer(ScriptingImplementation.IL2CPP, UnityIntegrationFixtureProfile.BaselineOnly);
@@ -373,6 +309,73 @@ namespace Spire.UnityIntegration
             });
         }
 
+        private static void RunPluginImportChecks(IntegrationReport report)
+        {
+            Check(report, "RuntimeAndCompilerPluginPlatforms", () =>
+            {
+                const string package = "Packages/com.houtamelo.spire/";
+                var runtime = AssetImporter.GetAtPath(package + "Runtime/Houtamelo.Spire.dll") as PluginImporter;
+                Require(runtime != null, "The runtime DLL importer was not found.");
+                Require(runtime!.GetCompatibleWithAnyPlatform(), "The runtime DLL was not enabled for Any Platform.");
+                Require(runtime.GetCompatibleWithEditor(), "The runtime DLL was not enabled for Editor.");
+                Require(!runtime.GetExcludeFromAnyPlatform(PlayerTarget) &&
+                    PluginImporter.GetImporters(PlayerTarget)
+                        .Any(importer => importer.assetPath == runtime.assetPath),
+                    "The runtime DLL was not enabled for " + PlayerTarget + " players.");
+                foreach (var name in new[] { "Houtamelo.Spire.Analyzers", "Houtamelo.Spire.PatternAnalysis", "Houtamelo.Spire.CodeFixes" })
+                {
+                    var compiler = AssetImporter.GetAtPath(package + "Analyzers/" + name + ".dll") as PluginImporter;
+                    Require(compiler != null && !compiler.GetCompatibleWithAnyPlatform() &&
+                        !compiler.GetCompatibleWithEditor() &&
+                        !compiler.GetCompatibleWithPlatform(PlayerTarget),
+                        "Compiler-only DLL was enabled as a runtime plugin: " + name);
+                }
+            });
+        }
+
+        private static void RunChangeEventFocusChecks(IntegrationReport report)
+        {
+            Check(report, "ChangeEventFocusCompatibility", () =>
+            {
+                var support = typeof(UnityShapeSerializable).Assembly.GetType(
+                    "Houtamelo.Spire.Generated.__SpireUnityPropertyDrawer", throwOnError: true)!;
+                var suppress = support.GetMethod("SuppressChangeEventFocus", BindingFlags.Static | BindingFlags.NonPublic);
+                Require(suppress != null, "The change-event focus compatibility helper was not emitted.");
+                var processed = typeof(UnityEngine.UIElements.EventBase).GetProperty(
+                    "processedByFocusController", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                Require(processed != null, "The event's focus-processing state was not found.");
+
+                using (var change = UnityEngine.UIElements.ChangeEvent<int>.GetPooled(1, 2))
+                {
+                    Require(!(bool)processed!.GetValue(change)!, "A fresh change event was already processed.");
+                    var controller = new UnityEngine.UIElements.FocusController(null);
+                    suppress!.Invoke(null, new object[] { controller, change });
+                    Require((bool)processed.GetValue(change)!, "A handled change event could still change focus.");
+                }
+
+                using (var unattached = UnityEngine.UIElements.ChangeEvent<int>.GetPooled(2, 3))
+                {
+                    suppress!.Invoke(null, new object[] { null!, unattached });
+                    Require(!(bool)processed!.GetValue(unattached)!, "An event without a focus controller was changed.");
+                }
+            });
+        }
+
+        private static string DescribeSerializedPaths(SerializedObject serialized, string prefix)
+        {
+            var paths = new List<string>();
+            using var iterator = serialized.FindProperty(prefix);
+            if (iterator == null)
+                return "<missing>";
+            for (var visited = 0; visited < 128 && iterator.Next(true); visited++)
+            {
+                if (!iterator.propertyPath.StartsWith(prefix + ".", StringComparison.Ordinal))
+                    break;
+                paths.Add(iterator.propertyPath);
+            }
+            return string.Join(", ", paths);
+        }
+
         private static void Check(IntegrationReport report, string name, Action action)
         {
             report.checks++;
@@ -448,7 +451,7 @@ namespace Spire.UnityIntegration
                 {
                     scenes = new[] { ScenePath },
                     locationPathName = result.executablePath,
-                    target = BuildTarget.StandaloneLinux64,
+                    target = PlayerTarget,
                     options = BuildOptions.CleanBuildCache,
                 });
                 result.status = build.summary.result == BuildResult.Succeeded ? "pass" : "fail";
@@ -496,27 +499,27 @@ namespace Spire.UnityIntegration
                 throw new InvalidOperationException(message);
         }
 
-    [Serializable]
-    private sealed class IntegrationReport
-    {
-        public string probe = string.Empty;
-        public string unityVersion = string.Empty;
-        public string status = string.Empty;
-        public int checks;
-        public List<string> passed = new List<string>();
-        public List<string> failures = new List<string>();
-    }
+        [Serializable]
+        private sealed class IntegrationReport
+        {
+            public string probe = string.Empty;
+            public string unityVersion = string.Empty;
+            public string status = string.Empty;
+            public int checks;
+            public List<string> passed = new List<string>();
+            public List<string> failures = new List<string>();
+        }
 
-    [Serializable]
-    private sealed class PlayerBuildReport
-    {
-        public string unityVersion = string.Empty;
-        public string backend = string.Empty;
-        public string fixtureProfile = string.Empty;
-        public string status = string.Empty;
-        public int errors;
-        public string executablePath = string.Empty;
-        public string error = string.Empty;
+        [Serializable]
+        private sealed class PlayerBuildReport
+        {
+            public string unityVersion = string.Empty;
+            public string backend = string.Empty;
+            public string fixtureProfile = string.Empty;
+            public string status = string.Empty;
+            public int errors;
+            public string executablePath = string.Empty;
+            public string error = string.Empty;
+        }
     }
-}
 }

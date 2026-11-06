@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using NUnitTestCaseData = NUnit.Framework.TestCaseData;
@@ -21,6 +22,26 @@ public static class XunitReflectionBridge
 {
     public const string TestAssembliesEnvironmentVariable = "SPIRE_UNITY_TEST_ASSEMBLIES";
     public const string DiscoveryManifestEnvironmentVariable = "SPIRE_UNITY_TEST_DISCOVERY_PATH";
+
+    public static string CurrentPlatform => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Windows"
+        : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Linux"
+        : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "macOS" : "Other";
+
+    public static string PlatformSkipReason(string requiredPlatform)
+        => $"Requires {requiredPlatform}; current platform is {CurrentPlatform}.";
+
+    public static string? GetRequiredPlatform(MethodInfo method)
+    {
+        var fact = method.GetCustomAttributes(inherit: true).OfType<FactAttribute>().FirstOrDefault();
+        if (fact?.GetType().Assembly.GetName().Name != "DevTools.Tests")
+            return null;
+        return fact.GetType().FullName switch
+        {
+            "DevTools.Tests.LinuxFactAttribute" => "Linux",
+            "DevTools.Tests.WindowsFactAttribute" => "Windows",
+            _ => null,
+        };
+    }
 
     private const BindingFlags TestMethodFlags =
         BindingFlags.Instance |
@@ -105,17 +126,20 @@ public static class XunitReflectionBridge
         => Discover(new[] { assembly ?? throw new ArgumentNullException(nameof(assembly)) });
 
     public static IReadOnlyList<XunitReflectionCase> Discover(IEnumerable<Assembly> assemblies)
+        => DiscoverWithPlatformSelection(assemblies).Cases;
+
+    public static XunitDiscoveryResult DiscoverWithPlatformSelection(IEnumerable<Assembly> assemblies)
     {
         if (assemblies == null)
             throw new ArgumentNullException(nameof(assemblies));
 
         var requested = assemblies.ToArray();
-        var cases = Discover(requested.SelectMany(assembly => GetConcreteTypes(assembly)
+        var discovery = DiscoverWithPlatformSelection(requested.SelectMany(assembly => GetConcreteTypes(assembly)
             .Where(type => !type.IsDefined(typeof(XunitBridgeInfrastructureAttribute), false))));
         foreach (var assembly in requested)
         {
             var assemblyName = assembly.GetName().Name ?? assembly.FullName ?? "Unknown";
-            if (!cases.Any(testCase => string.Equals(
+            if (!discovery.Cases.Concat(discovery.PlatformExclusions.Select(item => item.Case)).Any(testCase => string.Equals(
                     testCase.AssemblyName,
                     assemblyName,
                     StringComparison.OrdinalIgnoreCase)))
@@ -125,15 +149,19 @@ public static class XunitReflectionBridge
             }
         }
 
-        return cases;
+        return discovery;
     }
 
     internal static IReadOnlyList<XunitReflectionCase> Discover(IEnumerable<Type> types)
+        => DiscoverWithPlatformSelection(types).Cases;
+
+    public static XunitDiscoveryResult DiscoverWithPlatformSelection(IEnumerable<Type> types)
     {
         if (types == null)
             throw new ArgumentNullException(nameof(types));
 
         var cases = new List<XunitReflectionCase>();
+        var exclusions = new List<XunitPlatformExclusion>();
         foreach (var fixtureType in types
             .Where(type => type.IsClass && !type.IsAbstract && !type.ContainsGenericParameters)
                      .OrderBy(type => TypeName(type), StringComparer.Ordinal))
@@ -147,7 +175,20 @@ public static class XunitReflectionBridge
                 if (fact == null)
                     continue;
 
-                ValidateMethod(fixtureType, method, fact);
+                var requiredPlatform = GetRequiredPlatform(method);
+                var excluded = requiredPlatform != null && requiredPlatform != CurrentPlatform;
+                var expectedSkip = excluded ? PlatformSkipReason(requiredPlatform!) : null;
+                if (requiredPlatform != null && fact.Skip != expectedSkip)
+                    throw Unsupported(method, $"platform Skip metadata '{fact.Skip ?? "<none>"}' does not match " +
+                        $"the declared requirement; expected '{expectedSkip ?? "<none>"}'.");
+                ValidateMethod(fixtureType, method, fact, allowPlatformSkip: excluded);
+                if (excluded)
+                {
+                    exclusions.Add(new XunitPlatformExclusion(
+                        new XunitReflectionCase(fixtureType, method, Array.Empty<object?>(), rowIndex: null),
+                        requiredPlatform!, fact.Skip!));
+                    continue;
+                }
                 if (fact is TheoryAttribute)
                 {
                     ExpandTheory(cases, fixtureType, method, fact);
@@ -166,7 +207,7 @@ public static class XunitReflectionBridge
         var ordered = cases
             .OrderBy(testCase => testCase.Identity, StringComparer.Ordinal)
             .ToArray();
-        var duplicateIdentities = ordered
+        var duplicateIdentities = ordered.Concat(exclusions.Select(item => item.Case))
             .GroupBy(testCase => testCase.Identity, StringComparer.Ordinal)
             .Where(group => group.Count() > 1)
             .Select(group => group.Key)
@@ -177,7 +218,7 @@ public static class XunitReflectionBridge
                 "Duplicate xUnit case identities: " + string.Join(", ", duplicateIdentities));
         }
 
-        return ordered;
+        return new XunitDiscoveryResult(ordered, exclusions.OrderBy(item => item.Case.Identity, StringComparer.Ordinal).ToArray());
     }
 
     public static async Task InvokeAsync(XunitReflectionCase testCase)
@@ -217,12 +258,25 @@ public static class XunitReflectionBridge
             ExceptionDispatchInfo.Capture(failure).Throw();
     }
 
-    public static string ExportDiscoveryManifest(IEnumerable<XunitReflectionCase>? cases = null)
+    public static string ExportDiscoveryManifest(IEnumerable<XunitReflectionCase>? cases = null,
+        IEnumerable<XunitPlatformExclusion>? platformExclusions = null)
     {
+        if (cases == null)
+        {
+            var discovery = DiscoverWithPlatformSelection(LoadConfiguredAssemblies());
+            cases = discovery.Cases;
+            platformExclusions ??= discovery.PlatformExclusions;
+        }
         var discovered = (cases ?? DiscoverLoadedAssemblies())
             .OrderBy(testCase => testCase.Identity, StringComparer.Ordinal)
             .ToArray();
-        var duplicateIdentities = discovered
+        var exclusions = (platformExclusions ?? Array.Empty<XunitPlatformExclusion>())
+            .OrderBy(item => item.Case.Identity, StringComparer.Ordinal).ToArray();
+        foreach (var exclusion in exclusions)
+            if (GetRequiredPlatform(exclusion.Case.Method) != exclusion.RequiredPlatform ||
+                exclusion.RequiredPlatform == CurrentPlatform || exclusion.Reason != PlatformSkipReason(exclusion.RequiredPlatform))
+                throw new InvalidOperationException("Invalid platform exclusion: " + exclusion.Case.Identity);
+        var duplicateIdentities = discovered.Concat(exclusions.Select(item => item.Case))
             .GroupBy(testCase => testCase.Identity, StringComparer.Ordinal)
             .Where(group => group.Count() > 1)
             .Select(group => group.Key)
@@ -233,7 +287,8 @@ public static class XunitReflectionBridge
                 "Duplicate xUnit case identities: " + string.Join(", ", duplicateIdentities));
         }
 
-        var builder = new StringBuilder("{\"cases\":[");
+        var builder = new StringBuilder("{\"schemaVersion\":2,\"platform\":\"")
+            .Append(JsonEscape(CurrentPlatform)).Append("\",\"cases\":[");
         for (var index = 0; index < discovered.Length; index++)
         {
             if (index > 0)
@@ -255,6 +310,19 @@ public static class XunitReflectionBridge
                 .Append('}');
         }
 
+        builder.Append("],\"platformExclusions\":[");
+        for (var index = 0; index < exclusions.Length; index++)
+        {
+            if (index > 0) builder.Append(',');
+            var item = exclusions[index];
+            builder.Append("{\"identity\":\"").Append(JsonEscape(item.Case.Identity))
+                .Append("\",\"displayName\":\"").Append(JsonEscape(item.Case.DisplayName))
+                .Append("\",\"assembly\":\"").Append(JsonEscape(item.Case.AssemblyName))
+                .Append("\",\"fixture\":\"").Append(JsonEscape(TypeName(item.Case.FixtureType)))
+                .Append("\",\"method\":\"").Append(JsonEscape(item.Case.Method.Name))
+                .Append("\",\"requiredPlatform\":\"").Append(JsonEscape(item.RequiredPlatform))
+                .Append("\",\"reason\":\"").Append(JsonEscape(item.Reason)).Append("\"}");
+        }
         return builder.Append("]}").ToString();
     }
 
@@ -308,9 +376,9 @@ public static class XunitReflectionBridge
             throw Unsupported(method, "all DataAttributes produced zero rows.");
     }
 
-    private static void ValidateMethod(Type fixtureType, MethodInfo method, FactAttribute fact)
+    private static void ValidateMethod(Type fixtureType, MethodInfo method, FactAttribute fact, bool allowPlatformSkip = false)
     {
-        if (fact.Skip is not null)
+        if (fact.Skip is not null && !allowPlatformSkip)
             throw Unsupported(method, "Skip is not supported by the Unity bridge.");
         if (method.IsStatic)
             throw Unsupported(method, "static test methods are not supported.");
@@ -448,6 +516,23 @@ public static class XunitReflectionBridge
             .Replace("\n", "\\n", StringComparison.Ordinal);
 }
 
+public sealed class XunitDiscoveryResult
+{
+    public XunitDiscoveryResult(IReadOnlyList<XunitReflectionCase> cases, IReadOnlyList<XunitPlatformExclusion> platformExclusions)
+    { Cases = cases; PlatformExclusions = platformExclusions; }
+    public IReadOnlyList<XunitReflectionCase> Cases { get; }
+    public IReadOnlyList<XunitPlatformExclusion> PlatformExclusions { get; }
+}
+
+public sealed class XunitPlatformExclusion
+{
+    public XunitPlatformExclusion(XunitReflectionCase @case, string requiredPlatform, string reason)
+    { Case = @case; RequiredPlatform = requiredPlatform; Reason = reason; }
+    public XunitReflectionCase Case { get; }
+    public string RequiredPlatform { get; }
+    public string Reason { get; }
+}
+
 public sealed class XunitReflectionCase
 {
     internal XunitReflectionCase(Type fixtureType, MethodInfo method, object?[] arguments, int? rowIndex)
@@ -547,7 +632,8 @@ public sealed class XunitReflectionNUnitRunner
 {
     public static IEnumerable<NUnitTestCaseData> Cases()
     {
-        var cases = XunitReflectionBridge.DiscoverLoadedAssemblies();
+        var discovery = XunitReflectionBridge.DiscoverWithPlatformSelection(XunitReflectionBridge.LoadConfiguredAssemblies());
+        var cases = discovery.Cases;
         var manifestPath = Environment.GetEnvironmentVariable(
             XunitReflectionBridge.DiscoveryManifestEnvironmentVariable);
         if (!string.IsNullOrWhiteSpace(manifestPath))
@@ -557,7 +643,7 @@ public sealed class XunitReflectionNUnitRunner
                 Directory.CreateDirectory(directory);
             File.WriteAllText(
                 manifestPath,
-                XunitReflectionBridge.ExportDiscoveryManifest(cases),
+                XunitReflectionBridge.ExportDiscoveryManifest(cases, discovery.PlatformExclusions),
                 new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         }
 

@@ -35,7 +35,7 @@ public sealed class UnityCustomerWorkflowTests
             Path.Combine(repositoryRoot, "tests", "UnityCustomerAcceptance", "Packages"),
             Path.Combine(fixture.ProjectPath, "Packages"));
         AssertTreeEqual(
-            Path.Combine(repositoryRoot, "examples", "UnityShowcase", "ProjectSettings"),
+            Path.Combine(repositoryRoot, "tests", "UnityPackageSample", "ProjectSettings"),
             Path.Combine(fixture.ProjectPath, "ProjectSettings"));
         Assert.False(Directory.Exists(Path.Combine(fixture.ProjectPath, "Assets", "Samples", "SpireAcceptance")));
         Assert.False(Directory.Exists(Path.Combine(fixture.ProjectPath, "Packages", "com.houtamelo.spire")));
@@ -50,6 +50,12 @@ public sealed class UnityCustomerWorkflowTests
         using var fixture = WorkflowFixture.Create(repositoryRoot);
         await BuildPackageAsync(repositoryRoot, fixture.CandidatePath);
         await BuildPackageAsync(repositoryRoot, fixture.BaselinePath);
+        var baselineOnlyAsset = Path.Combine(
+            fixture.BaselinePath,
+            "Samples~",
+            "Showcase",
+            "baseline-only-acceptance-marker.txt");
+        File.WriteAllText(baselineOnlyAsset, "copied from baseline package only\n");
 
         var result = await RunCustomerAsync(
             repositoryRoot,
@@ -62,8 +68,16 @@ public sealed class UnityCustomerWorkflowTests
             Path.Combine(repositoryRoot, "tests", "UnityCustomerAcceptance", "Assets"),
             Path.Combine(fixture.ProjectPath, "Assets"));
         AssertTreeEqual(
-            Path.Combine(repositoryRoot, "examples", "UnityShowcase", "Assets"),
+            Path.Combine(fixture.BaselinePath, "Samples~", "Showcase"),
             Path.Combine(fixture.ProjectPath, "Assets", "Samples", "SpireAcceptance"));
+        Assert.Equal(
+            "copied from baseline package only\n",
+            File.ReadAllText(Path.Combine(
+                fixture.ProjectPath,
+                "Assets",
+                "Samples",
+                "SpireAcceptance",
+                "baseline-only-acceptance-marker.txt")));
         AssertTreeSubset(
             Path.Combine(repositoryRoot, "tests", "UnityCustomerAcceptance", "Packages"),
             Path.Combine(fixture.ProjectPath, "Packages"),
@@ -143,6 +157,82 @@ public sealed class UnityCustomerWorkflowTests
         Assert.Equal(before, Snapshot(trackedFixture));
     }
 
+    [Fact]
+    public async Task PrepareOnly_RejectsCandidatePackageInsideAnIsolatedRepositoryExamplesDirectoryBeforeMutation()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        using var fixture = WorkflowFixture.Create(repositoryRoot);
+        await BuildPackageAsync(repositoryRoot, fixture.CandidatePath);
+
+        var isolatedExamples = Path.Combine(fixture.Root, "examples", "candidate");
+        CopyDirectory(fixture.CandidatePath, isolatedExamples);
+        CreateUnrelatedProject(fixture.ProjectPath);
+        var before = Snapshot(fixture.ProjectPath);
+
+        var result = await RunCustomerAsync(
+            repositoryRoot,
+            fixture.ProjectPath,
+            isolatedExamples,
+            editor: Path.Combine(fixture.Root, "editor-that-must-not-be-launched"),
+            rootOverride: fixture.Root);
+
+        AssertFailure(result);
+        Assert.Contains("repository examples directory", CombinedOutput(result), StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(before, Snapshot(fixture.ProjectPath));
+        Assert.False(File.Exists(Path.Combine(fixture.ProjectPath, ".spire-unity-customer")));
+    }
+
+    [Fact]
+    public async Task PrepareOnly_RejectsBaselinePackageInsideAnIsolatedRepositoryExamplesDirectoryBeforeMutation()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        using var fixture = WorkflowFixture.Create(repositoryRoot);
+        await BuildPackageAsync(repositoryRoot, fixture.CandidatePath);
+        await BuildPackageAsync(repositoryRoot, fixture.BaselinePath);
+
+        var isolatedExamples = Path.Combine(fixture.Root, "examples", "baseline");
+        CopyDirectory(fixture.BaselinePath, isolatedExamples);
+        CreateUnrelatedProject(fixture.ProjectPath);
+        var before = Snapshot(fixture.ProjectPath);
+
+        var result = await RunCustomerAsync(
+            repositoryRoot,
+            fixture.ProjectPath,
+            fixture.CandidatePath,
+            isolatedExamples,
+            editor: Path.Combine(fixture.Root, "editor-that-must-not-be-launched"),
+            rootOverride: fixture.Root);
+
+        AssertFailure(result);
+        Assert.Contains("repository examples directory", CombinedOutput(result), StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(before, Snapshot(fixture.ProjectPath));
+        Assert.False(File.Exists(Path.Combine(fixture.ProjectPath, ".spire-unity-customer")));
+    }
+
+    [Fact]
+    public async Task PrepareOnly_MissingBaselineShowcaseFailsBeforeMutatingTheProject()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        using var fixture = WorkflowFixture.Create(repositoryRoot);
+        await BuildPackageAsync(repositoryRoot, fixture.CandidatePath);
+        await BuildPackageAsync(repositoryRoot, fixture.BaselinePath);
+        Directory.Delete(Path.Combine(fixture.BaselinePath, "Samples~", "Showcase"), recursive: true);
+        CreateUnrelatedProject(fixture.ProjectPath);
+        var before = Snapshot(fixture.ProjectPath);
+
+        var result = await RunCustomerAsync(
+            repositoryRoot,
+            fixture.ProjectPath,
+            fixture.CandidatePath,
+            fixture.BaselinePath,
+            editor: Path.Combine(fixture.Root, "editor-that-must-not-be-launched"));
+
+        AssertFailure(result);
+        Assert.Contains("Showcase sample", CombinedOutput(result), StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(before, Snapshot(fixture.ProjectPath));
+        Assert.False(File.Exists(Path.Combine(fixture.ProjectPath, ".spire-unity-customer")));
+    }
+
     private static async Task BuildPackageAsync(string repositoryRoot, string outputPath)
     {
         var result = await RunCliAsync(
@@ -161,7 +251,8 @@ public sealed class UnityCustomerWorkflowTests
         string projectPath,
         string packagePath,
         string? baselinePath = null,
-        string? editor = null)
+        string? editor = null,
+        string? rootOverride = null)
     {
         var arguments = new List<string>
         {
@@ -186,8 +277,16 @@ public sealed class UnityCustomerWorkflowTests
             arguments.Add(editor);
         }
 
-        return await RunCliAsync(repositoryRoot, arguments.ToArray());
+        return rootOverride is null
+            ? await RunCliAsync(repositoryRoot, arguments.ToArray())
+            : await RunCliWithRootAsync(repositoryRoot, rootOverride, arguments.ToArray());
     }
+
+    private static async Task<ProcessResult> RunCliWithRootAsync(
+        string repositoryRoot,
+        string rootOverride,
+        params string[] arguments)
+        => await RunCliAsync(repositoryRoot, new[] { "--root", rootOverride }.Concat(arguments).ToArray());
 
     private static async Task<ProcessResult> RunCliAsync(string repositoryRoot, params string[] arguments)
     {
@@ -265,6 +364,16 @@ public sealed class UnityCustomerWorkflowTests
         Directory.CreateDirectory(Path.Combine(projectPath, "Assets"));
         File.WriteAllText(Path.Combine(projectPath, "unrelated-sentinel.txt"), "preserve this file\n");
         File.WriteAllText(Path.Combine(projectPath, "Assets", "unrelated.asset"), "preserve this asset\n");
+    }
+
+    private static void CopyDirectory(string source, string target)
+    {
+        Assert.True(Directory.Exists(source), source);
+        Directory.CreateDirectory(target);
+        foreach (var file in Directory.EnumerateFiles(source))
+            File.Copy(file, Path.Combine(target, Path.GetFileName(file)));
+        foreach (var directory in Directory.EnumerateDirectories(source))
+            CopyDirectory(directory, Path.Combine(target, Path.GetFileName(directory)));
     }
 
     private static void AssertTreeEqual(string source, string target)

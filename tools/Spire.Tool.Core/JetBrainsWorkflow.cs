@@ -181,7 +181,7 @@ public static class JetBrainsWorkflow
 
     public static async Task<int> RunAsync(ToolContext context, string project, string rider, string cli, string editor, string stage, TimeSpan timeout)
     {
-        project = FileOps.FullPath(project);
+        project = context.RequireOutsideExamples(project);
         ValidateProject(project);
         var results = new JsonObject();
         if (stage == "all" || stage == "inspect") results["inspection"] = await InspectAsync(context, project, cli, rider, timeout).ConfigureAwait(false);

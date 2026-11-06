@@ -11,15 +11,21 @@ public static class CustomerWorkflow
 
     public static string Prepare(ToolContext context, string project, string package, string? baseline)
     {
-        package = ValidatePackage(package);
-        if (baseline != null) baseline = ValidatePackage(baseline);
+        project = context.RequireOutsideExamples(project);
+        package = ValidatePackage(context.RequireOutsideExamples(package));
+        if (baseline != null)
+        {
+            baseline = ValidatePackage(context.RequireOutsideExamples(baseline));
+            if (!Directory.Exists(Path.Combine(baseline, "Samples~/Showcase")))
+                throw new DirectoryNotFoundException("Baseline package Showcase sample is missing: " + baseline);
+        }
         project = FileOps.Disposable(project, context.PathOf(Fixture), ".spire-unity-customer", Marker);
         foreach (var folder in new[] { "Assets", "Packages", "ProjectSettings" })
         {
             var target = Path.Combine(project, folder);
             FileOps.ResetDirectory(target);
             FileOps.CopyDirectory(context.PathOf(folder == "ProjectSettings"
-                ? "examples/UnityShowcase/ProjectSettings"
+                ? "tests/UnityPackageSample/ProjectSettings"
                 : Fixture + "/" + folder), target);
         }
 
@@ -29,7 +35,7 @@ public static class CustomerWorkflow
             var manifest = FileOps.ReadObject(manifestPath);
             manifest["dependencies"]!["com.houtamelo.spire"] = "file:" + baseline;
             FileOps.WriteJson(manifestPath, manifest);
-            FileOps.CopyDirectory(context.PathOf("examples/UnityShowcase/Assets"), Path.Combine(project, "Assets/Samples/SpireAcceptance"));
+            FileOps.CopyDirectory(Path.Combine(baseline, "Samples~/Showcase"), Path.Combine(project, "Assets/Samples/SpireAcceptance"));
         }
         FileOps.WriteJson(Path.Combine(project, "global.json"), new JsonObject
         { ["sdk"] = new JsonObject { ["version"] = "8.0.318", ["rollForward"] = "latestPatch" } });

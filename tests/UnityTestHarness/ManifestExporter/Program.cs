@@ -95,9 +95,10 @@ try
     var assemblies = assemblyPaths
         .Select(path => AssemblyLoadContext.Default.LoadFromAssemblyPath(path))
         .ToArray();
-    var cases = await DiscoverIndependentlyAsync(assemblies);
-    File.WriteAllText(outputManifest, XunitReflectionBridge.ExportDiscoveryManifest(cases));
-    Console.WriteLine($"Discovered {cases.Count} portable xUnit cases.");
+    var discovery = await DiscoverIndependentlyAsync(assemblies);
+    File.WriteAllText(outputManifest, XunitReflectionBridge.ExportDiscoveryManifest(discovery.Cases, discovery.PlatformExclusions));
+    Console.WriteLine($"Discovered {discovery.Cases.Count} applicable xUnit cases for {XunitReflectionBridge.CurrentPlatform}; " +
+        $"{discovery.PlatformExclusions.Count} explicitly platform-inapplicable cases.");
     return 0;
 }
 catch (Exception exception)
@@ -108,6 +109,13 @@ catch (Exception exception)
 
 static string ResolveReferenceRoot(string repositoryRoot)
 {
+    var configured = Environment.GetEnvironmentVariable("SPIRE_UNITY_TEST_REFERENCE_ROOT");
+    if (!string.IsNullOrEmpty(configured))
+    {
+        if (!Directory.Exists(configured) || !File.Exists(Path.Combine(configured, "System.Runtime.dll")))
+            throw new DirectoryNotFoundException("Configured .NET reference pack is incomplete: " + configured);
+        return Path.GetFullPath(configured);
+    }
     var prepared = Path.Combine(repositoryRoot, "ReferenceAssemblies", "net8.0");
     if (Directory.Exists(prepared) && Directory.EnumerateFiles(prepared, "*.dll").Any())
         return prepared;
@@ -141,10 +149,11 @@ static void CopyDirectory(string source, string target)
         CopyDirectory(directory, Path.Combine(target, Path.GetFileName(directory)));
 }
 
-static async Task<IReadOnlyList<XunitReflectionCase>> DiscoverIndependentlyAsync(
+static async Task<XunitDiscoveryResult> DiscoverIndependentlyAsync(
     IEnumerable<Assembly> assemblies)
 {
     var cases = new List<XunitReflectionCase>();
+    var exclusions = new List<XunitPlatformExclusion>();
     foreach (var assembly in assemblies)
     {
         var collector = new DiscoveryCollector();
@@ -171,12 +180,6 @@ static async Task<IReadOnlyList<XunitReflectionCase>> DiscoverIndependentlyAsync
 
         foreach (var testCase in collector.Cases)
         {
-            if (!string.IsNullOrEmpty(testCase.SkipReason))
-            {
-                throw new InvalidOperationException(
-                    $"xUnit discovery returned skipped test '{testCase.DisplayName}': {testCase.SkipReason}");
-            }
-
             var reflectionMethod = (testCase.TestMethod.Method as IReflectionMethodInfo)?.MethodInfo;
             var fixtureType = (testCase.TestMethod.TestClass.Class as IReflectionTypeInfo)?.Type;
             if (reflectionMethod == null || fixtureType == null)
@@ -185,17 +188,32 @@ static async Task<IReadOnlyList<XunitReflectionCase>> DiscoverIndependentlyAsync
                     $"xUnit discovery returned a non-reflection test method for '{assembly.GetName().Name}'.");
             }
 
-            cases.Add(new XunitReflectionCase(
+            var @case = new XunitReflectionCase(
                 fixtureType,
                 reflectionMethod,
                 testCase.TestMethodArguments ?? Array.Empty<object?>(),
-                rowIndex: null));
+                rowIndex: null);
+            var required = XunitReflectionBridge.GetRequiredPlatform(reflectionMethod);
+            if (!string.IsNullOrEmpty(testCase.SkipReason))
+            {
+                if (required == null || required == XunitReflectionBridge.CurrentPlatform ||
+                    testCase.SkipReason != XunitReflectionBridge.PlatformSkipReason(required))
+                    throw new InvalidOperationException(
+                        $"xUnit discovery returned an unexplained skipped test '{testCase.DisplayName}': {testCase.SkipReason}");
+                exclusions.Add(new XunitPlatformExclusion(@case, required, testCase.SkipReason));
+            }
+            else
+            {
+                if (required != null && required != XunitReflectionBridge.CurrentPlatform)
+                    throw new InvalidOperationException($"xUnit did not report the required platform exclusion for '{testCase.DisplayName}'.");
+                cases.Add(@case);
+            }
         }
     }
 
-    return cases
-        .OrderBy(testCase => testCase.Identity, StringComparer.Ordinal)
-        .ToArray();
+    return new XunitDiscoveryResult(
+        cases.OrderBy(testCase => testCase.Identity, StringComparer.Ordinal).ToArray(),
+        exclusions.OrderBy(item => item.Case.Identity, StringComparer.Ordinal).ToArray());
 }
 
 static ITestFrameworkDiscoveryOptions CreateDiscoveryOptions()

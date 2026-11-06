@@ -622,6 +622,20 @@ public sealed class UnityStructCatalogCliTests
     }
 
     [Fact]
+    public async Task Catalog_RejectsMalformedAssemblyInReferenceDirectoryWithoutSuccessReport()
+    {
+        using var fixture = TestFixture.Create();
+        fixture.WriteSource("Input.cs", "public struct Value { public int Number; }");
+        var references = fixture.RootPath("references");
+        Directory.CreateDirectory(references);
+        File.WriteAllText(Path.Combine(references, "Broken.dll"), "This is not a PE image.");
+
+        var result = await fixture.RunCatalogAsync("--reference", references);
+
+        AssertFailureWithoutReport(result, fixture.OutputDirectory);
+    }
+
+    [Fact]
     public async Task Catalog_UsesSelectedFrameworkAssembliesAndExcludesHostAndRoslynReferences()
     {
         using var fixture = TestFixture.Create();
@@ -1217,6 +1231,7 @@ public sealed class UnityStructCatalogCliTests
         };
         info.Environment["CI"] = "true";
         info.Environment["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1";
+        info.Environment["EnableSourceControlManagerQueries"] = "false";
         var nugetCache = Path.Combine(workingDirectory, "tmp", "unity-struct-catalog-test-nuget-cache");
         Directory.CreateDirectory(nugetCache);
         info.Environment["NUGET_HTTP_CACHE_PATH"] = nugetCache;

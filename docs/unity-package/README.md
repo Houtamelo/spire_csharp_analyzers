@@ -10,8 +10,10 @@ unions on Unity `2022.3.62f3`. Generic unions cannot use native serialization on
 Unity 2022. Keep the documented minimum version; older-Editor verification does
 not expand supported versions. See [Serialization](Documentation~/Serialization.md).
 
-Validated on Unity 6000.5.6f1, Linux x64, with Editor Mono and IL2CPP players.
-Rider is the verified IDE workflow. On Unity 6000.6.5f1 (Linux), an engine bug still affects
+Validated on Unity 6000.5.6f1, Linux and Windows x64, with Editor Mono and IL2CPP players;
+Windows Mono players were also exercised. Rider and Visual Studio Community have
+verified diagnostics, generated symbols, and a representative IDE Quick Action.
+On Unity 6000.6.5f1 (Linux), an engine bug still affects
 serialization of generic unions with reference-type arguments, such as
 `Command<string>`. Native Editor write/read checks pass for non-generic unions
 and tested unmanaged generic unions. See [Serialization](Documentation~/Serialization.md).

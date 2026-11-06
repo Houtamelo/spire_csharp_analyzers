@@ -138,20 +138,40 @@ public sealed class ProcessCompatibilityTests
     {
         var info = new ProcessStartInfo
         {
-            FileName = "/bin/sh",
+            FileName = Path.DirectorySeparatorChar == '\\' ? "powershell.exe" : "/bin/sh",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             WorkingDirectory = workingDirectory,
         };
-        DevTools.ProcessCompatibility.AddArgument(info, "-c");
-        DevTools.ProcessCompatibility.AddArgument(info, command);
-        DevTools.ProcessCompatibility.AddArgument(info, zero);
+        if (Path.DirectorySeparatorChar == '\\')
+        {
+            var script = Path.Combine(workingDirectory, zero + ".ps1");
+            var body = zero switch
+            {
+                "print-arguments" => "foreach ($value in $args) { [Console]::WriteLine($value) }",
+                "sleep" => "Start-Sleep -Seconds 30",
+                "spawn-child" or "delayed-spawn-child" =>
+                    (zero == "delayed-spawn-child" ? "[IO.File]::WriteAllText($args[0], ''); Start-Sleep -Milliseconds 200; " : "") +
+                    "$child=Start-Process powershell.exe -ArgumentList '-NoProfile -Command Start-Sleep -Seconds 30' -PassThru; " +
+                    "[IO.File]::WriteAllText($args[0], [string]$child.Id); $child.WaitForExit()",
+                _ => throw new InvalidOperationException("Unknown Windows process fixture: " + zero),
+            };
+            File.WriteAllText(script, body);
+            foreach (var option in new[] { "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script })
+                DevTools.ProcessCompatibility.AddArgument(info, option);
+        }
+        else
+        {
+            DevTools.ProcessCompatibility.AddArgument(info, "-c");
+            DevTools.ProcessCompatibility.AddArgument(info, command);
+            DevTools.ProcessCompatibility.AddArgument(info, zero);
+        }
         foreach (var argument in arguments)
             DevTools.ProcessCompatibility.AddArgument(info, argument);
 
         var process = new Process { StartInfo = info };
-        Assert.True(process.Start(), "Could not start /bin/sh.");
+        Assert.True(process.Start(), "Could not start the platform process fixture.");
         return process;
     }
 
@@ -283,8 +303,7 @@ public sealed class ProcessCompatibilityTests
 
         public void Dispose()
         {
-            if (Directory.Exists(Root))
-                Directory.Delete(Root, recursive: true);
+            TestDirectories.DeleteOwned(Root);
         }
     }
 

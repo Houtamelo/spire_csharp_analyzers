@@ -1,0 +1,103 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 448e250abd9f694af51638ffce25d865, type: 3}
+  m_Name: ShowcasePreset
+  m_EditorClassIdentifier: Houtamelo.Spire.Showcase::Houtamelo.Spire.Showcase.ShowcasePreset
+  selectedCommand:
+    _kind: 2
+    _serializedPayload:
+      rid: 6494732838706348034
+  commands:
+  - _kind: 0
+    _serializedPayload:
+      rid: 6494732838706348035
+  - _kind: 2
+    _serializedPayload:
+      rid: 6494732838706348036
+  - _kind: 3
+    _serializedPayload:
+      rid: 6494732838706348037
+  - _kind: 4
+    _serializedPayload:
+      rid: 6494732838706348038
+  - _kind: 4
+    _serializedPayload:
+      rid: 6494732838706348039
+  - _kind: 4
+    _serializedPayload:
+      rid: 6494732838706348040
+  shape:
+    _kind: 1
+    _serializedPayload:
+      rid: 6494732838706348041
+  result:
+    _kind: 0
+    _serializedPayload:
+      rid: 6494732838706348042
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
+    - rid: 6494732838706348034
+      type: {class: 'SpireSerializedPayload`1[[Houtamelo.Spire.Showcase.GameplayCommandTypes/Variants/Move, Houtamelo.Spire.Showcase]]', ns: Houtamelo.Spire.Generated, asm: Houtamelo.Spire.Showcase}
+      data:
+        value:
+          _destination: {x: 3, y: 4}
+          _speed: 2
+    - rid: 6494732838706348035
+      type: {class: 'SpireSerializedPayload`1[[Houtamelo.Spire.Showcase.GameplayCommandTypes/Variants/Idle, Houtamelo.Spire.Showcase]]', ns: Houtamelo.Spire.Generated, asm: Houtamelo.Spire.Showcase}
+      data: {}
+    - rid: 6494732838706348036
+      type: {class: 'SpireSerializedPayload`1[[Houtamelo.Spire.Showcase.GameplayCommandTypes/Variants/Move, Houtamelo.Spire.Showcase]]', ns: Houtamelo.Spire.Generated, asm: Houtamelo.Spire.Showcase}
+      data:
+        value:
+          _destination: {x: 3, y: 4}
+          _speed: 2
+    - rid: 6494732838706348037
+      type: {class: 'SpireSerializedPayload`1[[Houtamelo.Spire.Showcase.GameplayCommandTypes/Variants/Speak, Houtamelo.Spire.Showcase]]', ns: Houtamelo.Spire.Generated, asm: Houtamelo.Spire.Showcase}
+      data:
+        value:
+          _speech: Hello from Spire
+    - rid: 6494732838706348038
+      type: {class: 'SpireSerializedPayload`1[[Houtamelo.Spire.Showcase.GameplayCommandTypes/Variants/ApplyEffect, Houtamelo.Spire.Showcase]]', ns: Houtamelo.Spire.Generated, asm: Houtamelo.Spire.Showcase}
+      data:
+        value:
+          _effect:
+            rid: 6494732838706348043
+    - rid: 6494732838706348039
+      type: {class: 'SpireSerializedPayload`1[[Houtamelo.Spire.Showcase.GameplayCommandTypes/Variants/ApplyEffect, Houtamelo.Spire.Showcase]]', ns: Houtamelo.Spire.Generated, asm: Houtamelo.Spire.Showcase}
+      data:
+        value:
+          _effect:
+            rid: 6494732838706348043
+    - rid: 6494732838706348040
+      type: {class: 'SpireSerializedPayload`1[[Houtamelo.Spire.Showcase.GameplayCommandTypes/Variants/ApplyEffect, Houtamelo.Spire.Showcase]]', ns: Houtamelo.Spire.Generated, asm: Houtamelo.Spire.Showcase}
+      data:
+        value:
+          _effect:
+            rid: -2
+    - rid: 6494732838706348041
+      type: {class: 'SpireSerializedPayload`1[[Houtamelo.Spire.Showcase.ShapeTypes/Variants/Rectangle, Houtamelo.Spire.Showcase]]', ns: Houtamelo.Spire.Generated, asm: Houtamelo.Spire.Showcase}
+      data:
+        value:
+          _width: 3
+          _height: 4
+    - rid: 6494732838706348042
+      type: {class: 'SpireSerializedPayload`1[[Houtamelo.Spire.Showcase.OperationResultTypes1/Variants/Success`1[[System.Int32, mscorlib]], Houtamelo.Spire.Showcase]]', ns: Houtamelo.Spire.Generated, asm: Houtamelo.Spire.Showcase}
+      data:
+        value:
+          _value: 42
+    - rid: 6494732838706348043
+      type: {class: DamageEffect, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
+      data:
+        amount: 10

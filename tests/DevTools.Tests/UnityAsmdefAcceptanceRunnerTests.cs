@@ -27,6 +27,27 @@ public sealed class UnityAsmdefAcceptanceRunnerTests
         AssertFixtureSourcesCopied(repositoryRoot, fixture.ProjectPath);
         AssertInputProvenance(repositoryRoot, fixture.ProjectPath);
         AssertPackageProvenance(repositoryRoot, fixture.ProjectPath, configuration);
+        Assert.Equal(File.ReadAllBytes(Path.Combine(repositoryRoot, "tests", "UnityAsmdefIntegration", "matrix.json")),
+            File.ReadAllBytes(Path.Combine(fixture.ProjectPath, "matrix.json")));
+    }
+
+    [Fact]
+    public async Task VisualStudio_MissingExecutableFailsBeforeMutatingAnExistingProject()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        using var fixture = AcceptanceFixture.Create(repositoryRoot);
+        Directory.CreateDirectory(fixture.ProjectPath);
+        var sentinel = Path.Combine(fixture.ProjectPath, "preserve.txt");
+        File.WriteAllText(sentinel, "preserve this file");
+
+        await Assert.ThrowsAnyAsync<Exception>(() => AsmdefWorkflow.RunAsync(
+            new ToolContext(repositoryRoot), fixture.ProjectPath, ToolContext.DefaultEditor,
+            ToolContext.DefaultRider, BuildConfiguration(), false, true, TimeSpan.FromSeconds(5),
+            Path.Combine(fixture.ProjectPath, "missing-devenv.exe")));
+
+        Assert.Equal("preserve this file", File.ReadAllText(sentinel));
+        Assert.False(File.Exists(Path.Combine(fixture.ProjectPath, ".spire-unity-asmdefs")));
+        Assert.False(Directory.Exists(Path.Combine(fixture.ProjectPath, "Assets")));
     }
 
     [Fact]
@@ -251,14 +272,14 @@ public sealed class UnityAsmdefAcceptanceRunnerTests
             var rsp = Path.Combine(directory, "csc.rsp");
             Assert.True(File.Exists(rsp), rsp);
             Assert.Contains("-langversion:9", File.ReadAllText(rsp));
-            Assert.Contains("-ruleset:\"" + ruleset + "\"", File.ReadAllText(rsp));
+            Assert.Contains("-ruleset:Assets/Default.ruleset", File.ReadAllText(rsp));
         }
 
         var sampleRoot = Path.Combine(projectPath, "Packages", "com.houtamelo.spire", "Samples~", "Showcase");
         Assert.True(Directory.Exists(sampleRoot), sampleRoot);
         var sampleAsmdefs = Directory.EnumerateFiles(sampleRoot, "*.asmdef", SearchOption.AllDirectories).ToArray();
         Assert.NotEmpty(sampleAsmdefs);
-        var authoredSampleAssets = Path.Combine(repositoryRoot, "examples", "UnityShowcase", "Assets");
+        var authoredSampleAssets = Path.Combine(repositoryRoot, "tests", "UnityPackageSample", "Assets");
         foreach (var asmdef in sampleAsmdefs)
         {
             var relativeAsmdef = RelativePath(sampleRoot, asmdef);

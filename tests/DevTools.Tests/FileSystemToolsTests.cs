@@ -40,6 +40,15 @@ public sealed class FileSystemToolsTests
             File.WriteAllText("ordinary.txt", "remove");
             Assert.Contains("Deleted:", FileSystemTools.Remove("ordinary.txt"));
             Assert.False(File.Exists("ordinary.txt"));
+
+            var outside = Path.Combine(Path.GetDirectoryName(repo)!, Path.GetFileName(repo) + "-outside.txt");
+            File.WriteAllText(outside, "keep");
+            try
+            {
+                Assert.Contains("outside repo root", FileSystemTools.Remove(outside));
+                Assert.True(File.Exists(outside));
+            }
+            finally { File.Delete(outside); }
         }
         finally
         {

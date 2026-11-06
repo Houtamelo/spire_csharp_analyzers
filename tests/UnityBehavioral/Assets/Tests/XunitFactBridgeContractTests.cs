@@ -52,7 +52,13 @@ public sealed class XunitFactBridgeContractTests
     {
 #if ENABLE_IL2CPP
         const string backend = "IL2CPP";
-        Assert.That(Application.platform, Is.EqualTo(RuntimePlatform.LinuxPlayer));
+            Assert.That(Application.platform, Is.EqualTo(
+#if UNITY_STANDALONE_WIN
+                RuntimePlatform.WindowsPlayer
+#else
+                RuntimePlatform.LinuxPlayer
+#endif
+            ));
 
         var reportPath = ResolveBackendReportPath();
         if (reportPath == null)

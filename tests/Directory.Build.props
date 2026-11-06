@@ -1,0 +1,12 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)../Directory.Build.props" />
+  <PropertyGroup>
+    <!-- Source Link otherwise walks Git submodules in the interactive examples. -->
+    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ProjectReference>
+      <AdditionalProperties>EnableSourceControlManagerQueries=false</AdditionalProperties>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+</Project>

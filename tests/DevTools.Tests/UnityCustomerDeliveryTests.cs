@@ -295,7 +295,7 @@ public sealed class UnityCustomerDeliveryTests
         var result = await RunPackageBuilderAsync(repositoryRoot, fixture.OutputPath, fixture.Root);
 
         AssertSuccess(result);
-        var assetsRoot = Path.Combine(repositoryRoot, "examples", "UnityShowcase", "Assets");
+        var assetsRoot = UnityCustomerDeliveryTestSupport.SampleAssetsRoot(repositoryRoot);
         UnityCustomerDeliveryTestSupport.AssertSampleInventoryMatchesAssets(repositoryRoot);
         foreach (var source in Directory.EnumerateFiles(assetsRoot, "*", SearchOption.AllDirectories))
         {
@@ -416,6 +416,33 @@ public sealed class UnityCustomerDeliveryTests
     }
 
     [Fact]
+    public async Task BuildPackage_RejectsOutputInsideAnIsolatedRepositoryExamplesDirectoryBeforeMutation()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        using var fixture = CustomerPackageFixture.Create(repositoryRoot);
+        var outputPath = Path.Combine(fixture.Root, "examples", "package");
+        var result = await RunPackageBuilderAsync(repositoryRoot, outputPath, fixture.Root);
+
+        Assert.NotEqual(0, result.ExitCode);
+        Assert.Contains("repository examples directory", CombinedOutput(result), StringComparison.OrdinalIgnoreCase);
+        Assert.False(Directory.Exists(outputPath));
+    }
+
+    [Fact]
+    public async Task BuildPackage_AllowsSiblingExamplesOtherDirectoryWhenExamplesIsAbsent()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        using var fixture = CustomerPackageFixture.Create(repositoryRoot);
+        var outputPath = Path.Combine(fixture.Root, "examples-other", "package");
+        Assert.False(Directory.Exists(Path.Combine(fixture.Root, "examples")));
+
+        var result = await RunPackageBuilderAsync(repositoryRoot, outputPath, fixture.Root);
+
+        AssertSuccess(result);
+        Assert.True(File.Exists(Path.Combine(outputPath, "package.json")), outputPath);
+    }
+
+    [Fact]
     public async Task BuildPackage_MissingRequiredAssemblyArtifactFailsBeforeCreatingOutput()
     {
         var repositoryRoot = FindRepositoryRoot();
@@ -449,8 +476,8 @@ public sealed class UnityCustomerDeliveryTests
     public async Task BuildPackage_MissingTrackedShowcaseAssetFailsWithoutPartialOutput()
     {
         var repositoryRoot = FindRepositoryRoot();
-        var assetsRoot = Path.Combine(repositoryRoot, "examples", "UnityShowcase", "Assets");
-        var inventory = Path.Combine(repositoryRoot, "examples", "UnityShowcase", "sample-files.txt");
+        var assetsRoot = UnityCustomerDeliveryTestSupport.SampleAssetsRoot(repositoryRoot);
+        var inventory = Path.Combine(UnityCustomerDeliveryTestSupport.SampleRoot(repositoryRoot), "sample-files.txt");
         var inventoryRelative = Path.GetRelativePath(repositoryRoot, inventory);
         using (var inventoryFixture = CustomerPackageFixture.Create(repositoryRoot))
         {
@@ -773,9 +800,9 @@ public sealed class UnityCustomerDeliveryTests
                 CopyFile(repositoryRoot, Path.GetRelativePath(repositoryRoot, source));
 
             CopyDirectory(
-                Path.Combine(repositoryRoot, "examples", "UnityShowcase", "Assets"),
-                Path.Combine(Root, "examples", "UnityShowcase", "Assets"));
-            CopyFile(repositoryRoot, "examples/UnityShowcase/sample-files.txt");
+                UnityCustomerDeliveryTestSupport.SampleAssetsRoot(repositoryRoot),
+                Path.Combine(Root, "tests", "UnityPackageSample", "Assets"));
+            CopyFile(repositoryRoot, "tests/UnityPackageSample/sample-files.txt");
         }
 
         private void CopyFile(string repositoryRoot, string relative)
@@ -837,6 +864,12 @@ internal static class UnityCustomerDeliveryTestSupport
         yield return $"src/Houtamelo.Spire.PatternAnalysis/bin/{configuration}/netstandard2.0/Houtamelo.Spire.PatternAnalysis.dll";
         yield return $"src/Houtamelo.Spire.CodeFixes/bin/{configuration}/netstandard2.0/Houtamelo.Spire.CodeFixes.dll";
     }
+
+    internal static string SampleRoot(string repositoryRoot)
+        => Path.Combine(repositoryRoot, "tests", "UnityPackageSample");
+
+    internal static string SampleAssetsRoot(string repositoryRoot)
+        => Path.Combine(SampleRoot(repositoryRoot), "Assets");
 
     internal static IEnumerable<string> DocumentationSourceFiles(string repositoryRoot)
     {
@@ -936,7 +969,7 @@ internal static class UnityCustomerDeliveryTestSupport
             expected.Add(relative);
         }
 
-        var assetsRoot = Path.Combine(repositoryRoot, "examples", "UnityShowcase", "Assets");
+        var assetsRoot = UnityCustomerDeliveryTestSupport.SampleAssetsRoot(repositoryRoot);
         foreach (var source in Directory.EnumerateFiles(assetsRoot, "*", SearchOption.AllDirectories))
         {
             var relative = Path.GetRelativePath(assetsRoot, source).Replace(Path.DirectorySeparatorChar, '/');
@@ -981,17 +1014,14 @@ internal static class UnityCustomerDeliveryTestSupport
 
         var sourceRelative = relative[prefix.Length..];
         var source = Path.Combine(
-            repositoryRoot,
-            "examples",
-            "UnityShowcase",
-            "Assets",
+            SampleAssetsRoot(repositoryRoot),
             sourceRelative.Replace('/', Path.DirectorySeparatorChar));
         return File.Exists(source);
     }
 
     internal static void AssertAuthoredShowcaseMetaGuids(string repositoryRoot, string outputRoot)
     {
-        var sourceRoot = Path.Combine(repositoryRoot, "examples", "UnityShowcase", "Assets");
+        var sourceRoot = SampleAssetsRoot(repositoryRoot);
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var source in Directory.EnumerateFiles(sourceRoot, "*.meta", SearchOption.AllDirectories))
         {
@@ -1012,7 +1042,7 @@ internal static class UnityCustomerDeliveryTestSupport
 
     internal static void AssertSampleInventoryMatchesAssets(string repositoryRoot)
     {
-        var sampleRoot = Path.Combine(repositoryRoot, "examples", "UnityShowcase");
+        var sampleRoot = SampleRoot(repositoryRoot);
         var inventoryPath = Path.Combine(sampleRoot, "sample-files.txt");
         Assert.True(File.Exists(inventoryPath), inventoryPath);
         var inventory = File.ReadAllLines(inventoryPath)
@@ -1095,6 +1125,7 @@ internal static class UnityCustomerDeliveryTestSupport
                 repositoryRoot,
                 normalizedRoot,
                 "examples/UnityShowcase",
+                "tests/UnityPackageSample",
                 "tmp/unity-package",
                 ".csproj",
                 ".sln",
@@ -1116,7 +1147,7 @@ internal static class UnityCustomerDeliveryTestSupport
             .Select(path => ReadGuidLine(path)["guid: ".Length..])
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var sourceGuids = Directory.EnumerateFiles(
-                Path.Combine(repositoryRoot, "examples", "UnityShowcase", "Assets"),
+                SampleAssetsRoot(repositoryRoot),
                 "*.meta",
                 SearchOption.AllDirectories)
             .Select(path => ReadGuidLine(path)["guid: ".Length..])
@@ -1216,7 +1247,7 @@ internal static class UnityCustomerDeliveryTestSupport
 
     internal static void AssertPublicApiXmlCoverage(string assemblyPath, string xmlPath)
     {
-        var assembly = Assembly.LoadFile(Path.GetFullPath(assemblyPath));
+        var assembly = Assembly.Load(File.ReadAllBytes(assemblyPath));
         var members = LoadXmlMembers(xmlPath);
         foreach (var type in assembly.GetExportedTypes().Where(IsConsumerType))
         {
@@ -1253,7 +1284,7 @@ internal static class UnityCustomerDeliveryTestSupport
 
     internal static void AssertReflectionSmoke(string assemblyPath, string xmlPath)
     {
-        var assembly = Assembly.LoadFile(Path.GetFullPath(assemblyPath));
+        var assembly = Assembly.Load(File.ReadAllBytes(assemblyPath));
         var members = LoadXmlMembers(xmlPath);
         var expectedTypes = new List<string>
         {

@@ -168,6 +168,7 @@ public sealed class StandaloneAnalyzerPackageTests
         ["CI"] = "true",
         ["MSBUILDDISABLENODEREUSE"] = "1",
         ["MSBUILDTERMINALLOGGER"] = "off",
+        ["EnableSourceControlManagerQueries"] = "false",
         ["NUGET_HTTP_CACHE_PATH"] = Path.Combine(Path.GetTempPath(), "spire-nuget-http-cache"),
         ["NUGET_SCRATCH"] = Path.Combine(Path.GetTempPath(), "spire-nuget-scratch"),
     };

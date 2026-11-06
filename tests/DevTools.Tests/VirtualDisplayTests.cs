@@ -14,7 +14,7 @@ public sealed class VirtualDisplayTests
     private static readonly TimeSpan ProcessTimeout = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan ServerObservationTimeout = TimeSpan.FromSeconds(5);
 
-    [Fact]
+    [LinuxFact]
     public async Task RunAsync_ProvidesAWorkingDisplayThenReturnsTheCallbackResultAndCleansUp()
     {
         using var fixture = VirtualDisplayFixture.Create();
@@ -35,7 +35,7 @@ public sealed class VirtualDisplayTests
         await AssertServerExitedAsync(ownedDisplay!);
     }
 
-    [Fact]
+    [LinuxFact]
     public async Task RunAsync_PropagatesTheCallbackExceptionAndCleansUp()
     {
         using var fixture = VirtualDisplayFixture.Create();
@@ -58,7 +58,7 @@ public sealed class VirtualDisplayTests
         await AssertServerExitedAsync(ownedDisplay!);
     }
 
-    [Fact]
+    [LinuxFact]
     public async Task RunAsync_PreservesARealProcessRunnerResultAndCleansUp()
     {
         using var fixture = VirtualDisplayFixture.Create();
@@ -85,7 +85,7 @@ public sealed class VirtualDisplayTests
         await AssertServerExitedAsync(ownedDisplay!);
     }
 
-    [Fact]
+    [LinuxFact]
     public async Task RunAsync_PropagatesCallbackCancellationAndCleansUp()
     {
         using var fixture = VirtualDisplayFixture.Create();

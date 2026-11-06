@@ -156,6 +156,12 @@ internal static class Catalog
                 var name = Path.GetFileNameWithoutExtension(path);
                 if (!references.ContainsKey(name))
                 {
+                    if (Directory.Exists(input))
+                    {
+                        using var stream = File.OpenRead(path);
+                        using var image = new System.Reflection.PortableExecutable.PEReader(stream);
+                        if (!image.HasMetadata) continue;
+                    }
                     _ = System.Reflection.AssemblyName.GetAssemblyName(path);
                     references.Add(name, path);
                 }

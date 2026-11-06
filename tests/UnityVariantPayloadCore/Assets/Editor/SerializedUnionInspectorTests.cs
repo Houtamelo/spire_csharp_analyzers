@@ -1875,15 +1875,17 @@ namespace Spire.UnityVariantPayloadCore
                 RecordFailure(
                     "IMGUI_RenderedFieldEdit",
                     new UnverifiedException(
-                        "Native XTest input was unavailable for the isolated Unity display; " +
-                        "the direct EditorWindow.SendEvent path is intentionally not used."));
+                        "Native desktop input was unavailable for the Unity display; " +
+                        "the direct EditorWindow.SendEvent path is intentionally not used." +
+                        (Application.platform == RuntimePlatform.WindowsEditor ? " " + WindowsInspectorInput.DescribeAvailability() : string.Empty)));
                 _phase = (int)Phase.Finish;
                 return;
             }
             if (!_imguiWindow.QueueNativeMouseClick())
             {
                 RecordFailure("IMGUI_RenderedFieldEdit", new UnverifiedException(
-                    "Native XTest could not queue the IMGUI field click."));
+                    "Native desktop input could not queue the IMGUI field click. " + _imguiWindow.DescribeImgui() +
+                    (Application.platform == RuntimePlatform.WindowsEditor ? " " + WindowsInspectorInput.DescribeAvailability() : string.Empty)));
                 _phase = (int)Phase.Finish;
                 return;
             }
@@ -2393,8 +2395,9 @@ namespace Spire.UnityVariantPayloadCore
             public Rect LastPropertyRect => _lastPropertyRect;
             public bool QueueNativeMouseClick()
             {
-                var x = Mathf.RoundToInt(_imguiFieldScreenPoint.x);
-                var y = Mathf.RoundToInt(_imguiFieldScreenPoint.y);
+                var scale = Application.platform == RuntimePlatform.WindowsEditor ? EditorGUIUtility.pixelsPerPoint : 1f;
+                var x = Mathf.RoundToInt(_imguiFieldScreenPoint.x * scale);
+                var y = Mathf.RoundToInt(_imguiFieldScreenPoint.y * scale);
                 return NativeInspectorInput.QueueMove(x, y) && NativeInspectorInput.QueueClick(1);
             }
 
@@ -3136,6 +3139,7 @@ namespace Spire.UnityVariantPayloadCore
             public string DescribeImgui()
             {
                 return "repaint=" + _imguiRepainted +
+                    ";pixelsPerPoint=" + EditorGUIUtility.pixelsPerPoint +
                     ";rect=" + _lastPropertyRect +
                     ";screenPoint=" + _imguiFieldScreenPoint +
                     ";height=" + _lastPropertyHeight +

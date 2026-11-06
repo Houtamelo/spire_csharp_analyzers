@@ -15,7 +15,10 @@ namespace Spire.UnityAsmdefIntegration
     internal static class RiderVerification
     {
         private const string StatePath = "Library/Spire.UnityAsmdefIntegration-rider-state.json";
-        private const string ReportPath = "rider-recompile-results.json";
+        private static string IdeName => Environment.GetEnvironmentVariable("SPIRE_IDE_TEST_PROVIDER") == "VisualStudio"
+            ? "Visual Studio" : "Rider";
+        private static string ReportPath => Environment.GetEnvironmentVariable("SPIRE_IDE_TEST_PROVIDER") == "VisualStudio"
+            ? "visual-studio-recompile-results.json" : "rider-recompile-results.json";
         private const string RiderSourcePath = "Assets/RuntimeAuto/_rider.cs";
         private const int TimeoutSeconds = 900;
         private const long PollIntervalTicks = TimeSpan.TicksPerMillisecond * 100;
@@ -221,9 +224,9 @@ namespace Spire.UnityAsmdefIntegration
 
             _state.phases.Add(new PhaseResult
             {
-                name = "rider-recompile",
+                name = IdeName == "Rider" ? "rider-recompile" : "visual-studio-recompile",
                 passed = true,
-                summary = "All fixture assemblies recompiled after Rider's SPIRE016 fix.",
+                summary = "All fixture assemblies recompiled after " + IdeName + "'s SPIRE016 fix.",
                 diagnostics = diagnostics,
             });
             _state.active = false;
@@ -472,6 +475,7 @@ namespace Spire.UnityAsmdefIntegration
             {
                 schemaVersion = 1,
                 fixture = "UnityAsmdefIntegration",
+                ide = IdeName,
                 unityVersion = Application.unityVersion,
                 status = _state.active ? "running" : (_state.success ? "pass" : "fail"),
                 success = _state.success,
@@ -556,6 +560,7 @@ namespace Spire.UnityAsmdefIntegration
         {
             public int schemaVersion;
             public string fixture;
+            public string ide;
             public string unityVersion;
             public string status;
             public bool success;
