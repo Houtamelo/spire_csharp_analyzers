@@ -1,0 +1,25 @@
+// ReSharper disable ClassCanBeSealed.Global, FieldCanBeMadeReadOnly.Global, ConvertToConstant.Global, InconsistentNaming, CheckNamespace, MemberCanBePrivate.Global, UnusedMember.Global, UnusedType.Global, UnusedMember.Local, NotAccessedField.Global, RedundantUsingDirective
+using Houtamelo.Spire.Showcase;
+using UnityEngine;
+
+namespace SpireGallery {
+
+public static class CommandRunner {
+    public static void Execute(GameplayCommand command) {
+        switch (command) {
+            case { IsIdle: true }:
+                break;
+            case { IsMove: true, move: { destination: var target, speed: var speed } }:
+                Debug.Log($"Move to {target} at speed {speed}");
+                break;
+            case { IsTeleport: true, teleport: { target: var target } }:
+                Debug.Log($"Teleport to {target}");
+                break;
+            case { IsSpeak: true, speak: { speech: var text } }:
+                Debug.Log(text);
+                break;
+        }
+    }
+}
+
+}

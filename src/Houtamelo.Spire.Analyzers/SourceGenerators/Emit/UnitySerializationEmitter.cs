@@ -32,8 +32,9 @@ internal static class UnitySerializationEmitter
     }
 
     /// Emits callbacks for a union whose public payload structs are themselves
-    /// Unity-serializable. This path intentionally does not emit per-variant
-    /// serializer classes: each cache value is a closed shared wrapper.
+    /// Unity-serializable. The shared generic wrapper remains the restore and
+    /// compatibility shape; newly written values use the per-union concrete
+    /// wrappers emitted beside the payloads.
     internal static void EmitVariantPayloadCallbacks(
         SourceBuilder sb,
         UnionDeclaration union,
@@ -57,7 +58,7 @@ internal static class UnitySerializationEmitter
         foreach (var variant in union.Variants)
         {
             var payloadVariable = "serializedPayload_" + Safe(variant.Name);
-            var wrapperType = GeneratedAliasEmitter.SerializedPayloadReference(union, variant.Name);
+            var wrapperType = GeneratedAliasEmitter.ConcreteSerializedPayloadReference(union, variant.Name);
             var arm = $"(Kind.{IdentifierUtility.Escape(variant.Name)}, {wrapperType} {payloadVariable}) =>";
             if (variant.Fields.Length == 0)
             {
@@ -107,6 +108,7 @@ internal static class UnitySerializationEmitter
             var variantName = IdentifierUtility.Escape(variant.Name);
             var payloadType = VariantPayloadType(union, variant.Name);
             var wrapperType = GeneratedAliasEmitter.SerializedPayloadReference(union, variant.Name);
+            var concreteWrapperType = GeneratedAliasEmitter.ConcreteSerializedPayloadReference(union, variant.Name);
             var currentVariable = "currentPayload_" + Safe(variant.Name);
             var aliasVariable = "formerPayload_" + Safe(variant.FormerlySerializedAs ?? variant.Name);
             var preparedVariable = "preparedPayload_" + Safe(variant.Name);
@@ -124,7 +126,7 @@ internal static class UnitySerializationEmitter
             sb.Indent();
             sb.AppendLine("return this;");
             sb.Dedent();
-            sb.AppendLine($"var {preparedVariable} = new {wrapperType}();");
+            sb.AppendLine($"var {preparedVariable} = new {concreteWrapperType}();");
             EmitVariantPayloadRefresh(
                 sb,
                 union,

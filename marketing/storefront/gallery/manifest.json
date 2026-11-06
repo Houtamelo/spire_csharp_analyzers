@@ -1,0 +1,475 @@
+{
+  "revision": 3,
+  "verificationDetails": "raw/verification-v3.json",
+  "status": "approved-for-first-release",
+  "dimensions": [
+    1950,
+    1300
+  ],
+  "sourceLogo": "../../brand/spire-s-three-colors-v4_edited_slight_blur.png",
+  "sourceLogoSha256": "f92056eacbc3252fa678d92a96c9f02d7ddf11c54cfcbbf99a7807852f46301a",
+  "software": {
+    "Unity": "6000.5.6f1",
+    "Rider": "2026.2.4",
+    "Burst": "1.8.29",
+    "NewtonsoftJson": "3.2.2"
+  },
+  "captureMethod": "Actual Unity Editor and Rider windows on isolated Xvfb displays; PNG window/root captures.",
+  "layoutMethod": "ImageMagick composition, with self-contained editable SVG sources. Captures are cropped and resized; no UI is generated or repainted.",
+  "fixtures": "All code is captured in Rider. The Inspector displays the serialized fields shown beside it. JSON and Burst result panels execute real generated code in Unity; these result panels are capture-only demonstrations.",
+  "verification": {
+    "jsonRoundTrip": {
+      "kind": "Success",
+      "value": 42
+    },
+    "nativeBurst": {
+      "nativeBurstExecution": true,
+      "position": [
+        4,
+        4,
+        0
+      ],
+      "commands": 3
+    },
+    "quickFix": {
+      "quickFix": "Add missing variant arms",
+      "missingCase": "TalkToNpc",
+      "appliedVia": "actual Rider popup selected and confirmed with Enter",
+      "sourceChanged": true,
+      "generatedBranch": "TalkToNpc => throw new System.NotImplementedException(),",
+      "highlight": "Actual Rider text selection in the saved generated branch"
+    }
+  },
+  "rawCaptures": [
+    {
+      "file": "raw/01-rider-missing-case.png",
+      "sha256": "dd1ff0738b365c37f71dde33883769485cd430646a3d41dac656eeac4323b444"
+    },
+    {
+      "file": "raw/02-rider-quick-fix.png",
+      "sha256": "642efd57530aec0e18b7b21448271cc419fb0780aa823d36c31c596929b09ffd"
+    },
+    {
+      "file": "raw/03-rider-generated-cases.png",
+      "sha256": "72ae20d88939b3c2922ad352fb698cec4ea2917b5a0096eb2b0f167305248c3f"
+    },
+    {
+      "file": "raw/04-rider-variant-payloads.png",
+      "sha256": "dc180ff255c90397ca6fede976b1b6862727815edfe0f4c555300df6dd666dee"
+    },
+    {
+      "file": "raw/v3-rider-union-switch.png",
+      "sha256": "d7b474857d5191be8b556df0eb3df1a671145006050b0a89e982f14305beb375"
+    },
+    {
+      "file": "raw/v3-rider-union-diagnostic.png",
+      "sha256": "0c313524220eb45c5a293a14985922560599c2459b3b1c51b2d061cfcc48a858"
+    },
+    {
+      "file": "raw/05-rider-serialized-fields.png",
+      "sha256": "b8ecd4ebf7ab80ff352c09ee9c6c16eff84ca6d887d481a121d0c00f16f9bcf4"
+    },
+    {
+      "file": "raw/08-unity-inspector-narrow.png",
+      "sha256": "3a61470192d8b1f464d200737239f515a2410a0a863758aebc3fc7076c4e97bd"
+    },
+    {
+      "file": "raw/06-rider-json-full.png",
+      "sha256": "2cb42791980874d1820968d2085d0c8c802bb78b8b0710cbe882b118a7a4efde"
+    },
+    {
+      "file": "raw/09-unity-json-output.png",
+      "sha256": "7cb98f0459e0b16f9af9b7ba1777f3aae3cf58be771b91698bdd6fe35183746b"
+    },
+    {
+      "file": "raw/07-rider-burst-job.png",
+      "sha256": "045d120c53912c3784ba7e7a8d3cb33197b998a765d9a8ca09fe041c6649e755"
+    },
+    {
+      "file": "raw/v3-rider-burst-execute.png",
+      "sha256": "a3974d5b445b96b567e47efda19e891ccdf4307768a9ae5f7fd96c210c462212"
+    },
+    {
+      "file": "raw/10-unity-burst-output.png",
+      "sha256": "9c0b29a35669b78c0f9a3bda9d9d77943d5ce7eb7422c12e0bcd06bbbaf29228"
+    }
+  ],
+  "slides": [
+    {
+      "file": "01-exhaustive-matching",
+      "title": "Catch missing cases at compile time.",
+      "subtitle": [
+        "Add an implementation. Spire immediately reports all switches that need updating."
+      ],
+      "photos": [
+        {
+          "source": "01-rider-missing-case.png",
+          "crop": [
+            225,
+            290,
+            2050,
+            910
+          ],
+          "x": 70,
+          "y": 345,
+          "width": 1810
+        },
+        {
+          "source": "02-rider-quick-fix.png",
+          "crop": [
+            1250,
+            1065,
+            620,
+            32
+          ],
+          "x": 70,
+          "y": 1155,
+          "width": 1400
+        }
+      ],
+      "notes": [
+        {
+          "text": "Works with enums, classes, interfaces, structs, and discriminated unions.",
+          "x": 70,
+          "y": 1258,
+          "size": 30,
+          "color": "#BDB1C5"
+        }
+      ],
+      "context": "Actual Rider diagnostic · full incomplete switch and data-bearing interface implementors",
+      "png": "01-exhaustive-matching.png",
+      "editable": "editable/01-exhaustive-matching.svg",
+      "sha256": "81431b19ca1535bc27799fb9a4abf7e29bf73fb62ea4a322e4017852d50a0239"
+    },
+    {
+      "file": "02-generate-missing-branches",
+      "title": "Generate the missing branches.",
+      "subtitle": [
+        "Use the IDE quick fix, then fill in the behavior."
+      ],
+      "photos": [
+        {
+          "source": "02-rider-quick-fix.png",
+          "crop": [
+            173,
+            1068,
+            1070,
+            32
+          ],
+          "x": 70,
+          "y": 405,
+          "width": 1810
+        },
+        {
+          "source": "03-rider-generated-cases.png",
+          "crop": [
+            235,
+            810,
+            1600,
+            340
+          ],
+          "x": 70,
+          "y": 660,
+          "width": 1810
+        }
+      ],
+      "notes": [
+        {
+          "text": "Choose the Rider code action",
+          "x": 70,
+          "y": 365,
+          "size": 29,
+          "color": "#BDB1C5"
+        },
+        {
+          "text": "The new branch is highlighted in blue.",
+          "x": 70,
+          "y": 615,
+          "size": 29,
+          "color": "#BDB1C5"
+        }
+      ],
+      "context": "Actual Rider quick fix · highlighted branch comes from the saved source transformation",
+      "png": "02-generate-missing-branches.png",
+      "editable": "editable/02-generate-missing-branches.svg",
+      "sha256": "1f1c97e67cd873ec8dfc686f7bb059e1a69d3eee2eead71b13aa384191e31afb"
+    },
+    {
+      "file": "03-variants-with-data",
+      "title": "Give each variant its own data.",
+      "subtitle": [
+        "Discriminated Unions allow expressing commands, states, and results with distinct payloads,",
+        "they are struct-based and lightweight:",
+        "storage is compact and requires no additional heap allocation."
+      ],
+      "photos": [
+        {
+          "source": "04-rider-variant-payloads.png",
+          "crop": [
+            240,
+            300,
+            1800,
+            690
+          ],
+          "x": 70,
+          "y": 440,
+          "width": 1810
+        }
+      ],
+      "notes": [
+        {
+          "text": "Move(destination, speed) · Speak(speech) · ApplyEffect(effect)",
+          "x": 70,
+          "y": 1195,
+          "size": 31,
+          "color": "#BDB1C5"
+        }
+      ],
+      "context": "Actual union declarations from the Unity showcase, displayed in Rider",
+      "png": "03-variants-with-data.png",
+      "editable": "editable/03-variants-with-data.svg",
+      "sha256": "057e5fa9be99264be205461d89a992a7d18b7674c39d0fecc2bae84fc5b3b7be"
+    },
+    {
+      "file": "04-exhaustive-union-switch",
+      "title": "Exhaustive matching for union switches.",
+      "subtitle": [
+        "Switch statements are exhaustive too. Spire names any missing variant.",
+        "You can even generate missing cases using the quick fix menu."
+      ],
+      "photos": [
+        {
+          "source": "v3-rider-union-switch.png",
+          "crop": [
+            230,
+            385,
+            2050,
+            760
+          ],
+          "x": 70,
+          "y": 390,
+          "width": 1810
+        },
+        {
+          "source": "v3-rider-union-diagnostic.png",
+          "crop": [
+            1215,
+            570,
+            605,
+            33
+          ],
+          "x": 70,
+          "y": 1100,
+          "width": 1810
+        }
+      ],
+      "notes": [
+        {
+          "text": "All cases are checked, without a default branch.",
+          "x": 70,
+          "y": 1238,
+          "size": 31,
+          "color": "#BDB1C5"
+        }
+      ],
+      "context": "Actual Rider switch statement using generated payload deconstruction · missing ApplyEffect variant reported by Spire",
+      "png": "04-exhaustive-union-switch.png",
+      "editable": "editable/04-exhaustive-union-switch.svg",
+      "sha256": "a11b15a2b20f4c5e7943261cae6387c807d9cb2c06ea3bc09b3c6a6f20f2d38a"
+    },
+    {
+      "file": "05-unity-inspector",
+      "title": "Author unions in the Unity Inspector.",
+      "subtitle": [
+        "Pick your variant, get editable fields from that variant.",
+        "Compatible with Odin Inspector."
+      ],
+      "photos": [
+        {
+          "source": "05-rider-serialized-fields.png",
+          "crop": [
+            315,
+            452,
+            895,
+            100
+          ],
+          "x": 70,
+          "y": 550,
+          "width": 950
+        },
+        {
+          "source": "08-unity-inspector-narrow.png",
+          "crop": [
+            0,
+            0,
+            600,
+            445
+          ],
+          "x": 1080,
+          "y": 395,
+          "width": 800
+        }
+      ],
+      "notes": [
+        {
+          "text": "Rider · serialized field declarations",
+          "x": 70,
+          "y": 505,
+          "size": 29,
+          "color": "#BDB1C5"
+        },
+        {
+          "text": "Unity · generated Inspector",
+          "x": 1080,
+          "y": 1080,
+          "size": 29,
+          "color": "#BDB1C5"
+        },
+        {
+          "text": "The same drawer works inside a List.",
+          "x": 70,
+          "y": 790,
+          "size": 32,
+          "color": "#BDB1C5"
+        }
+      ],
+      "context": "Actual Rider declarations and a 600-pixel-wide Unity Inspector showing the same serialized fields",
+      "png": "05-unity-inspector.png",
+      "editable": "editable/05-unity-inspector.svg",
+      "sha256": "c84e2023eecf26311a3e631c426d1391305a045fae1bce2cecfb7b7212cb12d1"
+    },
+    {
+      "file": "06-generated-json",
+      "title": "JSON converters, generated for you.",
+      "subtitle": [
+        "Serialization and deserialization. System.Text.Json and Newtonsoft.Json."
+      ],
+      "photos": [
+        {
+          "source": "06-rider-json-full.png",
+          "crop": [
+            235,
+            390,
+            1900,
+            750
+          ],
+          "x": 70,
+          "y": 380,
+          "width": 1400
+        },
+        {
+          "source": "09-unity-json-output.png",
+          "crop": [
+            45,
+            585,
+            430,
+            220
+          ],
+          "x": 1510,
+          "y": 590,
+          "width": 365
+        }
+      ],
+      "notes": [
+        {
+          "text": "Rider · union and round-trip code",
+          "x": 70,
+          "y": 345,
+          "size": 29,
+          "color": "#BDB1C5"
+        },
+        {
+          "text": "Unity output",
+          "x": 1510,
+          "y": 550,
+          "size": 28,
+          "color": "#BDB1C5"
+        },
+        {
+          "text": "Generated converter. Verified round trip: Success(42).",
+          "x": 70,
+          "y": 1100,
+          "size": 34,
+          "color": "#BDB1C5"
+        }
+      ],
+      "context": "Code captured in Rider · actual Unity JSON output and verified deserialization",
+      "png": "06-generated-json.png",
+      "editable": "editable/06-generated-json.svg",
+      "sha256": "e50ee0d69a546b3bcf7fee5caff9231c8a8699659595a02a4a7d3abe158fd6dc"
+    },
+    {
+      "file": "07-native-burst",
+      "title": "Typed variants inside native Burst jobs.",
+      "subtitle": [
+        "Struct-based Discriminated Unions provide the strongest polymorphism possible",
+        "within Burst's strict type restrictions. Also naturally compatible with DOTS."
+      ],
+      "photos": [
+        {
+          "source": "07-rider-burst-job.png",
+          "crop": [
+            225,
+            310,
+            1280,
+            730
+          ],
+          "x": 70,
+          "y": 420,
+          "width": 855
+        },
+        {
+          "source": "v3-rider-burst-execute.png",
+          "crop": [
+            325,
+            135,
+            1300,
+            880
+          ],
+          "x": 965,
+          "y": 420,
+          "width": 915
+        },
+        {
+          "source": "10-unity-burst-output.png",
+          "crop": [
+            45,
+            808,
+            650,
+            67
+          ],
+          "x": 70,
+          "y": 960,
+          "width": 800
+        }
+      ],
+      "notes": [
+        {
+          "text": "Rider · union and job",
+          "x": 70,
+          "y": 390,
+          "size": 29,
+          "color": "#BDB1C5"
+        },
+        {
+          "text": "Rider · Execute",
+          "x": 965,
+          "y": 390,
+          "size": 29,
+          "color": "#BDB1C5"
+        },
+        {
+          "text": "Unity · native Burst execution verified",
+          "x": 70,
+          "y": 1100,
+          "size": 29,
+          "color": "#BDB1C5"
+        }
+      ],
+      "context": "Actual Rider declarations and Execute method · typed commands from NativeArray handled inside a native Burst job",
+      "png": "07-native-burst.png",
+      "editable": "editable/07-native-burst.svg",
+      "sha256": "660b31c48cc219a8cc99b2db1ac0457f97577433fb0221a3f3afef8965a9beb6"
+    }
+  ]
+}

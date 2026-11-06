@@ -2,7 +2,7 @@
   "Baseline": "46ac18b",
   "ProductionBuild": "Clean Release source build completed with 0 warnings and 0 errors before compatibility verification.",
   "CaptureMethod": "One-shot baseline generator-driver capture before emitter refactors; core/record/JSON/performance/benchmark bytes are in tmp/full-code-quality-review/batch2/raw and the expanded Unity bytes are in tmp/full-code-quality-review/batch2/raw-unity-expanded.",
-  "ApprovedChange": "The core, JSON struct, Unity base-union, and benchmark union fixtures include hand-authored public payload-to-union implicit conversion operators; affected hashes reflect that approved contract. Namespaced union fixtures also place generated aliases inside their namespace block.",
+  "ApprovedChange": "The core, JSON struct, Unity base-union, and benchmark union fixtures include hand-authored public payload-to-union implicit conversion operators; affected hashes reflect that approved contract. Namespaced union fixtures also place generated aliases inside their namespace block. Unity serialization writes concrete per-variant wrappers while retaining legacy generic restore; drawer lookup uses inherited value fields, cyclic traversal handles ID 0, and multi-object binding notifications preserve per-target values.",
   "NewlinePolicy": "Compare exact UTF-8 source after normalizing CRLF or CR to LF only.",
   "Cases": [
     {
@@ -16,13 +16,13 @@
           "SourceSha256": "480d111d97b7d62c6732d1f8662ac594b3fc4962193eb9fe108629aff3dd27a6"
         },
         {
-          "Hint": "Q09.Core.Container.event\u00601.g.cs",
-          "Expected": "Compatibility/fixturedata/outputs/core/001-Q09.Core.Container.event\u00601.g.cs.txt",
+          "Hint": "Q09.Core.Container.event`1.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/core/001-Q09.Core.Container.event`1.g.cs.txt",
           "SourceSha256": "d43833ff0ab06ca79dd5c847d1dc119570fb15ae8f54fcad0a4e81782bf854e6"
         },
         {
-          "Hint": "Q09.Core.Shared\u00601.g.cs",
-          "Expected": "Compatibility/fixturedata/outputs/core/002-Q09.Core.Shared\u00601.g.cs.txt",
+          "Hint": "Q09.Core.Shared`1.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/core/002-Q09.Core.Shared`1.g.cs.txt",
           "SourceSha256": "153a8743999db744e9b7e72b005e1b8470d9b760e33c1b5a332dea05565e61c4"
         },
         {
@@ -48,13 +48,13 @@
           "SourceSha256": "4bb4536c814d6c3d355e28d68c01c7678486070e33144df2d0569b62d79ae038"
         },
         {
-          "Hint": "Q09.Records.Result\u00601.ToString.g.cs",
-          "Expected": "Compatibility/fixturedata/outputs/records/002-Q09.Records.Result\u00601.ToString.g.cs.txt",
+          "Hint": "Q09.Records.Result`1.ToString.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/records/002-Q09.Records.Result`1.ToString.g.cs.txt",
           "SourceSha256": "cb830d2330ed291a593266d291374268ce40982ca9a97b8f86e1fe6d97615b5b"
         },
         {
-          "Hint": "Q09.Records.Result\u00601.g.cs",
-          "Expected": "Compatibility/fixturedata/outputs/records/003-Q09.Records.Result\u00601.g.cs.txt",
+          "Hint": "Q09.Records.Result`1.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/records/003-Q09.Records.Result`1.g.cs.txt",
           "SourceSha256": "61cc2ef0f5899de5235bbc1d4e3cf14adcc15adc0b1158c18a65c3726c28b11a"
         }
       ]
@@ -85,38 +85,38 @@
           "SourceSha256": "0c542845d1d8612904d113428ea3e77ae40983281b31ba2fc4649a1d06e462b3"
         },
         {
-          "Hint": "Q09.Json.NsjOption\u00601.Nsj.g.cs",
-          "Expected": "Compatibility/fixturedata/outputs/json/004-Q09.Json.NsjOption\u00601.Nsj.g.cs.txt",
+          "Hint": "Q09.Json.NsjOption`1.Nsj.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/004-Q09.Json.NsjOption`1.Nsj.g.cs.txt",
           "SourceSha256": "b8d134c41c79f2b3eb45646dee19a2132656b47b7b9056ba28fdc7cf97fff64b"
         },
         {
-          "Hint": "Q09.Json.NsjOption\u00601.Schema.g.cs",
-          "Expected": "Compatibility/fixturedata/outputs/json/005-Q09.Json.NsjOption\u00601.Schema.g.cs.txt",
+          "Hint": "Q09.Json.NsjOption`1.Schema.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/005-Q09.Json.NsjOption`1.Schema.g.cs.txt",
           "SourceSha256": "697f026ff3860b5c6ee003743dca9bc690340362bdddf39052dae23f14596204"
         },
         {
-          "Hint": "Q09.Json.NsjOption\u00601.g.cs",
-          "Expected": "Compatibility/fixturedata/outputs/json/006-Q09.Json.NsjOption\u00601.g.cs.txt",
+          "Hint": "Q09.Json.NsjOption`1.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/006-Q09.Json.NsjOption`1.g.cs.txt",
           "SourceSha256": "32e3144a632c9b1e3f358cdc837300052a99f64456943263fee4e89f29d581a1"
         },
         {
-          "Hint": "Q09.Json.SchemaShape\u00601.Nsj.g.cs",
-          "Expected": "Compatibility/fixturedata/outputs/json/007-Q09.Json.SchemaShape\u00601.Nsj.g.cs.txt",
+          "Hint": "Q09.Json.SchemaShape`1.Nsj.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/007-Q09.Json.SchemaShape`1.Nsj.g.cs.txt",
           "SourceSha256": "43862a78bb320c9e74b3f941580c11605681eaeba54d3ce5dc54deb088425331"
         },
         {
-          "Hint": "Q09.Json.SchemaShape\u00601.Schema.g.cs",
-          "Expected": "Compatibility/fixturedata/outputs/json/008-Q09.Json.SchemaShape\u00601.Schema.g.cs.txt",
+          "Hint": "Q09.Json.SchemaShape`1.Schema.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/008-Q09.Json.SchemaShape`1.Schema.g.cs.txt",
           "SourceSha256": "bf2127a951eb8b1b33af197e538686d65ef4dc8712b901d5b6d6571bd4f23cda"
         },
         {
-          "Hint": "Q09.Json.SchemaShape\u00601.ToString.g.cs",
-          "Expected": "Compatibility/fixturedata/outputs/json/009-Q09.Json.SchemaShape\u00601.ToString.g.cs.txt",
+          "Hint": "Q09.Json.SchemaShape`1.ToString.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/009-Q09.Json.SchemaShape`1.ToString.g.cs.txt",
           "SourceSha256": "85c10a74870ab81703afaa5a3b2c5d19a0f8e8adf95a604d6e094d6fd923f3b1"
         },
         {
-          "Hint": "Q09.Json.SchemaShape\u00601.g.cs",
-          "Expected": "Compatibility/fixturedata/outputs/json/010-Q09.Json.SchemaShape\u00601.g.cs.txt",
+          "Hint": "Q09.Json.SchemaShape`1.g.cs",
+          "Expected": "Compatibility/fixturedata/outputs/json/010-Q09.Json.SchemaShape`1.g.cs.txt",
           "SourceSha256": "cc8dc5cb5e39c1aa3b31c08adc0cbc067e4eea45324c91da53ae81520c2d1070"
         },
         {
@@ -144,22 +144,22 @@
         {
           "Hint": "Q09UnityCommand.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-player/000-Q09UnityCommand.g.cs.txt",
-          "SourceSha256": "42ab738f37e4dfa79ea5c5864d55196da8e52cba3d2c3fd4d4dbfbb994af6bd8"
+          "SourceSha256": "8cf6a47a4097ed982c381cd3686a6db29f913aba0345bedbc91feab3026ba89e"
         },
         {
           "Hint": "Q09UnityGeneric`1.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-player/001-Q09UnityGeneric`1.g.cs.txt",
-          "SourceSha256": "0a8564b0aa56c331262044af67e244025b8350c2c2fb4820e910657b3ac33592"
+          "SourceSha256": "78526ba9e2c355cf23a9861270b6a3ad268a0c88d1b81cccd50976d14790ed75"
         },
         {
           "Hint": "Q09UnityPrivateContainer.event.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-player/002-Q09UnityPrivateContainer.event.g.cs.txt",
-          "SourceSha256": "8b90b2855a471c6fd64af3d405b2b2379f6716f684f87d09a22290cb9fd63700"
+          "SourceSha256": "71bd8fa9e5c05725584dd2a20576901e498200452628619c0892aee6c2888ee1"
         },
         {
           "Hint": "Spire.UnitySerializationSupport.generated.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-player/003-Spire.UnitySerializationSupport.generated.cs.txt",
-          "SourceSha256": "3aff6adf0480dbb08346966af25ad9b8a8e21a0f76e4f5b360ca7e617a11299d"
+          "SourceSha256": "7a30010384d27b140aeec38ae98ef0a75c6797685996a1e9145fcc8853940e3a"
         }
       ]
     },
@@ -176,7 +176,7 @@
         {
           "Hint": "Q09UnityCommand.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-editor/001-Q09UnityCommand.g.cs.txt",
-          "SourceSha256": "42ab738f37e4dfa79ea5c5864d55196da8e52cba3d2c3fd4d4dbfbb994af6bd8"
+          "SourceSha256": "8cf6a47a4097ed982c381cd3686a6db29f913aba0345bedbc91feab3026ba89e"
         },
         {
           "Hint": "Q09UnityGeneric`1.UnityDrawer.g.cs",
@@ -186,7 +186,7 @@
         {
           "Hint": "Q09UnityGeneric`1.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-editor/003-Q09UnityGeneric`1.g.cs.txt",
-          "SourceSha256": "0a8564b0aa56c331262044af67e244025b8350c2c2fb4820e910657b3ac33592"
+          "SourceSha256": "78526ba9e2c355cf23a9861270b6a3ad268a0c88d1b81cccd50976d14790ed75"
         },
         {
           "Hint": "Q09UnityPrivateContainer.event.UnityDrawer.g.cs",
@@ -196,17 +196,17 @@
         {
           "Hint": "Q09UnityPrivateContainer.event.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-editor/005-Q09UnityPrivateContainer.event.g.cs.txt",
-          "SourceSha256": "8b90b2855a471c6fd64af3d405b2b2379f6716f684f87d09a22290cb9fd63700"
+          "SourceSha256": "71bd8fa9e5c05725584dd2a20576901e498200452628619c0892aee6c2888ee1"
         },
         {
           "Hint": "Spire.UnityDrawerSupport.generated.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-editor/006-Spire.UnityDrawerSupport.generated.cs.txt",
-          "SourceSha256": "4dea96e7a486608e12e06f1a33fafbe9cf40307148e6385eaf2f7b017cc8ab52"
+          "SourceSha256": "d7adca6b0ece367690050e54e94384099897291b659c9ea2e805c60e9da0fc05"
         },
         {
           "Hint": "Spire.UnitySerializationSupport.generated.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-editor/007-Spire.UnitySerializationSupport.generated.cs.txt",
-          "SourceSha256": "3aff6adf0480dbb08346966af25ad9b8a8e21a0f76e4f5b360ca7e617a11299d"
+          "SourceSha256": "7a30010384d27b140aeec38ae98ef0a75c6797685996a1e9145fcc8853940e3a"
         }
       ]
     },

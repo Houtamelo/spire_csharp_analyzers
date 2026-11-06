@@ -10,6 +10,8 @@ Editor/ShowcaseAuthoring.cs
 Editor/ShowcaseAuthoring.cs.meta
 Editor/ShowcasePaths.cs
 Editor/ShowcasePaths.cs.meta
+Editor/csc.rsp
+Editor/csc.rsp.meta
 Examples.meta
 Examples/ShowcasePreset.asset
 Examples/ShowcasePreset.asset.meta

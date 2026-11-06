@@ -54,7 +54,15 @@ internal static class UnityGeneratorTestHarness
         => Path.Combine(ManagedRoot, "UnityEngine");
 
     public static string UnityScriptingAssemblyPath
-        => Path.Combine(UnityEngineRoot, "Unity.Scripting.dll");
+    {
+        get
+        {
+            var dedicated = Path.Combine(UnityEngineRoot, "Unity.Scripting.dll");
+            return File.Exists(dedicated)
+                ? dedicated
+                : Path.Combine(UnityEngineRoot, "UnityEngine.CoreModule.dll");
+        }
+    }
 
     public static UnityGeneratorRun Run(
         string source,
@@ -197,7 +205,7 @@ internal static class UnityGeneratorTestHarness
 
         Assert.True(
             File.Exists(UnityScriptingAssemblyPath),
-            $"Unity.Scripting.dll was not found below '{UnityEngineRoot}'. " +
+            $"Unity scripting metadata was not found below '{UnityEngineRoot}'. " +
             "Set SPIRE_UNITY_EDITOR to the installed Unity 6000.5.6f1 root or Unity executable.");
 
         if (includeEditor)
@@ -453,7 +461,7 @@ internal static class UnityGeneratorTestHarness
             "DotNetSdk",
             "sdk");
         if (!Directory.Exists(sdkRoot))
-            return TestHarnessEnvironment.FrameworkReferences;
+            return RuntimeFrameworkReferences();
 
         var frameworkRoot = Directory.EnumerateDirectories(sdkRoot)
             .Select(path => Path.Combine(path, "TestHostNetFramework"))
@@ -461,7 +469,7 @@ internal static class UnityGeneratorTestHarness
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
             .LastOrDefault();
         if (frameworkRoot is null)
-            return TestHarnessEnvironment.FrameworkReferences;
+            return RuntimeFrameworkReferences();
 
         // Unity's TestHostNetFramework facade carries netstandard 2.0, matching
         // Houtamelo.Spire's netstandard2.0 reference. Do not import its bundled
@@ -504,6 +512,15 @@ internal static class UnityGeneratorTestHarness
 
         return frameworkPaths;
     }
+
+    private static IEnumerable<MetadataReference> RuntimeFrameworkReferences()
+        => TestHarnessEnvironment.RuntimeReferences.Where(reference =>
+        {
+            var name = Path.GetFileName(reference.Display ?? string.Empty);
+            return !name.StartsWith("Unity.", StringComparison.OrdinalIgnoreCase) &&
+                !name.StartsWith("UnityEngine", StringComparison.OrdinalIgnoreCase) &&
+                !name.StartsWith("UnityEditor", StringComparison.OrdinalIgnoreCase);
+        });
 
     private const string UnityEditorFacadeAlias = "__SpireUnityEditorFacade";
 

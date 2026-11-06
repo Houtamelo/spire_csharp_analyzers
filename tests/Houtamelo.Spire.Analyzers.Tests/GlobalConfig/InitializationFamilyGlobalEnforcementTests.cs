@@ -227,8 +227,15 @@ public class InitializationFamilyGlobalEnforcementTests
     private static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsWithoutSpireReferenceAsync(
         string source, string setting)
     {
+#if SPIRE_UNITY_TEST_HOST
+        var spirePath = typeof(Houtamelo.Spire.EnforceInitializationAttribute).Assembly.Location;
+        var references = global::Spire.Tests.Hosting.UnityTestHost.FrameworkReferences
+            .Where(reference => !string.Equals(reference.Display, spirePath, StringComparison.OrdinalIgnoreCase))
+            .ToImmutableArray();
+#else
         var references = await ReferenceAssemblies.Net.Net80.ResolveAsync(
             LanguageNames.CSharp, CancellationToken.None);
+#endif
         references = references.Add(MetadataReference.CreateFromFile(
             typeof(SPIRE001ArrayOfEnforceInitializationStructAnalyzer).Assembly.Location));
         var tree = CSharpSyntaxTree.ParseText(
@@ -239,6 +246,7 @@ public class InitializationFamilyGlobalEnforcementTests
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         AssertNoCompilerErrors(nameof(GetDiagnosticsWithoutSpireReferenceAsync), compilation.GetDiagnostics());
+        Assert.Null(compilation.GetTypeByMetadataName("Houtamelo.Spire.EnforceInitializationAttribute"));
 
         var options = Options(setting);
         var analyzerOptions = new AnalyzerOptions(

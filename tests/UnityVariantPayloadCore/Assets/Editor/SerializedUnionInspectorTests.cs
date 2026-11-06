@@ -37,6 +37,7 @@ namespace Spire.UnityVariantPayloadCore
         private const string PrefabPath = AssetFolder + "/InspectorCommand.prefab";
         private const double WatchdogSeconds = 75.0;
         private const int UiWaitFrames = 240;
+        private const int NativeEditCommitWaitFrames = 60;
 
         private static InspectorReport? _report;
         private static InspectorCommandAsset? _asset;
@@ -50,6 +51,7 @@ namespace Spire.UnityVariantPayloadCore
         private static InspectorProbeWindow? _imguiWindow;
         private static double _startedAt;
         private static int _phase;
+        private static int _lastLoggedPhase = -1;
         private static int _waitFrames;
         private static bool _finishing;
 
@@ -75,12 +77,16 @@ namespace Spire.UnityVariantPayloadCore
         private static int _imguiEditWaitFrames;
         private static string _imguiInitialSpeech = string.Empty;
         private static int _undoWaitFrames;
+        private static bool _undoEditSent;
+        private static int _undoCommitWaitFrames;
         private static TextField? _undoField;
         private static string _undoBefore = string.Empty;
         private static Exception? _undoError;
         private static SerializedObject? _undoExternalSerialized;
         private static int _undoExternalWaitFrames;
         private static int _managedRefWaitFrames;
+        private static bool _managedRefEditSent;
+        private static int _managedRefCommitWaitFrames;
         private static TextField? _managedRefField;
         private static string _managedRefBefore = string.Empty;
         private static int _collectionEditWaitFrames;
@@ -153,11 +159,17 @@ namespace Spire.UnityVariantPayloadCore
                 assertions = new List<string>(),
                 failures = new List<string>(),
                 diagnostics = new List<string>(),
+                genericUnionSerializationSupported =
+                    SerializedUnionNativeCapabilities.GenericUnionSerializationSupported,
+                genericUnionSerializationApplicability =
+                    SerializedUnionNativeCapabilities.GenericUnionSerializationApplicability,
             };
             _startedAt = EditorApplication.timeSinceStartup;
             _phase = (int)Phase.Setup;
+            _lastLoggedPhase = -1;
             _waitFrames = 0;
             _finishing = false;
+            RunCase("NativeInput_OptOutAndInvalidInput", CheckNativeInputSafety);
             EditorApplication.update -= Tick;
             EditorApplication.update += Tick;
             Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_BEGIN");
@@ -167,6 +179,12 @@ namespace Spire.UnityVariantPayloadCore
         {
             if (_report == null || _finishing)
                 return;
+
+            if (_lastLoggedPhase != _phase)
+            {
+                Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_PHASE phase=" + ((Phase)_phase));
+                _lastLoggedPhase = _phase;
+            }
 
             try
             {
@@ -192,7 +210,17 @@ namespace Spire.UnityVariantPayloadCore
                         break;
                     case Phase.UiReadOnly:
                         RunCase("OpenDoesNotMutateActual", CheckUiOpenDoesNotMutateActual);
-                        _phase = (int)Phase.GenericStart;
+                        if (SerializedUnionNativeCapabilities.GenericUnionSerializationSupported)
+                        {
+                            _phase = (int)Phase.GenericStart;
+                        }
+                        else
+                        {
+                            RecordNotApplicable(
+                                "ClosedGenericKindControl",
+                                "Closed-generic Inspector serialization is not applicable on Unity 2022.");
+                            _phase = (int)Phase.UiKeyboardStart;
+                        }
                         _waitFrames = 0;
                         break;
                     case Phase.GenericStart:
@@ -348,7 +376,9 @@ namespace Spire.UnityVariantPayloadCore
         {
             RunCase("FixtureSetup", () =>
             {
+                Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP DeleteFixtureAssets start");
                 DeleteFixtureAssets();
+                Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP DeleteFixtureAssets done");
                 EnsureFolder(AssetFolder);
 
                 _texture = new Texture2D(2, 2, TextureFormat.RGBA32, false)
@@ -361,6 +391,7 @@ namespace Spire.UnityVariantPayloadCore
                 _texture.SetPixel(1, 1, Color.magenta);
                 _texture.Apply();
                 AssetDatabase.CreateAsset(_texture, TexturePath);
+                Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP texture asset created");
 
                 var shared = new InspectorNode { label = "shared", value = 7 };
                 shared.next = shared;
@@ -384,6 +415,7 @@ namespace Spire.UnityVariantPayloadCore
                 };
                 _asset.sharedNode = shared;
                 _asset.secondSharedNode = shared;
+                Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP native asset created path=" + AssetPath);
 
                 _secondAsset = CreateAsset(
                     SecondAssetPath,
@@ -395,17 +427,27 @@ namespace Spire.UnityVariantPayloadCore
                 _secondAsset.ordinaryField = "second";
                 _secondAsset.commands = new[] { InspectorCommand.Move(new Vector2(8f, 9f), 10f) };
                 _secondAsset.commandList = new List<InspectorCommand> { InspectorCommand.Move(new Vector2(6f, 7f), 8f) };
+                Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP native asset created path=" + SecondAssetPath);
 
-                _genericAsset = ScriptableObject.CreateInstance<InspectorGenericAsset>();
-                _genericAsset.generic = InspectorGeneric<int>.Empty();
-                AssetDatabase.CreateAsset(_genericAsset, GenericAssetPath);
-                EditorUtility.SetDirty(_genericAsset);
+                if (SerializedUnionNativeCapabilities.GenericUnionSerializationSupported)
+                {
+                    _genericAsset = ScriptableObject.CreateInstance<InspectorGenericAsset>();
+                    _genericAsset.generic = InspectorGeneric<int>.Empty();
+                    AssetDatabase.CreateAsset(_genericAsset, GenericAssetPath);
+                    EditorUtility.SetDirty(_genericAsset);
+                }
 
+                Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP CreatePrefab start");
                 CreatePrefab();
+                Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP CreatePrefab done");
+                Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP AssetDatabase.SaveAssets start");
                 AssetDatabase.SaveAssets();
+                Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP AssetDatabase.SaveAssets done");
                 AssetDatabase.Refresh();
+                Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP AssetDatabase.Refresh done");
                 Require(File.Exists(ProjectPath(AssetPath)), "The Inspector ScriptableObject asset was not persisted.");
-                Require(File.Exists(ProjectPath(GenericAssetPath)), "The closed-generic Inspector asset was not persisted.");
+                if (SerializedUnionNativeCapabilities.GenericUnionSerializationSupported)
+                    Require(File.Exists(ProjectPath(GenericAssetPath)), "The closed-generic Inspector asset was not persisted.");
                 Require(File.Exists(ProjectPath(PrefabPath)), "The Inspector prefab asset was not persisted.");
 
                 var beforeYaml = ReadAssetText(AssetPath);
@@ -413,9 +455,13 @@ namespace Spire.UnityVariantPayloadCore
                 var beforeUndoGroup = Undo.GetCurrentGroup();
                 _window = ScriptableObject.CreateInstance<InspectorProbeWindow>();
                 _window.InitialUndoGroup = beforeUndoGroup;
+                Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP window BindUi start");
                 _window.BindUi(_asset);
+                Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP window BindUi done");
                 _window.Show();
+                Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP window Show done");
                 _window.Focus();
+                Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP window Focus done");
                 _window.InitialYaml = beforeYaml;
                 _window.InitialPayloadId = beforeId;
             });
@@ -931,13 +977,23 @@ namespace Spire.UnityVariantPayloadCore
             if (!_copiedEditSent && _copiedError == null && _window != null)
             {
                 _copiedField = _window.FindTextField("copiedLeft", "speech");
-                if (_copiedField != null && _window.FocusTextField(_copiedField))
+                if (_copiedField != null && _window.PrepareTextFieldForEdit(_copiedField))
                 {
                     _copiedExpected = _copiedField.value ?? "left";
+                    Debug.Log(
+                        "SPIRE_UNITY_VARIANT_INSPECTOR_EDIT copied-before-send field=" +
+                        _window.DescribeTextField(_copiedField) + ";value=" + _copiedField.value +
+                        ";cursor=" + _copiedField.cursorIndex + ";select=" + _copiedField.selectIndex);
+                    _window.SendKey('\0', KeyCode.End);
                     _window.SendKey('!', KeyCode.Alpha1);
                     _copiedExpected += "!";
                     _window.Serialized.ApplyModifiedProperties();
                     _copiedEditSent = true;
+                    Debug.Log(
+                        "SPIRE_UNITY_VARIANT_INSPECTOR_EDIT copied-after-send field=" +
+                        _window.DescribeTextField(_copiedField) + ";readOnly=" + _copiedField.isReadOnly +
+                        ";host=" + (_asset.copiedLeft.kind == InspectorCommand.Kind.Speak
+                            ? _asset.copiedLeft.speak.speech : "<non-speak>"));
                 }
                 else if (_copiedWaitFrames >= UiWaitFrames)
                 {
@@ -948,6 +1004,23 @@ namespace Spire.UnityVariantPayloadCore
             }
             if (!_copiedEditSent && _copiedError == null)
                 return;
+            if (_copiedEditSent && _copiedError == null && _window != null && _asset != null)
+            {
+                _window.Serialized.Update();
+                var committed = _asset.copiedLeft.kind == InspectorCommand.Kind.Speak &&
+                    _asset.copiedLeft.speak.speech == _copiedExpected;
+                if (!committed && _copiedWaitFrames < UiWaitFrames)
+                    return;
+            }
+            if (_copiedEditSent && _copiedError == null && _copiedWaitFrames >= UiWaitFrames)
+            {
+                Debug.Log(
+                    "SPIRE_UNITY_VARIANT_INSPECTOR_EDIT copied-timeout field=" +
+                    (_window == null ? "<window-null>" : _window.DescribeTextField(_copiedField)) +
+                    ";readOnly=" + (_copiedField == null ? "<null>" : _copiedField.isReadOnly.ToString()) +
+                    ";host=" + (_asset == null || _asset.copiedLeft.kind != InspectorCommand.Kind.Speak
+                        ? "<non-speak>" : _asset.copiedLeft.speak.speech));
+            }
             if (_copiedWaitFrames < 3)
                 return;
 
@@ -1027,6 +1100,8 @@ namespace Spire.UnityVariantPayloadCore
             _window.ExpandGeneratedPayloadFoldouts();
             _window.ExpandFoldout("node");
             _managedRefField = null;
+            _managedRefEditSent = false;
+            _managedRefCommitWaitFrames = 0;
             _managedRefBefore = node.label;
         }
 
@@ -1038,8 +1113,46 @@ namespace Spire.UnityVariantPayloadCore
             if (_window != null && _asset != null)
             {
                 _managedRefField = _window.FindTextField("command", "label");
-                if (_managedRefField != null && _window.FocusTextField(_managedRefField))
+                if (_managedRefField != null && _window.PrepareTextFieldForEdit(_managedRefField))
                 {
+                    if (!_managedRefEditSent)
+                    {
+                        Undo.ClearAll();
+                        Debug.Log(
+                            "SPIRE_UNITY_VARIANT_INSPECTOR_EDIT managed-reference-before-send field=" +
+                            _window.DescribeTextField(_managedRefField) + ";value=" + _managedRefField.value +
+                            ";cursor=" + _managedRefField.cursorIndex + ";select=" + _managedRefField.selectIndex);
+                        _window.SendKey('\0', KeyCode.End);
+                        _window.SendKey('!', KeyCode.Alpha1);
+                        _window.Serialized.ApplyModifiedProperties();
+                        _managedRefEditSent = true;
+                        Debug.Log(
+                            "SPIRE_UNITY_VARIANT_INSPECTOR_EDIT managed-reference-after-send field=" +
+                            _window.DescribeTextField(_managedRefField) + ";readOnly=" + _managedRefField.isReadOnly +
+                            ";host=" + (_asset.sharedNode == null ? "<null>" : _asset.sharedNode.label));
+                        return;
+                    }
+
+                    _window.Serialized.Update();
+                    if (_asset.sharedNode == null || _asset.sharedNode.label != _managedRefBefore + "!")
+                    {
+                        _managedRefCommitWaitFrames++;
+                        if (_managedRefCommitWaitFrames >= NativeEditCommitWaitFrames)
+                        {
+                            Debug.Log(
+                                "SPIRE_UNITY_VARIANT_INSPECTOR_EDIT managed-reference-timeout field=" +
+                                _window.DescribeTextField(_managedRefField) + ";readOnly=" + _managedRefField.isReadOnly +
+                                ";host=" + (_asset.sharedNode == null ? "<null>" : _asset.sharedNode.label));
+                            RunCase("ManagedReferenceFieldUndoPreservesAliases", () =>
+                                throw new InvalidOperationException(
+                                    "The native managed-reference scalar edit did not commit after " +
+                                    NativeEditCommitWaitFrames + " update frames."));
+                            _phase = (int)Phase.UiCollectionsWait;
+                            _waitFrames = 0;
+                        }
+                        return;
+                    }
+
                     var field = _managedRefField;
                     RunCase("ManagedReferenceFieldUndoPreservesAliases", () =>
                     {
@@ -1047,9 +1160,6 @@ namespace Spire.UnityVariantPayloadCore
                             ReferenceEquals(_asset.sharedNode, _asset.secondSharedNode) &&
                             ReferenceEquals(_asset.sharedNode, _asset.sharedNode.next),
                             "The managed-reference aliases/cycle were not present before the scalar edit.");
-                        Undo.ClearAll();
-                        _window!.SendKey('!', KeyCode.Alpha1);
-                        _window.Serialized.ApplyModifiedProperties();
                         var editedNode = _asset.sharedNode;
                         Require(editedNode != null && editedNode.label == _managedRefBefore + "!",
                             "The native managed-reference scalar edit did not reach the host.");
@@ -1083,6 +1193,25 @@ namespace Spire.UnityVariantPayloadCore
                             "Undo/Redo replaced the managed-reference scalar control unexpectedly.");
                         Observe("SerializeReference=scalar-label;Undo/Redo=restored;aliases=true;cycle=true;external-pointer-not-required=true");
                     });
+                    _phase = (int)Phase.UiCollectionsWait;
+                    _waitFrames = 0;
+                    return;
+                }
+            }
+            if (_managedRefEditSent &&
+                (_managedRefField == null || _window == null || !_window.IsTextFieldFocused(_managedRefField)))
+            {
+                _managedRefCommitWaitFrames++;
+                if (_managedRefCommitWaitFrames >= NativeEditCommitWaitFrames)
+                {
+                    Debug.Log(
+                        "SPIRE_UNITY_VARIANT_INSPECTOR_EDIT managed-reference-timeout field=" +
+                        (_window == null ? "<window-null>" : _window.DescribeTextField(_managedRefField)) +
+                        ";host=" + (_asset == null || _asset.sharedNode == null ? "<null>" : _asset.sharedNode.label));
+                    RunCase("ManagedReferenceFieldUndoPreservesAliases", () =>
+                        throw new InvalidOperationException(
+                            "The native managed-reference scalar edit did not commit after " +
+                            NativeEditCommitWaitFrames + " update frames."));
                     _phase = (int)Phase.UiCollectionsWait;
                     _waitFrames = 0;
                     return;
@@ -1193,7 +1322,9 @@ namespace Spire.UnityVariantPayloadCore
             _window?.RefreshNativeListViews();
             if (_window != null &&
                 _window.HasBindingPath("commands.Array.data[0].*", "speed") &&
-                _window.HasBindingPath("commandList.Array.data[0].*", "speed"))
+                _window.HasBindingPath("commandList.Array.data[0].*", "speed") &&
+                _window.AreEditableFieldBoundsReady("commands.Array.data[0]", "speed") &&
+                _window.AreEditableFieldBoundsReady("commandList.Array.data[0]", "speed"))
             {
                 RunCase("NestedAndCollectionPathsBind", CheckNestedAndCollectionPaths);
                 if (_phase != (int)Phase.UiCollectionsEditWait)
@@ -1213,6 +1344,8 @@ namespace Spire.UnityVariantPayloadCore
         {
             _undoError = null;
             _undoField = null;
+            _undoEditSent = false;
+            _undoCommitWaitFrames = 0;
             _undoBefore = string.Empty;
             _undoWaitFrames = 0;
             try
@@ -1262,17 +1395,54 @@ namespace Spire.UnityVariantPayloadCore
             if (_undoError == null && _window != null && _asset != null)
             {
                 _undoField = _window.FindTextField("command", "speech");
-                if (_undoField != null && _window.FocusTextField(_undoField))
+                if (_undoField != null && _window.PrepareTextFieldForEdit(_undoField))
                 {
+                    if (!_undoEditSent)
+                    {
+                        Undo.ClearAll();
+                        _undoBefore = _asset.command.speak.speech;
+                        Debug.Log(
+                            "SPIRE_UNITY_VARIANT_INSPECTOR_EDIT undo-before-send field=" +
+                            _window.DescribeTextField(_undoField) + ";value=" + _undoField.value +
+                            ";cursor=" + _undoField.cursorIndex + ";select=" + _undoField.selectIndex);
+                        _window.SendKey('\0', KeyCode.End);
+                        _window.SendKey('!', KeyCode.Alpha1);
+                        _window.Serialized.ApplyModifiedProperties();
+                        _undoEditSent = true;
+                        Debug.Log(
+                            "SPIRE_UNITY_VARIANT_INSPECTOR_EDIT undo-after-send field=" +
+                            _window.DescribeTextField(_undoField) + ";readOnly=" + _undoField.isReadOnly +
+                            ";host=" + (_asset.command.kind == InspectorCommand.Kind.Speak
+                                ? _asset.command.speak.speech : "<non-speak>"));
+                        return;
+                    }
+
+                    _window.Serialized.Update();
+                    if (_asset.command.kind != InspectorCommand.Kind.Speak ||
+                        _asset.command.speak.speech != _undoBefore + "!")
+                    {
+                        _undoCommitWaitFrames++;
+                        if (_undoCommitWaitFrames >= NativeEditCommitWaitFrames)
+                        {
+                            Debug.Log(
+                                "SPIRE_UNITY_VARIANT_INSPECTOR_EDIT undo-timeout field=" +
+                                _window.DescribeTextField(_undoField) + ";readOnly=" + _undoField.isReadOnly +
+                                ";host=" + (_asset.command.kind == InspectorCommand.Kind.Speak
+                                    ? _asset.command.speak.speech : "<non-speak>"));
+                            RunCase("UndoRedoAndExternalSerializedChange", () =>
+                                throw new InvalidOperationException(
+                                    "The rendered Undo field edit did not commit after " +
+                                    NativeEditCommitWaitFrames + " update frames."));
+                            _phase = (int)Phase.PrefabStart;
+                        }
+                        return;
+                    }
+
                     var field = _undoField;
                     RunCase("UndoRedoAndExternalSerializedChange", () =>
                     {
                         Require(_asset.command.kind == InspectorCommand.Kind.Speak,
                             "The undo fixture did not retain its Speak variant.");
-                        Undo.ClearAll();
-                        _undoBefore = _asset.command.speak.speech;
-                        _window!.SendKey('!', KeyCode.Alpha1);
-                        _window.Serialized.ApplyModifiedProperties();
                         if (_asset.command.kind != InspectorCommand.Kind.Speak)
                             throw new InvalidOperationException("The Undo field edit changed the active variant.");
                         Require(_asset.command.speak.speech == _undoBefore + "!",
@@ -1323,6 +1493,25 @@ namespace Spire.UnityVariantPayloadCore
                     });
                     if (_phase != (int)Phase.UiUndoExternalWait)
                         _phase = (int)Phase.PrefabStart;
+                    return;
+                }
+            }
+            if (_undoEditSent &&
+                (_undoField == null || _window == null || !_window.IsTextFieldFocused(_undoField)))
+            {
+                _undoCommitWaitFrames++;
+                if (_undoCommitWaitFrames >= NativeEditCommitWaitFrames)
+                {
+                    Debug.Log(
+                        "SPIRE_UNITY_VARIANT_INSPECTOR_EDIT undo-timeout field=" +
+                        (_window == null ? "<window-null>" : _window.DescribeTextField(_undoField)) +
+                        ";host=" + (_asset == null || _asset.command.kind != InspectorCommand.Kind.Speak
+                            ? "<non-speak>" : _asset.command.speak.speech));
+                    RunCase("UndoRedoAndExternalSerializedChange", () =>
+                        throw new InvalidOperationException(
+                            "The rendered Undo field edit did not commit after " +
+                            NativeEditCommitWaitFrames + " update frames."));
+                    _phase = (int)Phase.PrefabStart;
                     return;
                 }
             }
@@ -1518,10 +1707,28 @@ namespace Spire.UnityVariantPayloadCore
             {
                 Require(speed != null && speed.enabledInHierarchy && !speed.isReadOnly,
                     "The multi-object Move.speed control was unavailable or disabled.");
+                Require(_asset.command.kind == InspectorCommand.Kind.Move &&
+                    _secondAsset.command.kind == InspectorCommand.Kind.Move,
+                    "The multi-object Move payloads were not active before the speed edit.");
+                var beforeFirst = _asset.command.move;
+                var beforeSecond = _secondAsset.command.move;
+                Debug.Log(
+                    "SPIRE_UNITY_VARIANT_INSPECTOR_MULTI before-speed-edit first-destination=" +
+                    beforeFirst.destination + ";first-speed=" + beforeFirst.speed +
+                    ";second-destination=" + beforeSecond.destination + ";second-speed=" + beforeSecond.speed);
+                Require(beforeFirst.destination == new Vector2(100f, 101f) &&
+                    beforeSecond.destination == new Vector2(200f, 201f),
+                    "The multi-object payloads lost their distinct destinations before the speed edit.");
                 speed!.value = 9f;
                 _window.Serialized.ApplyModifiedProperties();
                 var firstValue = _asset.command;
                 var secondValue = _secondAsset.command;
+                Debug.Log(
+                    "SPIRE_UNITY_VARIANT_INSPECTOR_MULTI after-speed-edit first-kind=" +
+                    firstValue.kind + ";first-destination=" + firstValue.move.destination +
+                    ";first-speed=" + firstValue.move.speed + ";second-kind=" + secondValue.kind +
+                    ";second-destination=" + secondValue.move.destination +
+                    ";second-speed=" + secondValue.move.speed);
                 if (firstValue.kind != InspectorCommand.Kind.Move)
                     throw new InvalidOperationException("Choosing a valid multi-object variant did not affect the first selected target.");
                 if (secondValue.kind != InspectorCommand.Kind.Move)
@@ -1694,7 +1901,7 @@ namespace Spire.UnityVariantPayloadCore
             if (_imguiKeyIndex >= keys.Length || !NativeInspectorInput.QueueKeystroke(keys[_imguiKeyIndex]))
             {
                 RecordFailure("IMGUI_RenderedFieldEdit", new UnverifiedException(
-                    "Native XTest could not queue the IMGUI keyboard event."));
+                    "Native desktop input could not queue the IMGUI keyboard event."));
                 _phase = (int)Phase.Finish;
                 return;
             }
@@ -1733,7 +1940,8 @@ namespace Spire.UnityVariantPayloadCore
                     throw new InvalidOperationException("The IMGUI event changed the union to an invalid kind.");
                 Require(_asset.command.speak.speech != _imguiInitialSpeech &&
                     _asset.command.speak.speech.EndsWith("xyz", StringComparison.Ordinal),
-                    "The three real IMGUI text events did not commit the replacement union.");
+                    "The three real IMGUI text events did not commit the replacement union; speech=" +
+                    _asset.command.speak.speech + ";" + _imguiWindow.DescribeImgui());
                 Require(_imguiWindow.KeyboardControl != 0,
                     "The IMGUI keyboard control was not retained after the queued keystrokes.");
                 Observe("actual EditorGUI mouse/key events;keys=xyz;replacement-union=true;keyboard-control=" + _imguiWindow.KeyboardControl + ";reflection-mutation=false");
@@ -1759,7 +1967,8 @@ namespace Spire.UnityVariantPayloadCore
             }
 
             var allCasesPassed = _report.cases.Count > 0 &&
-                _report.cases.All(item => item.status == "pass");
+                _report.cases.All(item => item.status == "pass" ||
+                    (item.status == "not-applicable" && item.name == "ClosedGenericKindControl"));
             _report.status = _report.failures.Count == 0 && _report.unverified == 0 && allCasesPassed
                 ? "pass"
                 : "fail";
@@ -1792,10 +2001,33 @@ namespace Spire.UnityVariantPayloadCore
             EditorApplication.Exit(_report.status == "pass" ? 0 : 1);
         }
 
+        private static void CheckNativeInputSafety()
+        {
+            var previous = Environment.GetEnvironmentVariable("SPIRE_UNITY_NATIVE_INPUT");
+            try
+            {
+                Environment.SetEnvironmentVariable("SPIRE_UNITY_NATIVE_INPUT", null);
+                NativeInspectorInput.Dispose();
+                Require(!NativeInspectorInput.IsAvailable, "Native input was enabled without opt-in.");
+                Require(!NativeInspectorInput.QueueMove(0, 0), "Pointer input bypassed opt-in.");
+                Require(!NativeInspectorInput.QueueButton(1, true), "Button input bypassed opt-in.");
+                Require(!NativeInspectorInput.QueueKeystroke("x"), "Keyboard input bypassed opt-in.");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("SPIRE_UNITY_NATIVE_INPUT", previous);
+                NativeInspectorInput.Dispose();
+            }
+            Require(!NativeInspectorInput.QueueButton(0, true), "An invalid button was accepted.");
+            Require(!NativeInspectorInput.QueueKeystroke(string.Empty), "An empty key was accepted.");
+        }
+
         private static void RunCase(string name, Action action)
         {
             if (_report == null)
                 return;
+
+            Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_CASE_START name=" + name);
 
             var result = new InspectorCase
             {
@@ -1813,6 +2045,8 @@ namespace Spire.UnityVariantPayloadCore
             }
             catch (PendingCaseException)
             {
+                Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_CASE_COMPLETE name=" + name + " status=pending");
+                WriteProgressReport();
                 return;
             }
             catch (UnverifiedException exception)
@@ -1832,10 +2066,15 @@ namespace Spire.UnityVariantPayloadCore
             }
 
             _report.cases.Add(result);
+            Debug.Log(
+                "SPIRE_UNITY_VARIANT_INSPECTOR_CASE_COMPLETE name=" + name +
+                " status=" + result.status + " checks=" + result.checks +
+                (string.IsNullOrEmpty(result.failure) ? string.Empty : " failure=" + result.failure));
             if (result.status == "pass")
                 _report.passed++;
             else
                 _report.failed++;
+            WriteProgressReport();
         }
 
         private static void RecordFailure(string name, Exception exception)
@@ -1854,6 +2093,47 @@ namespace Spire.UnityVariantPayloadCore
             });
             if (exception is UnverifiedException)
                 _report.unverified++;
+            WriteProgressReport();
+        }
+
+        private static void RecordNotApplicable(string name, string reason)
+        {
+            if (_report == null)
+                return;
+
+            Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_CASE_COMPLETE name=" + name + " status=not-applicable");
+
+            _report.cases.Add(new InspectorCase
+            {
+                name = name,
+                status = "not-applicable",
+                checks = 0,
+                observations = new List<string> { reason },
+                failure = reason,
+            });
+            _report.assertions.Add("not-applicable: " + reason);
+            WriteProgressReport();
+        }
+
+        private static void WriteProgressReport()
+        {
+            if (_report == null)
+                return;
+
+            var status = _report.status;
+            try
+            {
+                _report.status = "running";
+                File.WriteAllText(ProjectPath(ReportName), JsonUtility.ToJson(_report, true));
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError("Inspector progress report write failed: " + exception.Message);
+            }
+            finally
+            {
+                _report.status = status;
+            }
         }
 
         private static void Require(bool condition, string message)
@@ -1953,10 +2233,14 @@ namespace Spire.UnityVariantPayloadCore
             component.sharedNode = shared;
             component.secondSharedNode = shared;
             bool success;
+            Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP PrefabUtility.SaveAsPrefabAsset start path=" + PrefabPath);
             _prefabAsset = PrefabUtility.SaveAsPrefabAsset(source, PrefabPath, out success);
+            Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP PrefabUtility.SaveAsPrefabAsset done success=" + success);
             Require(success && _prefabAsset != null, "The Inspector fixture prefab could not be saved.");
             UnityEngine.Object.DestroyImmediate(source);
+            Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP PrefabUtility.InstantiatePrefab start");
             _prefabInstance = PrefabUtility.InstantiatePrefab(_prefabAsset) as GameObject;
+            Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP PrefabUtility.InstantiatePrefab done");
             Require(_prefabInstance != null, "The Inspector fixture prefab could not be instantiated.");
             _prefabComponent = _prefabInstance!.GetComponent<InspectorCommandComponent>();
             Require(_prefabComponent != null, "The Inspector fixture prefab component was unavailable.");
@@ -2039,6 +2323,8 @@ namespace Spire.UnityVariantPayloadCore
             public int failed;
             public int unverified;
             public string completedAt = string.Empty;
+            public bool genericUnionSerializationSupported;
+            public string genericUnionSerializationApplicability = string.Empty;
             public List<string> assertions = new List<string>();
             public List<string> failures = new List<string>();
             public List<string> diagnostics = new List<string>();
@@ -2091,6 +2377,7 @@ namespace Spire.UnityVariantPayloadCore
             private bool _receivedKeyboardEvent;
             private InspectorElement? _inspector;
             private bool _nativeListViewsRefreshed;
+            private TextField? _pendingFocusedField;
 
             public string InitialYaml { get; set; } = string.Empty;
             public long InitialPayloadId { get; set; }
@@ -2117,6 +2404,7 @@ namespace Spire.UnityVariantPayloadCore
                 _imguiRepainted = false;
                 _receivedKeyboardEvent = false;
                 _nativeListViewsRefreshed = false;
+                _pendingFocusedField = null;
                 _serialized = new SerializedObject(target);
                 _serialized.Update();
                 rootVisualElement.Unbind();
@@ -2137,6 +2425,7 @@ namespace Spire.UnityVariantPayloadCore
                 _imguiRepainted = false;
                 _receivedKeyboardEvent = false;
                 _nativeListViewsRefreshed = false;
+                _pendingFocusedField = null;
                 _serialized = new SerializedObject(target);
                 _serialized.Update();
                 rootVisualElement.Unbind();
@@ -2165,6 +2454,7 @@ namespace Spire.UnityVariantPayloadCore
                 _imguiRepainted = false;
                 _receivedKeyboardEvent = false;
                 _nativeListViewsRefreshed = false;
+                _pendingFocusedField = null;
                 _serialized = new SerializedObject(targets);
                 _serialized.Update();
                 rootVisualElement.Unbind();
@@ -2194,6 +2484,7 @@ namespace Spire.UnityVariantPayloadCore
                 _imgui = true;
                 _imguiRepainted = false;
                 _receivedKeyboardEvent = false;
+                _pendingFocusedField = null;
                 _serialized = new SerializedObject(target);
                 _serialized.Update();
                 _imguiProperty = _serialized.FindProperty(propertyPath);
@@ -2292,18 +2583,58 @@ namespace Spire.UnityVariantPayloadCore
             public bool AreFieldBoundsReady(string owner, params string[] fieldNames)
             {
                 var selector = FindKindSelector(owner);
-                if (selector == null || selector.worldBound.width <= 0f)
+                if (selector == null || !HasFinitePositiveBounds(selector.worldBound))
                     return false;
                 foreach (var fieldName in fieldNames)
                 {
                     var field = FindTextField(owner, fieldName) as VisualElement ??
                         FindFloatField(owner, fieldName) as VisualElement ??
                         FindVector2Field(owner, fieldName) as VisualElement;
-                    if (field == null || field.worldBound.width <= 0f)
+                    if (field == null || !HasFinitePositiveBounds(field.worldBound))
                         return false;
                 }
                 return true;
             }
+
+            public bool AreEditableFieldBoundsReady(string owner, params string[] fieldNames)
+            {
+                foreach (var fieldName in fieldNames)
+                {
+                    var field = FindFloatField(owner, fieldName) as VisualElement ??
+                        FindTextField(owner, fieldName) as VisualElement ??
+                        FindVector2Field(owner, fieldName) as VisualElement;
+                    if (field == null || !field.enabledInHierarchy ||
+                        (field is TextField textField && textField.isReadOnly) ||
+                        (field is FloatField floatField && floatField.isReadOnly) ||
+                        (field is Vector2Field vectorField && !IsEditableVector2Field(vectorField)) ||
+                        !HasFinitePositiveBounds(field.worldBound))
+                        return false;
+                }
+
+                return true;
+            }
+
+            private static bool IsEditableVector2Field(Vector2Field field)
+            {
+                var foundComponent = false;
+                var editable = true;
+                field.Query<FloatField>().ForEach(component =>
+                {
+                    foundComponent = true;
+                    if (!component.enabledInHierarchy || component.isReadOnly ||
+                        !HasFinitePositiveBounds(component.worldBound))
+                        editable = false;
+                });
+                return foundComponent && editable;
+            }
+
+            private static bool HasFinitePositiveBounds(Rect bounds)
+                => IsFinite(bounds.x) && IsFinite(bounds.y) &&
+                    IsFinite(bounds.width) && IsFinite(bounds.height) &&
+                    bounds.width > 0f && bounds.height > 0f;
+
+            private static bool IsFinite(float value)
+                => !float.IsNaN(value) && !float.IsInfinity(value);
 
             public void RequireAlignedFieldColumns(string owner, params string[] fieldNames)
             {
@@ -2702,6 +3033,35 @@ namespace Spire.UnityVariantPayloadCore
                 return string.Join(",", descriptions);
             }
 
+            public bool PrepareTextFieldForEdit(TextField field)
+            {
+                var firstRequest = !ReferenceEquals(_pendingFocusedField, field);
+                if (firstRequest)
+                    _pendingFocusedField = field;
+
+                var input = field.Q(TextInputBaseField<string>.textInputUssName) ?? field;
+                if (!field.enabledInHierarchy || field.isReadOnly || input.panel == null)
+                    return false;
+
+                if (firstRequest)
+                {
+                    input.Focus();
+                    return false;
+                }
+
+                if (!IsTextFieldFocused(field))
+                {
+                    input.Focus();
+                    return false;
+                }
+
+                var end = field.value?.Length ?? 0;
+                field.cursorIndex = end;
+                field.selectIndex = end;
+                _pendingFocusedField = null;
+                return true;
+            }
+
             public bool FocusTextField(TextField field)
             {
                 var input = field.Q(TextInputBaseField<string>.textInputUssName) ?? field;
@@ -2858,15 +3218,20 @@ namespace Spire.UnityVariantPayloadCore
                     "secondSharedNode",
                 })
                 {
+                    Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP field-bind-start path=" + path);
                     var property = _serialized?.FindProperty(path);
                     if (property == null)
+                    {
+                        Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP field-bind-skip path=" + path + " reason=missing-property");
                         continue;
+                    }
                     var field = new PropertyField(property, path)
                     {
                         name = "spire-property-" + path,
                     };
                     container.Add(field);
                     field.Bind(_serialized!);
+                    Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP field-bind-done path=" + path);
                 }
 
                 foreach (var elementPath in new[]
@@ -2875,9 +3240,13 @@ namespace Spire.UnityVariantPayloadCore
                     "commandList.Array.data[0]",
                 })
                 {
+                    Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP field-bind-start path=" + elementPath);
                     var property = _serialized?.FindProperty(elementPath);
                     if (property == null)
+                    {
+                        Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP field-bind-skip path=" + elementPath + " reason=missing-property");
                         continue;
+                    }
                     var owner = elementPath.StartsWith("commands.", StringComparison.Ordinal)
                         ? "commands"
                         : "commandList";
@@ -2887,6 +3256,7 @@ namespace Spire.UnityVariantPayloadCore
                     };
                     container.Add(field);
                     field.Bind(_serialized!);
+                    Debug.Log("SPIRE_UNITY_VARIANT_INSPECTOR_SETUP field-bind-done path=" + elementPath);
                 }
             }
         }

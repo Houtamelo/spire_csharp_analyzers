@@ -73,13 +73,23 @@ namespace Spire.UnityVariantPayloadCore
             require(asset.shapeArray.Length == 3 && asset.shapeList.Count == 3,
                 "Player did not reconstruct top-level union collections.");
 
-            if (asset.generic.kind != SerializedGeneric<int>.Kind.Value)
+            if (SerializedUnionNativeCapabilities.GenericUnionSerializationSupported)
             {
-                require(false, "Player did not reconstruct the generic union variant.");
-                return;
+                if (asset.generic.kind != SerializedGeneric<int>.Kind.Value)
+                {
+                    require(false, "Player did not reconstruct the generic union variant.");
+                    return;
+                }
+                require(asset.generic.value.value == 42 && asset.generic.value.label == "generic",
+                    "Player did not reconstruct the generic union closure.");
             }
-            require(asset.generic.value.value == 42 && asset.generic.value.label == "generic",
-                "Player did not reconstruct the generic union closure.");
+            else
+            {
+                Debug.Log(
+                    "SerializedUnionPlayerProbe: generic union native serialization is " +
+                    SerializedUnionNativeCapabilities.GenericUnionSerializationApplicability +
+                    "; runtime generic coverage remains in CorePlayerProbe.");
+            }
 
             require(asset.graphRoot != null && rich.graph != null &&
                 ReferenceEquals(asset.graphRoot, rich.graph),

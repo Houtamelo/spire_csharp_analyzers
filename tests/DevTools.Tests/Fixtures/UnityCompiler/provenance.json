@@ -1,0 +1,16 @@
+{
+  "unityVersion": "2023.2.22f1",
+  "origin": "Actual Unity assembly-definition acceptance project; no mock compiler output.",
+  "inputs": [
+    {
+      "file": "CapturedAssembly.rsp",
+      "source": "tmp/unity-legacy-validation-20261103/2023.2.22f1/asmdefs/Library/Bee/artifacts/2400b0aE.dag/Assembly-CSharp.rsp",
+      "sha256": "0d9e07c006b69a5482090f3676e34a24c03ead713e2b7e2868437333978897a5"
+    },
+    {
+      "file": "CapturedAssembly.csproj",
+      "source": "tmp/unity-legacy-validation-20261103/2023.2.22f1/asmdefs/Spire.UnityAsmdefRuntimeAuto.csproj",
+      "sha256": "a1ec250f0acf7587fbd78c617332f2b00ce85e4544d6de966aeb066dd6675659"
+    }
+  ]
+}

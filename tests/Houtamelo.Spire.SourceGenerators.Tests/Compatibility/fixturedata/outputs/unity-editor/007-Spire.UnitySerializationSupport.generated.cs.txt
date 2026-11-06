@@ -15,7 +15,7 @@ internal sealed class __SpireReconstructedPayload : global::Houtamelo.Spire.Unit
 
 [@Serializable]
 [@Preserve]
-internal sealed class SpireSerializedPayload<T> : global::Houtamelo.Spire.UnitySerializationPayloadBase {
+internal class SpireSerializedPayload<T> : global::Houtamelo.Spire.UnitySerializationPayloadBase {
     [@Preserve]
     public SpireSerializedPayload() {}
 

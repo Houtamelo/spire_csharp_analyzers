@@ -23,7 +23,7 @@ public sealed class UnityVariantPayloadGeneratorTests
         "Houtamelo.Spire.Generated.__SpireUnityVariantMetadata";
 
     [Fact]
-    public void SerializableUnion_UsesSiblingMutablePayloadsAndOneGenericWrapper()
+    public void SerializableUnion_UsesSiblingMutablePayloadsAndOneSharedGenericWrapper()
     {
         var result = Run(BasicSource(), includeEditorReferences: true);
         UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
@@ -165,7 +165,7 @@ public sealed class UnityVariantPayloadGeneratorTests
     }
 
     [Fact]
-    public void SerializableUnion_FormerVariantNameRemainsRepresentedWithoutPrivatePayloadClasses()
+    public void SerializableUnion_FormerVariantNameEmitsConcreteCanonicalAndFormerWrappers()
     {
         var result = Run(AliasSource());
         UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
@@ -179,15 +179,17 @@ public sealed class UnityVariantPayloadGeneratorTests
         Assert.True(former!.IsValueType);
         Assert.Contains("Old", result.GeneratedSource, StringComparison.Ordinal);
 
-        var generatedPayloadClasses = AllNamedTypes(result.OutputCompilation)
-            .Where(type => HasAttribute(type, "System.SerializableAttribute") &&
-                type.IsReferenceType &&
-                type.Name.Contains("Payload", StringComparison.Ordinal) &&
-                !(type.TypeParameters.Length == 1 &&
-                    type.BaseType?.ToDisplayString() ==
-                        "Houtamelo.Spire.UnitySerializationPayloadBase"))
-            .ToArray();
-        Assert.Empty(generatedPayloadClasses);
+        var shared = Assert.IsAssignableFrom<INamedTypeSymbol>(
+            result.OutputCompilation.GetTypeByMetadataName(
+                "Houtamelo.Spire.Generated.SpireSerializedPayload`1"));
+        var canonicalWrapper = result.OutputCompilation.GetTypeByMetadataName(
+            "RenamedTypes+SerializedPayloads+CurrentSerializedPayload");
+        var formerWrapper = result.OutputCompilation.GetTypeByMetadataName(
+            "RenamedTypes+SerializedPayloads+OldSerializedPayload");
+        AssertConcreteWrapper(canonicalWrapper, shared, canonical);
+        AssertConcreteWrapper(formerWrapper, shared, former);
+        Assert.Contains("CurrentSerializedPayload", result.GeneratedSource, StringComparison.Ordinal);
+        Assert.Contains("OldSerializedPayload", result.GeneratedSource, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -355,6 +357,29 @@ public sealed class UnityVariantPayloadGeneratorTests
     private static bool HasAttribute(ISymbol symbol, string fullName)
         => symbol.GetAttributes().Any(attribute =>
             string.Equals(attribute.AttributeClass?.ToDisplayString(), fullName, StringComparison.Ordinal));
+
+    private static void AssertConcreteWrapper(
+        INamedTypeSymbol? wrapper,
+        INamedTypeSymbol shared,
+        INamedTypeSymbol payload)
+    {
+        Assert.NotNull(wrapper);
+        var concrete = wrapper!;
+        Assert.Equal(Accessibility.Internal, concrete.DeclaredAccessibility);
+        Assert.True(concrete.IsReferenceType);
+        Assert.True(concrete.IsSealed);
+        Assert.True(HasAttribute(concrete, "System.SerializableAttribute"));
+        Assert.True(HasAttribute(concrete, "UnityEngine.Scripting.PreserveAttribute"));
+        Assert.True(SymbolEqualityComparer.Default.Equals(
+            concrete.BaseType!.OriginalDefinition,
+            shared));
+        Assert.True(SymbolEqualityComparer.Default.Equals(
+            concrete.BaseType.TypeArguments.Single(),
+            payload));
+        Assert.DoesNotContain(
+            concrete.GetMembers().OfType<IFieldSymbol>(),
+            field => !field.IsStatic);
+    }
 
     private static void AssertCallbackImplementation(INamedTypeSymbol union, string callbackName)
     {

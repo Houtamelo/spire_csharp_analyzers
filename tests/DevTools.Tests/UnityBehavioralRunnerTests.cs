@@ -408,7 +408,7 @@ public sealed class UnityBehavioralRunnerTests
             definition.GetProperty("optionalUnityReferences").EnumerateArray().Select(value => value.GetString()));
 
         var rsp = File.ReadAllText(Path.Combine(projectPath, "Assets", "Tests", "csc.rsp"));
-        Assert.Equal("-langversion:12\n-nullable:enable\n", rsp);
+        Assert.Equal("-langversion:preview\n-nullable:enable\n", rsp);
 
         using var inputs = JsonDocument.Parse(
             File.ReadAllText(Path.Combine(projectPath, "behavioral-inputs.json")));
@@ -498,8 +498,8 @@ public sealed class UnityBehavioralRunnerTests
         Assert.All(actualDependencies, dependency =>
         {
             var metadata = File.ReadAllText(Path.Combine(dependencyRoot, dependency + ".meta"));
-            Assert.Contains("      '': Any\n    second:\n      enabled: 1", metadata, StringComparison.Ordinal);
-            Assert.DoesNotContain("      '': Any\n    second:\n      enabled: 0", metadata, StringComparison.Ordinal);
+            Assert.Contains("      Any:\n    second:\n      enabled: 1", metadata, StringComparison.Ordinal);
+            Assert.DoesNotContain("      Any:\n    second:\n      enabled: 0", metadata, StringComparison.Ordinal);
         });
 
         var settingsPath = Path.Combine(projectPath, "il2cpp-test-settings.json");
@@ -525,7 +525,7 @@ public sealed class UnityBehavioralRunnerTests
         {
             var metadata = File.ReadAllText(dependency + ".meta");
             Assert.Contains("isExplicitlyReferenced: 1", metadata, StringComparison.Ordinal);
-            Assert.Contains("      '': Any\n    second:\n      enabled: 0", metadata, StringComparison.Ordinal);
+            Assert.Contains("      Any:\n    second:\n      enabled: 0", metadata, StringComparison.Ordinal);
             Assert.Contains("      Editor: Editor\n    second:\n      enabled: 1", metadata, StringComparison.Ordinal);
             Assert.DoesNotContain("Runtime: Runtime", metadata, StringComparison.Ordinal);
         }

@@ -1,0 +1,69 @@
+{
+  "title": "Houtamelo.Spire - Exhaustive Matching & Discriminated Unions",
+  "summary": "Save time by catching errors at compile time. Exhaustive matching, IDE quick fixes, and lightweight discriminated unions with Inspector drawers, generated JSON converters, and Burst/DOTS support.",
+  "regularPriceUsd": 20,
+  "launchDiscountPercent": null,
+  "proposedCategory": "Tools/Utilities",
+  "proposedDeliveryFormat": "UPM, single-package product",
+  "currentPackageTechnicalName": "com.houtamelo.spire",
+  "currentSourceVersion": "4.7.6",
+  "releaseVersion": null,
+  "currentManifestMinimumUnityVersion": "6000.5.6f1",
+  "publisherProfile": "exists",
+  "upmEnrollmentStatus": "submitted; awaiting approval",
+  "upmEnrollmentSubmittedDate": "2026-11-03",
+  "upmEnrollmentReviewEstimateBusinessDays": [
+    5,
+    7
+  ],
+  "supportUrl": "https://github.com/Houtamelo/spire_csharp_analyzers/issues",
+  "publicDocumentationUrl": null,
+  "videoUrl": null,
+  "sourceListing": "docs/asset_store_listing.md",
+  "sourceListingSha256": "2ceeeb5c00ac8894c7f11885cf412f2ba64f0c94ef47f77d67b4b9215d9d0121",
+  "descriptionFile": "listing/description.md",
+  "technicalDetailsFile": "listing/technical-details.md",
+  "keywordsFile": "listing/keywords.txt",
+  "media": [
+    {
+      "role": "cover",
+      "file": "images/cover.png"
+    },
+    {
+      "role": "card",
+      "file": "images/card.png"
+    },
+    {
+      "role": "icon",
+      "file": "images/icon.png"
+    },
+    {
+      "role": "gallery",
+      "file": "images/gallery/01-exhaustive-matching.png"
+    },
+    {
+      "role": "gallery",
+      "file": "images/gallery/02-generate-missing-branches.png"
+    },
+    {
+      "role": "gallery",
+      "file": "images/gallery/03-variants-with-data.png"
+    },
+    {
+      "role": "gallery",
+      "file": "images/gallery/04-exhaustive-union-switch.png"
+    },
+    {
+      "role": "gallery",
+      "file": "images/gallery/05-unity-inspector.png"
+    },
+    {
+      "role": "gallery",
+      "file": "images/gallery/06-generated-json.png"
+    },
+    {
+      "role": "gallery",
+      "file": "images/gallery/07-native-burst.png"
+    }
+  ]
+}

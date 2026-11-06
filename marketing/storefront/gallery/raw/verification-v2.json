@@ -1,0 +1,47 @@
+{
+  "revision": 2,
+  "verifiedUtc": "2026-11-01T22:37:12.874354+00:00",
+  "interfaceDiagnostic": {
+    "missingCase": "TalkToNpc",
+    "capture": "raw/02-rider-quick-fix.png"
+  },
+  "unionSwitchStatement": {
+    "missingVariant": "ApplyEffect",
+    "capture": "raw/12-rider-union-diagnostic.png",
+    "completeFixtureCompiledInUnity": true
+  },
+  "unityFixtureCompilation": "Unity 6000.5.6f1: Tundra build success after restoring complete example branches",
+  "jsonRoundTrip": {
+    "kind": "Success",
+    "value": 42
+  },
+  "nativeBurst": {
+    "nativeBurstExecution": true,
+    "position": [
+      4,
+      4,
+      0
+    ],
+    "commands": 3
+  },
+  "riderQuickFix": {
+    "quickFix": "Add missing variant arms",
+    "missingCase": "TalkToNpc",
+    "appliedVia": "actual Rider popup selected and confirmed with Enter",
+    "sourceChanged": true,
+    "generatedBranch": "TalkToNpc => throw new System.NotImplementedException(),",
+    "highlight": "Actual Rider text selection in the saved generated branch"
+  },
+  "inspector": {
+    "clientWidthPixels": 600,
+    "serializedFields": [
+      "GameplayCommand selectedCommand",
+      "List<GameplayCommand> commands"
+    ]
+  },
+  "layoutChecks": {
+    "allCodeCapturedInRider": true,
+    "oldPlayModePageRemoved": true,
+    "unionSwitchFollowsDeclarations": true
+  }
+}

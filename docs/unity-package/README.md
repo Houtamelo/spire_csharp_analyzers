@@ -1,14 +1,21 @@
 # Houtamelo.Spire for Unity
 
-Discriminated unions, generated Inspector drawers, compiler diagnostics, and Rider
+Discriminated unions, generated Inspector drawers, compiler diagnostics, and IDE
 code fixes. This bundle contains the runtime DLL, three compiler extensions,
 offline guides, API tooltips, and an optional URP showcase.
 
+**Unity 2020 will not work.** Its compiler lacks features required by Spire.
+Concrete wrappers pass native serialization write/read checks for non-generic
+unions on Unity `2022.3.62f3`. Generic unions cannot use native serialization on
+Unity 2022. Keep the documented minimum version; older-Editor verification does
+not expand supported versions. See [Serialization](Documentation~/Serialization.md).
+
 Validated on Unity 6000.5.6f1, Linux x64, with Editor Mono and IL2CPP players.
-Rider is the supported IDE. Unity 6000.6.5f1 has a reported engine crash in
-generic struct serialization callbacks, reproduced without Spire; native serialization
-on that version is not supported. Other Editor versions and platforms need
-separate validation.
+Rider is the verified IDE workflow. On Unity 6000.6.5f1 (Linux), an engine bug still affects
+serialization of generic unions with reference-type arguments, such as
+`Command<string>`. Native Editor write/read checks pass for non-generic unions
+and tested unmanaged generic unions. See [Serialization](Documentation~/Serialization.md).
+Other Editor versions, platforms, and 6.6 Player/Inspector workflows need separate validation.
 The compiler extensions use a Roslyn 4.3 baseline and load in Unity 6000.3.26f1
 LTS. Complete 6.3 support is still being evaluated; the showcase dependencies
 remain those of the verified 6.5 environment. The current payload representation

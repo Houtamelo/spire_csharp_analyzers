@@ -60,6 +60,11 @@ internal static class GeneratedAliasEmitter
         string variantName)
         => $"global::Houtamelo.Spire.Generated.SpireSerializedPayload<{VariantPayloadReference(union, variantName)}>";
 
+    internal static string ConcreteSerializedPayloadReference(
+        UnionDeclaration union,
+        string variantName)
+        => $"{GlobalTypesPath(union)}.SerializedPayloads.{IdentifierUtility.Escape(Safe(variantName))}SerializedPayload{DeclarationFormatting.FormatEscapedTypeParameters(union.TypeParameters)}";
+
     internal static string FieldsReference(UnionDeclaration union)
         => ContainerReference(union, "Fields", $"{GlobalTypesPath(union)}.Fields");
 

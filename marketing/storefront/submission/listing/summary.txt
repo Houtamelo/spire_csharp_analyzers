@@ -1,0 +1,1 @@
+Save time by catching errors at compile time. Exhaustive matching, IDE quick fixes, and lightweight discriminated unions with Inspector drawers, generated JSON converters, and Burst/DOTS support.

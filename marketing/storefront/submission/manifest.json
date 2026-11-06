@@ -1,0 +1,170 @@
+{
+  "preparedDate": "2026-11-06",
+  "status": "marketing-ready; account and software delivery pending",
+  "regularPriceUsd": 20,
+  "sourceListingSha256": "2ceeeb5c00ac8894c7f11885cf412f2ba64f0c94ef47f77d67b4b9215d9d0121",
+  "images": [
+    {
+      "role": "cover",
+      "source": "marketing/storefront/cover-mockup-v2.png",
+      "file": "images/cover.png",
+      "width": 1950,
+      "height": 1300,
+      "sha256": "4b47a9cf6e8ffaadcedae1132a454d02089d1584c7de5a6748893876f70c1919"
+    },
+    {
+      "role": "card",
+      "source": "marketing/storefront/card-mockup-v3.png",
+      "file": "images/card.png",
+      "width": 420,
+      "height": 280,
+      "sha256": "e30fd139179be7067130c326fc94893ab690fd2aaf7131d15c060a55029450e7"
+    },
+    {
+      "role": "icon",
+      "source": "marketing/brand/logo_160x160.png",
+      "file": "images/icon.png",
+      "width": 160,
+      "height": 160,
+      "sha256": "2f07ccc60092e0b9cd11908a7ae5acdeb23f58ed797fa0edd0b79f09bfd6afef"
+    },
+    {
+      "role": "gallery",
+      "source": "marketing/storefront/gallery/01-exhaustive-matching.png",
+      "file": "images/gallery/01-exhaustive-matching.png",
+      "width": 1950,
+      "height": 1300,
+      "sha256": "81431b19ca1535bc27799fb9a4abf7e29bf73fb62ea4a322e4017852d50a0239"
+    },
+    {
+      "role": "gallery",
+      "source": "marketing/storefront/gallery/02-generate-missing-branches.png",
+      "file": "images/gallery/02-generate-missing-branches.png",
+      "width": 1950,
+      "height": 1300,
+      "sha256": "1f1c97e67cd873ec8dfc686f7bb059e1a69d3eee2eead71b13aa384191e31afb"
+    },
+    {
+      "role": "gallery",
+      "source": "marketing/storefront/gallery/03-variants-with-data.png",
+      "file": "images/gallery/03-variants-with-data.png",
+      "width": 1950,
+      "height": 1300,
+      "sha256": "057e5fa9be99264be205461d89a992a7d18b7674c39d0fecc2bae84fc5b3b7be"
+    },
+    {
+      "role": "gallery",
+      "source": "marketing/storefront/gallery/04-exhaustive-union-switch.png",
+      "file": "images/gallery/04-exhaustive-union-switch.png",
+      "width": 1950,
+      "height": 1300,
+      "sha256": "a11b15a2b20f4c5e7943261cae6387c807d9cb2c06ea3bc09b3c6a6f20f2d38a"
+    },
+    {
+      "role": "gallery",
+      "source": "marketing/storefront/gallery/05-unity-inspector.png",
+      "file": "images/gallery/05-unity-inspector.png",
+      "width": 1950,
+      "height": 1300,
+      "sha256": "c84e2023eecf26311a3e631c426d1391305a045fae1bce2cecfb7b7212cb12d1"
+    },
+    {
+      "role": "gallery",
+      "source": "marketing/storefront/gallery/06-generated-json.png",
+      "file": "images/gallery/06-generated-json.png",
+      "width": 1950,
+      "height": 1300,
+      "sha256": "e50ee0d69a546b3bcf7fee5caff9231c8a8699659595a02a4a7d3abe158fd6dc"
+    },
+    {
+      "role": "gallery",
+      "source": "marketing/storefront/gallery/07-native-burst.png",
+      "file": "images/gallery/07-native-burst.png",
+      "width": 1950,
+      "height": 1300,
+      "sha256": "660b31c48cc219a8cc99b2db1ac0457f97577433fb0221a3f3afef8965a9beb6"
+    }
+  ],
+  "files": [
+    {
+      "file": "listing/title.txt",
+      "sha256": "0b6bd69f6262cf78430f23c2440d113e44ac5a0bfeca856329538bc862c0ae31"
+    },
+    {
+      "file": "listing/summary.txt",
+      "sha256": "2a06399dbca626f84553581ff7fb4c30f22e30a0610a82347fee3d5d605c0caf"
+    },
+    {
+      "file": "listing/description.md",
+      "sha256": "1fbf4b99d7201e04608c474c5f5c69042526ad9eda763c0544c8ff6ca88fd4ef"
+    },
+    {
+      "file": "listing/technical-details.md",
+      "sha256": "6cdf096cfc0fcafa1193e980cfd5d0ef052bc7d2ba183d0af335fd5ac1d4173e"
+    },
+    {
+      "file": "listing/documentation-and-support.md",
+      "sha256": "7fe6f6053a16130ced49f3e6a48cf3a32f048acd67096a6ed01d546e36dc124d"
+    },
+    {
+      "file": "listing/keywords.txt",
+      "sha256": "acf12595eccba01a3472770cfd0a42f33ee859ea17472a83da39e1ec9806fd05"
+    },
+    {
+      "file": "listing/publisher-notes.md",
+      "sha256": "d4994e372416c6db918879c57155c3c435241d835bfe85d1e649ff19bc78cf9a"
+    },
+    {
+      "file": "listing/approved-copy.md",
+      "sha256": "2ceeeb5c00ac8894c7f11885cf412f2ba64f0c94ef47f77d67b4b9215d9d0121"
+    },
+    {
+      "file": "images/cover.png",
+      "sha256": "4b47a9cf6e8ffaadcedae1132a454d02089d1584c7de5a6748893876f70c1919"
+    },
+    {
+      "file": "images/card.png",
+      "sha256": "e30fd139179be7067130c326fc94893ab690fd2aaf7131d15c060a55029450e7"
+    },
+    {
+      "file": "images/icon.png",
+      "sha256": "2f07ccc60092e0b9cd11908a7ae5acdeb23f58ed797fa0edd0b79f09bfd6afef"
+    },
+    {
+      "file": "images/gallery/01-exhaustive-matching.png",
+      "sha256": "81431b19ca1535bc27799fb9a4abf7e29bf73fb62ea4a322e4017852d50a0239"
+    },
+    {
+      "file": "images/gallery/02-generate-missing-branches.png",
+      "sha256": "1f1c97e67cd873ec8dfc686f7bb059e1a69d3eee2eead71b13aa384191e31afb"
+    },
+    {
+      "file": "images/gallery/03-variants-with-data.png",
+      "sha256": "057e5fa9be99264be205461d89a992a7d18b7674c39d0fecc2bae84fc5b3b7be"
+    },
+    {
+      "file": "images/gallery/04-exhaustive-union-switch.png",
+      "sha256": "a11b15a2b20f4c5e7943261cae6387c807d9cb2c06ea3bc09b3c6a6f20f2d38a"
+    },
+    {
+      "file": "images/gallery/05-unity-inspector.png",
+      "sha256": "c84e2023eecf26311a3e631c426d1391305a045fae1bce2cecfb7b7212cb12d1"
+    },
+    {
+      "file": "images/gallery/06-generated-json.png",
+      "sha256": "e50ee0d69a546b3bcf7fee5caff9231c8a8699659595a02a4a7d3abe158fd6dc"
+    },
+    {
+      "file": "images/gallery/07-native-burst.png",
+      "sha256": "660b31c48cc219a8cc99b2db1ac0457f97577433fb0221a3f3afef8965a9beb6"
+    },
+    {
+      "file": "portal-fields.json",
+      "sha256": "e6116eb07841a7afd750831486315a5781b3ddb9f721fa161a9dd85b8ec3aead"
+    },
+    {
+      "file": "README.md",
+      "sha256": "f722d3a15bfdd1e3945aa56c3d46ce9cd4bbc24a42ad4d211d3e2d6f6796f1e9"
+    }
+  ]
+}

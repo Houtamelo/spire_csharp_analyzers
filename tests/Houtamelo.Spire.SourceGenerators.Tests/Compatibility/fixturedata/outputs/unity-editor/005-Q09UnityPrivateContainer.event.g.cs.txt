@@ -86,10 +86,10 @@ public partial class Q09UnityPrivateContainer {
 
         [@EditorBrowsable(EditorBrowsableState.Never)]
         public readonly bool __SpireSerializedStateCurrent(object? payload) => (this._kind, payload) switch {
-            (Kind.@new, global::Houtamelo.Spire.Generated.SpireSerializedPayload<global::Q09UnityPrivateContainer.eventTypes.Variants.@new> serializedPayload_new) =>
+            (Kind.@new, global::Q09UnityPrivateContainer.eventTypes.SerializedPayloads.@newSerializedPayload serializedPayload_new) =>
                 SpireSerialization.SpireSerializedValuesEqual((object?)this.new_value.@class, (object?)serializedPayload_new.value.@class)
                 && SpireSerialization.SpireSerializedValuesEqual((object?)this.new_value.@event, (object?)serializedPayload_new.value.@event),
-            (Kind.Empty, global::Houtamelo.Spire.Generated.SpireSerializedPayload<global::Q09UnityPrivateContainer.eventTypes.Variants.Empty> serializedPayload_Empty) => true,
+            (Kind.Empty, global::Q09UnityPrivateContainer.eventTypes.SerializedPayloads.EmptySerializedPayload serializedPayload_Empty) => true,
             _ => false,
         };
 
@@ -103,7 +103,7 @@ public partial class Q09UnityPrivateContainer {
                     var currentPayload_new = this._serializedPayload as global::Houtamelo.Spire.Generated.SpireSerializedPayload<global::Q09UnityPrivateContainer.eventTypes.Variants.@new>;
                     if (currentPayload_new is not null && this.__SpireSerializedStateCurrent(currentPayload_new))
                         return this;
-                    var preparedPayload_new = new global::Houtamelo.Spire.Generated.SpireSerializedPayload<global::Q09UnityPrivateContainer.eventTypes.Variants.@new>();
+                    var preparedPayload_new = new global::Q09UnityPrivateContainer.eventTypes.SerializedPayloads.@newSerializedPayload();
                     var preparedValue_new = new global::Q09UnityPrivateContainer.eventTypes.Variants.@new(this.new_value.@class, this.new_value.@event);
                     preparedPayload_new.value = preparedValue_new;
                     this._serializedPayload = preparedPayload_new;
@@ -112,7 +112,7 @@ public partial class Q09UnityPrivateContainer {
                     var currentPayload_Empty = this._serializedPayload as global::Houtamelo.Spire.Generated.SpireSerializedPayload<global::Q09UnityPrivateContainer.eventTypes.Variants.Empty>;
                     if (currentPayload_Empty is not null && this.__SpireSerializedStateCurrent(currentPayload_Empty))
                         return this;
-                    var preparedPayload_Empty = new global::Houtamelo.Spire.Generated.SpireSerializedPayload<global::Q09UnityPrivateContainer.eventTypes.Variants.Empty>();
+                    var preparedPayload_Empty = new global::Q09UnityPrivateContainer.eventTypes.SerializedPayloads.EmptySerializedPayload();
                     var preparedValue_Empty = new global::Q09UnityPrivateContainer.eventTypes.Variants.Empty();
                     preparedPayload_Empty.value = preparedValue_Empty;
                     this._serializedPayload = preparedPayload_Empty;
@@ -205,6 +205,23 @@ public partial class Q09UnityPrivateContainer {
                     [@NonSerialized] internal int @class;
                 }
             }
+        }
+
+        internal static class SerializedPayloads {
+            [@Serializable]
+            [@Preserve]
+            internal sealed class newSerializedPayload : global::Houtamelo.Spire.Generated.SpireSerializedPayload<global::Q09UnityPrivateContainer.eventTypes.Variants.@new> {
+                [@Preserve]
+                public newSerializedPayload() {}
+            }
+
+            [@Serializable]
+            [@Preserve]
+            internal sealed class EmptySerializedPayload : global::Houtamelo.Spire.Generated.SpireSerializedPayload<global::Q09UnityPrivateContainer.eventTypes.Variants.Empty> {
+                [@Preserve]
+                public EmptySerializedPayload() {}
+            }
+
         }
 
         public static class Variants {

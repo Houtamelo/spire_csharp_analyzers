@@ -1,5 +1,19 @@
 # Unity serialization
 
+Unity 2022 does not support native serialization of generic unions. Non-generic
+unions use non-generic concrete wrappers. Newer Editors retain existing generic
+union support, subject to the engine limitation below. The generated wrapper code is the same across
+Unity versions; there is no Unity 2022-specific representation.
+Nesting a struct union inside a generic containing type remains rejected by
+`SPIRE_DU018` on every Unity version.
+
+On Unity 6000.6.5f1 (Linux), generic unions instantiated with reference-type
+arguments, such as `Command<string>`, still trigger an engine serialization
+callback crash. Use 6000.5.6f1 for those serialized generic unions. Non-generic
+unions can contain reference-type payload fields: the current native Editor
+write/read checks pass for them and for tested unmanaged generic unions.
+This recheck does not establish complete 6.6 Player or rendered Inspector support.
+
 Known limitation for Burst and ECS: serialization adds a managed-reference cache,
 so a serializable union cannot also be unmanaged runtime data. Manually declare a
 separate union without `[Serializable]` when you need a Burst-compatible version,
@@ -12,8 +26,10 @@ support the same generated serialization payload and Inspector workflow. Unity
 decides which variant parameter types it can serialize. Readonly structs and
 record/class unions do not get this generated Unity serialization support.
 
-The union stores `_kind` and one active managed-reference payload. The shared
-generic wrapper's public `value` field contains a generated payload struct from
+The union stores `_kind` and one active managed-reference payload. Each variant
+has a concrete wrapper under `CommandTypes.SerializedPayloads`, derived from
+the shared `SpireSerializedPayload<T>` base. Its inherited public `value` field
+contains a generated payload struct from
 `CommandTypes.Variants`. Its private `_`-prefixed fields carry `[SerializeField]`
 or, when requested, `[SerializeReference]`; public getters retain the factory parameter names.
 A recognized payload identifies the variant even when `_kind` disagrees.
@@ -24,6 +40,12 @@ players release it after deserialization. The existing payload reference also
 tracks reconstructed state; serialization adds no hydration flag or other
 instance field. Runtime serialization can allocate
 another snapshot when necessary.
+
+Assets written with the previous shared generic wrapper remain readable where
+Unity supports that type. Saving upgrades them to the current concrete wrapper
+without changing the payload fields. To move old assets to Unity 2022, load and
+resave them in a newer supported Editor first; Unity 2022 cannot load the old
+generic managed-reference representation itself.
 
 Ordinary parameter fields use Unity's inline serialization. To preserve null,
 derived types, cycles, or shared managed references, mark a variant parameter:
@@ -55,7 +77,7 @@ public static partial Command Speak(string speech);
 ```
 
 The generator emits current-name and former-name payload structs under `Variants`,
-wrapped by the same shared generic class. Both restore
+with corresponding concrete wrappers under `SerializedPayloads`. Both restore
 the current Speak variant, and future serialization uses its current payload.
 Only one former name is supported per variant. This alias does not cover field,
 union type, namespace, or assembly renames, nor payload schema/type changes.

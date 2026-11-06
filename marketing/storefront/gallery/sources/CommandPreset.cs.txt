@@ -1,0 +1,22 @@
+// ReSharper disable ClassCanBeSealed.Global, FieldCanBeMadeReadOnly.Global, ConvertToConstant.Global, InconsistentNaming, CheckNamespace, MemberCanBePrivate.Global, UnusedMember.Global, UnusedType.Global, UnusedMember.Local, NotAccessedField.Global, RedundantUsingDirective
+using System.Collections.Generic;
+using Houtamelo.Spire.Showcase;
+using UnityEngine;
+
+namespace SpireGallery {
+
+public class CommandPreset : ScriptableObject {
+    [SerializeField] GameplayCommand selectedCommand;
+    [SerializeField] List<GameplayCommand> commands;
+
+    public void ResetExamples() {
+        selectedCommand = GameplayCommand.Move(new Vector2(3, 4), 2);
+        commands = new List<GameplayCommand> {
+            GameplayCommand.Idle(),
+            selectedCommand,
+            GameplayCommand.Speak("Hello from Spire"),
+        };
+    }
+}
+
+}

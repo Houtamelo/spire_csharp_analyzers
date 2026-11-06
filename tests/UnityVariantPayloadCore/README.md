@@ -14,6 +14,14 @@ The invoked Editor method is:
 Spire.UnityVariantPayloadCore.CorePlayerBuild.BuildPlayers
 ```
 
+On Unity 2022, the native generic serialization fixture is inapplicable:
+`SerializedUnionAsset.generic` is `[NonSerialized]`, and its persistence
+assertions do not run. Generic factories, payload reflection, accessors, and
+managed hydration remain tested. Unity 2023 and newer retain the serialized field
+and its persistence assertions. Editor checks verify the field's presence or
+absence through `SerializedObject`; reports include
+`genericUnionSerializationSupported` and `genericUnionSerializationApplicability`.
+
 The editor writes `unity-core-build-report.json` at the disposable project root.
 The report contains separate executable paths:
 
@@ -69,6 +77,41 @@ the player builder without exiting the Editor and records
 player probe calls it after the Resources assets have been included in both
 player builds.
 
+Concrete-wrapper acceptance has separate non-generic assets and Editor methods:
+
+```text
+Spire.UnityVariantPayloadCore.ConcreteWrapperEditorTests.Write
+Spire.UnityVariantPayloadCore.ConcreteWrapperEditorTests.Read
+Spire.UnityVariantPayloadCore.ConcreteWrapperEditorTests.WriteLegacy
+Spire.UnityVariantPayloadCore.ConcreteWrapperEditorTests.UpgradeLegacy
+Spire.UnityVariantPayloadCore.ConcreteWrapperEditorTests.VerifyUpgraded
+```
+
+Run Write and Read in separate Editor processes. These checks cover inherited
+payload paths, collections, native object references, shared/cyclic managed
+graphs, former names, YAML stability, and generated drawer variant detection
+through real `SerializedObject` properties. They do not open an Inspector window.
+The reports are `unity-concrete-wrapper-{write,read,legacy-write,upgrade,verify}-results.json`.
+
+For migration, run WriteLegacy with the old package in a newer Editor, archive
+the asset/YAML, replace the package, then run UpgradeLegacy and VerifyUpgraded
+in separate processes. VerifyUpgraded can also check the migrated asset in
+Unity 2022. The fixture cannot create old generic-wrapper assets in Unity 2022.
+Keep the broader generic cases above: this non-generic fixture does not establish
+generic serialization support there. Current evidence is in the
+[wrapper validation](../../docs/reviews/2026-11-04-concrete-unity-wrappers.md).
+
+The November 5 concrete-wrapper revalidation passes both Linux x64 player builds
+with High stripping on `6000.5.6f1`, then all 60 runtime checks on each actual
+Mono/IL2CPP executable. The resource allowance is 12 GiB total with two CPU cores;
+evidence is under `tmp/unity-concrete-wrappers-12g-20261105`.
+
+The current [Unity 2022/2023 recheck](../../docs/reviews/2026-11-05-unity-2022-2023-current-validation.md)
+also passes both Unity 2023 player backends. The probe defers quitting until the
+first update because quitting from `AfterSceneLoad` reproducibly crashes an empty
+Unity 2023 player during native cleanup. The actual scheduler's success and
+failure exit codes are checked in the separate lifecycle control project.
+
 Phase-3 native evidence is archived under
 `tmp/union-redesign-results/phase3-native`. On Unity 6000.5.6f1, Editor
 Recovery passes with 59 checks, and both standalone Mono and IL2CPP players
@@ -92,7 +135,8 @@ during the player build, so this evidence does not claim native malformed-asset
 callback execution; the direct generated bridge fallback remains checked in
 both players.
 
-Rendered Editor checks use native UI Toolkit controls and IMGUI input:
+Rendered Editor checks use native UI Toolkit controls and IMGUI input. They are
+separate from the headless Editor harness and require an explicit graphics run:
 
 ```sh
 SPIRE_UNITY_NATIVE_INPUT=1 dotnet run -c Release --project tools/Spire.Tool -- \
@@ -104,7 +148,11 @@ SPIRE_UNITY_NATIVE_INPUT=1 dotnet run -c Release --project tools/Spire.Tool -- \
 The Linux runner creates a private Xvfb display. The opt-in input helper queues
 XTest events there; it does nothing without the flag and a display. This avoids
 Unity 6000.5.6f1 blocking inside synchronous `EditorWindow.SendEvent(MouseDown)`.
-The final rendered run passes 16 cases and 147 checks with no failures or
-unverified cases. It covers repeated text/numeric edits, native IMGUI `x/y/z`
+The current Linux rendered runs pass 18 cases and 204 checks on both
+2023.2.22f1 and 6000.5.6f1, and 17 cases with 192 checks on 2022.3.62f3. Only
+the unsupported closed-generic Inspector serialization case is not applicable
+on 2022. There are no failures or unverified cases; see the
+[rendered validation](../../docs/reviews/2026-11-05-rendered-inspector-validation.md).
+Coverage includes repeated text/numeric edits, native IMGUI `x/y/z`
 without refocusing, copied previews, collections, external edits, Undo/Redo,
 shared managed-reference aliases/cycles, prefab overrides, and multi-object edits.

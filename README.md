@@ -5,7 +5,13 @@ Roslyn analyzers and source generators for C# type safety — struct initializat
 ## Installation
 
 This `unity-6000` branch targets Unity 6000.5, with Mono and Linux IL2CPP
-validation. Build its local package:
+validation. **Unity 2020 will not work.** Unity 2021/2022 LTS compatibility is
+tracked in the [LTS validation](docs/reviews/2026-11-04-unity-lts-followup.md).
+Concrete per-variant wrappers pass native serialization write/read checks for
+non-generic unions on `2022.3.62f3`. Generic unions remain unsupported by that
+Editor's serializer. The minimum remains unchanged; see the
+[wrapper validation](docs/reviews/2026-11-04-concrete-unity-wrappers.md).
+Build its local package:
 
 ```sh
 dotnet run -c Release --project tools/Spire.Tool -- package
@@ -38,7 +44,7 @@ The normal NuGet build is maintained on `main`.
 | [SPIRE006](docs/rules/SPIRE006.md) | Clearing array or span of `[EnforceInitialization]` type                        |
 | [SPIRE007](docs/rules/SPIRE007.md) | `Unsafe.SkipInit` on `[EnforceInitialization]` struct                           |
 | [SPIRE008](docs/rules/SPIRE008.md) | `RuntimeHelpers.GetUninitializedObject` on `[EnforceInitialization]` struct     |
-| [SPIRE009](docs/rules/SPIRE009.md) | Switch does not handle all variants of discriminated union                      |
+| [SPIRE009](docs/rules/SPIRE009.md) | Switch does not handle all possible cases of type marked with `[EnforceExhaustiveness]` |
 | [SPIRE010](docs/rules/SPIRE010.md) | Expand wildcard to explicit variant arms (refactoring)                          |
 | [SPIRE011](docs/rules/SPIRE011.md) | Discriminated union pattern field type mismatch                                 |
 | [SPIRE012](docs/rules/SPIRE012.md) | Discriminated union pattern field count mismatch                                |

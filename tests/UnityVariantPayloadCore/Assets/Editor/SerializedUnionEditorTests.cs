@@ -41,9 +41,12 @@ namespace Spire.UnityVariantPayloadCore
             "invalid union serialization data, defaulting to Move";
         // Unity's managed-reference YAML/type-name representation uses '/'
         // between nested types. Reflection checks below intentionally retain '+'.
-        private const string SerializedShapeMovePayloadType = "SerializedShapeTypes/Variants/Move";
-        private const string SerializedAliasCurrentPayloadType = "SerializedAliasUnionTypes/Variants/Current";
-        private const string SerializedAliasFormerPayloadType = "SerializedAliasUnionTypes/Variants/Former";
+        private const string SerializedShapeMovePayloadType =
+            "SerializedShapeTypes/SerializedPayloads/MoveSerializedPayload";
+        private const string SerializedAliasCurrentPayloadType =
+            "SerializedAliasUnionTypes/SerializedPayloads/CurrentSerializedPayload";
+        private const string SerializedAliasFormerPayloadType =
+            "SerializedAliasUnionTypes/SerializedPayloads/FormerSerializedPayload";
 
         private static int _checks;
         private static readonly List<string> Failures = new List<string>();
@@ -85,6 +88,7 @@ namespace Spire.UnityVariantPayloadCore
                 checks = _checks,
                 failures = new List<string>(Failures),
             };
+            ApplyNativeCapabilityReport(report);
 
             try
             {
@@ -146,6 +150,7 @@ namespace Spire.UnityVariantPayloadCore
                 checks = _checks,
                 failures = new List<string>(Failures),
             };
+            ApplyNativeCapabilityReport(report);
 
             try
             {
@@ -388,7 +393,9 @@ namespace Spire.UnityVariantPayloadCore
                 canonical.IndexOf(SerializedShapeMovePayloadType, StringComparison.Ordinal) >= 0,
                 description + " recovery did not canonicalize the next save.");
             Check(
-                canonical.IndexOf("SerializedShapeTypes/Variants/NotKnown", StringComparison.Ordinal) < 0,
+                canonical.IndexOf(
+                    "SerializedShapeTypes/SerializedPayloads/NotKnownSerializedPayload",
+                    StringComparison.Ordinal) < 0,
                 description + " recovery retained an invalid payload typename.");
         }
 
@@ -554,6 +561,20 @@ namespace Spire.UnityVariantPayloadCore
                 Check(
                     serialized.FindProperty("shape._serializedPayload.value._kind") == null,
                     "The public payload unexpectedly contains a nested union discriminator.");
+
+                var generic = serialized.FindProperty("generic");
+                Check(
+                    (generic != null) == SerializedUnionNativeCapabilities.GenericUnionSerializationSupported,
+                    SerializedUnionNativeCapabilities.GenericUnionSerializationSupported
+                        ? "The generic union field was not exposed to SerializedObject on a supported Unity version."
+                        : "The generic union field was unexpectedly exposed to SerializedObject on Unity 2022.");
+                if (SerializedUnionNativeCapabilities.GenericUnionSerializationSupported)
+                {
+                    Check(
+                        generic != null && generic.propertyType == SerializedPropertyType.Generic &&
+                        serialized.FindProperty("generic._serializedPayload") != null,
+                        "The generic union field did not expose its serialized payload on a supported Unity version.");
+                }
             }
         }
 
@@ -678,14 +699,17 @@ namespace Spire.UnityVariantPayloadCore
                 asset.shapeList[2].kind == SerializedShape.Kind.Rich,
                 "Union list variants did not restore in declaration order.");
 
-            if (asset.generic.kind != SerializedGeneric<int>.Kind.Value)
-                throw new InvalidOperationException("Generic union kind did not restore.");
-            var generic = asset.generic.value;
-            Check(generic.value == 42 && generic.label == "generic",
-                "Generic union fields did not restore.");
-            var (genericValue, genericLabel) = generic;
-            Check(genericValue == 42 && genericLabel == "generic",
-                "Generic payload Deconstruct did not preserve values.");
+            if (SerializedUnionNativeCapabilities.GenericUnionSerializationSupported)
+            {
+                if (asset.generic.kind != SerializedGeneric<int>.Kind.Value)
+                    throw new InvalidOperationException("Generic union kind did not restore.");
+                var generic = asset.generic.value;
+                Check(generic.value == 42 && generic.label == "generic",
+                    "Generic union fields did not restore.");
+                var (genericValue, genericLabel) = generic;
+                Check(genericValue == 42 && genericLabel == "generic",
+                    "Generic payload Deconstruct did not preserve values.");
+            }
 
             if (asset.alias.kind != SerializedAliasUnion.Kind.Current)
                 throw new InvalidOperationException("Canonical alias union kind did not restore.");
@@ -845,9 +869,15 @@ namespace Spire.UnityVariantPayloadCore
             if (includeUnknownRecoveryAssets)
             {
                 CreateCopyAndTransform(PlayerUnknownPath, text =>
-                    ReplaceShapePayload(text, "SerializedShapeTypes/Variants/NotKnown", removePayload: false));
+                    ReplaceShapePayload(
+                        text,
+                        "SerializedShapeTypes/SerializedPayloads/NotKnownSerializedPayload",
+                        removePayload: false));
                 CreateCopyAndTransform(EditorUnknownPath, text =>
-                    ReplaceShapePayload(text, "SerializedShapeTypes/Variants/NotKnown", removePayload: false));
+                    ReplaceShapePayload(
+                        text,
+                        "SerializedShapeTypes/SerializedPayloads/NotKnownSerializedPayload",
+                        removePayload: false));
             }
 
             CreateCopyAndTransform(PlayerStaleKindPath, text => ReplaceShapeKind(text, 1));
@@ -1212,6 +1242,14 @@ namespace Spire.UnityVariantPayloadCore
                 throw new InvalidOperationException(message);
         }
 
+        private static void ApplyNativeCapabilityReport(PhaseReport report)
+        {
+            report.genericUnionSerializationSupported =
+                SerializedUnionNativeCapabilities.GenericUnionSerializationSupported;
+            report.genericUnionSerializationApplicability =
+                SerializedUnionNativeCapabilities.GenericUnionSerializationApplicability;
+        }
+
         private static int WarningCount(List<string> warningMessages)
         {
             lock (warningMessages)
@@ -1226,6 +1264,8 @@ namespace Spire.UnityVariantPayloadCore
             public string status = string.Empty;
             public int checks;
             public List<string> failures = new List<string>();
+            public bool genericUnionSerializationSupported;
+            public string genericUnionSerializationApplicability = string.Empty;
         }
     }
 

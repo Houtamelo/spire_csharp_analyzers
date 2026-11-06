@@ -316,7 +316,7 @@ public sealed class VariantPayloadJsonTests : Behavioral.BehavioralTestBase
     private static (Microsoft.CodeAnalysis.GeneratorDriverRunResult Result, Compilation Compilation)
         GenerateWithConfig(string source, Dictionary<string, string> options)
     {
-        var references = TestHarnessEnvironment.FrameworkReferences
+        var references = TestHarnessEnvironment.RuntimeReferences
             .Append(MetadataReference.CreateFromFile(
                 typeof(Houtamelo.Spire.DiscriminatedUnionAttribute).Assembly.Location))
             .Append(MetadataReference.CreateFromFile(typeof(JsonSerializer).Assembly.Location))

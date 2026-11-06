@@ -1,0 +1,8 @@
+{
+  "quickFix": "Add missing variant arms",
+  "missingCase": "TalkToNpc",
+  "appliedVia": "actual Rider popup selected and confirmed with Enter",
+  "sourceChanged": true,
+  "generatedBranch": "TalkToNpc => throw new System.NotImplementedException(),",
+  "highlight": "Actual Rider text selection in the saved generated branch"
+}

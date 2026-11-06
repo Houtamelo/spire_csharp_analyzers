@@ -1,0 +1,357 @@
+[
+  {
+    "file": "01-exhaustive-matching",
+    "title": "Catch missing cases at compile time.",
+    "subtitle": [
+      "Add an implementation. Spire immediately reports all switches that need updating."
+    ],
+    "photos": [
+      {
+        "source": "01-rider-missing-case.png",
+        "crop": [
+          225,
+          290,
+          2050,
+          910
+        ],
+        "x": 70,
+        "y": 345,
+        "width": 1810
+      },
+      {
+        "source": "02-rider-quick-fix.png",
+        "crop": [
+          1250,
+          1065,
+          620,
+          32
+        ],
+        "x": 70,
+        "y": 1155,
+        "width": 1400
+      }
+    ],
+    "notes": [
+      {
+        "text": "Works with enums, classes, interfaces, structs, and discriminated unions.",
+        "x": 70,
+        "y": 1258,
+        "size": 30,
+        "color": "#BDB1C5"
+      }
+    ],
+    "context": "Actual Rider diagnostic \u00b7 full incomplete switch and data-bearing interface implementors"
+  },
+  {
+    "file": "02-generate-missing-branches",
+    "title": "Generate the missing branches.",
+    "subtitle": [
+      "Use the IDE quick fix, then fill in the behavior."
+    ],
+    "photos": [
+      {
+        "source": "02-rider-quick-fix.png",
+        "crop": [
+          173,
+          1068,
+          1070,
+          32
+        ],
+        "x": 70,
+        "y": 405,
+        "width": 1810
+      },
+      {
+        "source": "03-rider-generated-cases.png",
+        "crop": [
+          235,
+          810,
+          1600,
+          340
+        ],
+        "x": 70,
+        "y": 660,
+        "width": 1810
+      }
+    ],
+    "notes": [
+      {
+        "text": "Choose the Rider code action",
+        "x": 70,
+        "y": 365,
+        "size": 29,
+        "color": "#BDB1C5"
+      },
+      {
+        "text": "The new branch is highlighted in blue.",
+        "x": 70,
+        "y": 615,
+        "size": 29,
+        "color": "#BDB1C5"
+      }
+    ],
+    "context": "Actual Rider quick fix \u00b7 highlighted branch comes from the saved source transformation"
+  },
+  {
+    "file": "03-variants-with-data",
+    "title": "Give each variant its own data.",
+    "subtitle": [
+      "Discriminated Unions allow expressing commands, states, and results with distinct payloads,",
+      "they are struct-based and lightweight:",
+      "storage is compact and requires no additional heap allocation."
+    ],
+    "photos": [
+      {
+        "source": "04-rider-variant-payloads.png",
+        "crop": [
+          240,
+          300,
+          1800,
+          690
+        ],
+        "x": 70,
+        "y": 440,
+        "width": 1810
+      }
+    ],
+    "notes": [
+      {
+        "text": "Move(destination, speed) \u00b7 Speak(speech) \u00b7 ApplyEffect(effect)",
+        "x": 70,
+        "y": 1195,
+        "size": 31,
+        "color": "#BDB1C5"
+      }
+    ],
+    "context": "Actual union declarations from the Unity showcase, displayed in Rider"
+  },
+  {
+    "file": "04-exhaustive-union-switch",
+    "title": "Exhaustive matching for union switches.",
+    "subtitle": [
+      "Switch statements are exhaustive too. Spire names any missing variant.",
+      "You can even generate missing cases using the quick fix menu."
+    ],
+    "photos": [
+      {
+        "source": "v3-rider-union-switch.png",
+        "crop": [
+          230,
+          385,
+          2050,
+          760
+        ],
+        "x": 70,
+        "y": 390,
+        "width": 1810
+      },
+      {
+        "source": "v3-rider-union-diagnostic.png",
+        "crop": [
+          1215,
+          570,
+          605,
+          33
+        ],
+        "x": 70,
+        "y": 1100,
+        "width": 1810
+      }
+    ],
+    "notes": [
+      {
+        "text": "All cases are checked, without a default branch.",
+        "x": 70,
+        "y": 1238,
+        "size": 31,
+        "color": "#BDB1C5"
+      }
+    ],
+    "context": "Actual Rider switch statement using generated payload deconstruction \u00b7 missing ApplyEffect variant reported by Spire"
+  },
+  {
+    "file": "05-unity-inspector",
+    "title": "Author unions in the Unity Inspector.",
+    "subtitle": [
+      "Pick your variant, get editable fields from that variant.",
+      "Compatible with Odin Inspector."
+    ],
+    "photos": [
+      {
+        "source": "05-rider-serialized-fields.png",
+        "crop": [
+          315,
+          452,
+          895,
+          100
+        ],
+        "x": 70,
+        "y": 550,
+        "width": 950
+      },
+      {
+        "source": "08-unity-inspector-narrow.png",
+        "crop": [
+          0,
+          0,
+          600,
+          445
+        ],
+        "x": 1080,
+        "y": 395,
+        "width": 800
+      }
+    ],
+    "notes": [
+      {
+        "text": "Rider \u00b7 serialized field declarations",
+        "x": 70,
+        "y": 505,
+        "size": 29,
+        "color": "#BDB1C5"
+      },
+      {
+        "text": "Unity \u00b7 generated Inspector",
+        "x": 1080,
+        "y": 1080,
+        "size": 29,
+        "color": "#BDB1C5"
+      },
+      {
+        "text": "The same drawer works inside a List.",
+        "x": 70,
+        "y": 790,
+        "size": 32,
+        "color": "#BDB1C5"
+      }
+    ],
+    "context": "Actual Rider declarations and a 600-pixel-wide Unity Inspector showing the same serialized fields"
+  },
+  {
+    "file": "06-generated-json",
+    "title": "JSON converters, generated for you.",
+    "subtitle": [
+      "Serialization and deserialization. System.Text.Json and Newtonsoft.Json."
+    ],
+    "photos": [
+      {
+        "source": "06-rider-json-full.png",
+        "crop": [
+          235,
+          390,
+          1900,
+          750
+        ],
+        "x": 70,
+        "y": 380,
+        "width": 1400
+      },
+      {
+        "source": "09-unity-json-output.png",
+        "crop": [
+          45,
+          585,
+          430,
+          220
+        ],
+        "x": 1510,
+        "y": 590,
+        "width": 365
+      }
+    ],
+    "notes": [
+      {
+        "text": "Rider \u00b7 union and round-trip code",
+        "x": 70,
+        "y": 345,
+        "size": 29,
+        "color": "#BDB1C5"
+      },
+      {
+        "text": "Unity output",
+        "x": 1510,
+        "y": 550,
+        "size": 28,
+        "color": "#BDB1C5"
+      },
+      {
+        "text": "Generated converter. Verified round trip: Success(42).",
+        "x": 70,
+        "y": 1100,
+        "size": 34,
+        "color": "#BDB1C5"
+      }
+    ],
+    "context": "Code captured in Rider \u00b7 actual Unity JSON output and verified deserialization"
+  },
+  {
+    "file": "07-native-burst",
+    "title": "Typed variants inside native Burst jobs.",
+    "subtitle": [
+      "Struct-based Discriminated Unions provide the strongest polymorphism possible",
+      "within Burst's strict type restrictions. Also naturally compatible with DOTS."
+    ],
+    "photos": [
+      {
+        "source": "07-rider-burst-job.png",
+        "crop": [
+          225,
+          310,
+          1280,
+          730
+        ],
+        "x": 70,
+        "y": 420,
+        "width": 855
+      },
+      {
+        "source": "v3-rider-burst-execute.png",
+        "crop": [
+          325,
+          135,
+          1300,
+          880
+        ],
+        "x": 965,
+        "y": 420,
+        "width": 915
+      },
+      {
+        "source": "10-unity-burst-output.png",
+        "crop": [
+          45,
+          808,
+          650,
+          67
+        ],
+        "x": 70,
+        "y": 960,
+        "width": 800
+      }
+    ],
+    "notes": [
+      {
+        "text": "Rider \u00b7 union and job",
+        "x": 70,
+        "y": 390,
+        "size": 29,
+        "color": "#BDB1C5"
+      },
+      {
+        "text": "Rider \u00b7 Execute",
+        "x": 965,
+        "y": 390,
+        "size": 29,
+        "color": "#BDB1C5"
+      },
+      {
+        "text": "Unity \u00b7 native Burst execution verified",
+        "x": 70,
+        "y": 1100,
+        "size": 29,
+        "color": "#BDB1C5"
+      }
+    ],
+    "context": "Actual Rider declarations and Execute method \u00b7 typed commands from NativeArray handled inside a native Burst job"
+  }
+]

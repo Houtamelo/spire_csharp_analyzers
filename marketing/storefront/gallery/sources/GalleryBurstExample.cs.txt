@@ -1,0 +1,51 @@
+// ReSharper disable ClassCanBeSealed.Global, FieldCanBeMadeReadOnly.Global, ConvertToConstant.Global, InconsistentNaming, CheckNamespace, MemberCanBePrivate.Global, UnusedMember.Global, UnusedType.Global, UnusedMember.Local, NotAccessedField.Global, RedundantUsingDirective
+using Houtamelo.Spire;
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Jobs;
+using Unity.Mathematics;
+
+namespace SpireGallery {
+
+[DiscriminatedUnion]
+public partial struct MotionCommand {
+    [Variant] public static partial MotionCommand Move(float3 destination);
+    [Variant] public static partial MotionCommand Offset(float3 delta);
+    [Variant] public static partial MotionCommand Idle();
+}
+
+[BurstCompile(CompileSynchronously = true)]
+public struct ApplyMotionCommandsJob : IJob {
+    [ReadOnly] public NativeArray<MotionCommand> commands;
+    public NativeArray<float3> result;
+    public NativeArray<int> nativeExecution;
+
+    public void Execute() {
+        var position = float3.zero;
+        foreach (var command in commands) {
+            switch (command) {
+                case { IsMove: true, move: var (destination) }:
+                    position = destination;
+                    break;
+                case { IsOffset: true, offset: var (delta) }:
+                    position += delta;
+                    break;
+                case { IsIdle: true }:
+                    break;
+            }
+        }
+        result[0] = position;
+        RecordNativeExecution();
+    }
+
+    void RecordNativeExecution() {
+        bool managed = false;
+        DetectManagedFallback(ref managed);
+        nativeExecution[0] = managed ? 0 : 1;
+    }
+
+    [BurstDiscard]
+    static void DetectManagedFallback(ref bool managed) { managed = true; }
+}
+
+}

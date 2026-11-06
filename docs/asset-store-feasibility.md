@@ -92,6 +92,13 @@ the store's usual seat licensing creates exclusivity over MIT-covered components
 
 ## Implemented and verified
 
+October 27 update: native Burst material jobs and real DOTS Firefighters state
+transitions now run in Spire-integrated sibling projects. See the
+[demo integration evidence](reviews/2026-10-27-spire-demo-integration.md).
+The current representation uses per-variant payloads and an explicit unmanaged
+overlay; the five public Layout strategies mentioned in older validation below
+have been removed. Those earlier results retain their historical scope.
+
 The Unity build remains on `unity-6000`, separate from the normal NuGet build on
 `main`. The compiler extensions now use a Roslyn 4.3 baseline; the shipping
 manifest still targets Unity 6000.5, with Rider as the supported IDE. Native evidence
@@ -148,6 +155,10 @@ The [Unity-only callback reproducer](issues/unity-6.6-generic-struct-serializati
 now establishes a 6.6 regression without Spire installed, affecting generic struct
 serialization callbacks. Its single-file MRP needs only a null managed-reference
 field and a logging callback. A safe package workaround has not been established.
+The [November 2 current-package recheck](reviews/2026-11-02-unity-6.6-serialization-recheck.md)
+narrows this boundary: 126 native Editor write checks and 87 fresh-process read
+checks pass on 6000.6.5f1, while a generic union instantiated with `string` still
+crashes. Complete 6.6 Player/Inspector support remains unverified.
 See [Unity support and validation](unity.md) for reproducible workflows and IDE
 acceptance boundaries.
 
@@ -170,10 +181,12 @@ customers depend on the saved representation:
   significant. Unchanged saves are tested against saved/reloaded data, with
   additional managed-reference null tests.
 
-All five layouts support serialization. Existing `Overlap` generic restrictions,
-`UnsafeOverlap`'s unsafe-code requirement, Editor cache retention, and player
-cloning-source snapshots are documented design limits, rather than unimplemented
-serialization features. See [the Unity guide](unity.md#serialize-a-union)
+Current struct unions support serialization, but the generated managed cache
+prevents using that serialized representation as unmanaged Burst/ECS data. Users
+must manually declare separate serializable authoring and unmanaged runtime
+unions and convert between them. The current overlay requires neither unsafe
+code nor an extra Unsafe DLL. Editor cache retention and player cloning-source
+snapshots remain documented design limits. See [the Unity guide](unity.md#serialize-a-union)
 and [payload stability evidence](unity-managed-reference-stability.md#implemented-behavior).
 
 ## Remaining preparation before submission

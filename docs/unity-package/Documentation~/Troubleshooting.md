@@ -2,6 +2,8 @@
 
 | Symptom | Check |
 |---|---|
+| Unity 2020 cannot load Spire or generate factories | Unity 2020 will not work. Its compiler lacks the source-generator support and C# 9 features required by Spire. |
+| Unity 2022 loses serialized union payloads | Generic unions are unsupported by this Editor's serializer. Non-generic unions use concrete wrappers. For assets written with the previous generic wrapper, update and resave in a newer supported Editor before moving them to Unity 2022. |
 | Partial factories have no implementation | Start with Unity's first compiler/generator error. Confirm `partial` on the union and all containing types, all four DLLs, and `RoslynAnalyzer` labels in their metadata. |
 | Unity compiles but Rider lacks generated members or fixes | Enable Rider's Roslyn Analyzers, refresh the Unity project model, and check the IDE's analyzer errors. |
 | Analyzer works in one assembly only | Keep analyzer `.meta` files with the DLLs; inspect the owning asmdef and compiler response file for analyzer loading. |
@@ -14,9 +16,11 @@
 
 The verified environment is Unity **6000.5.6f1**, Linux x64, Editor Mono and
 IL2CPP players with High managed stripping. Other Editor versions and platforms
-need separate validation. Unity 6000.6.5f1 has a reported engine crash in generic
-struct serialization callbacks, reproduced without Spire. Native serialization
-on that version is not supported.
+need separate validation. On Unity 6000.6.5f1 (Linux), generic unions instantiated with
+reference-type arguments, such as `Command<string>`, still trigger an engine
+serialization crash. Native Editor write/read checks pass for non-generic unions
+and tested unmanaged generic unions. Use 6000.5.6f1 for serialized reference-type
+generic instantiations; see [Serialization](Serialization.md).
 The compiler extensions now target Roslyn 4.3 and load in Unity 6000.3.26f1 LTS.
 Complete support for that Editor remains under evaluation. Historical probes
 used the removed `UnsafeOverlap` mode; the current payload representation does

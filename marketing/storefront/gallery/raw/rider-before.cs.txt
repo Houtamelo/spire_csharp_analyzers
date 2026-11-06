@@ -1,0 +1,28 @@
+// ReSharper disable ClassCanBeSealed.Global, FieldCanBeMadeReadOnly.Global, ConvertToConstant.Global, InconsistentNaming, CheckNamespace, MemberCanBePrivate.Global, UnusedMember.Global, UnusedType.Global, UnusedMember.Local, NotAccessedField.Global, RedundantUsingDirective
+#nullable enable
+using System;
+using Houtamelo.Spire;
+
+namespace SpireGallery {
+
+[EnforceExhaustiveness]
+public interface IQuestObjective { }
+
+public class CollectItem : IQuestObjective {
+    public string ItemId = "wood"; public int Amount = 3;
+}
+public class DefeatEnemy : IQuestObjective {
+    public string EnemyId = "slime"; public int Amount = 5;
+}
+public class TalkToNpc : IQuestObjective {
+    public string NpcId = "blacksmith"; public string DialogueId = "repair_sword";
+}
+
+public static class QuestJournal {
+    public static string Describe(IQuestObjective objective) => objective switch {
+        CollectItem item => $"Collect {item.Amount} x {item.ItemId}",
+        DefeatEnemy enemy => $"Defeat {enemy.Amount} x {enemy.EnemyId}",
+    };
+}
+
+}

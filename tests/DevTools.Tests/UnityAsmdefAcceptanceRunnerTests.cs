@@ -140,15 +140,8 @@ public sealed class UnityAsmdefAcceptanceRunnerTests
     public void AnalyzerReferences_ParsesARealBeeResponseAndDropsAResponseWithoutAnalyzers()
     {
         var repositoryRoot = FindRepositoryRoot();
-        var sourceProject = Path.Combine(repositoryRoot, "tmp", "unity-asmdefs");
-        var sourceBee = Path.Combine(sourceProject, "Library", "Bee");
-        Assert.True(Directory.Exists(sourceBee), sourceBee);
-
-        var sourceResponse = Directory
-            .EnumerateFiles(sourceBee, "*.rsp", SearchOption.AllDirectories)
-            .Select(path => new { Path = path, Lines = File.ReadAllLines(path) })
-            .FirstOrDefault(value => value.Lines.Any(IsOutputArgument) && value.Lines.Any(IsAnalyzerArgument));
-        Assert.NotNull(sourceResponse);
+        var sourcePath = Path.Combine(repositoryRoot, "tests", "DevTools.Tests", "Fixtures", "UnityCompiler", "CapturedAssembly.rsp");
+        var sourceResponse = new { Lines = File.ReadAllLines(sourcePath) };
 
         var outputArgument = sourceResponse!.Lines.First(IsOutputArgument);
         var assemblyName = Path.GetFileNameWithoutExtension(
@@ -179,7 +172,7 @@ public sealed class UnityAsmdefAcceptanceRunnerTests
     public void GeneratedProjectReferences_ReadsActualGeneratedUnityProjects()
     {
         var repositoryRoot = FindRepositoryRoot();
-        var sourceProject = Path.Combine(repositoryRoot, "tmp", "unity-asmdefs");
+        var sourceProject = Path.Combine(repositoryRoot, "tests", "DevTools.Tests", "Fixtures", "UnityCompiler");
         var sourceProjects = Directory.EnumerateFiles(sourceProject, "*.csproj", SearchOption.TopDirectoryOnly).ToArray();
         Assert.NotEmpty(sourceProjects);
 

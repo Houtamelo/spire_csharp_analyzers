@@ -260,7 +260,7 @@ public sealed class UnityHarnessRunnerTests
 
             var metadata = File.ReadAllText(target + ".meta");
             Assert.Contains("isExplicitlyReferenced: 1", metadata, StringComparison.Ordinal);
-            Assert.Contains("      '': Any\n    second:\n      enabled: 0", metadata, StringComparison.Ordinal);
+            Assert.Contains("      Any:\n    second:\n      enabled: 0", metadata, StringComparison.Ordinal);
             Assert.Contains("      Editor: Editor\n    second:\n      enabled: 1", metadata, StringComparison.Ordinal);
             Assert.DoesNotContain("Runtime: Runtime", metadata, StringComparison.Ordinal);
         }

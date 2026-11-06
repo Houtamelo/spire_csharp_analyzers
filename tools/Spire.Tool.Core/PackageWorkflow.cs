@@ -129,14 +129,14 @@ public static class PackageWorkflow
         return "fileFormatVersion: 2\nguid: " + Guid(relative) + "\n" + (analyzer ? "labels:\n- RoslynAnalyzer\n" : "") +
             "PluginImporter:\n  externalObjects: {}\n  serializedVersion: 2\n  iconMap: {}\n  executionOrder: {}\n" +
             "  defineConstraints: []\n  isPreloaded: 0\n  isOverridable: 0\n  isExplicitlyReferenced: 0\n  validateReferences: 1\n" +
-            "  platformData:\n  - first:\n      : Any\n    second:\n      enabled: " + enabled + "\n      settings: {}\n" +
+            "  platformData:\n  - first:\n      Any:\n    second:\n      enabled: " + enabled + "\n      settings: {}\n" +
             "  - first:\n      Editor: Editor\n    second:\n      enabled: " + enabled + "\n      settings:\n        DefaultValueInitialized: true\n" +
             "  userData:\n  assetBundleName:\n  assetBundleVariant:\n";
     }
 
     internal static string TestPluginMetadata(string guid, bool player = false) => "fileFormatVersion: 2\nguid: " + guid + "\nPluginImporter:\n" +
         "  externalObjects: {}\n  serializedVersion: 2\n  isPreloaded: 0\n  isOverridable: 0\n  isExplicitlyReferenced: 1\n  validateReferences: 1\n" +
-        "  platformData:\n  - first:\n      '': Any\n    second:\n      enabled: " + (player ? 1 : 0) + "\n      settings: {}\n" +
+        "  platformData:\n  - first:\n      Any:\n    second:\n      enabled: " + (player ? 1 : 0) + "\n      settings: {}\n" +
         "  - first:\n      Editor: Editor\n    second:\n      enabled: 1\n      settings:\n        DefaultValueInitialized: true\n" +
         "  userData:\n  assetBundleName:\n  assetBundleVariant:\n";
 }

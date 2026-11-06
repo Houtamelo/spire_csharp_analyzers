@@ -95,6 +95,33 @@ public sealed class XunitReflectionBridgeContractTests
     }
 
     [NUnitTestAttribute]
+    public async Task Runner_YieldsSynchronousCompletionAndPreservesFailures()
+    {
+        var runner = new XunitReflectionNUnitRunner();
+        OutputFixture.OutputReceived = false;
+        var outputCase = XunitReflectionBridge.Discover(new[] { typeof(OutputFixture) }).Single();
+        var completion = runner.Run(outputCase);
+
+        Assert.That(completion.IsCompleted, Is.False);
+        await completion;
+        Assert.That(OutputFixture.OutputReceived, Is.True);
+
+        var failureCase = XunitReflectionBridge.Discover(new[] { typeof(FailingAsyncFixture) }).Single();
+        InvalidOperationException? failure = null;
+        try
+        {
+            await runner.Run(failureCase);
+        }
+        catch (InvalidOperationException exception)
+        {
+            failure = exception;
+        }
+
+        Assert.That(failure, Is.Not.Null);
+        Assert.That(failure!.Message, Is.EqualTo("async bridge failure"));
+    }
+
+    [NUnitTestAttribute]
     public void Discover_RejectsSkippedMissingAndFailingData()
     {
         Assert.Throws<InvalidOperationException>(() =>

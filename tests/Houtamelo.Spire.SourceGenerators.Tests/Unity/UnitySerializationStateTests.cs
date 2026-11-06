@@ -193,15 +193,27 @@ public sealed class UnitySerializationStateTests
 
         var first = InvokeFactory(unionType, "First", 17);
         var firstPayload = Activator.CreateInstance(firstPayloadType, new object[] { 17 })!;
-        var firstWrapper = WrapPayload(assembly, firstPayloadType, firstPayload);
+        var firstLegacyWrapper = WrapPayload(assembly, firstPayloadType, firstPayload);
+        Assert.False(SerializedStateCurrent(unionType, first, firstLegacyWrapper));
+        var firstWrapper = WrapConcretePayload(
+            assembly,
+            "First",
+            firstPayload);
         Assert.True(SerializedStateCurrent(unionType, first, firstWrapper));
         Assert.False(SerializedStateCurrent(unionType, first, null));
         Assert.False(SerializedStateCurrent(unionType, first, new object()));
 
         var second = InvokeFactory(unionType, "Second", "hello");
         var secondPayload = Activator.CreateInstance(secondPayloadType, new object[] { "hello" })!;
-        var secondWrapper = WrapPayload(assembly, secondPayloadType, secondPayload);
+        var secondWrapper = WrapConcretePayload(
+            assembly,
+            "Second",
+            secondPayload);
         Assert.True(SerializedStateCurrent(unionType, second, secondWrapper));
+        Assert.False(SerializedStateCurrent(
+            unionType,
+            second,
+            WrapPayload(assembly, secondPayloadType, secondPayload)));
         var differentText = Activator.CreateInstance(secondPayloadType, new object[] { "other" })!;
         Assert.False(SerializedStateCurrent(
             unionType,
@@ -212,8 +224,15 @@ public sealed class UnitySerializationStateTests
         var node = Activator.CreateInstance(assembly.GetType("TupleNode", throwOnError: true)!)!;
         var nodeState = InvokeFactory(unionType, "Node", node);
         var nodePayload = Activator.CreateInstance(nodePayloadType, new[] { node })!;
-        var nodeWrapper = WrapPayload(assembly, nodePayloadType, nodePayload);
+        var nodeWrapper = WrapConcretePayload(
+            assembly,
+            "Node",
+            nodePayload);
         Assert.True(SerializedStateCurrent(unionType, nodeState, nodeWrapper));
+        Assert.False(SerializedStateCurrent(
+            unionType,
+            nodeState,
+            WrapPayload(assembly, nodePayloadType, nodePayload)));
         var otherNode = Activator.CreateInstance(assembly.GetType("TupleNode", throwOnError: true)!)!;
         var otherNodePayload = Activator.CreateInstance(nodePayloadType, new[] { otherNode })!;
         Assert.False(SerializedStateCurrent(
@@ -287,6 +306,20 @@ public sealed class UnitySerializationStateTests
             "Houtamelo.Spire.Generated.SpireSerializedPayload`1",
             throwOnError: true)!;
         var wrapperType = wrapperDefinition.MakeGenericType(payloadType);
+        var wrapper = Activator.CreateInstance(wrapperType)!;
+        wrapperType.GetField("value", BindingFlags.Public | BindingFlags.Instance)!
+            .SetValue(wrapper, payload);
+        return wrapper;
+    }
+
+    private static object WrapConcretePayload(
+        Assembly assembly,
+        string variantName,
+        object payload)
+    {
+        var wrapperType = assembly.GetType(
+            "TupleStateTypes+SerializedPayloads+" + variantName + "SerializedPayload",
+            throwOnError: true)!;
         var wrapper = Activator.CreateInstance(wrapperType)!;
         wrapperType.GetField("value", BindingFlags.Public | BindingFlags.Instance)!
             .SetValue(wrapper, payload);

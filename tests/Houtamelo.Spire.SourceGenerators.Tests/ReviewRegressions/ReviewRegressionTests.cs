@@ -284,9 +284,7 @@ public sealed class ReviewRegressionTests
         string source,
         Dictionary<string, string>? globalOptions = null)
     {
-        var references = UnityGeneratorTestHarness.GetReferences(
-                includeUnityReferences: false,
-                includeEditorReferences: false)
+        var references = TestHarnessEnvironment.RuntimeReferences
             .Append(MetadataReference.CreateFromFile(
                 typeof(JsonConvert).Assembly.Location))
             .Append(MetadataReference.CreateFromFile(

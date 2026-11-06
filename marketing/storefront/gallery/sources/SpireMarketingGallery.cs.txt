@@ -1,0 +1,243 @@
+using System;
+using System.IO;
+using System.Reflection;
+using Houtamelo.Spire.Showcase;
+using Newtonsoft.Json;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using Unity.Collections;
+using Unity.Jobs;
+using Unity.Mathematics;
+using Object = UnityEngine.Object;
+
+namespace SpireGallery {
+
+[InitializeOnLoad]
+public static class SpireMarketingGallery {
+    static readonly string Project = Path.GetDirectoryName(Application.dataPath);
+    static readonly string Root = Path.GetDirectoryName(Project);
+    static readonly string CommandPath = Path.Combine(Root, "unity-command.txt");
+    static double readyAt;
+    static string pending;
+    static int playFrames;
+
+    static SpireMarketingGallery() {
+        if (File.Exists(Path.Combine(Project, ".marketing-gallery"))) {
+            pending = SessionState.GetString("SpireGalleryPending", "");
+            if (pending == "") pending = null;
+            if (pending == "edit") pending = "edit-ready";
+            EditorApplication.update += Update;
+        }
+    }
+
+    public static void Start() {
+        EditorSceneManager.OpenScene("Assets/Scenes/Showcase.unity");
+        var preset = AssetDatabase.LoadAssetAtPath<ShowcasePreset>("Assets/Examples/ShowcasePreset.asset");
+        preset.ResetExamples();
+        EditorUtility.SetDirty(preset);
+        AssetDatabase.SaveAssets();
+        ShowInspector(preset);
+        WriteState("ready", "Unity " + Application.unityVersion);
+    }
+
+    static void Update() {
+        try {
+            if (pending == "runtime" && EditorApplication.isPlaying) {
+                if (++playFrames < 15) return;
+                var controller = Object.FindAnyObjectByType<ShowcaseController>();
+                if (controller == null) throw new InvalidOperationException("No showcase controller");
+                controller.ResetSession();
+                controller.Execute(GameplayCommand.Move(new Vector2(3, 4), 2));
+                controller.Execute(GameplayCommand.Speak("Hello from Spire"));
+                controller.Execute(GameplayCommand.ApplyEffect(new DamageEffect(10)));
+                if (controller.Position != new Vector2(3, 4) || controller.Health != 90 || controller.LastMessage != "Hello from Spire")
+                    throw new InvalidOperationException("Runtime command verification failed");
+                var game = OpenWindow("UnityEditor.GameView", "Game", new Rect(120, 80, 2200, 1400));
+                game.Repaint();
+                pending = "runtime-ready";
+                readyAt = EditorApplication.timeSinceStartup + 3;
+            }
+            if (pending != null && pending != "runtime" && EditorApplication.timeSinceStartup >= readyAt) {
+                WriteState(pending, "capture ready");
+                pending = null;
+                SessionState.SetString("SpireGalleryPending", "");
+            }
+            if (!File.Exists(CommandPath) || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+            var command = File.ReadAllText(CommandPath).Trim();
+            File.Delete(CommandPath);
+            switch (command) {
+                case "move": SetPreset(GameplayCommand.Move(new Vector2(3, 4), 2)); break;
+                case "speak": SetPreset(GameplayCommand.Speak("Hello from Spire")); break;
+                case "effect": SetPreset(GameplayCommand.ApplyEffect(new DamageEffect(10))); break;
+                case "authoring":
+                    var authoring = AssetDatabase.LoadAssetAtPath<CommandPreset>("Assets/Gallery/CommandPreset.asset");
+                    if (authoring == null) {
+                        authoring = ScriptableObject.CreateInstance<CommandPreset>();
+                        AssetDatabase.CreateAsset(authoring, "Assets/Gallery/CommandPreset.asset");
+                    }
+                    authoring.ResetExamples();
+                    EditorUtility.SetDirty(authoring);
+                    AssetDatabase.SaveAssets();
+                    Selection.activeObject = authoring;
+                    var inspectorData = new SerializedObject(authoring);
+                    var property = inspectorData.GetIterator();
+                    while (property.NextVisible(true))
+                        if (property.hasVisibleChildren) property.isExpanded = true;
+                    inspectorData.ApplyModifiedPropertiesWithoutUndo();
+                    OpenWindow("UnityEditor.InspectorWindow", "Inspector", new Rect(1500, 80, 600, 1200));
+                    break;
+                case "json":
+                    var json = JsonConvert.SerializeObject(OperationReply.Success(42), Formatting.Indented);
+                    var restored = JsonConvert.DeserializeObject<OperationReply>(json);
+                    if (restored is not { IsSuccess: true, success: { value: 42 } })
+                        throw new InvalidOperationException("Generated JSON round trip failed");
+                    File.WriteAllText(Path.Combine(Root, "generated-json.json"), json);
+                    GalleryJsonWindow.Json = json;
+                    GalleryJsonWindow window = ScriptableObject.CreateInstance<GalleryJsonWindow>();
+                    window.titleContent = new GUIContent("Generated JSON — live Unity example");
+                    window.position = new Rect(160, 100, 1900, 1250);
+                    window.ShowUtility();
+                    window.Focus();
+                    break;
+                case "runtime":
+                    pending = "runtime";
+                    SessionState.SetString("SpireGalleryPending", "runtime");
+                    playFrames = 0;
+                    EditorApplication.EnterPlaymode();
+                    return;
+                case "burst":
+                    using (var commands = new NativeArray<MotionCommand>(3, Allocator.TempJob))
+                    using (var result = new NativeArray<float3>(1, Allocator.TempJob))
+                    using (var native = new NativeArray<int>(1, Allocator.TempJob)) {
+                        var writableCommands = commands;
+                        writableCommands[0] = MotionCommand.Move(new float3(3, 4, 0));
+                        writableCommands[1] = MotionCommand.Offset(new float3(1, 0, 0));
+                        writableCommands[2] = MotionCommand.Idle();
+                        new ApplyMotionCommandsJob { commands = commands, result = result, nativeExecution = native }.Schedule().Complete();
+                        if (native[0] != 1 || !math.all(result[0] == new float3(4, 4, 0)))
+                            throw new InvalidOperationException("Native Burst job verification failed: " + native[0] + " / " + result[0]);
+                        File.WriteAllText(Path.Combine(Root, "burst-result.json"), "{\"nativeBurstExecution\":true,\"position\":[4,4,0],\"commands\":3}");
+                        GalleryBurstWindow.Native = native[0] == 1;
+                        GalleryBurstWindow.Position = result[0].ToString();
+                    }
+                    var burstWindow = ScriptableObject.CreateInstance<GalleryBurstWindow>();
+                    burstWindow.titleContent = new GUIContent("Native Burst job — live Unity example");
+                    burstWindow.position = new Rect(160, 100, 1900, 1250);
+                    burstWindow.ShowUtility();
+                    burstWindow.Focus();
+                    break;
+                case "edit": SessionState.SetString("SpireGalleryPending", "edit"); EditorApplication.ExitPlaymode(); break;
+                case "solution":
+                    var sync = typeof(Editor).Assembly.GetType("UnityEditor.SyncVS");
+                    var method = sync?.GetMethod("SyncSolution", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                    if (method == null) throw new InvalidOperationException("Unity solution generator unavailable");
+                    method.Invoke(null, null);
+                    break;
+                case "refresh": AssetDatabase.Refresh(); return;
+                case "quit": EditorApplication.Exit(0); return;
+                default: throw new InvalidOperationException("Unknown gallery command: " + command);
+            }
+            pending = command + "-ready";
+            readyAt = EditorApplication.timeSinceStartup + 3;
+        } catch (Exception error) {
+            pending = null;
+            Debug.LogException(error);
+            WriteState("error", error.ToString());
+        }
+    }
+
+    static void SetPreset(GameplayCommand command) {
+        var preset = AssetDatabase.LoadAssetAtPath<ShowcasePreset>("Assets/Examples/ShowcasePreset.asset");
+        preset.selectedCommand = command;
+        EditorUtility.SetDirty(preset);
+        AssetDatabase.SaveAssets();
+        ShowInspector(preset);
+    }
+
+    static void ShowInspector(ShowcasePreset preset) {
+        Selection.activeObject = preset;
+        var serialized = new SerializedObject(preset);
+        var iterator = serialized.GetIterator();
+        int count = 0;
+        while (iterator.NextVisible(true) && ++count < 300)
+            if (iterator.hasVisibleChildren) iterator.isExpanded = true;
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+        var inspector = OpenWindow("UnityEditor.InspectorWindow", "Inspector", new Rect(1220, 80, 1200, 1400));
+        inspector.Repaint();
+    }
+
+    static EditorWindow OpenWindow(string typeName, string title, Rect position) {
+        var type = typeof(Editor).Assembly.GetType(typeName);
+        if (type == null) throw new InvalidOperationException("Missing Editor window " + typeName);
+        var window = EditorWindow.GetWindow(type, true, title, true);
+        window.position = position;
+        window.ShowUtility();
+        window.Focus();
+        return window;
+    }
+
+    static void WriteState(string status, string detail) {
+        File.WriteAllText(Path.Combine(Root, "unity-state.json"), JsonUtility.ToJson(new CaptureState {
+            status = status, detail = detail, unity = Application.unityVersion,
+            utc = DateTime.UtcNow.ToString("o")
+        }, true));
+    }
+
+    [Serializable]
+    sealed class CaptureState { public string status; public string detail; public string unity; public string utc; }
+}
+
+public sealed class GalleryJsonWindow : EditorWindow {
+    public static string Json;
+    GUIStyle heading;
+    GUIStyle code;
+
+    void OnGUI() {
+        heading ??= new GUIStyle(EditorStyles.boldLabel) { fontSize = 30, wordWrap = true };
+        code ??= new GUIStyle(EditorStyles.textArea) { fontSize = 26, wordWrap = true, padding = new RectOffset(24, 24, 18, 18) };
+        GUILayout.Space(35);
+        GUILayout.BeginHorizontal(); GUILayout.Space(40); GUILayout.BeginVertical();
+        GUILayout.Label("Generated JSON serialization & deserialization", heading);
+        GUILayout.Space(24);
+        GUILayout.Label("Union definition", EditorStyles.boldLabel);
+        GUILayout.TextArea("[DiscriminatedUnion(json: JsonLibrary.NewtonsoftJson)]\npublic partial struct OperationReply {\n    [Variant] public static partial OperationReply Success(int value);\n    [Variant] public static partial OperationReply Failure(string reason);\n}", code, GUILayout.Height(290));
+        GUILayout.Space(28);
+        GUILayout.Label("Serialize with the generated converter", EditorStyles.boldLabel);
+        GUILayout.TextArea("var reply = OperationReply.Success(42);\nvar json = JsonConvert.SerializeObject(reply, Formatting.Indented);", code, GUILayout.Height(125));
+        GUILayout.Space(28);
+        GUILayout.Label("Actual output from this Unity session", EditorStyles.boldLabel);
+        GUILayout.TextArea(Json ?? "", code, GUILayout.Height(220));
+        GUILayout.Space(28);
+        GUILayout.Label("Round trip verified in Unity", EditorStyles.boldLabel);
+        GUILayout.TextArea("var restored = JsonConvert.DeserializeObject<OperationReply>(json);\n// Verified: restored is { IsSuccess: true, success: { value: 42 } }", code, GUILayout.Height(135));
+        GUILayout.EndVertical(); GUILayout.Space(40); GUILayout.EndHorizontal();
+    }
+}
+
+public sealed class GalleryBurstWindow : EditorWindow {
+    public static bool Native;
+    public static string Position;
+    GUIStyle heading;
+    GUIStyle code;
+
+    void OnGUI() {
+        heading ??= new GUIStyle(EditorStyles.boldLabel) { fontSize = 30, wordWrap = true };
+        code ??= new GUIStyle(EditorStyles.textArea) { fontSize = 26, wordWrap = true, padding = new RectOffset(24, 24, 18, 18) };
+        GUILayout.Space(35);
+        GUILayout.BeginHorizontal(); GUILayout.Space(40); GUILayout.BeginVertical();
+        GUILayout.Label("Typed variants inside a native Burst job", heading);
+        GUILayout.Space(24);
+        GUILayout.Label("Unmanaged union", EditorStyles.boldLabel);
+        GUILayout.TextArea("[DiscriminatedUnion]\npublic partial struct MotionCommand {\n    [Variant] public static partial MotionCommand Move(float3 destination);\n    [Variant] public static partial MotionCommand Offset(float3 delta);\n    [Variant] public static partial MotionCommand Idle();\n}", code, GUILayout.Height(285));
+        GUILayout.Space(24);
+        GUILayout.Label("The job consumes a NativeArray<MotionCommand>", EditorStyles.boldLabel);
+        GUILayout.TextArea("[BurstCompile(CompileSynchronously = true)]\npublic struct ApplyMotionCommandsJob : IJob {\n    [ReadOnly] public NativeArray<MotionCommand> commands;\n    // Exhaustive switch in Execute handles Move, Offset, and Idle.\n}", code, GUILayout.Height(245));
+        GUILayout.Space(24);
+        GUILayout.Label("Actual completed job from this Unity session", EditorStyles.boldLabel);
+        GUILayout.TextArea("Move(3, 4, 0)  ->  Offset(1, 0, 0)  ->  Idle()\n\nResult: " + Position + "\nNative Burst execution: " + (Native ? "VERIFIED" : "NOT VERIFIED") + "\nManaged fallback excluded using a BurstDiscard marker.", code, GUILayout.Height(285));
+        GUILayout.EndVertical(); GUILayout.Space(40); GUILayout.EndHorizontal();
+    }
+}
+
+}

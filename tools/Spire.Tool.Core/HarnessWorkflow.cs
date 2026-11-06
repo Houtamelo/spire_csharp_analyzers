@@ -54,7 +54,7 @@ public static class HarnessWorkflow
         var probeTarget = Path.Combine(project, "Assets/CompilerProbe");
         FileOps.ResetDirectory(probeTarget);
         FileOps.CopyDirectory(context.PathOf("tests/UnityBehavioral/Assets/CompilerProbe"), probeTarget);
-        FileOps.Write(Path.Combine(probeTarget, "csc.rsp"), "-langversion:12\n-nullable:enable\n");
+        FileOps.Write(Path.Combine(probeTarget, "csc.rsp"), "-langversion:preview\n-nullable:enable\n");
         var dependencies = Path.Combine(project, "Assets/Tests/Dependencies");
         FileOps.ResetDirectory(dependencies);
         var probeOutput = context.PathOf("tools/UnityCompilerTestDependencies/bin/" + configuration + "/netstandard2.1");

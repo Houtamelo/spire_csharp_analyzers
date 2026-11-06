@@ -1,0 +1,16 @@
+// ReSharper disable ClassCanBeSealed.Global, FieldCanBeMadeReadOnly.Global, ConvertToConstant.Global, InconsistentNaming, CheckNamespace, MemberCanBePrivate.Global, UnusedMember.Global, UnusedType.Global, UnusedMember.Local, NotAccessedField.Global, RedundantUsingDirective
+using UnityEngine;
+
+namespace SpireGallery {
+
+public class GalleryUsage : MonoBehaviour {
+    void Start() {
+        Debug.Log(QuestJournal.Describe(new CollectItem()));
+        Debug.Log(QuestJournal.Describe(new DefeatEnemy()));
+        Debug.Log(QuestJournal.Describe(new TalkToNpc()));
+        Debug.Log(JsonExample.RoundTrip());
+        CommandRunner.Execute(Houtamelo.Spire.Showcase.GameplayCommand.Idle());
+    }
+}
+
+}

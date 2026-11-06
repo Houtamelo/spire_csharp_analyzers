@@ -55,6 +55,12 @@ internal abstract class __SpireUnityPropertyDrawer : PropertyDrawer {
     const int MixedKindIndex = -2;
     const int MissingKindIndex = -3;
 
+    static readonly MethodInfo? IgnoreFocusEvent = typeof(FocusController).GetMethod(
+        "IgnoreEvent", BindingFlags.Instance | BindingFlags.Public,
+        null, new[] { typeof(EventBase) }, null);
+    static readonly PropertyInfo? FocusEventProcessed = typeof(EventBase).GetProperty(
+        "processedByFocusController", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
     readonly __SpireUnityDrawerMetadata Metadata;
     readonly Dictionary<string, ImmediatePreviewState> ImmediatePreviews = new Dictionary<string, ImmediatePreviewState>(StringComparer.Ordinal);
 
@@ -546,6 +552,7 @@ internal abstract class __SpireUnityPropertyDrawer : PropertyDrawer {
             return;
         if (serialized.isEditingMultipleObjects) {
             CommitMultiObjectChange(serialized, binding.PropertyPath, propertyPath, relativePath, value);
+            RefreshMultiObjectBinding(binding);
             return;
         }
         var unionType = ResolveUnionType(actualProperty);
@@ -829,6 +836,23 @@ internal abstract class __SpireUnityPropertyDrawer : PropertyDrawer {
         }
         serialized.Update();
         Undo.FlushUndoRecordObjects();
+    }
+
+    void RefreshMultiObjectBinding(VisualTreeBinding binding) {
+        if (binding == null || !binding.ActualSerializedObject.isEditingMultipleObjects)
+            return;
+        var serialized = binding.ActualSerializedObject;
+        serialized.Update();
+        var property = serialized.FindProperty(binding.ActualPropertyPath);
+        if (property == null)
+            return;
+        binding.Property = property;
+        binding.PropertyPath = property.propertyPath;
+        CapturePayloadSnapshot(binding);
+        var current = CaptureVisualTreeState(property);
+        binding.State.KindIndex = current.KindIndex;
+        binding.State.PayloadId = current.PayloadId;
+        binding.State.PayloadType = current.PayloadType;
     }
 
     object? ReadSerializedPropertyValue(SerializedProperty property) {
@@ -1568,11 +1592,7 @@ internal abstract class __SpireUnityPropertyDrawer : PropertyDrawer {
         var value = wrapper?.managedReferenceValue;
         if (value is null)
             return -1;
-        var type = value.GetType();
-        var genericArguments = type.IsGenericType ? type.GetGenericArguments() : Type.EmptyTypes;
-        var payloadType = genericArguments.Length == 1
-            ? genericArguments[0]
-            : null;
+        var payloadType = FindValueField(value.GetType())?.FieldType;
         var fullName = payloadType?.FullName ?? payloadType?.Name ?? string.Empty;
         if (fullName.Length == 0)
             return -1;
@@ -1584,6 +1604,17 @@ internal abstract class __SpireUnityPropertyDrawer : PropertyDrawer {
                 return index;
         }
         return -1;
+    }
+
+    static FieldInfo? FindValueField(Type type) {
+        for (var current = type; current is not null; current = current.BaseType) {
+            var field = current.GetField(
+                "value",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            if (field != null)
+                return field;
+        }
+        return null;
     }
 
     bool IsPayloadTypeName(string typeName, string payloadName) {
@@ -1640,7 +1671,7 @@ internal abstract class __SpireUnityPropertyDrawer : PropertyDrawer {
             return;
         if (binding.ApplyingUserChange) {
             changed.StopImmediatePropagation();
-            (changed.target as VisualElement)?.focusController?.IgnoreEvent(changed);
+            SuppressChangeEventFocus((changed.target as VisualElement)?.focusController, changed);
             return;
         }
         if (!TryResolveChangeProperty(binding, changed.target as VisualElement, bindable.bindingPath, out var resolvedProperty, out var resolvedPath, out _)) {
@@ -1653,19 +1684,32 @@ internal abstract class __SpireUnityPropertyDrawer : PropertyDrawer {
             return;
         }
         var isUserChange = IsUserChange(binding, resolvedProperty, resolvedPath, changed.newValue);
-        if (!isUserChange) {
+        var isMixedChange = binding.ActualSerializedObject.isEditingMultipleObjects &&
+            resolvedProperty.hasMultipleDifferentValues;
+        if (!isUserChange && !isMixedChange) {
             changed.StopImmediatePropagation();
-            (changed.target as VisualElement)?.focusController?.IgnoreEvent(changed);
+            SuppressChangeEventFocus((changed.target as VisualElement)?.focusController, changed);
             return;
         }
         changed.StopImmediatePropagation();
-        (changed.target as VisualElement)?.focusController?.IgnoreEvent(changed);
+        SuppressChangeEventFocus((changed.target as VisualElement)?.focusController, changed);
         binding.ApplyingUserChange = true;
         try {
             CommitUserChange(binding, resolvedPath, changed.newValue);
         } finally {
             binding.ApplyingUserChange = false;
         }
+    }
+
+    static void SuppressChangeEventFocus(FocusController? controller, EventBase changed) {
+        if (controller == null)
+            return;
+        if (IgnoreFocusEvent != null) {
+            IgnoreFocusEvent.Invoke(controller, new object[] { changed });
+            return;
+        }
+        // Unity 2022 has the event state but does not expose IgnoreEvent.
+        FocusEventProcessed?.SetValue(changed, true);
     }
 
     bool IsUserChange<T>(VisualTreeBinding binding, SerializedProperty? property, string path, T value) {
@@ -1720,14 +1764,22 @@ internal abstract class __SpireUnityPropertyDrawer : PropertyDrawer {
 
     bool HasSharedManagedReference(SerializedProperty payload) {
         var id = payload.managedReferenceId;
-        if (id == 0)
+        if (id < 0)
             return false;
         var iterator = payload.serializedObject.GetIterator();
+        var visitedManagedReferenceIds = new HashSet<long>();
         var enterChildren = true;
         while (iterator.NextVisible(enterChildren)) {
             enterChildren = iterator.hasVisibleChildren;
-            if (iterator.propertyType == SerializedPropertyType.ManagedReference && iterator.managedReferenceId == id && !string.Equals(iterator.propertyPath, payload.propertyPath, StringComparison.Ordinal))
+            if (iterator.propertyType != SerializedPropertyType.ManagedReference)
+                continue;
+
+            var currentId = iterator.managedReferenceId;
+            if (currentId == id &&
+                !string.Equals(iterator.propertyPath, payload.propertyPath, StringComparison.Ordinal))
                 return true;
+            if (currentId >= 0 && !visitedManagedReferenceIds.Add(currentId))
+                enterChildren = false;
         }
         return false;
     }
@@ -1764,7 +1816,12 @@ internal abstract class __SpireUnityPropertyDrawer : PropertyDrawer {
         binding.SynchronizingRuntimeValue = true;
         try {
             if (changed.serializedObject.isEditingMultipleObjects) {
-                CommitUserChange(binding, changed.propertyPath, ReadSerializedPropertyValue(changed));
+                if (changed.hasMultipleDifferentValues)
+                    return;
+                var value = ReadSerializedPropertyValue(changed);
+                if (!IsUserChange(binding, changed, changed.propertyPath, value))
+                    return;
+                CommitUserChange(binding, changed.propertyPath, value);
             } else {
                 SynchronizeRuntimeValue(property);
             }

@@ -1,0 +1,22 @@
+// ReSharper disable ClassCanBeSealed.Global, FieldCanBeMadeReadOnly.Global, ConvertToConstant.Global, InconsistentNaming, CheckNamespace, MemberCanBePrivate.Global, UnusedMember.Global, UnusedType.Global, UnusedMember.Local, NotAccessedField.Global, RedundantUsingDirective
+using Houtamelo.Spire;
+using Newtonsoft.Json;
+
+namespace SpireGallery {
+
+[DiscriminatedUnion(json: JsonLibrary.NewtonsoftJson)]
+public partial struct OperationReply {
+    [Variant] public static partial OperationReply Success(int value);
+    [Variant] public static partial OperationReply Failure(string reason);
+}
+
+public static class JsonExample {
+    public static OperationReply RoundTrip() {
+        var reply = OperationReply.Success(42);
+        var json = JsonConvert.SerializeObject(reply, Formatting.Indented);
+        var restored = JsonConvert.DeserializeObject<OperationReply>(json);
+        return restored;
+    }
+}
+
+}

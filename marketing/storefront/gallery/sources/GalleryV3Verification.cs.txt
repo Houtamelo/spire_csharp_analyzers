@@ -1,0 +1,37 @@
+using System;
+using System.IO;
+using Newtonsoft.Json;
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Jobs;
+using Unity.Mathematics;
+using UnityEngine;
+
+namespace SpireGallery {
+
+public static class GalleryV3Verification {
+    public static void Run() {
+        BurstCompiler.Options.EnableBurstCompilation = true;
+        BurstCompiler.Options.EnableBurstCompileSynchronously = true;
+        using (var commands = new NativeArray<MotionCommand>(3, Allocator.TempJob))
+        using (var result = new NativeArray<float3>(1, Allocator.TempJob))
+        using (var native = new NativeArray<int>(1, Allocator.TempJob)) {
+            var writable = commands;
+            writable[0] = MotionCommand.Move(new float3(3, 4, 0));
+            writable[1] = MotionCommand.Offset(new float3(1, 0, 0));
+            writable[2] = MotionCommand.Idle();
+            new ApplyMotionCommandsJob { commands = commands, result = result, nativeExecution = native }.Schedule().Complete();
+            if (native[0] != 1 || !math.all(result[0] == new float3(4, 4, 0)))
+                throw new InvalidOperationException("Native Burst execution or deconstruction result failed");
+        }
+        var reply = JsonExample.RoundTrip();
+        if (reply is not { IsSuccess: true, success: { value: 42 } })
+            throw new InvalidOperationException("JSON round trip failed");
+        var root = Path.GetDirectoryName(Path.GetDirectoryName(Application.dataPath));
+        File.WriteAllText(Path.Combine(root, "verification-v3-runtime.json"),
+            "{\"unity\":\"" + Application.unityVersion + "\",\"deconstructionCompiled\":true,\"nativeBurstExecution\":true,\"position\":[4,4,0],\"commands\":3,\"jsonRoundTrip\":true}");
+        Debug.Log("SPIRE_GALLERY_V3_VERIFICATION_PASSED");
+    }
+}
+
+}

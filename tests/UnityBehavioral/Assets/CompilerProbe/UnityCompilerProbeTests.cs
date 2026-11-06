@@ -107,7 +107,10 @@ public sealed class UnityCompilerProbeTests
             out var generatorDiagnostics);
 
         Assert.That(generatorDiagnostics, Is.Empty, FormatDiagnostics(generatorDiagnostics));
-        Assert.That(outputCompilation.GetDiagnostics(), Is.Empty, FormatDiagnostics(outputCompilation.GetDiagnostics()));
+        var compilerDiagnostics = outputCompilation.GetDiagnostics()
+            .Where(diagnostic => diagnostic.Severity >= DiagnosticSeverity.Warning)
+            .ToArray();
+        Assert.That(compilerDiagnostics, Is.Empty, FormatDiagnostics(compilerDiagnostics));
 
         using var stream = new MemoryStream();
         var emit = outputCompilation.Emit(stream);

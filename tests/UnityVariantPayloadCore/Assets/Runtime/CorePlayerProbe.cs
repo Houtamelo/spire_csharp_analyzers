@@ -32,6 +32,10 @@ namespace Spire.UnityVariantPayloadCore
                 failures = new List<string>(),
                 debugBuild = Debug.isDebugBuild,
                 processorBits = IntPtr.Size * 8,
+                genericUnionSerializationSupported =
+                    SerializedUnionNativeCapabilities.GenericUnionSerializationSupported,
+                genericUnionSerializationApplicability =
+                    SerializedUnionNativeCapabilities.GenericUnionSerializationApplicability,
             };
 
             activeReport = report;
@@ -70,7 +74,7 @@ namespace Spire.UnityVariantPayloadCore
                 report.failures.Add("Could not write player report: " + exception);
             }
 
-            Application.Quit(report.status == "pass" ? 0 : 1);
+            CorePlayerExitScheduler.Schedule(report.status == "pass" ? 0 : 1);
         }
 
         private static void Check(PlayerReport report, string name, Action assertion)
@@ -451,6 +455,8 @@ namespace Spire.UnityVariantPayloadCore
             public List<string> failures = new();
             public bool debugBuild;
             public int processorBits;
+            public bool genericUnionSerializationSupported;
+            public string genericUnionSerializationApplicability = string.Empty;
         }
     }
 

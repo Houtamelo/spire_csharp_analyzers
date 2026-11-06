@@ -65,7 +65,7 @@ public static class BehavioralWorkflow
             FileOps.DeleteFile(Path.Combine(project, "il2cpp-test-settings.json"));
             FileOps.DeleteFile(Path.Combine(project, "global.json"));
         }
-        FileOps.Write(Path.Combine(Path.GetDirectoryName(asmdef)!, "csc.rsp"), "-langversion:12\n-nullable:enable\n");
+        FileOps.Write(Path.Combine(Path.GetDirectoryName(asmdef)!, "csc.rsp"), "-langversion:preview\n-nullable:enable\n");
         var inputs = new JsonArray();
         var expectedNames = new List<string>();
         var factCount = 0;

@@ -277,9 +277,10 @@ public sealed class UnityPackagingTests
     {
         var readme = File.ReadAllText(Path.Combine(outputPath, "README.md"));
 
-        Assert.Contains("Rider is the supported IDE", readme, StringComparison.Ordinal);
+        Assert.Contains("Rider is the verified IDE workflow", readme, StringComparison.Ordinal);
         Assert.Contains("Unity 6000.6.5f1", readme, StringComparison.Ordinal);
-        Assert.Contains("generic struct serialization callbacks", readme, StringComparison.Ordinal);
+        Assert.Contains("generic unions with reference-type arguments", readme, StringComparison.Ordinal);
+        Assert.Contains("Unity 2020 will not work", readme, StringComparison.Ordinal);
     }
 
     private static void AssertPluginMetadata(string outputPath, string relativeDll, bool analyzer)
@@ -294,7 +295,7 @@ public sealed class UnityPackagingTests
             Assert.DoesNotContain("RoslynAnalyzer", metadata, StringComparison.Ordinal);
 
         Assert.Contains(
-            $"      : Any\n    second:\n      enabled: {enabled}\n",
+            $"      Any:\n    second:\n      enabled: {enabled}\n",
             metadata,
             StringComparison.Ordinal);
         Assert.Contains(

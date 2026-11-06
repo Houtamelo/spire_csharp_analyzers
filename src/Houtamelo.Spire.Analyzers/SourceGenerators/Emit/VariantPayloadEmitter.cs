@@ -54,8 +54,55 @@ internal static class VariantPayloadEmitter
             EmitFields(sb, union, layout);
             sb.EnsureBlankLine();
         }
+        if (union.EmitUnitySerialization)
+        {
+            EmitSerializedPayloads(sb, union, variants);
+            sb.EnsureBlankLine();
+        }
         EmitVariants(sb, union, variants);
         sb.CloseBrace();
+    }
+
+    private static void EmitSerializedPayloads(
+        SourceBuilder sb,
+        UnionDeclaration union,
+        IReadOnlyList<VariantInfo> variants)
+    {
+        sb.AppendLine("internal static class SerializedPayloads");
+        sb.OpenBrace();
+        foreach (var variant in variants)
+        {
+            EmitSerializedPayloadType(sb, union, variant.Name);
+            if (HasAlias(variant))
+                EmitSerializedPayloadType(sb, union, variant.FormerlySerializedAs!);
+        }
+        sb.CloseBrace();
+    }
+
+    private static void EmitSerializedPayloadType(
+        SourceBuilder sb,
+        UnionDeclaration union,
+        string variantName)
+    {
+        var name = Safe(variantName) + "SerializedPayload";
+        var typeParams = DeclarationFormatting.FormatEscapedTypeParameters(union.TypeParameters);
+        var constraints = DeclarationFormatting.FormatConstraints(union.TypeParameterConstraints);
+        var serializable = GeneratedAliasEmitter.AttributeReference(
+            union,
+            "Serializable",
+            "global::System.SerializableAttribute");
+        var preserve = GeneratedAliasEmitter.AttributeReference(
+            union,
+            "Preserve",
+            "global::UnityEngine.Scripting.PreserveAttribute");
+        sb.AppendLine($"[{serializable}]");
+        sb.AppendLine($"[{preserve}]");
+        sb.AppendLine($"internal sealed class {IdentifierUtility.Escape(name)}{typeParams} : {GeneratedAliasEmitter.SerializedPayloadReference(union, variantName)}{constraints}");
+        sb.OpenBrace();
+        sb.AppendLine($"[{preserve}]");
+        sb.AppendLine($"public {IdentifierUtility.Escape(name)}() {{}}");
+        sb.CloseBrace();
+        sb.AppendLine();
     }
 
     private static void EmitFields(SourceBuilder sb, UnionDeclaration union, StorageLayout layout)

@@ -10,6 +10,13 @@ save them without edits and review the YAML diff. Exercise each stored variant,
 managed-reference sharing/nulls, and your target player backend. Keep your own
 assemblies and union type identities unchanged during a package-only upgrade.
 
+The concrete serialization-wrapper update reads the previous
+`SpireSerializedPayload<T>` representation and writes per-variant subclasses.
+When moving existing assets to Unity 2022, install the update and resave those
+assets in a newer supported Editor first. Unity 2022 rejects the old generic
+managed-reference objects; this migration does not make generic unions
+serializable in Unity 2022.
+
 Import the showcase once. Reimporting samples from another package version can
 create a second copy with the same authored GUIDs and assembly names. Remove the
 previous unmodified sample copy first, or retain your customized copy and compare

@@ -1,10 +1,33 @@
 # Unity 6000
 
+**Unity 2020 will not work.** Its compiler lacks the source-generator support and
+C# 9 features required by Spire. Non-extended Unity 2021/2022 LTS results are
+tracked in the [LTS follow-up](reviews/2026-11-04-unity-lts-followup.md).
+
+Concrete per-variant wrappers pass native write/read checks for non-generic
+unions on `2022.3.62f3`. **Generic unions cannot use native Unity serialization
+on Unity 2022.** Newer Editors retain their existing generic support. See the
+[wrapper validation](reviews/2026-11-04-concrete-unity-wrappers.md) and
+[original failure](issues/2026-11-04-unity-2022-generic-managed-reference-payloads.md).
+
+The [initial Unity 2020–2023 validation](reviews/2026-11-04-unity-2020-2023-validation.md)
+records the original failures. The current full Editor harness passes 2,689
+checks on both Unity 2022 and 2023. Both also pass applicable native serialization
+and actual Mono/IL2CPP player checks; Unity 2022 excludes unsupported native
+generic serialization. The separate rendered Inspector suite also passes on
+2022.3.62f3, 2023.2.22f1, and 6000.5.6f1 after two Editor drawer corrections;
+see the [rendered validation](reviews/2026-11-05-rendered-inspector-validation.md)
+for exact counts and revalidation scope. The declared minimum is unchanged.
+See the [current-package recheck](reviews/2026-11-05-unity-2022-2023-current-validation.md).
+Unity 2021's Roslyn 3.9 compiler cannot load the current Roslyn 4.3 extensions.
+
 The `unity-6000` compiler extensions target the Roslyn 4.3 API baseline. Native validation
 covers Editor Mono and Linux IL2CPP runtime tests on 6000.5.6f1; player
 serialization and stripping coverage are detailed below. The normal NuGet build
 remains on `main`. Other Unity versions and player platforms require separate
-validation. Rider is the supported IDE.
+validation. Rider is the verified IDE workflow. The quick fixes use standard
+Roslyn providers; Visual Studio Community compatibility is expected, with
+end-to-end Unity integration still to be validated.
 
 Unity now marks [6.5 end of life](https://discussions.unity.com/t/unity-6-5-is-now-available/1723176).
 This guide records compatibility evidence; a maintained release baseline remains
@@ -39,9 +62,14 @@ In Unity's Package Manager, choose **Add package from disk** and select
 `tmp/unity-package/com.houtamelo.spire/package.json`.
 
 The manifest declares `6000.5.6f1` as its minimum version. This is not an upper
-compatibility bound: native serialization on `6000.6.5f1` is blocked by a
-[reported Unity generic-struct callback crash](issues/unity-6.6-generic-struct-serialization-callback.md).
-Use the validated Editor version for serialization-dependent projects.
+compatibility bound. On `6000.6.5f1`, the current package passes 126 native Editor
+serialization write checks and 87 fresh-process read checks. Generic unions
+closed over reference-type arguments, such as `UnityGenericUnion<string>`, still
+trigger the [Unity generic-struct callback crash](issues/unity-6.6-generic-struct-serialization-callback.md).
+Use `6000.5.6f1` for those serialized generic unions. The
+[November 2 recheck](reviews/2026-11-02-unity-6.6-serialization-recheck.md)
+records the passing cases, isolated failure, and exact package hashes; it does
+not extend the complete Inspector/Player validation matrix to 6.6.
 
 The package contains the runtime DLL and compiler-only Spire analyzer,
 PatternAnalysis, and CodeFixes DLLs. Compiler-only assets have the
@@ -60,7 +88,7 @@ menu does. See the [customer getting-started guide](unity-package/Documentation~
 The runtime DLL uses Auto Reference. Assemblies with Override References enabled
 must include `Houtamelo.Spire.dll` explicitly. Analyzer scope is separate from
 runtime DLL references; verify that every intended consuming asmdef receives
-the analyzer. Code fixes execute in Rider, while Unity executes analyzers and
+the analyzer. Code fixes execute in the IDE, while Unity executes analyzers and
 source generators.
 
 The DLL package does not import the NuGet MSBuild `.props` into Unity's compiler.
@@ -166,8 +194,13 @@ serialization mode.
 
 Unity stores `_kind` and one active managed-reference wrapper whose public
 `value` field contains the generated payload struct from the union's sibling
-types container (`ResultTypes.Variants.Success`). One generic wrapper
-declaration is shared per compilation. Runtime storage is excluded from
+types container (`ResultTypes.Variants.Success`). Each variant has a concrete
+wrapper under `ResultTypes.SerializedPayloads`, inheriting `value` from a shared
+generic base. Wrappers for generic unions remain generic; Unity 2022 cannot
+serialize them. The same wrapper code is generated on all Unity versions.
+Old shared-generic cache objects remain readable and are upgraded when saved;
+resave old assets in a newer supported Editor before moving them to Unity 2022.
+Runtime storage is excluded from
 serialization. A recognized payload identifies the variant even if `_kind`
 disagrees. Generated callbacks rebuild the union through its factories,
 and a generated editor drawer displays the `Kind` selector and active fields as siblings
@@ -288,6 +321,9 @@ SPIRE_UNITY_NATIVE_INPUT=1 dotnet run -c Release --project tools/Spire.Tool -- u
 This opens native UI Toolkit and IMGUI controls to check field edits, focus,
 variant changes, Undo/Redo, prefab overrides, and multi-object editing. A missing
 control or unavailable scenario is a failed verification, not a passing observation.
+This graphics suite is separate from the headless Editor harness and must be
+invoked explicitly. On Unity 2022, only the unsupported closed-generic Inspector
+serialization case is marked not applicable.
 On Linux the runner creates a private Xvfb display. The explicit input flag
 enables XTest keyboard/pointer events on that display for the IMGUI checks.
 
@@ -332,16 +368,20 @@ Run the existing runtime behavioral tests inside the Unity Editor:
 dotnet run -c Release --project tools/Spire.Tool -- unity-behavioral
 ```
 
-This runner copies the original union declarations and all 73 xUnit test
+This runner copies the original union declarations and all 100 xUnit test
 methods into `tmp/unity-behavioral`. Unity's compiler runs the packaged
 generator; a Unity Test Framework adapter executes each original assertion in
 Editor Mono and writes `behavioral-results.xml`. Input hashes and the expected
 test count prevent a partial run from passing unnoticed.
 
-The test assembly enables C# 12 and supplies a test-only `IsExternalInit`
+The test assembly enables the compiler's preview language mode and supplies a test-only `IsExternalInit`
 polyfill because these existing tests use newer syntax and records. The normal
 consumer C# 9 profile remains covered separately. xUnit and JSON dependencies
 are test assets, outside the shipped Spire package.
+
+Both xUnit adapters yield once after successful execution so Unity Test Framework
+1.4.5 observes an incomplete Task even for a synchronous test. Without this, the
+framework can append a stale-yield failure to the last case after aggregating results.
 
 Run the same original assertions in an IL2CPP Linux player:
 
@@ -357,7 +397,7 @@ build-tool environment. The C# preparation CLI itself still requires SDK 10.
 
 Results are written to `il2cpp-behavioral-results.xml`. The runner requires every
 original case identity, zero failures or skips, and the IL2CPP root-domain marker.
-The migrated suite contains 73 original assertions plus adapter/backend checks.
+The migrated suite contains 100 original assertions plus adapter/backend checks.
 It covers payload accessors, reference storage, records, generics, both JSON
 converters, and closure inliners. Require the current manifest count and case
 identities; the historical 137-check result measured the retired layouts. Test-specific linker roots
@@ -384,7 +424,7 @@ semantic models, and loading emitted assemblies in the actual Editor runtime.
 The full runner builds portable versions of the analyzer, generator snapshot and
 behavioral, PatternAnalysis, DevTools, and global configuration test assemblies.
 A Unity Test Framework adapter executes their existing xUnit assertions; the
-73 compile-time behavioral tests also run through Unity's own compiler. The
+100 compile-time behavioral tests also run through Unity's own compiler. The
 normal .NET test projects retain their default targets and runner.
 
 Independent xUnit discovery provides a case identity baseline. Unity must

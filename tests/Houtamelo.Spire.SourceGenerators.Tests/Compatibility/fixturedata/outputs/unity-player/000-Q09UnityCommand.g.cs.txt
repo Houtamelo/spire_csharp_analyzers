@@ -105,12 +105,12 @@ public partial struct Q09UnityCommand : global::Houtamelo.Spire.IDiscriminatedUn
 
     [@EditorBrowsable(EditorBrowsableState.Never)]
     public readonly bool __SpireSerializedStateCurrent(object? payload) => (this._kind, payload) switch {
-        (Kind.Move, global::Houtamelo.Spire.Generated.SpireSerializedPayload<Variants.Move> serializedPayload_Move) =>
+        (Kind.Move, global::Q09UnityCommandTypes.SerializedPayloads.MoveSerializedPayload serializedPayload_Move) =>
             SpireSerialization.SpireSerializedValuesEqual((object?)this.move.position, (object?)serializedPayload_Move.value.position)
             && SpireSerialization.SpireSerializedValuesEqual((object?)this.move.label, (object?)serializedPayload_Move.value.label),
-        (Kind.ObjectRef, global::Houtamelo.Spire.Generated.SpireSerializedPayload<Variants.ObjectRef> serializedPayload_ObjectRef) =>
+        (Kind.ObjectRef, global::Q09UnityCommandTypes.SerializedPayloads.ObjectRefSerializedPayload serializedPayload_ObjectRef) =>
             SpireSerialization.SpireSerializedValuesEqual((object?)this.objectRef.texture, (object?)serializedPayload_ObjectRef.value.texture),
-        (Kind.Empty, global::Houtamelo.Spire.Generated.SpireSerializedPayload<Variants.Empty> serializedPayload_Empty) => true,
+        (Kind.Empty, global::Q09UnityCommandTypes.SerializedPayloads.EmptySerializedPayload serializedPayload_Empty) => true,
         _ => false,
     };
 
@@ -125,7 +125,7 @@ public partial struct Q09UnityCommand : global::Houtamelo.Spire.IDiscriminatedUn
                 var formerPayload_OldMove = this._serializedPayload as global::Houtamelo.Spire.Generated.SpireSerializedPayload<Variants.OldMove>;
                 if (currentPayload_Move is not null && this.__SpireSerializedStateCurrent(currentPayload_Move))
                     return this;
-                var preparedPayload_Move = new global::Houtamelo.Spire.Generated.SpireSerializedPayload<Variants.Move>();
+                var preparedPayload_Move = new global::Q09UnityCommandTypes.SerializedPayloads.MoveSerializedPayload();
                 var preparedValue_Move = new Variants.Move(this.move.position, this.move.label);
                 preparedPayload_Move.value = preparedValue_Move;
                 this._serializedPayload = preparedPayload_Move;
@@ -134,7 +134,7 @@ public partial struct Q09UnityCommand : global::Houtamelo.Spire.IDiscriminatedUn
                 var currentPayload_ObjectRef = this._serializedPayload as global::Houtamelo.Spire.Generated.SpireSerializedPayload<Variants.ObjectRef>;
                 if (currentPayload_ObjectRef is not null && this.__SpireSerializedStateCurrent(currentPayload_ObjectRef))
                     return this;
-                var preparedPayload_ObjectRef = new global::Houtamelo.Spire.Generated.SpireSerializedPayload<Variants.ObjectRef>();
+                var preparedPayload_ObjectRef = new global::Q09UnityCommandTypes.SerializedPayloads.ObjectRefSerializedPayload();
                 var preparedValue_ObjectRef = new Variants.ObjectRef(this.objectRef.texture);
                 preparedPayload_ObjectRef.value = preparedValue_ObjectRef;
                 this._serializedPayload = preparedPayload_ObjectRef;
@@ -143,7 +143,7 @@ public partial struct Q09UnityCommand : global::Houtamelo.Spire.IDiscriminatedUn
                 var currentPayload_Empty = this._serializedPayload as global::Houtamelo.Spire.Generated.SpireSerializedPayload<Variants.Empty>;
                 if (currentPayload_Empty is not null && this.__SpireSerializedStateCurrent(currentPayload_Empty))
                     return this;
-                var preparedPayload_Empty = new global::Houtamelo.Spire.Generated.SpireSerializedPayload<Variants.Empty>();
+                var preparedPayload_Empty = new global::Q09UnityCommandTypes.SerializedPayloads.EmptySerializedPayload();
                 var preparedValue_Empty = new Variants.Empty();
                 preparedPayload_Empty.value = preparedValue_Empty;
                 this._serializedPayload = preparedPayload_Empty;
@@ -248,6 +248,37 @@ public static class Q09UnityCommandTypes {
                 [@NonSerialized] internal global::UnityEngine.Vector3 position;
             }
         }
+    }
+
+    internal static class SerializedPayloads {
+        [@Serializable]
+        [@Preserve]
+        internal sealed class MoveSerializedPayload : global::Houtamelo.Spire.Generated.SpireSerializedPayload<Variants.Move> {
+            [@Preserve]
+            public MoveSerializedPayload() {}
+        }
+
+        [@Serializable]
+        [@Preserve]
+        internal sealed class OldMoveSerializedPayload : global::Houtamelo.Spire.Generated.SpireSerializedPayload<Variants.OldMove> {
+            [@Preserve]
+            public OldMoveSerializedPayload() {}
+        }
+
+        [@Serializable]
+        [@Preserve]
+        internal sealed class ObjectRefSerializedPayload : global::Houtamelo.Spire.Generated.SpireSerializedPayload<Variants.ObjectRef> {
+            [@Preserve]
+            public ObjectRefSerializedPayload() {}
+        }
+
+        [@Serializable]
+        [@Preserve]
+        internal sealed class EmptySerializedPayload : global::Houtamelo.Spire.Generated.SpireSerializedPayload<Variants.Empty> {
+            [@Preserve]
+            public EmptySerializedPayload() {}
+        }
+
     }
 
     public static class Variants {

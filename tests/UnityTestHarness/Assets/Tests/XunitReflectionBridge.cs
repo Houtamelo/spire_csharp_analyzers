@@ -569,6 +569,9 @@ public sealed class XunitReflectionNUnitRunner
     public async Task Run(XunitReflectionCase testCase)
     {
         await XunitReflectionBridge.InvokeAsync(testCase);
+        // Unity Test Framework 1.4.5 retains a stale yield object when the final
+        // Task completes synchronously. Let its coroutine observe a pending Task.
+        await Task.Yield();
     }
 }
 

@@ -130,7 +130,7 @@ public sealed class NamespaceAliasTests
         var diagnostics = result.GeneratorDiagnostics
             .Where(diagnostic => diagnostic.Severity >= DiagnosticSeverity.Warning)
             .ToArray();
-        Assert.True(diagnostics.Length == 0, string.Join("\n", diagnostics));
+        Assert.True(diagnostics.Length == 0, string.Join("\n", diagnostics.Select(diagnostic => diagnostic.ToString())));
     }
 
     private static void AssertNoCompilationErrors(Compilation compilation)

@@ -1,0 +1,2 @@
+C#, exhaustive matching, discriminated unions, tagged unions, enum, source
+generator, Roslyn analyzer, IDE quick fixes, Unity Inspector, JSON, Burst, DOTS

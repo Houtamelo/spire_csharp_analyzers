@@ -227,10 +227,15 @@ public sealed class VariantPayloadImplicitConversionTests
     {
         var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(languageVersion);
         var tree = CSharpSyntaxTree.ParseText(source, parseOptions, path: "implicit-conversions.cs");
+        var references = UnityGeneratorTestHarness.GetReferences(false, false).ToArray();
+        var trees = ImmutableArray.Create<SyntaxTree>(tree);
+        var compatibility = TestHarnessEnvironment.CreateRuntimeCompatibilityTree(parseOptions, references);
+        if (compatibility is not null)
+            trees = trees.Add(compatibility);
         var compilation = CSharpCompilation.Create(
             $"ImplicitConversions_{Guid.NewGuid():N}",
-            new[] { tree },
-            UnityGeneratorTestHarness.GetReferences(false, false),
+            trees,
+            references,
             new CSharpCompilationOptions(
                 OutputKind.DynamicallyLinkedLibrary,
                 allowUnsafe: true,
@@ -258,7 +263,7 @@ public sealed class VariantPayloadImplicitConversionTests
         var diagnostics = result.GeneratorDiagnostics
             .Where(diagnostic => diagnostic.Severity >= DiagnosticSeverity.Warning)
             .ToArray();
-        Assert.True(diagnostics.Length == 0, string.Join("\n", diagnostics));
+        Assert.True(diagnostics.Length == 0, string.Join("\n", diagnostics.Select(diagnostic => diagnostic.ToString())));
     }
 
     private static void AssertNoCompilationErrors(GeneratedResult result)

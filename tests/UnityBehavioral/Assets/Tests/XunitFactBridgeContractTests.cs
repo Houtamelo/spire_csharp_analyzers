@@ -191,6 +191,32 @@ public sealed class XunitFactBridgeContractTests
     }
 
     [Test]
+    public async Task Runner_YieldsSynchronousCompletionAndPreservesFailures()
+    {
+        var runner = new XunitFactNUnitRunner();
+        var success = new XunitFactCase(typeof(SynchronousFixture), typeof(SynchronousFixture).GetMethod(nameof(SynchronousFixture.Run))!);
+        var completion = runner.Run(success);
+
+        Assert.That(completion.IsCompleted, Is.False);
+        await completion;
+
+        var failure = new XunitFactCase(typeof(ThrowingFixture), typeof(ThrowingFixture).GetMethod(nameof(ThrowingFixture.Throw))!);
+        InvalidOperationException? exception = null;
+        try
+        {
+            await runner.Run(failure);
+        }
+        catch (InvalidOperationException caught)
+        {
+            exception = caught;
+        }
+
+        Assert.That(exception, Is.Not.Null);
+        Assert.That(exception!.Message, Is.EqualTo("bridge failure"));
+        Assert.That(exception.StackTrace, Does.Contain(nameof(ThrowingFixture.Throw)));
+    }
+
+    [Test]
     public void Discover_RejectsTheoryMethods()
     {
         var exception = Assert.Throws<InvalidOperationException>(
@@ -206,6 +232,14 @@ public sealed class XunitFactBridgeContractTests
             () => XunitTestBridge.Discover(new[] { typeof(UnsupportedSkippedFixture) }));
 
         Assert.That(exception.Message, Does.Contain("Skipped Xunit.Fact methods are not supported"));
+    }
+
+    [XunitBridgeInfrastructure]
+    public sealed class SynchronousFixture
+    {
+        public void Run()
+        {
+        }
     }
 
     [XunitBridgeInfrastructure]

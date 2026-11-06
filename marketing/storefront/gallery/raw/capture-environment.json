@@ -1,0 +1,45 @@
+{
+  "capturedUtc": "2026-11-01T23:02:09.612243+00:00",
+  "Unity": "6000.5.6f1",
+  "Rider": "2026.2.4",
+  "RiderBuild": "262.11879.110",
+  "Burst": "1.8.29",
+  "NewtonsoftJson": "3.2.2",
+  "platform": "Linux x64",
+  "captureDisplay": [
+    2560,
+    1600
+  ],
+  "package": {
+    "name": "com.houtamelo.spire",
+    "version": "4.7.6",
+    "displayName": "Houtamelo.Spire",
+    "description": "Spire analyzers and discriminated unions for Unity 6000.5.6f1; validated with Mono and IL2CPP on Linux x64.",
+    "unity": "6000.5",
+    "unityRelease": "6f1",
+    "dependencies": {
+      "com.unity.modules.imgui": "1.0.0",
+      "com.unity.modules.uielements": "1.0.0"
+    },
+    "samples": [
+      {
+        "displayName": "Unity Showcase (URP)",
+        "description": "Inspector, serialization, matching, and runtime examples. Requires URP 17.5.0 and Unity Test Framework 1.7.0 before import.",
+        "path": "Samples~/Showcase"
+      }
+    ],
+    "author": {
+      "name": "Houtamelo"
+    },
+    "license": "MIT"
+  },
+  "packageDllSha256": {
+    "Runtime/Houtamelo.Spire.dll": "ec840fc5b187688b814d628c038446c981c6954ea79e3f1e6e1a40c9faa21c3f",
+    "Analyzers/Houtamelo.Spire.Analyzers.dll": "0ba0fb33f1da7604da3c6625d32e0cdb74aaf224ae750595944af8c83809c636",
+    "Analyzers/Houtamelo.Spire.CodeFixes.dll": "90fde65a1f02a8e57efce3bc4a7ada6eaa022ff1dbc0b48f2a74dcff737450a4",
+    "Analyzers/Houtamelo.Spire.PatternAnalysis.dll": "4f5a207920bd62ad1d86ec5a7eb1c4d25fa87229d2b584e5a977e45dbaf3cd77"
+  },
+  "revision": 3,
+  "riderTheme": "Bundled default dark theme",
+  "inspectorCaptureWidth": 600
+}

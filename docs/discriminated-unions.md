@@ -185,8 +185,10 @@ from its regenerated IDE projects; configure its unions on the attribute.
 ## Unity and diagnostics
 
 Mutable `[Serializable]` struct unions receive generated Unity callbacks and
-drawers when Unity references are present. Public payloads are reused through
-one shared generic managed-reference wrapper. See [Unity](unity.md) for field
+drawers when Unity references are present. Each variant has a concrete
+managed-reference wrapper derived from a shared generic base; its inherited
+`value` field holds the public payload. Generic unions retain generic wrappers
+and cannot use native Unity serialization on Unity 2022. See [Unity](unity.md) for field
 eligibility, serialization, and Editor behavior.
 
 Unity serialization is incompatible with an unmanaged Burst/ECS representation:
