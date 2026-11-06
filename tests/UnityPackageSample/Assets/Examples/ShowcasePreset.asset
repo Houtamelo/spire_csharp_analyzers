@@ -15,85 +15,85 @@ MonoBehaviour:
   selectedCommand:
     _kind: 2
     _serializedPayload:
-      rid: 6494732838706348034
+      rid: 2577988769617281033
   commands:
   - _kind: 0
     _serializedPayload:
-      rid: 6494732838706348035
+      rid: 2577988769617281034
   - _kind: 2
     _serializedPayload:
-      rid: 6494732838706348036
+      rid: 2577988769617281035
   - _kind: 3
     _serializedPayload:
-      rid: 6494732838706348037
+      rid: 2577988769617281036
   - _kind: 4
     _serializedPayload:
-      rid: 6494732838706348038
+      rid: 2577988769617281037
   - _kind: 4
     _serializedPayload:
-      rid: 6494732838706348039
+      rid: 2577988769617281038
   - _kind: 4
     _serializedPayload:
-      rid: 6494732838706348040
+      rid: 2577988769617281039
   shape:
     _kind: 1
     _serializedPayload:
-      rid: 6494732838706348041
+      rid: 2577988769617281040
   result:
     _kind: 0
     _serializedPayload:
-      rid: 6494732838706348042
+      rid: 2577988769617281041
   references:
     version: 2
     RefIds:
     - rid: -2
       type: {class: , ns: , asm: }
-    - rid: 6494732838706348034
-      type: {class: 'SpireSerializedPayload`1[[Houtamelo.Spire.Showcase.GameplayCommandTypes/Variants/Move, Houtamelo.Spire.Showcase]]', ns: Houtamelo.Spire.Generated, asm: Houtamelo.Spire.Showcase}
+    - rid: 2577988769617281033
+      type: {class: GameplayCommandTypes/SerializedPayloads/MoveSerializedPayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
       data:
         value:
           _destination: {x: 3, y: 4}
           _speed: 2
-    - rid: 6494732838706348035
-      type: {class: 'SpireSerializedPayload`1[[Houtamelo.Spire.Showcase.GameplayCommandTypes/Variants/Idle, Houtamelo.Spire.Showcase]]', ns: Houtamelo.Spire.Generated, asm: Houtamelo.Spire.Showcase}
+    - rid: 2577988769617281034
+      type: {class: GameplayCommandTypes/SerializedPayloads/IdleSerializedPayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
       data: {}
-    - rid: 6494732838706348036
-      type: {class: 'SpireSerializedPayload`1[[Houtamelo.Spire.Showcase.GameplayCommandTypes/Variants/Move, Houtamelo.Spire.Showcase]]', ns: Houtamelo.Spire.Generated, asm: Houtamelo.Spire.Showcase}
+    - rid: 2577988769617281035
+      type: {class: GameplayCommandTypes/SerializedPayloads/MoveSerializedPayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
       data:
         value:
           _destination: {x: 3, y: 4}
           _speed: 2
-    - rid: 6494732838706348037
-      type: {class: 'SpireSerializedPayload`1[[Houtamelo.Spire.Showcase.GameplayCommandTypes/Variants/Speak, Houtamelo.Spire.Showcase]]', ns: Houtamelo.Spire.Generated, asm: Houtamelo.Spire.Showcase}
+    - rid: 2577988769617281036
+      type: {class: GameplayCommandTypes/SerializedPayloads/SpeakSerializedPayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
       data:
         value:
           _speech: Hello from Spire
-    - rid: 6494732838706348038
-      type: {class: 'SpireSerializedPayload`1[[Houtamelo.Spire.Showcase.GameplayCommandTypes/Variants/ApplyEffect, Houtamelo.Spire.Showcase]]', ns: Houtamelo.Spire.Generated, asm: Houtamelo.Spire.Showcase}
+    - rid: 2577988769617281037
+      type: {class: GameplayCommandTypes/SerializedPayloads/ApplyEffectSerializedPayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
       data:
         value:
           _effect:
             rid: 6494732838706348043
-    - rid: 6494732838706348039
-      type: {class: 'SpireSerializedPayload`1[[Houtamelo.Spire.Showcase.GameplayCommandTypes/Variants/ApplyEffect, Houtamelo.Spire.Showcase]]', ns: Houtamelo.Spire.Generated, asm: Houtamelo.Spire.Showcase}
+    - rid: 2577988769617281038
+      type: {class: GameplayCommandTypes/SerializedPayloads/ApplyEffectSerializedPayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
       data:
         value:
           _effect:
             rid: 6494732838706348043
-    - rid: 6494732838706348040
-      type: {class: 'SpireSerializedPayload`1[[Houtamelo.Spire.Showcase.GameplayCommandTypes/Variants/ApplyEffect, Houtamelo.Spire.Showcase]]', ns: Houtamelo.Spire.Generated, asm: Houtamelo.Spire.Showcase}
+    - rid: 2577988769617281039
+      type: {class: GameplayCommandTypes/SerializedPayloads/ApplyEffectSerializedPayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
       data:
         value:
           _effect:
             rid: -2
-    - rid: 6494732838706348041
-      type: {class: 'SpireSerializedPayload`1[[Houtamelo.Spire.Showcase.ShapeTypes/Variants/Rectangle, Houtamelo.Spire.Showcase]]', ns: Houtamelo.Spire.Generated, asm: Houtamelo.Spire.Showcase}
+    - rid: 2577988769617281040
+      type: {class: ShapeTypes/SerializedPayloads/RectangleSerializedPayload, ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
       data:
         value:
           _width: 3
           _height: 4
-    - rid: 6494732838706348042
-      type: {class: 'SpireSerializedPayload`1[[Houtamelo.Spire.Showcase.OperationResultTypes1/Variants/Success`1[[System.Int32, mscorlib]], Houtamelo.Spire.Showcase]]', ns: Houtamelo.Spire.Generated, asm: Houtamelo.Spire.Showcase}
+    - rid: 2577988769617281041
+      type: {class: 'OperationResultTypes1/SerializedPayloads/SuccessSerializedPayload`1[[System.Int32, mscorlib]]', ns: Houtamelo.Spire.Showcase, asm: Houtamelo.Spire.Showcase}
       data:
         value:
           _value: 42

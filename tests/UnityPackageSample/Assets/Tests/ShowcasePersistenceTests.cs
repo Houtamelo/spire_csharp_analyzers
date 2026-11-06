@@ -82,9 +82,9 @@ public sealed class ShowcasePersistenceTests {
 
         var assetYaml = ShowcaseTestSupport.ReadProjectFile(ShowcaseTestSupport.PresetPath);
         const string currentTypeIdentity =
-            "SpireSerializedPayload" + "\u0060" + "1[[Houtamelo.Spire.Showcase.GameplayCommandTypes/Variants/Speak";
+            "GameplayCommandTypes/SerializedPayloads/SpeakSerializedPayload";
         const string formerTypeIdentity =
-            "SpireSerializedPayload" + "\u0060" + "1[[Houtamelo.Spire.Showcase.GameplayCommandTypes/Variants/Say";
+            "GameplayCommandTypes/SerializedPayloads/SaySerializedPayload";
         Assert.That(assetYaml, Does.Contain(currentTypeIdentity));
         assetYaml = assetYaml.Replace(currentTypeIdentity, formerTypeIdentity, StringComparison.Ordinal);
 
