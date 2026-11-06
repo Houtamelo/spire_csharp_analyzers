@@ -3,8 +3,9 @@
 Approved storefront images and listing copy, collected on 2026-11-06 (UTC).
 Regular price: **20 USD**, chosen by the publisher. The publisher already has an
 Asset Store profile and submitted UPM enrollment on November 3, 2026. Approval is
-pending; Unity quoted an estimated 5–7 business days. Video and Windows / Visual
-Studio verification are being handled in separate sessions.
+pending; Unity quoted an estimated 5–7 business days. Windows / Visual Studio and
+three-version WebGL validation are complete within the listing's documented
+scope. Video is being handled in a separate session.
 
 ## Publisher Portal fields
 
@@ -48,13 +49,13 @@ current unversioned workflow.
 3. Build a release candidate with the existing package command, using a dedicated
    output directory: dotnet run -c Release --project tools/Spire.Tool -- package
    --output tmp/asset-store-release-candidate/com.houtamelo.spire
-4. Finish the release version and final compatibility evidence, including the
-   separate Windows / Visual Studio verification. The observed source version is 4.7.6;
+4. Choose the release version and declared minimum, retaining the documented
+   validation scope and limitations. The observed source version is 4.7.6;
    this handoff does not choose a release version or build package DLLs.
 5. Install the exact candidate in a clean project, run the
    [Asset Store UPM Validator and Uploader](https://docs.unity.com/en-us/asset-store/publishing/upm-packages/validate),
-   and populate the draft from the approved files above. Reconcile the provisional
-   Windows / Visual Studio claims with the other session's results.
+   and populate the draft from the files above. The technical details and publisher
+   notes include the completed Windows / Visual Studio and WebGL results.
 
 Unity 7000.0.0a12 serialization and Linux IL2CPP results are recorded in the
 internal publisher notes. All 100 original behavioral tests and 60 native
@@ -64,7 +65,7 @@ cases after removal of an unrelated subprocess capability probe.
 ## Remaining publication inputs
 
 - UPM enrollment approval and reserved namespace.
-- Final software bundle, release version, and compatibility results.
+- Final software bundle, release version, and declared minimum.
 - Existing publisher profile contact/website details and an online documentation
   URL if one will be advertised. The included offline guides are already listed.
 - Video URL from the separate session when available.

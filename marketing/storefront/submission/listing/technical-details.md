@@ -1,8 +1,18 @@
-- **Validated Unity version:** 6000.5.6f1.
+- **Validated Unity versions:** 2022.3.62f3, 2023.2.22f1, and 6000.5.6f1.
 - **Unity 2020:** will not work.
+- **Unity 2021:** cannot load the current compiler extensions.
 - **IDE support:** Spire uses Roslyn's standard analysis/code-fix providers, any IDE that supports that should also support Spire. Verified in JetBrains Rider and Visual Studio Community.
-- **Tested platform and backends:** Linux x64, Windows 10, Editor Mono, and IL2CPP players.
-  Other Unity versions and platforms require separate validation.
+- **Tested desktop platforms and backends:** Linux x64 and Windows 10 x64 on all
+  three versions, including Editor Mono, native serialization, rendered Inspector
+  interaction, and standalone Mono/IL2CPP players.
+- **Tested Web builds:** WebGL2/IL2CPP on all three versions in Chrome and Firefox
+  on desktop Linux, with High managed stripping and `FullWithStacktrace` exception
+  support. Unity's default Web exception setting does not preserve all tested
+  exception behavior. Other browsers and platforms require separate validation.
+- **Unity 2022 serialization:** non-generic unions pass native serialization;
+  generic unions cannot use native Unity serialization on this version.
+- **Package minimum:** the manifest still declares 6000.5.6f1. Older-version
+  verification does not lower the package minimum or Showcase requirements.
 - **JSON:** install the JSON library you select, System.Text.Json or
   Newtonsoft.Json, in your project.
 - **Burst/DOTS:** Spire does not have code that specifically targets Burst/DOTS, our discriminated unions are naturally Burst/DOTS compatible since they are struct-based. Note that the fields of the variants must also comply with Burst's restrictions (Spire isn't magic!). Consult the included Usage and Serialization guides for payload and serialization choices.

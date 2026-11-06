@@ -10,8 +10,13 @@ unions on Unity `2022.3.62f3`. Generic unions cannot use native serialization on
 Unity 2022. Keep the documented minimum version; older-Editor verification does
 not expand supported versions. See [Serialization](Documentation~/Serialization.md).
 
-Validated on Unity 6000.5.6f1, Linux and Windows x64, with Editor Mono and IL2CPP players;
-Windows Mono players were also exercised. Rider and Visual Studio Community have
+Validated on Unity 2022.3.62f3, 2023.2.22f1, and 6000.5.6f1 on Linux and Windows
+x64, with Editor Mono, applicable native serialization, rendered Inspector
+interaction, and standalone Mono/IL2CPP players. WebGL2/IL2CPP runtime checks also
+pass on all three in Chrome and Firefox on desktop Linux, with High managed
+stripping and `FullWithStacktrace` exception support. Unity's default Web exception
+setting does not preserve all tested exception behavior; Safari, mobile browsers,
+and WebGPU remain unverified. Rider and Visual Studio Community have
 verified diagnostics, generated symbols, and a representative IDE Quick Action.
 On Unity 6000.6.5f1 (Linux), an engine bug still affects
 serialization of generic unions with reference-type arguments, such as

@@ -4,9 +4,12 @@ Roslyn analyzers and source generators for C# type safety — struct initializat
 
 ## Installation
 
-This `unity-6000` branch targets Unity 6000.5, with Mono and Linux IL2CPP
-validation. **Unity 2020 will not work.** Unity 2021/2022 LTS compatibility is
-tracked in the [LTS validation](docs/reviews/2026-11-04-unity-lts-followup.md).
+This `unity-6000` branch validates Unity 2022.3.62f3, 2023.2.22f1, and 6000.5.6f1
+on Linux and Windows x64, including Editor Mono and standalone Mono/IL2CPP players.
+WebGL2/IL2CPP runtime checks also pass in Chrome and Firefox on desktop Linux with
+full exception support; see the [coverage and limitations](docs/unity.md#web-runtime).
+**Unity 2020 will not work.** Unity 2021 cannot load the current compiler
+extensions; see the [LTS validation](docs/reviews/2026-11-04-unity-lts-followup.md).
 Concrete per-variant wrappers pass native serialization write/read checks for
 non-generic unions on `2022.3.62f3`. Generic unions remain unsupported by that
 Editor's serializer. The minimum remains unchanged; see the

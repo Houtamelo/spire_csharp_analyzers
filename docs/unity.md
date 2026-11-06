@@ -465,6 +465,8 @@ identities; the historical 137-check result measured the retired layouts. Test-s
 preserve the test and dependency assemblies for the reflection-based adapter;
 this run alone does not establish production stripping compatibility.
 
+### Web runtime
+
 Build the runtime assertions for the browser:
 
 ```sh
@@ -517,6 +519,8 @@ negative controls propagated that failure. Builds, source hashes, browser report
 and the initial failed attempt are retained under `tmp/web-runtime-20261106`.
 The Web runner covers generated runtime behavior and built Resources loading;
 Editor/IDE tooling, Safari, mobile browsers, and WebGPU are separate coverage.
+
+### Editor compiler harness
 
 The full compiler/test harness below remains in Editor Mono. Actual IL2CPP
 probes reject dynamic IL emission and process launching, both required by that

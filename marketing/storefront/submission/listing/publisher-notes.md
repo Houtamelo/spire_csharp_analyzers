@@ -2,16 +2,26 @@
   Unity 2021 cannot load the current Roslyn API baseline. Unity 2022 passes
   native serialization write/read checks for non-generic unions with the new
   concrete wrappers; generic unions remain unsupported by its serializer.
-  Unity 2022 and 2023 pass the headless Editor harness, applicable native
-  serialization, and actual Mono/IL2CPP players. Their rendered Inspector suites
-  also pass after two Editor drawer corrections. Retain the currently declared
-  minimum until release metadata is finalized. See the
+  All three listed versions pass the full Editor harness, applicable native
+  serialization, rendered Inspector interaction, and actual Mono/IL2CPP players
+  on Linux and Windows. Retain the currently declared minimum until release
+  metadata is finalized. See the
   [current validation](reviews/2026-11-05-unity-2022-2023-current-validation.md)
   and [rendered follow-up](reviews/2026-11-05-rendered-inspector-validation.md)
   for exact versions, DLLs, and test scope.
-- Windows 10 and Visual Studio Community verification is being handled in a
-  separate session. The current storefront wording assumes those checks succeed;
-  their results are pending here.
+- Windows 10 validation is complete on all three listed versions: 2,692 complete
+  Editor cases per version, applicable native/player/Inspector gates, and Visual
+  Studio Community live diagnostics, generated-symbol navigation, a representative
+  Quick Action, and Unity recompilation. See the
+  [Windows matrix](reviews/2026-11-06-windows-unity-version-matrix.md).
+- Release WebGL/IL2CPP validation passes in Chrome and Firefox on Linux for all
+  three listed versions: 100 original behavioral tests per browser, plus 59
+  native core checks on Unity 2022 and 60 on Unity 2023/6000. Each browser/version
+  also propagates an intentional assertion failure. These runs use High stripping
+  and full exception support; the initial default-exception build passes 99/100
+  behavioral tests. Software rendering establishes correctness, not GPU
+  performance. Safari, mobile browsers, and WebGPU are unverified. See the
+  [Web results and exception-setting limitation](unity.md#web-runtime).
 - Unity serialization follow-up: the engine repro and preserved Spire probe pass
   on `7000.0.0a12` with CoreCLR, including a fresh-process asset read. The same
   inputs still crash on 6000.6.5f1 with Mono. Use a shared root cause with issue

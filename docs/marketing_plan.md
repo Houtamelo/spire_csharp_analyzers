@@ -26,10 +26,11 @@ correctness and time saved, rather than memory safety.
 - IDE quick fixes generate the missing cases for you.
 
 Describe the feature as "IDE quick fixes." Spire uses standard Roslyn code-fix
-providers, which Visual Studio Community also supports. Rider is the verified
-workflow and gallery capture host. Windows 10 and end-to-end Unity integration in
-Visual Studio Community are being verified in a separate session. The listing
-is being drafted assuming those checks succeed; results are still pending here.
+providers. Rider and Visual Studio Community have verified workflows; Rider is
+the gallery capture host. Windows 10 Visual Studio Community acceptance passes
+on Unity 2022.3.62f3, 2023.2.22f1, and 6000.5.6f1, including live diagnostics,
+generated-symbol navigation, a representative Quick Action, and subsequent Unity
+recompilation. See the [Windows matrix](reviews/2026-11-06-windows-unity-version-matrix.md).
 
 Suggested demonstration: add a new interface implementation, show the resulting
 missing-case error, generate the missing branch through the IDE context menu,
@@ -104,6 +105,24 @@ See the [rendered validation](reviews/2026-11-05-rendered-inspector-validation.m
 for the later DLL and exact revalidation scope. Keep the published minimum
 unchanged. See the
 [current-package recheck](reviews/2026-11-05-unity-2022-2023-current-validation.md).
+
+The public validation list is **2022.3.62f3, 2023.2.22f1, and 6000.5.6f1**.
+All three pass applicable Editor, native serialization, rendered Inspector, and
+standalone Mono/IL2CPP checks on Linux x64 and Windows 10 x64. The Windows matrix
+passes 2,692 complete Editor cases per version and Visual Studio Community
+acceptance. Retain Unity 2022's native generic-serialization restriction and the
+current package minimum; validation does not change release metadata or the
+Unity 6000 Showcase requirements.
+
+Release WebGL2/IL2CPP builds also pass on all three versions in Chrome and Firefox
+on desktop Linux: 100 original behavioral tests per browser, plus 59 native core
+checks on Unity 2022 and 60 on Unity 2023/6000. All six intentional assertion-failure
+controls propagate correctly. Public Web compatibility wording must include full
+exception support: the passing builds use `FullWithStacktrace`; Unity 6000's
+initial default-exception build passes 99/100 behavioral tests. The browsers use
+software rendering, so these are correctness results. Safari, mobile browsers,
+WebGPU, and GPU performance are unverified. See the
+[Web validation and limitations](unity.md#web-runtime).
 
 Use the simple Burst/DOTS compatibility message on the storefront; document that
 a union cannot simultaneously use generated Unity serialization and be unmanaged
@@ -245,8 +264,9 @@ validating and uploading the software bundle. See the
 and [product draft guide](https://docs.unity.com/en-us/asset-store/publishing/upm-packages/create-draft).
 
 No Portal draft or software upload has been created in this session. The handoff
-contains marketing material; the release bundle, final version, and compatibility
-results remain separate. Rebuild the handoff with
+contains marketing material; the release bundle, final version, and declared
+minimum remain separate decisions. Completed compatibility results are recorded
+above and in the listing. Rebuild the handoff with
 `node marketing/storefront/build-submission.cjs`.
 
 ## Gallery revision decisions
