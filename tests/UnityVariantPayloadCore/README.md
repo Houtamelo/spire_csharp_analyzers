@@ -14,6 +14,10 @@ and rendered Inspector checks on `2022.3.62f3` and `2023.2.22f1`; see the
 Use a fresh disposable `--project` for Windows player builds. Reusing the native
 persistence project can encounter the documented file-sharing preparation issue.
 
+The `unity-web` command also reuses these runtime assertions and canonical
+Resources in browser WebGL/IL2CPP players. See the [Web runtime commands and
+three-version browser results](../../docs/unity.md).
+
 The invoked Editor method is:
 
 ```text

@@ -14,20 +14,28 @@ namespace Spire.UnityVariantPayloadCore
         // Unity 2023.2 can crash during startup native cleanup when quit is requested from AfterSceneLoad.
         internal static void Schedule(int exitCode)
         {
+#if UNITY_WEBGL
+            // WebGL runs inside the browser and has no process exit status. The
+            // browser harness consumes the completed result marker instead.
+            return;
+#else
             var host = new GameObject("SpireCorePlayerExitScheduler");
             Object.DontDestroyOnLoad(host);
             var scheduler = host.AddComponent<CorePlayerExitScheduler>();
             scheduler._exitCode = exitCode;
             scheduler._scheduled = true;
+#endif
         }
 
         private void Update()
         {
+#if !UNITY_WEBGL
             if (!_scheduled)
                 return;
 
             _scheduled = false;
             Application.Quit(_exitCode);
+#endif
         }
     }
 

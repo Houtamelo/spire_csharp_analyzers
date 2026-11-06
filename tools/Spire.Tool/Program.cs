@@ -6,7 +6,7 @@ try
     var options = Options.Parse(args);
     if (options.Help)
     {
-        Console.WriteLine("Spire.Tool: package | examples | unity-customer | unity-integration | unity-union-core | unity-behavioral | unity-harness | unity-asmdefs | jetbrains | hook");
+        Console.WriteLine("Spire.Tool: package | examples | unity-customer | unity-integration | unity-union-core | unity-behavioral | unity-web | unity-harness | unity-asmdefs | jetbrains | hook");
         Console.WriteLine("Usage: dotnet run --project tools/Spire.Tool -- <command> [options]");
         Console.WriteLine("Common options: --root PATH --configuration Debug|Release --no-build --help");
         Console.WriteLine("package: --output PATH");
@@ -17,6 +17,7 @@ try
         Console.WriteLine("unity-union-core: builds Mono and IL2CPP players; --method NAME --graphics select Editor validation");
         Console.WriteLine("unity-behavioral, unity-harness, unity-asmdefs: --prepare-only");
         Console.WriteLine("unity-behavioral: --backend Mono|IL2CPP (Mono runs in EditMode; IL2CPP builds a standalone player for the host platform)");
+        Console.WriteLine("unity-web: builds a release WebGL player containing the original behavioral Facts and native union probes; --prepare-only");
         Console.WriteLine("unity-harness: --probe");
         Console.WriteLine("unity-asmdefs: --rider PATH | --visual-studio PATH");
         Console.WriteLine("jetbrains: --rider PATH --cli PATH --stage all|inspect|quick-fix|recompile");
@@ -34,7 +35,7 @@ try
     if (configuration is not ("Debug" or "Release")) throw new ArgumentException("Configuration must be Debug or Release.");
     var editor = options.Value("editor", ToolContext.DefaultEditor);
     var rider = options.Value("rider", ToolContext.DefaultRider);
-    var timeout = TimeSpan.FromSeconds(options.Integer("timeout", options.Command == "unity-integration" ? 240 : backend == "IL2CPP" ? 1200 : 900));
+    var timeout = TimeSpan.FromSeconds(options.Integer("timeout", options.Command == "unity-integration" ? 240 : options.Command == "unity-web" ? 3600 : backend == "IL2CPP" ? 1200 : 900));
     var build = !options.Flag("no-build");
     var prepare = options.Flag("prepare-only");
     string Project(string name) => options.Value("project", context.PathOf("tmp/" + name));
@@ -62,6 +63,8 @@ try
                 options.Flag("baseline") ? options.Value("baseline", "") : null, prepare, timeout);
         case "unity-behavioral":
             return await BehavioralWorkflow.RunAsync(context, Project(backend == "IL2CPP" ? "unity-il2cpp-behavioral" : "unity-behavioral"), editor, configuration, build, prepare, timeout, backend);
+        case "unity-web":
+            return await WebRuntimeWorkflow.RunAsync(context, Project("unity-web-runtime"), editor, configuration, build, prepare, timeout);
         case "unity-harness":
             return await HarnessWorkflow.RunAsync(context, Project("unity-compiler-tests"), editor, configuration, build, prepare, options.Flag("probe"), timeout);
         case "unity-asmdefs":

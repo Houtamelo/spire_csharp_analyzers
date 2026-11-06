@@ -1,0 +1,8 @@
+{
+  "name": "spire-unity-web-runtime-validation",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "playwright": "1.65.0"
+  }
+}

@@ -174,9 +174,10 @@ internal static class UnityRunner
         }, context.Root, timeout, environment, log + ".xvfb.log");
 
     internal static Task<ProcessResult> MethodAsync(ToolContext context, string project, string editor, string method, string log, TimeSpan timeout,
-        bool graphics = false, IReadOnlyDictionary<string, string?>? environment = null)
+        bool graphics = false, IReadOnlyDictionary<string, string?>? environment = null, string? buildTarget = null)
         => RunWithDisplayAsync(project, FileOps.FullPath(editor),
             (graphics ? System.Array.Empty<string>() : new[] { "-batchmode", "-nographics" })
+                .Concat(buildTarget == null ? System.Array.Empty<string>() : new[] { "-buildTarget", buildTarget })
                 .Concat(new[] { "-projectPath", project, "-executeMethod", method, "-logFile", log }),
             context.Root, timeout, environment, log + ".xvfb.log");
 

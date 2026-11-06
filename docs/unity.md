@@ -465,6 +465,59 @@ identities; the historical 137-check result measured the retired layouts. Test-s
 preserve the test and dependency assemblies for the reflection-based adapter;
 this run alone does not establish production stripping compatibility.
 
+Build the runtime assertions for the browser:
+
+```sh
+dotnet run -c Release --project tools/Spire.Tool -- unity-web --project tmp/unity-web-runtime --timeout 3600
+npm ci --prefix tools/unity-web-runtime
+npm exec --prefix tools/unity-web-runtime -- playwright install firefox
+node tools/unity-web-runtime/run.mjs --project tmp/unity-web-runtime --browser chromium
+node tools/unity-web-runtime/run.mjs --project tmp/unity-web-runtime --browser firefox
+```
+
+Install the selected Editor's Web Build Support module first; `--editor` selects
+the installation. The Chromium runner uses installed Google Chrome, while the
+Firefox runner uses Playwright's matching Firefox binary. Preparation reads
+`tests/UnityBehavioral`, the original behavioral sources, `tests/UnityVariantPayloadCore`,
+and `tests/UnityWebRuntime`; inputs and outputs stay outside `examples/`.
+`--prepare-only` prepares the project without launching Unity.
+
+On 2026-11-06, actual release WebGL/IL2CPP players passed in headless Chrome
+157.0.8103.38 and Playwright Firefox 159.0 on Linux:
+
+| Unity | Original behavioral Facts per browser | Native core checks per browser |
+| --- | ---: | ---: |
+| 2022.3.62f3 | 100 | 59 |
+| 2023.2.22f1 | 100 | 60 |
+| 6000.5.6f1 | 100 | 60 |
+
+Every run confirmed `WebGLPlayer`, IL2CPP, 32-bit pointers, WebGL2, High managed
+stripping, and a nondevelopment build. Chrome used SwiftShader and Firefox used
+software rendering; these are runtime correctness results, not GPU performance
+measurements. Unity 2022 retains its existing generic native-serialization
+restriction. The original Fact bodies are copied unchanged. Reflection roots
+preserve the behavioral test/dependency assemblies; native core probes remain
+in the ordinary player assembly without blanket preservation of Spire.
+
+The builder requests `FullWithStacktrace` exception support. An initial Unity
+6000 build using the default `ExplicitlyThrownExceptionsOnly` passed all 60
+native checks and 99 Facts, but the null-source `OfKind` test received
+`MethodAccessException` instead of its expected `NullReferenceException`.
+Unity's [Web exception settings](https://docs.unity3d.com/2023.2/Documentation/Manual/webgl-building.html)
+require a full exception mode for implicit null-reference checks. The passing
+matrix therefore establishes full-exception behavior; it does not establish
+identical exception behavior with Unity's default Web setting.
+
+The browser runner checks every expected Fact identity and both completed
+reports, reads results through a test-only JavaScript plugin to avoid Unity's
+console truncation, and fails on missing results or browser errors. Add
+`--negative-control` to invoke an intentional xUnit assertion failure through the
+same bridge after all 100 Facts; the command must exit 1. All six browser/version
+negative controls propagated that failure. Builds, source hashes, browser reports,
+and the initial failed attempt are retained under `tmp/web-runtime-20261106`.
+The Web runner covers generated runtime behavior and built Resources loading;
+Editor/IDE tooling, Safari, mobile browsers, and WebGPU are separate coverage.
+
 The full compiler/test harness below remains in Editor Mono. Actual IL2CPP
 probes reject dynamic IL emission and process launching, both required by that
 harness. Its compile/emit/load tests and SDK subprocess tests cannot execute

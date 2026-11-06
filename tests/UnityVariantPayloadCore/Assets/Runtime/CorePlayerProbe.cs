@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Houtamelo.Spire;
 using UnityEngine;
 
@@ -22,6 +23,7 @@ namespace Spire.UnityVariantPayloadCore
             var report = new PlayerReport
             {
                 unityVersion = Application.unityVersion,
+                runtimePlatform = Application.platform.ToString(),
 #if ENABLE_IL2CPP
             backend = "IL2CPP",
 #else
@@ -74,6 +76,11 @@ namespace Spire.UnityVariantPayloadCore
                 report.failures.Add("Could not write player report: " + exception);
             }
 
+#if UNITY_WEBGL
+            var json = JsonUtility.ToJson(report, false);
+            Debug.Log("SPIRE_WEB_CORE_RESULT: " + json);
+            SpireWebReport("core", json);
+#endif
             CorePlayerExitScheduler.Schedule(report.status == "pass" ? 0 : 1);
         }
 
@@ -420,6 +427,9 @@ namespace Spire.UnityVariantPayloadCore
 
         private static string ResolveReportPath()
         {
+#if UNITY_WEBGL
+            return Path.Combine(Application.persistentDataPath, DefaultReportName);
+#else
             var arguments = Environment.GetCommandLineArgs();
             for (var index = 0; index < arguments.Length; index++)
             {
@@ -433,7 +443,13 @@ namespace Spire.UnityVariantPayloadCore
             return string.IsNullOrEmpty(logDirectory)
                 ? Path.Combine(Application.persistentDataPath, DefaultReportName)
                 : Path.Combine(logDirectory, DefaultReportName);
+#endif
         }
+
+#if UNITY_WEBGL
+        [DllImport("__Internal")]
+        private static extern void SpireWebReport(string kind, string json);
+#endif
 
         private static void Require(bool condition, string message)
         {
@@ -449,6 +465,7 @@ namespace Spire.UnityVariantPayloadCore
         private sealed class PlayerReport
         {
             public string unityVersion = string.Empty;
+            public string runtimePlatform = string.Empty;
             public string backend = string.Empty;
             public string status = string.Empty;
             public int checks;
