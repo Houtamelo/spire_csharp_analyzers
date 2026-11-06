@@ -653,8 +653,13 @@ namespace Spire.UnityVariantPayloadCore
             if (rich.icon is null || asset.sharedTexture is null)
                 throw new InvalidOperationException("UnityEngine.Object references were lost.");
             Check(ReferenceEquals(rich.icon, texture) && ReferenceEquals(asset.sharedTexture, texture) &&
+#if UNITY_6000_4_OR_NEWER
                 rich.icon.GetEntityId() == texture.GetEntityId() &&
                 asset.sharedTexture.GetEntityId() == texture.GetEntityId(),
+#else
+                rich.icon.GetInstanceID() == texture.GetInstanceID() &&
+                asset.sharedTexture.GetInstanceID() == texture.GetInstanceID(),
+#endif
                 "UnityEngine.Object identity did not survive serialization.");
             Check(rich.helper.label == "nested-helper", "Mutable inline helper label did not restore.");
             Check(rich.helper.callback != null, "Callback-bearing helper did not restore.");

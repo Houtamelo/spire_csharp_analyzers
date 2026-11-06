@@ -91,6 +91,14 @@ internal static class FileOps
     [DllImport("libc", EntryPoint = "free")]
     private static extern void Free(IntPtr pointer);
 
+    internal static string ReadSharedText(string path)
+    {
+        // Unity can leave its log writer open briefly after the Editor exits.
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        return reader.ReadToEnd();
+    }
+
     internal static JsonObject ReadObject(string path) => JsonNode.Parse(File.ReadAllText(path)) as JsonObject
         ?? throw new InvalidDataException("Expected a JSON object: " + path);
     internal static void WriteJson(string path, JsonNode data) => Write(path, data.ToJsonString(JsonOptions) + "\n");

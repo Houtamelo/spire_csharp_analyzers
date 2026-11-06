@@ -2548,7 +2548,11 @@ namespace Spire.UnityVariantPayloadCore
                     ? string.Empty
                     : string.Join(",", _serialized.targetObjects
                         .Where(target => target != null)
+#if UNITY_6000_4_OR_NEWER
                         .Select(target => target.GetEntityId().ToString()));
+#else
+                        .Select(target => target.GetInstanceID().ToString()));
+#endif
                 var property = _serialized.FindProperty(path);
                 if (property == null)
                     return "soTargets=" + targets + ";modified=" + _serialized.hasModifiedProperties +

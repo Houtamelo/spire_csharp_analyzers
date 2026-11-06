@@ -8,6 +8,12 @@ players through:
 dotnet run -c Release --project tools/Spire.Tool -- unity-union-core --timeout 1200
 ```
 
+Windows validation also passes native persistence, both actual player backends,
+and rendered Inspector checks on `2022.3.62f3` and `2023.2.22f1`; see the
+[three-version results](../../docs/reviews/2026-11-06-windows-unity-version-matrix.md).
+Use a fresh disposable `--project` for Windows player builds. Reusing the native
+persistence project can encounter the documented file-sharing preparation issue.
+
 The invoked Editor method is:
 
 ```text

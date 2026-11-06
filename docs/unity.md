@@ -11,7 +11,7 @@ on Unity 2022.** Newer Editors retain their existing generic support. See the
 [original failure](issues/2026-11-04-unity-2022-generic-managed-reference-payloads.md).
 
 The [initial Unity 2020–2023 validation](reviews/2026-11-04-unity-2020-2023-validation.md)
-records the original failures. The current full Editor harness passes 2,689
+records the original failures. The November 5 Linux Editor runs pass 2,689
 checks on both Unity 2022 and 2023. Both also pass applicable native serialization
 and actual Mono/IL2CPP player checks; Unity 2022 excludes unsupported native
 generic serialization. The separate rendered Inspector suite also passes on
@@ -21,13 +21,21 @@ for exact counts and revalidation scope. The declared minimum is unchanged.
 See the [current-package recheck](reviews/2026-11-05-unity-2022-2023-current-validation.md).
 Unity 2021's Roslyn 3.9 compiler cannot load the current Roslyn 4.3 extensions.
 
+The [Windows version matrix](reviews/2026-11-06-windows-unity-version-matrix.md)
+passes 2,692 complete Editor cases on each of `2022.3.62f3`, `2023.2.22f1`, and
+`6000.5.6f1`, including compiler probes and six new filesystem regressions.
+Applicable native persistence, rendered Inspector, High-stripping Mono/IL2CPP
+players, and Visual Studio Community acceptance also pass on all three.
+Twelve Linux-only cases are independently recorded as platform exclusions.
+
 The `unity-6000` compiler extensions target the Roslyn 4.3 API baseline. Native validation
-covers Editor Mono, Linux IL2CPP, and Windows Mono/IL2CPP runtime tests on 6000.5.6f1; player
+covers the versions and platform boundaries in the linked matrices; player
 serialization and stripping coverage are detailed below. The normal NuGet build
 remains on `main`. Other Unity versions and player platforms require separate
 validation. Rider and Visual Studio Community have verified IDE workflows,
 including one representative live Quick Action and subsequent Unity recompilation.
-See the [Windows validation evidence](reviews/2026-11-04-windows-unity-validation.md).
+See the [current Windows validation evidence](reviews/2026-11-06-windows-unity-version-matrix.md)
+and [initial environment validation](reviews/2026-11-04-windows-unity-validation.md).
 
 Unity now marks [6.5 end of life](https://discussions.unity.com/t/unity-6-5-is-now-available/1723176).
 This guide records compatibility evidence; a maintained release baseline remains

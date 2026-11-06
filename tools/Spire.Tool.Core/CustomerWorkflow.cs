@@ -110,7 +110,7 @@ public static class CustomerWorkflow
             var log = Path.Combine(project, "showcase-tests-" + attempt + ".log");
             run = await UnityRunner.TestsWithGraphicsAsync(context, project, editor,
                 "Houtamelo.Spire.Showcase.Tests", testReport, log, timeout).ConfigureAwait(false);
-            var text = File.Exists(log) ? File.ReadAllText(log) : "";
+            var text = File.Exists(log) ? FileOps.ReadSharedText(log) : "";
             var startupAssertion = !File.Exists(testReport) && text.Contains("ToFileDescriptor") && text.Contains("Assertion");
             if (run.ExitCode == 0 || !startupAssertion) break;
             Console.Error.WriteLine("Unity startup descriptor assertion; retrying once. Log: " + log);

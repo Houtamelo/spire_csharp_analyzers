@@ -260,7 +260,7 @@ public sealed class ExamplePreparationTests
             InitializeRepository(source);
             RunGit(Root, "init", "--initial-branch=parent");
             ConfigureRepository(Root);
-            RunGit(Root, "-c", "protocol.file.allow=always", "submodule", "add", "--branch", "with-spire", source, ExamplePath(name));
+            RunGit(Root, "-c", "protocol.file.allow=always", "submodule", "add", "--branch", "with-spire", source, Path.GetRelativePath(Root, ExamplePath(name)));
             RunGit(Root, "commit", "-m", "register example submodule");
             RunGit(ExamplePath(name), "checkout", "--detach", "HEAD");
         }

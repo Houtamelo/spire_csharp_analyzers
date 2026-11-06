@@ -46,8 +46,13 @@ namespace Spire.UnityVariantPayloadCore
             else
             {
                 require(ReferenceEquals(texture, asset.sharedTexture) && ReferenceEquals(texture, rich.icon) &&
+#if UNITY_6000_4_OR_NEWER
                     texture.GetEntityId() == asset.sharedTexture.GetEntityId() &&
                     texture.GetEntityId() == rich.icon.GetEntityId(),
+#else
+                    texture.GetInstanceID() == asset.sharedTexture.GetInstanceID() &&
+                    texture.GetInstanceID() == rich.icon.GetInstanceID(),
+#endif
                     "Player did not preserve UnityEngine.Object identity.");
             }
             if (rich.helper.command.kind != SerializedNestedOwner.Command.Kind.Run)

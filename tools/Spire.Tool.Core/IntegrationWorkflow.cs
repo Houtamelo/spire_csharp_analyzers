@@ -24,7 +24,7 @@ public static class IntegrationWorkflow
         {
             var log = Path.Combine(project, "unity-integration-" + attempt + ".log");
             result = await UnityRunner.MethodAsync(context, project, editor, method, log, timeout, graphics).ConfigureAwait(false);
-            var text = File.Exists(log) ? File.ReadAllText(log) : "";
+            var text = File.Exists(log) ? FileOps.ReadSharedText(log) : "";
             var startupAssertion = text.Contains("ToFileDescriptor") && text.Contains("Assertion") && !text.Contains("SPIRE_UNITY_INTEGRATION_BEGIN");
             if (result.ExitCode == 0 || !startupAssertion) break;
             Console.Error.WriteLine("Unity startup assertion; retrying once. Log: " + log);
