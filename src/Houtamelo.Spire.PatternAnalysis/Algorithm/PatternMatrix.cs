@@ -872,7 +872,9 @@ internal sealed class PatternMatrix
         ImmutableArray<Column> columns,
         System.Collections.Generic.List<ImmutableArray<ISymbol>> paths,
         DomainResolver resolver,
-        bool isStructDU)
+        bool isStructDU,
+        INamedTypeSymbol? generatedUnionType = null,
+        ImmutableArray<string> variantNames = default)
     {
         foreach (var propSub in recursive.PropertySubpatterns)
         {
@@ -907,7 +909,38 @@ internal sealed class PatternMatrix
 
             var childDomain = columns[index + 1].Domain;
             var childPattern = propSub.Pattern;
-            var childCell = ConvertNestedPattern(childPattern, childDomain);
+            if (generatedUnionType is not null &&
+                childPattern is not IRecursivePatternOperation &&
+                childDomain.Type is INamedTypeSymbol payloadType &&
+                TryGetGeneratedPayloadPropertiesFromType(
+                    payloadType,
+                    generatedUnionType,
+                    variantNames,
+                    out var singlePayloadProperties) &&
+                singlePayloadProperties.Length == 1)
+            {
+                var leafPath = path.Add(singlePayloadProperties[0]);
+                var leafIndex = FindPathIndex(paths, leafPath);
+                if (leafIndex >= 0)
+                {
+                    cells[index + 1] = NonNullCell(childDomain);
+                    var leafDomain = columns[leafIndex + 1].Domain;
+                    var leafCell = ConvertSinglePayloadPattern(childPattern, leafDomain);
+                    cells[leafIndex + 1] = IntersectCells(
+                        cells[leafIndex + 1],
+                        leafCell,
+                        leafDomain);
+                    continue;
+                }
+            }
+            var childCell = generatedUnionType is not null &&
+                !variantNames.IsDefaultOrEmpty
+                ? ConvertGeneratedPayloadPattern(
+                    childPattern,
+                    childDomain,
+                    generatedUnionType,
+                    variantNames)
+                : ConvertNestedPattern(childPattern, childDomain);
             cells[index + 1] = childCell;
 
             if (childPattern is IRecursivePatternOperation nested)
@@ -923,7 +956,55 @@ internal sealed class PatternMatrix
                     columns,
                     paths,
                     resolver,
-                    isStructDU: false);
+                    isStructDU: false,
+                    generatedUnionType: generatedUnionType,
+                    variantNames: variantNames);
+            }
+        }
+
+        if (generatedUnionType is null ||
+            variantNames.IsDefaultOrEmpty ||
+            recursive.DeconstructionSubpatterns.IsEmpty ||
+            !TryGetGeneratedPayloadProperties(
+                recursive,
+                generatedUnionType,
+                variantNames,
+                out var positionalProperties))
+        {
+            return;
+        }
+
+        for (var index = 0; index < positionalProperties.Length; index++)
+        {
+            var path = parent.Add(positionalProperties[index]);
+            var columnIndex = FindPathIndex(paths, path);
+            if (columnIndex < 0)
+                continue;
+
+            var childDomain = columns[columnIndex + 1].Domain;
+            var childPattern = recursive.DeconstructionSubpatterns[index];
+            var childCell = ConvertGeneratedPayloadPattern(
+                childPattern,
+                childDomain,
+                generatedUnionType,
+                variantNames);
+            cells[columnIndex + 1] = IntersectCells(
+                cells[columnIndex + 1],
+                childCell,
+                childDomain);
+
+            if (childPattern is IRecursivePatternOperation nested)
+            {
+                ApplyPropertySubpatterns(
+                    nested,
+                    path,
+                    cells,
+                    columns,
+                    paths,
+                    resolver,
+                    isStructDU: false,
+                    generatedUnionType: generatedUnionType,
+                    variantNames: variantNames);
             }
         }
     }
@@ -947,7 +1028,47 @@ internal sealed class PatternMatrix
             return NonNullCell(domain);
         }
 
-        return ConvertPattern(pattern, domain);
+        if (pattern is IDiscardPatternOperation)
+            return Cell.Wildcard.Instance;
+        if (pattern is IDeclarationPatternOperation declaration)
+            return ConvertDeclarationPattern(declaration, domain);
+        if (pattern is IConstantPatternOperation constant)
+            return ConvertConstantPattern(constant, domain);
+        if (pattern is IRelationalPatternOperation relational)
+            return ConvertRelationalPattern(relational, domain);
+        if (pattern is IBinaryPatternOperation binary)
+            return ConvertBinaryPattern(binary, domain);
+        if (pattern is INegatedPatternOperation negated)
+            return ConvertNegatedPattern(negated, domain);
+        if (pattern is ITypePatternOperation type)
+            return ConvertTypePattern(type.MatchedType, domain);
+        return Cell.Unknown.Instance;
+    }
+
+    static Cell ConvertGeneratedPayloadPattern(
+        IPatternOperation pattern,
+        IValueDomain domain,
+        INamedTypeSymbol unionType,
+        ImmutableArray<string> variantNames)
+    {
+        if (pattern is IRecursivePatternOperation recursive &&
+            !recursive.DeconstructionSubpatterns.IsEmpty)
+        {
+            if (TryGetGeneratedPayloadProperties(
+                    recursive,
+                    unionType,
+                    variantNames,
+                    out _))
+            {
+                return NonNullCell(domain);
+            }
+
+            return IsUnrestrictedValueDeconstruction(recursive)
+                ? NonNullCell(domain)
+                : Cell.Unknown.Instance;
+        }
+
+        return ConvertNestedPattern(pattern, domain);
     }
 
     static int FindPathIndex(
@@ -1204,7 +1325,9 @@ internal sealed class PatternMatrix
                     cols,
                     paths,
                     resolver,
-                    isStructDU: true);
+                    isStructDU: true,
+                    generatedUnionType: kindEnum.ContainingType,
+                    variantNames: variantNames);
             }
 
             rows.Add(cells.MoveToImmutable());
@@ -1242,9 +1365,105 @@ internal sealed class PatternMatrix
             var path = parent.AddRange(memberPath);
             AddPathPrefixes(paths, path);
 
+            if (propSub.Pattern is not IRecursivePatternOperation &&
+                memberPath[memberPath.Length - 1] is IPropertySymbol payloadProperty &&
+                payloadProperty.Type is INamedTypeSymbol payloadType &&
+                TryGetGeneratedPayloadPropertiesFromType(
+                    payloadType,
+                    (INamedTypeSymbol)subjectType,
+                    variantNames,
+                    out var singlePayloadProperties) &&
+                singlePayloadProperties.Length == 1)
+            {
+                AddPathPrefixes(paths, path.Add(singlePayloadProperties[0]));
+            }
+
             if (propSub.Pattern is IRecursivePatternOperation nested)
+            {
+                CollectPositionalPropertyPaths(
+                    nested,
+                    path,
+                    (INamedTypeSymbol)subjectType,
+                    variantNames,
+                    paths);
                 CollectStructDUPropertyPaths(nested, path, paths, subjectType, variantNames);
+            }
         }
+    }
+
+    static void CollectPositionalPropertyPaths(
+        IRecursivePatternOperation recursive,
+        ImmutableArray<ISymbol> parent,
+        INamedTypeSymbol unionType,
+        ImmutableArray<string> variantNames,
+        System.Collections.Generic.List<ImmutableArray<ISymbol>> paths)
+    {
+        if (recursive.DeconstructionSubpatterns.IsEmpty ||
+            !TryGetGeneratedPayloadProperties(
+                recursive,
+                unionType,
+                variantNames,
+                out var properties))
+        {
+            return;
+        }
+
+        for (var index = 0; index < properties.Length; index++)
+        {
+            var path = parent.Add(properties[index]);
+            var childPattern = recursive.DeconstructionSubpatterns[index];
+            var constrained = !IsUnrestrictedPositionalChild(
+                childPattern,
+                properties[index].Type);
+            if (constrained)
+                AddPathPrefixes(paths, path);
+
+            if (childPattern is IRecursivePatternOperation nested)
+            {
+                if (constrained)
+                {
+                    CollectPositionalPropertyPaths(
+                        nested,
+                        path,
+                        unionType,
+                        variantNames,
+                        paths);
+                    CollectStructDUPropertyPaths(
+                        nested,
+                        path,
+                        paths,
+                        unionType,
+                        variantNames);
+                }
+            }
+        }
+    }
+
+    static bool IsUnrestrictedPositionalChild(
+        IPatternOperation pattern,
+        ITypeSymbol expectedType)
+    {
+        if (pattern is IDiscardPatternOperation)
+            return true;
+
+        if (pattern is IDeclarationPatternOperation declaration)
+        {
+            if (declaration.MatchedType is null &&
+                (declaration.Syntax is VarPatternSyntax ||
+                 declaration.Syntax is SingleVariableDesignationSyntax))
+            {
+                return true;
+            }
+
+            return declaration.MatchedType is { IsValueType: true } matchedType &&
+                matchedType.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T &&
+                expectedType.IsValueType &&
+                expectedType.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T &&
+                SymbolEqualityComparer.Default.Equals(matchedType, expectedType);
+        }
+
+        return pattern is IRecursivePatternOperation recursive &&
+            IsUnrestrictedValueDeconstruction(recursive);
     }
 
     static PatternMatrix BuildNullableStructDUPropertyMatrix(
@@ -1531,8 +1750,62 @@ internal sealed class PatternMatrix
 
     static bool IsUnrestrictedValueDeconstruction(IRecursivePatternOperation recursive)
     {
-        if (recursive.Syntax is not ParenthesizedVariableDesignationSyntax
+        if (recursive.Syntax is ParenthesizedVariableDesignationSyntax)
+            return IsUnrestrictedVariableDesignation(recursive);
+
+        if (recursive.Syntax is not RecursivePatternSyntax
             || recursive.DeconstructionSubpatterns.IsEmpty
+            || recursive.InputType is not { IsValueType: true } inputType
+            || inputType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T
+            || (recursive.MatchedType is not null &&
+                !SymbolEqualityComparer.Default.Equals(recursive.MatchedType, inputType))
+            || !recursive.PropertySubpatterns.IsEmpty
+            || recursive.DeconstructSymbol is not IMethodSymbol deconstruct
+            || deconstruct.Parameters.Length != recursive.DeconstructionSubpatterns.Length)
+        {
+            return false;
+        }
+
+        for (var index = 0; index < recursive.DeconstructionSubpatterns.Length; index++)
+        {
+            var subpattern = recursive.DeconstructionSubpatterns[index];
+            if (subpattern is IDiscardPatternOperation)
+            {
+                continue;
+            }
+
+            if (subpattern is IDeclarationPatternOperation declaration
+                && declaration.MatchedType is null
+                && declaration.Syntax is SingleVariableDesignationSyntax)
+            {
+                continue;
+            }
+
+            if (subpattern is IDeclarationPatternOperation typedDeclaration
+                && typedDeclaration.MatchedType is { IsValueType: true } matchedType
+                && matchedType.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T
+                && deconstruct.Parameters[index].Type.IsValueType
+                && deconstruct.Parameters[index].Type.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T
+                && SymbolEqualityComparer.Default.Equals(
+                    matchedType,
+                    deconstruct.Parameters[index].Type))
+            {
+                continue;
+            }
+
+            // Nested designations and typed, constant, or restricted
+            // positional patterns are not proven to cover the payload. A
+            // typed declaration is accepted only when it exactly matches the
+            // corresponding value-typed Deconstruct output.
+            return false;
+        }
+
+        return true;
+    }
+
+    static bool IsUnrestrictedVariableDesignation(IRecursivePatternOperation recursive)
+    {
+        if (recursive.DeconstructionSubpatterns.IsEmpty
             || recursive.InputType is not { IsValueType: true } inputType
             || inputType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
         {
@@ -1554,12 +1827,114 @@ internal sealed class PatternMatrix
                 continue;
             }
 
-            // Nested designations and typed, constant, or restricted
-            // positional patterns are not proven to cover the payload.
             return false;
         }
 
         return true;
+    }
+
+    static bool TryGetGeneratedPayloadProperties(
+        IRecursivePatternOperation recursive,
+        INamedTypeSymbol unionType,
+        ImmutableArray<string> variantNames,
+        out ImmutableArray<IPropertySymbol> properties)
+    {
+        properties = ImmutableArray<IPropertySymbol>.Empty;
+        if (recursive.InputType is not INamedTypeSymbol payloadType ||
+            (recursive.MatchedType is not null &&
+             !SymbolEqualityComparer.Default.Equals(recursive.MatchedType, recursive.InputType)) ||
+            recursive.DeconstructSymbol is not IMethodSymbol deconstruct ||
+            !SymbolEqualityComparer.Default.Equals(
+                deconstruct.ContainingType,
+                payloadType) ||
+            deconstruct.IsStatic ||
+            deconstruct.MethodKind != MethodKind.Ordinary ||
+            deconstruct.ReducedFrom is not null ||
+            deconstruct.Parameters.Length != recursive.DeconstructionSubpatterns.Length ||
+            !TryGetGeneratedPayloadPropertiesFromType(
+                payloadType,
+                unionType,
+                variantNames,
+                out properties,
+                deconstruct))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    static bool TryGetGeneratedPayloadPropertiesFromType(
+        INamedTypeSymbol payloadType,
+        INamedTypeSymbol unionType,
+        ImmutableArray<string> variantNames,
+        out ImmutableArray<IPropertySymbol> properties,
+        IMethodSymbol? expectedDeconstruct = null)
+    {
+        properties = ImmutableArray<IPropertySymbol>.Empty;
+        if (!IsGeneratedPayloadType(payloadType, unionType, variantNames))
+            return false;
+
+        var deconstruct = payloadType.GetMembers("Deconstruct")
+            .OfType<IMethodSymbol>()
+            .SingleOrDefault();
+        if (deconstruct is null ||
+            (expectedDeconstruct is not null &&
+             !SymbolEqualityComparer.Default.Equals(deconstruct, expectedDeconstruct)))
+            return false;
+
+        var builder = ImmutableArray.CreateBuilder<IPropertySymbol>(deconstruct.Parameters.Length);
+        foreach (var parameter in deconstruct.Parameters)
+        {
+            if (parameter.RefKind != RefKind.Out)
+                return false;
+
+            var property = payloadType.GetMembers(parameter.Name)
+                .OfType<IPropertySymbol>()
+                .SingleOrDefault(candidate =>
+                    !candidate.IsStatic &&
+                    candidate.GetMethod is not null &&
+                    SymbolEqualityComparer.Default.Equals(candidate.Type, parameter.Type));
+            if (property is null)
+                return false;
+
+            builder.Add(property);
+        }
+
+        properties = builder.MoveToImmutable();
+        return true;
+    }
+
+    static bool IsGeneratedPayloadType(
+        INamedTypeSymbol payloadType,
+        INamedTypeSymbol unionType,
+        ImmutableArray<string> variantNames)
+    {
+        if (!payloadType.IsValueType ||
+            payloadType.ContainingType is not INamedTypeSymbol variantsType ||
+            !string.Equals(variantsType.Name, "Variants", StringComparison.Ordinal) ||
+            variantsType.ContainingType is not INamedTypeSymbol typesType)
+        {
+            return false;
+        }
+
+        var expectedTypesName = unionType.Name + "Types" +
+            (unionType.TypeParameters.Length == 0
+                ? string.Empty
+                : unionType.TypeParameters.Length.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        if (!string.Equals(typesType.Name, expectedTypesName, StringComparison.Ordinal) ||
+            !SymbolEqualityComparer.Default.Equals(
+                typesType.ContainingType,
+                unionType.ContainingType) ||
+            !SymbolEqualityComparer.Default.Equals(
+                typesType.ContainingNamespace,
+                unionType.ContainingNamespace))
+        {
+            return false;
+        }
+
+        return variantNames.Any(name =>
+            string.Equals(name, payloadType.Name, StringComparison.Ordinal));
     }
 
     /// Handle binary (or/and) patterns for struct DU Kind extraction.
@@ -1684,12 +2059,66 @@ internal sealed class PatternMatrix
         return Cell.Unknown.Instance;
     }
 
+    static Cell ConvertSinglePayloadPattern(
+        IPatternOperation pattern,
+        IValueDomain domain)
+    {
+        if (pattern is IConstantPatternOperation constant &&
+            constant.Syntax is ConstantPatternSyntax
+            {
+                Expression: ParenthesizedExpressionSyntax,
+            } &&
+            TryUnwrapConstantOperation(constant.Value, out var value))
+        {
+            return ConvertConstantOperation(value, domain);
+        }
+
+        return ConvertPattern(pattern, domain);
+    }
+
+    static bool TryUnwrapConstantOperation(
+        IOperation? operation,
+        out IOperation value)
+    {
+        if (operation is null)
+        {
+            value = null!;
+            return false;
+        }
+
+        if (operation.ConstantValue.HasValue)
+        {
+            value = operation;
+            return true;
+        }
+
+        foreach (var child in operation.ChildOperations)
+        {
+            if (TryUnwrapConstantOperation(child, out value))
+                return true;
+        }
+
+        value = null!;
+        return false;
+    }
+
+    static Cell ConvertConstantOperation(IOperation value, IValueDomain domain)
+    {
+        return ConvertConstantValue(value, domain);
+    }
+
     static Cell ConvertConstantPattern(IConstantPatternOperation constPattern, IValueDomain domain)
     {
         var value = constPattern.Value;
-        if (value == null)
+        if (value is null)
             return Cell.Unknown.Instance;
+        if (!value.ConstantValue.HasValue)
+            return Cell.Wildcard.Instance;
+        return ConvertConstantValue(value, domain);
+    }
 
+    static Cell ConvertConstantValue(IOperation value, IValueDomain domain)
+    {
         var constantValue = value.ConstantValue;
         if (!constantValue.HasValue)
             return Cell.Wildcard.Instance;

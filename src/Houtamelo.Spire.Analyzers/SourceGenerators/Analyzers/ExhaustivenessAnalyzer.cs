@@ -16,7 +16,8 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
         ImmutableArray.Create(
-            AnalyzerDescriptors.SPIRE009_SwitchNotExhaustive);
+            AnalyzerDescriptors.SPIRE009_SwitchNotExhaustive,
+            AnalyzerDescriptors.SPIRE009_InterfaceSwitchNotExhaustive);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -110,16 +111,49 @@ public sealed class ExhaustivenessAnalyzer : DiagnosticAnalyzer
         // Sort by declaration order when we have DU variant info
         if (unionInfo is not null)
             SortByVariantOrder(missingNames, unionInfo.VariantNames);
+        else
+            missingNames.Sort(System.StringComparer.Ordinal);
 
         var missingStr = string.Join(", ", missingNames.Select(n => $"'{n}'"));
 
         var properties = ImmutableDictionary.CreateBuilder<string, string?>();
         properties.Add("MissingVariants", string.Join(",", missingNames));
 
+        var missingPatterns = MissingPatternRenderer.Render(
+            subjectType,
+            unionInfo,
+            result,
+            out var canUseVariantTemplates);
+
+        // Whole-root DU variants retain the existing template-based fix so
+        // generated captures and predicate naming stay unchanged. All other
+        // determinate witnesses are carried as complete C# patterns.
+        if (canUseVariantTemplates)
+        {
+            properties.Add("UseVariantTemplates", "true");
+        }
+        else if (!missingPatterns.IsDefaultOrEmpty)
+        {
+            properties.Add("UseVariantTemplates", "false");
+            properties.Add(
+                "MissingPatternCount",
+                missingPatterns.Length.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            for (var index = 0; index < missingPatterns.Length; index++)
+                properties.Add($"MissingPattern{index}", missingPatterns[index]);
+        }
+
         ctx.ReportDiagnostic(Diagnostic.Create(
-            AnalyzerDescriptors.SPIRE009_SwitchNotExhaustive,
+            GetDescriptor(subjectType),
             location, properties.ToImmutable(),
             subjectType.Name, missingStr));
+    }
+
+    private static DiagnosticDescriptor GetDescriptor(ITypeSymbol subjectType)
+    {
+        var actualType = UnwrapNullable(subjectType);
+        return actualType is INamedTypeSymbol { TypeKind: TypeKind.Interface }
+            ? AnalyzerDescriptors.SPIRE009_InterfaceSwitchNotExhaustive
+            : AnalyzerDescriptors.SPIRE009_SwitchNotExhaustive;
     }
 
     /// Walks the missing-case constraints and extracts human-readable variant names

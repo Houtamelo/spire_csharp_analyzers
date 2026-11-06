@@ -6,12 +6,21 @@ internal static class AnalyzerDescriptors
 {
     public static readonly DiagnosticDescriptor SPIRE009_SwitchNotExhaustive = new(
         id: "SPIRE009",
-        title: "Switch does not handle all variants of discriminated union",
-        messageFormat: "Switch on '{0}' does not handle variant(s): {1}",
+        title: "Switch does not handle all possible cases of type marked with `[EnforceExhaustiveness]`",
+        messageFormat: "Switch on '{0}' does not handle case(s): {1}",
         category: "Correctness",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        description: "Switch expressions and statements on discriminated union types must handle all variants explicitly.");
+        description: "Switch expressions and statements on discriminated unions and types marked with [EnforceExhaustiveness] must handle all possible cases explicitly.");
+
+    public static readonly DiagnosticDescriptor SPIRE009_InterfaceSwitchNotExhaustive = new(
+        id: "SPIRE009",
+        title: "Switch does not handle all possible cases of interface marked with `[EnforceExhaustiveness]`",
+        messageFormat: "Switch on '{0}' does not handle case(s): {1}",
+        category: "Correctness",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "Switch expressions and statements on discriminated unions and types marked with [EnforceExhaustiveness] must handle all possible cases explicitly.");
 
     public static readonly DiagnosticDescriptor SPIRE011_FieldTypeMismatch = new(
         id: "SPIRE011",

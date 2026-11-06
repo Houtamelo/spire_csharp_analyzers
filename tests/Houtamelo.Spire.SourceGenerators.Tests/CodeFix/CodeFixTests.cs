@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Houtamelo.Spire.Analyzers.Rules;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Analyzers;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -14,7 +15,8 @@ public class CodeFixTests : CodeFixTestBase
         => ImmutableArray.Create<DiagnosticAnalyzer>(
             new ExhaustivenessAnalyzer(),
             new CS8509Suppressor(),
-            new TypeSafetyAnalyzer());
+            new TypeSafetyAnalyzer(),
+            new SPIRE015ExhaustiveEnumSwitchAnalyzer());
 
     protected override ImmutableArray<CodeFixProvider> GetCodeFixes()
         => ImmutableArray.Create<CodeFixProvider>(

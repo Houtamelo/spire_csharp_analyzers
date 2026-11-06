@@ -16,7 +16,7 @@ SPIRE005 | Correctness | Error | Activator.CreateInstance on [EnforceInitializat
 SPIRE006 | Correctness | Error | Clearing array or span of [EnforceInitialization] type produces uninitialized elements
 SPIRE007 | Correctness | Error | Unsafe.SkipInit on [EnforceInitialization] struct leaves it uninitialized
 SPIRE008 | Correctness | Error | RuntimeHelpers.GetUninitializedObject on [EnforceInitialization] struct bypasses all constructors
-SPIRE009 | Correctness | Error | Switch does not handle all variants of discriminated union
+SPIRE009 | Correctness | Error | Switch does not handle all possible cases of type marked with `[EnforceExhaustiveness]`
 SPIRE011 | Correctness | Error | Discriminated union pattern field type mismatch
 SPIRE012 | Correctness | Error | Discriminated union pattern field count mismatch
 SPIRE013 | Correctness | Error | Attempting to access mismatched variant data
@@ -24,7 +24,7 @@ SPIRE014 | Correctness | Warning | Attempting to access variant data without che
 SPIRE015 | Correctness | Error | Switch does not handle all members of [EnforceExhaustiveness] enum
 SPIRE016 | Correctness | Error | Operation may produce invalid value of [EnforceInitialization] enum
 SPIRE_DU002 | SourceGeneration | Error | ref struct not supported for [DiscriminatedUnion]
-SPIRE_DU003 | SourceGeneration | Warning | No [Variant] methods found
+SPIRE_DU003 | SourceGeneration | Warning | No [Variant] functions found
 SPIRE_DU006 | SourceGeneration | Error | System.Text.Json not referenced
 SPIRE_DU007 | SourceGeneration | Error | Newtonsoft.Json not referenced
 SPIRE_DU008 | SourceGeneration | Error | ref struct cannot use JSON generation

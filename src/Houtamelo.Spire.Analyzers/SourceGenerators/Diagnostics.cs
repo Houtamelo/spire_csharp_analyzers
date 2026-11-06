@@ -16,8 +16,8 @@ internal static class Diagnostics
 
     private static readonly DiagnosticDescriptor NoVariantsFound = new(
         id: "SPIRE_DU003",
-        title: "No [Variant] methods found",
-        messageFormat: "No [Variant] methods found on discriminated union type",
+        title: "No [Variant] functions found",
+        messageFormat: "No [Variant] functions found on discriminated union type",
         category: "SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);

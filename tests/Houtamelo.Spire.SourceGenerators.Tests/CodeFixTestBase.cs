@@ -17,7 +17,7 @@ using Xunit.Sdk;
 namespace Houtamelo.Spire.SourceGenerators.Tests;
 
 /// Base class for code fix tests. Each test case is a folder with before.cs / after.cs.
-/// Pipeline: strip comments → run generator → create workspace → run analyzers →
+/// Pipeline: run generator → create workspace → run analyzers →
 /// apply code fix → compare result with after.cs via IsEquivalentTo.
 public abstract class CodeFixTestBase
 {
@@ -38,10 +38,8 @@ public abstract class CodeFixTestBase
         var beforeSource = File.ReadAllText(Path.Combine(caseDir, "before.cs"));
         var afterSource = File.ReadAllText(Path.Combine(caseDir, "after.cs"));
 
-        var stripped = StripComments(beforeSource);
-
-        // Run generator on the stripped user source
-        GeneratorTestHelper.RunGenerator(stripped, out var outputCompilation, out _, path: "case.cs");
+        // Preserve source trivia so code fixes can be validated against real comments.
+        GeneratorTestHelper.RunGenerator(beforeSource, out var outputCompilation, out _, path: "case.cs");
 
         // Build a workspace from the output compilation so diagnostics reference workspace documents
         using var workspace = new AdhocWorkspace();
@@ -135,37 +133,6 @@ public abstract class CodeFixTestBase
         }
     }
 
-    private static string StripComments(string source)
-    {
-        var tree = CSharpSyntaxTree.ParseText(source);
-        var root = tree.GetRoot();
-        var chars = source.ToCharArray();
-
-        foreach (var trivia in root.DescendantTrivia())
-        {
-            if (trivia.IsKind(SyntaxKind.SingleLineCommentTrivia) ||
-                trivia.IsKind(SyntaxKind.MultiLineCommentTrivia))
-            {
-                BlankSpan(chars, trivia.Span);
-            }
-            else if (trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) ||
-                     trivia.IsKind(SyntaxKind.MultiLineDocumentationCommentTrivia))
-            {
-                BlankSpan(chars, trivia.FullSpan);
-            }
-        }
-
-        return new string(chars);
-    }
-
-    private static void BlankSpan(char[] chars, Microsoft.CodeAnalysis.Text.TextSpan span)
-    {
-        for (int i = span.Start; i < span.End && i < chars.Length; i++)
-        {
-            if (chars[i] != '\n' && chars[i] != '\r')
-                chars[i] = ' ';
-        }
-    }
 }
 
 /// Discovers code fix test case folders by scanning for directories containing before.cs.

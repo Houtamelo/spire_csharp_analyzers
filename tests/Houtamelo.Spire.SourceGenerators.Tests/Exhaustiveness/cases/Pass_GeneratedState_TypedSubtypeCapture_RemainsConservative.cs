@@ -1,0 +1,47 @@
+//@ should_pass
+// Ensure that SPIRE009 is NOT triggered when an open hierarchy subtype capture remains indeterminate.
+#nullable enable
+using Houtamelo.Spire;
+
+public readonly struct Point
+{
+}
+
+public abstract class Effect
+{
+    public abstract int Apply(int value);
+}
+
+public sealed class DamageEffect : Effect
+{
+    public override int Apply(int value) => value - 1;
+}
+
+public sealed class HealingEffect : Effect
+{
+    public override int Apply(int value) => value + 1;
+}
+
+[DiscriminatedUnion]
+partial struct State
+{
+    [Variant] public static partial State Idle();
+    [Variant] public static partial State Moving(Point destination, Effect? marker);
+    [Variant] public static partial State Speaking(string text, float timer);
+}
+
+static class Consumer
+{
+    static void Update(State state)
+    {
+        switch (state)
+        {
+            case { IsIdle: true }:
+                break;
+            case { IsMoving: true, moving: (Point destination, DamageEffect marker) }:
+                break;
+            case { IsSpeaking: true, speaking: var (text, timer) }:
+                break;
+        }
+    }
+}

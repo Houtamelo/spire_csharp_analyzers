@@ -94,7 +94,7 @@ internal static class UnionParser
         {
             var hint = declKind == "record"
                 ? "No nested variant types found inheriting from the union type."
-                : "No [Variant] methods found on discriminated union type.";
+                : "No [Variant] functions found on discriminated union type.";
             var noVariantDiagnostic = isUnitySerializable
                 ? UnitySerializationValidation.Validate(
                     typeSymbol,

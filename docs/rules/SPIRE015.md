@@ -24,6 +24,13 @@ Guarded catch-alls (e.g. `_ when cond => ...`) do NOT opt out — the guard may 
 
 For `[Flags]` enums, handling a composite value covers its constituent bit members. Alias members (same underlying value) share coverage.
 
+## Code fix
+
+**Add missing enum members** appends explicit cases or expression arms for the
+reported members, with `throw new System.NotImplementedException()` bodies.
+Nullable switches also receive a `null` case when needed. Existing arms stay
+in place; aliases and flags follow the analyzer's coverage rules.
+
 ## Examples
 
 ### Violating code

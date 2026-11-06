@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using Houtamelo.Spire.Analyzers.Utils;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -85,6 +86,7 @@ public sealed class SPIRE015ExhaustiveEnumSwitchAnalyzer : DiagnosticAnalyzer
             ExpandFlagsCoverage(allMembers, coveredValues);
 
         var missingGroups = new List<string>();
+        var missingPatterns = new List<(IFieldSymbol? Member, bool IsNull)>();
         var reportedValues = new HashSet<object>(ObjectEqualityComparer.Instance);
 
         foreach (var member in allMembers)
@@ -96,28 +98,59 @@ public sealed class SPIRE015ExhaustiveEnumSwitchAnalyzer : DiagnosticAnalyzer
             reportedValues.Add(val);
 
             if (!coveredValues.Contains(val))
+            {
                 missingGroups.Add(member.Name);
+                missingPatterns.Add((member, false));
+            }
         }
 
         if (isNullable && !coversNull)
+        {
             missingGroups.Add("null");
+            missingPatterns.Add((null, true));
+        }
 
         if (missingGroups.Count == 0)
             return;
 
         var missingStr = string.Join(", ", missingGroups);
 
-        var properties = ImmutableDictionary<string, string?>.Empty
-            .Add("MissingMembers", missingStr);
+        var properties = ImmutableDictionary.CreateBuilder<string, string?>();
+        properties.Add("MissingMembers", missingStr);
+        properties.Add("UseVariantTemplates", "false");
+
+        // Keep the exact syntax identity of each missing value separate from
+        // the display list.  A nullable enum can report both an enum member
+        // named `@null` and the literal null value; the old comma-separated
+        // property cannot distinguish those cases.
+        properties.Add("MissingPatternCount", missingGroups.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        for (var index = 0; index < missingGroups.Count; index++)
+        {
+            var missingPattern = missingPatterns[index];
+            properties.Add(
+                $"MissingPattern{index}",
+                missingPattern.IsNull
+                    ? "null"
+                    : GetEnumMemberPattern(enumType, missingPattern.Member!.Name));
+        }
 
         context.ReportDiagnostic(
             Diagnostic.Create(
                 Descriptors.SPIRE015_ExhaustiveEnumSwitch,
                 switchKeywordLocation,
-                properties,
+                properties.ToImmutable(),
                 enumType.Name,
                 missingStr));
     }
+
+    private static string GetEnumMemberPattern(INamedTypeSymbol enumType, string memberName)
+    {
+        var typeName = enumType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        return $"{typeName}.{EscapeIdentifier(memberName)}";
+    }
+
+    private static string EscapeIdentifier(string name) =>
+        SyntaxFacts.GetKeywordKind(name) != SyntaxKind.None ? "@" + name : name;
 
     /// Unwraps Nullable<T> and returns the named type plus whether it was nullable.
     private static (INamedTypeSymbol? enumType, bool isNullable) GetEnumTypeAndNullability(ITypeSymbol? type)
@@ -344,44 +377,44 @@ public sealed class SPIRE015ExhaustiveEnumSwitchAnalyzer : DiagnosticAnalyzer
                 break;
 
             case IBinaryPatternOperation { OperatorKind: BinaryOperatorKind.And } andPattern:
-            {
-                // Intersect: only values covered by BOTH sides
-                var leftSet = new HashSet<object>(ObjectEqualityComparer.Instance);
-                var rightSet = new HashSet<object>(ObjectEqualityComparer.Instance);
-                ExtractCoverageFromPattern(andPattern.LeftPattern, leftSet, allMembers);
-                ExtractCoverageFromPattern(andPattern.RightPattern, rightSet, allMembers);
-                foreach (var val in leftSet)
                 {
-                    if (rightSet.Contains(val))
-                        coveredValues.Add(val);
-                }
+                    // Intersect: only values covered by BOTH sides
+                    var leftSet = new HashSet<object>(ObjectEqualityComparer.Instance);
+                    var rightSet = new HashSet<object>(ObjectEqualityComparer.Instance);
+                    ExtractCoverageFromPattern(andPattern.LeftPattern, leftSet, allMembers);
+                    ExtractCoverageFromPattern(andPattern.RightPattern, rightSet, allMembers);
+                    foreach (var val in leftSet)
+                    {
+                        if (rightSet.Contains(val))
+                            coveredValues.Add(val);
+                    }
 
-                break;
-            }
+                    break;
+                }
 
             case INegatedPatternOperation negated:
-            {
-                // Covers all member values EXCEPT those matched by the inner pattern
-                var innerSet = new HashSet<object>(ObjectEqualityComparer.Instance);
-                ExtractCoverageFromPattern(negated.Pattern, innerSet, allMembers);
-
-                var seenValues = new HashSet<object>(ObjectEqualityComparer.Instance);
-                foreach (var member in allMembers)
                 {
-                    var val = member.ConstantValue!;
-                    if (seenValues.Contains(val))
-                        continue;
-                    seenValues.Add(val);
+                    // Covers all member values EXCEPT those matched by the inner pattern
+                    var innerSet = new HashSet<object>(ObjectEqualityComparer.Instance);
+                    ExtractCoverageFromPattern(negated.Pattern, innerSet, allMembers);
 
-                    if (!innerSet.Contains(val))
-                        coveredValues.Add(val);
+                    var seenValues = new HashSet<object>(ObjectEqualityComparer.Instance);
+                    foreach (var member in allMembers)
+                    {
+                        var val = member.ConstantValue!;
+                        if (seenValues.Contains(val))
+                            continue;
+                        seenValues.Add(val);
+
+                        if (!innerSet.Contains(val))
+                            coveredValues.Add(val);
+                    }
+
+                    break;
                 }
 
-                break;
-            }
-
-            // IDiscardPatternOperation, IDeclarationPatternOperation,
-            // IRelationalPatternOperation, null-check patterns — no member coverage
+                // IDiscardPatternOperation, IDeclarationPatternOperation,
+                // IRelationalPatternOperation, null-check patterns — no member coverage
         }
     }
 

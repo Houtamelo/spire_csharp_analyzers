@@ -1,6 +1,6 @@
 # [EnforceExhaustiveness]
 
-`[EnforceExhaustiveness]` (namespace `Houtamelo.Spire`) requires every switch expression or statement on the annotated type to explicitly handle all known cases. SPIRE015 fires as an error when any case is unhandled.
+`[EnforceExhaustiveness]` (namespace `Houtamelo.Spire`) requires every switch expression or statement on the annotated type to explicitly handle all known cases. Missing enum members produce SPIRE015; missing union variants or class/interface cases produce SPIRE009.
 
 ## Quick Start
 
@@ -60,11 +60,30 @@ string LabelLoose(Direction d) => d switch
 
 Alias members (two members with the same underlying value) share coverage — handling one handles both.
 
-`[Flags]` enums are not supported. The bitwise combination space makes exhaustive checking impractical, so SPIRE015 does not fire on `[Flags]` enum types even when `[EnforceExhaustiveness]` is present.
+For `[Flags]` enums, SPIRE015 checks named values. Handling a composite also
+covers its constituent bit members.
+
+The **Add missing enum members** code fix adds explicit cases or expression
+arms with `throw new System.NotImplementedException()` bodies, including a
+missing `null` case for nullable enums. SPIRE009's **Add missing variant arms**
+fix also handles exact missing subtype and payload/property patterns. Both
+fixes preserve existing arms and support Fix All.
+
+## On Discriminated Union Payloads
+
+Payload restrictions affect coverage. For a variant declared with
+`Effect? effect`, covering only `{ IsApplyEffect: true, applyEffect: { effect: null } }`
+leaves non-null effects uncovered, and SPIRE009 reports `ApplyEffect`.
+Cover the complementary `effect: not null` case too, or use an unrestricted
+capture such as `effect: var effect` to handle both states.
+
+This works for ordinary reference types without `[EnforceExhaustiveness]`;
+their subclasses do not need separate cases. A non-nullable `Effect effect`
+under enabled nullable annotations does not require a null arm.
 
 ## On Class/Interface Hierarchies
 
-When applied to an abstract class or interface, SPIRE015 requires every sealed direct subtype discovered in the compilation to be handled.
+When applied to an abstract class or interface, SPIRE009 requires every known concrete subtype discovered in the compilation to be handled.
 
 ```csharp
 using Houtamelo.Spire;
@@ -75,7 +94,7 @@ public sealed class Dog  : Animal { }
 public sealed class Cat  : Animal { }
 public sealed class Bird : Animal { }
 
-// SPIRE015: switch does not handle type(s): Bird
+// SPIRE009: Switch on 'Animal' does not handle case(s): 'Bird'
 string Describe(Animal a) => a switch
 {
     Dog => "dog",
@@ -106,9 +125,10 @@ string Area(IShape s) => s switch
 };
 ```
 
-Only `sealed` subtypes are considered. Non-sealed subtypes (abstract classes, open classes) are ignored because their set of further subtypes is unbounded.
+Concrete derived classes and implementors are considered; abstract classes
+and interfaces are not individual cases.
 
-Subtypes discovered across the entire compilation are included, not just those in the same file or assembly. Adding a new sealed subtype in any project that references the annotated type will cause SPIRE015 to fire on all switches that don't handle it.
+Subtypes discovered across the entire compilation are included, not just those in the same file or assembly. Adding a new sealed subtype in any project that references the annotated type will cause SPIRE009 to fire on all switches that don't handle it.
 
 ## Interaction with [EnforceInitialization]
 
@@ -140,7 +160,7 @@ By default, SPIRE015 only fires on types annotated with `[EnforceExhaustiveness]
 
 When enabled, every switch on any enum type in the project is checked for exhaustiveness — the same as if `[EnforceExhaustiveness]` were applied to every enum. This also activates SPIRE001-008 (initialization enforcement) and SPIRE016 (invalid enum cast) for all enums.
 
-`[Flags]` enums are still excluded.
+The same named-value coverage rules apply to `[Flags]` enums.
 
 ## CS8509 / CS8524 Suppression
 
