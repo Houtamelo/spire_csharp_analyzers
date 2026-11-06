@@ -17,6 +17,8 @@ Assemble the trailer after recording the walkthroughs.
 | 4 | [Meaningful failure feedback](04-cooking-outcomes.md) | Chop Chop: turn cooking outcomes into useful player feedback. |
 | 5 | [Protecting existing code](05-existing-code-safety.md) | Boss Room: enum exhaustiveness, checked conversions, and initialization. |
 | 6 | [Evolving saved content](06-evolving-saved-content.md) | Rename and reorder variants without losing authored quest data. |
+| 7 | [Burst material variants](07-burst-materials.md) | CPU path tracer: typed surface parameters in a native rendering job. |
+| 8 | [DOTS bot states](08-dots-firefighters.md) | Firefighters: typed state destinations in an ECS simulation. |
 | A1 | [Layouts and allocations](a1-layouts-and-allocations.md) | Profile a real workload before choosing storage and matching syntax. |
 | A2 | [Closure inliners](a2-closure-inliners.md) | Evaluate callbacks in Chop Chop's ingredient checks. |
 | A3 | [JSON save data](a3-json-save-data.md) | Persist gameplay data through generated JSON converters. |
@@ -25,14 +27,21 @@ Assemble the trailer after recording the walkthroughs.
 
 ## Example projects
 
-The original demo source was inspected on October 13, 2026. Example selection is
-provisional: neither project has been upgraded, integrated with Spire, or validated
-for filming. Existing game behavior is the baseline for each proposed refactor.
+The initial source review was October 13, 2026. October 27 work adds Spire sibling
+projects and Burst/DOTS examples; the [integration report](../reviews/2026-10-27-spire-demo-integration.md)
+records the completed checks and remaining filming preparation. Existing game
+behavior remains the baseline for the refactors.
 
 | Project | Local Unity project path | Inspected upstream revision | Original Editor |
 |---|---|---|---|
-| [Chop Chop](https://github.com/UnityTechnologies/open-project-1) | `examples/ChopChop/UOP1_Project` | `608eac98df29cd97821a6115cd52dfb9027345b1` | 2020.3.17f1 |
-| [Boss Room](https://github.com/Unity-Technologies/com.unity.multiplayer.samples.coop) | `examples/BossRoom` | `1299ba4fc97d83b634e7d32a86c438ba668d7f9c` | 6000.0.52f1 |
+| [Chop Chop](https://github.com/UnityTechnologies/open-project-1) | `examples/ChopChopSpire` | `608eac98df29cd97821a6115cd52dfb9027345b1` | 2020.3.17f1 |
+| [Boss Room](https://github.com/Unity-Technologies/com.unity.multiplayer.samples.coop) | `examples/BossRoomSpire` | `1299ba4fc97d83b634e7d32a86c438ba668d7f9c` | 6000.0.52f1 |
+| [DOTS Samples](https://github.com/Unity-Technologies/EntityComponentSystemSamples) | `examples/FirefightersSpire` | `6786a741ee1f118ed14cecfa02beae8e926937b0` | 6000.2.10f1 |
+| [ToyPathTracer](https://github.com/aras-p/ToyPathTracer) | `examples/BurstPathTracerSpire` | `ff20bfe777f38632277b84831a1ac62a3eca5c32` | 2021.3.16f1 |
+
+Only the Spire adaptations are kept locally. Their `upstream` and `without-spire`
+refs preserve comparison baselines; the separate original checkouts were removed.
+The paths above use Unity 6000.5.6f1; the final column records the upstream Editor.
 
 [UnityShowcase](../../examples/UnityShowcase/README.md) remains the existing Spire
 example and a reference for generated APIs. It is not a substitute for validating

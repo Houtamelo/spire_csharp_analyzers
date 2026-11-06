@@ -1,33 +1,60 @@
-# Spire examples and upstream demo baselines
+# Spire examples
 
-[UnityShowcase](UnityShowcase/README.md) is the existing Spire-integrated example.
-Chop Chop and Boss Room are upstream demo checkouts for the
-[release video plans](../docs/video-playlist/README.md). They are kept as pinned
-Git submodules so their source, assets, metadata, and upstream notices remain
-together without copying their history into Spire's main repository.
+Only the four Spire adaptations are tracked as submodules. The parent repository
+records their commits and URLs; project files and edits belong to those repositories.
+The duplicate original checkouts have been removed.
 
-| Demo checkout | Open this directory in Unity | Baseline Editor |
-|---|---|---|
-| `ChopChop` | `ChopChop/UOP1_Project` | 2020.3.17f1 |
-| `BossRoom` | `BossRoom` | 6000.0.52f1 |
+No pushes are authorized. The GitHub forks exist, but the local Spire comparison
+branches have not been published there yet.
 
-The baseline checkouts have not been upgraded or integrated with Spire. Open them
-with their original Editor or establish an upgrade separately before recording.
-The playlist index records the inspected revisions and upstream links.
+| Submodule | GitHub fork |
+|---|---|
+| `BossRoomSpire` | [Boss Room](https://github.com/Houtamelo/spire-example-boss-room) |
+| `ChopChopSpire` | [Chop Chop](https://github.com/Houtamelo/spire-example-chop-chop) |
+| `BurstPathTracerSpire` | [Path tracer](https://github.com/Houtamelo/spire-example-path-tracer) |
+| `FirefightersSpire` | [DOTS](https://github.com/Houtamelo/spire-example-dots) |
 
-To obtain the registered revisions after cloning Spire:
+Each adaptation opens as a Unity project at its repository root and targets Unity
+6000.5.6f1. Its existing standalone history is preserved. Compare `without-spire`
+with `with-spire` to inspect integration changes without Editor upgrade noise;
+`upstream` identifies the original project snapshot. Chop Chop also has
+`spire-item-so`, the serialized item-model example. No separate original checkout
+is needed to inspect these baselines.
+
+After the recorded commits are published, initialize them with
+`git submodule update --init --recursive`. Submodule checkout uses the recorded
+commit, normally with a detached HEAD. To edit a project, select or create a
+branch inside its repository and commit there. Publish that commit before
+updating the parent pointer with `git add examples/NAME`.
+
+## Local-only projects
+
+`UnityShowcase`, `2DPlatformer`, and `Playground` are ignored by the parent
+repository and are not submodules. They are excluded from publication. The first
+two retain local Git history with no GitHub remote; Playground remains untouched.
+A fresh clone of Spire will not contain these local projects.
+
+Package preparation currently requires the local `UnityShowcase` project: its
+`sample-files.txt` and authored assets supply the optional UPM showcase sample.
+Keep it available when running package or example preparation. This requirement
+also applies to packaging in a fresh checkout; the sample has no public checkout
+source while the project remains local-only.
+
+## Preparation
+
+Build the local package and validate the four adaptation projects:
 
 ```sh
-git submodule update --init --recursive --depth 1
-git -C examples/ChopChop lfs pull
-git -C examples/BossRoom lfs pull
+dotnet run -c Release --project tools/Spire.Tool -- examples
+dotnet run -c Release --project tools/Spire.Tool -- examples --example FirefightersSpire
 ```
 
-Run those commands from the Spire repository root with Git LFS installed. Fetch
-LFS content before opening either project so imported assets are real files,
-not pointer placeholders. Avoid updating to upstream heads implicitly; the
-recording plans refer to the pinned source revisions.
+`SpireExamples.json` records the upstream source revisions and the `without-spire`
+comparison refs. Preparation accepts local or `origin` comparison branches and
+validates Unity files and Git refs without changing checkouts or local edits.
+`Directory.Build.props` keeps Spire's parent build policy out of Unity-generated
+IDE projects.
 
-Future demo refactors must retain a reproducible original baseline. Changes
-inside a submodule belong to that checkout and are not captured by a commit of
-the outer repository alone.
+See the [integration report](../docs/reviews/2026-10-27-spire-demo-integration.md)
+and [video plans](../docs/video-playlist/README.md) for the recorded checks and
+feature walkthroughs. Repository cleanup does not add new Unity runtime validation.

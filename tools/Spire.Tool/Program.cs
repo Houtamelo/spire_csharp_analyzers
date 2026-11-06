@@ -6,10 +6,11 @@ try
     var options = Options.Parse(args);
     if (options.Help)
     {
-        Console.WriteLine("Spire.Tool: package | unity-customer | unity-integration | unity-union-core | unity-behavioral | unity-harness | unity-asmdefs | jetbrains | hook");
+        Console.WriteLine("Spire.Tool: package | examples | unity-customer | unity-integration | unity-union-core | unity-behavioral | unity-harness | unity-asmdefs | jetbrains | hook");
         Console.WriteLine("Usage: dotnet run --project tools/Spire.Tool -- <command> [options]");
         Console.WriteLine("Common options: --root PATH --configuration Debug|Release --no-build --help");
         Console.WriteLine("package: --output PATH");
+        Console.WriteLine("examples: [--example NAME] (validate demo Git checkouts and build the local package)");
         Console.WriteLine("unity-customer: --package PATH [--baseline PATH] [--prepare-only] (real Package Manager/sample acceptance)");
         Console.WriteLine("Unity tests: --editor PATH --project PATH --timeout SECONDS");
         Console.WriteLine("unity-integration: --graphics --method NAME");
@@ -42,6 +43,12 @@ try
         case "package":
             var output = await PackageWorkflow.BuildAsync(context, options.Value("output", context.PathOf("tmp/unity-package/com.houtamelo.spire")), configuration, build);
             Console.WriteLine("Unity package: " + output);
+            return 0;
+        case "examples":
+            var exampleProjects = ExamplesWorkflow.Prepare(context, options.Flag("example") ? options.Value("example", "") : null);
+            await PackageWorkflow.BuildAsync(context, context.PathOf("tmp/unity-package/com.houtamelo.spire"), configuration, build);
+            foreach (var example in exampleProjects)
+                Console.WriteLine("Unity example: " + example);
             return 0;
         case "unity-integration":
             return await IntegrationWorkflow.RunAsync(context, Project("unity-integration"), editor, configuration, build, options.Flag("graphics"),
@@ -104,7 +111,7 @@ internal sealed class Options
     {
         var options = new Options();
         var flags = new HashSet<string>(new[] { "help", "no-build", "prepare-only", "graphics", "probe" }, StringComparer.Ordinal);
-        var values = new HashSet<string>(new[] { "root", "configuration", "editor", "project", "output", "timeout", "rider", "visual-studio", "cli", "stage", "method", "backend", "package", "baseline" }, StringComparer.Ordinal);
+        var values = new HashSet<string>(new[] { "root", "configuration", "editor", "project", "output", "timeout", "rider", "visual-studio", "cli", "stage", "method", "backend", "package", "baseline", "example" }, StringComparer.Ordinal);
         for (var index = 0; index < args.Length; index++)
         {
             var argument = args[index];

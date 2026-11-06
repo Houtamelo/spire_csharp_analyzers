@@ -1,0 +1,4 @@
+<Project>
+  <!-- Unity owns these projects' compiler settings. Stop the parent Spire
+       build policy from overriding the generated Unity project settings. -->
+</Project>

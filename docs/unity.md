@@ -39,7 +39,7 @@ The shipping minimum and showcase requirements have not been lowered. See the
 [LTS evaluation](issues/unity-6.3-roslyn-host-compatibility.md) and
 [commercial review](reviews/2026-10-11-commercial-readiness.md).
 
-All build and acceptance workflows use the C# CLI in `tools/Spire.Tool`. It
+Build and Unity acceptance workflows use the C# CLI in `tools/Spire.Tool`. It
 requires the .NET 10 SDK for preparation; using the built package requires only
 Unity. Run `dotnet run -c Release --project tools/Spire.Tool -- --help` for commands
 and options. `Spire.Tool.Core` targets .NET Standard 2.1 so the same preparation
@@ -176,8 +176,8 @@ for prerequisites, reports, and repeat runs.
 
 [UnityShowcase](../examples/UnityShowcase/README.md) is a complete tracked Unity
 project with a saved scene and preset asset. Build the local package, then open
-`examples/UnityShowcase` in Unity Hub. It demonstrates union authoring, all five
-layouts, generic results, managed-reference fields, rename aliases, enum checks,
+`examples/UnityShowcase` in Unity Hub. It demonstrates union authoring,
+generic results, managed-reference fields, rename aliases, enum checks,
 LINQ filtering, and generated inliners. Its EditMode tests include native asset
 persistence and a Play Mode smoke test of the scene.
 
@@ -189,6 +189,26 @@ uses `tests/UnityPackageSample`; edits to this interactive showcase do not chang
 test inputs or exported sample assets.
 
 ## Serialize a union
+
+Known Burst/ECS limitation: generated Unity serialization adds a managed-reference
+cache to the union. Such a type cannot serve as unmanaged job, native-container,
+or ECS component data, even when its variant parameters are unmanaged. Users who
+need both must manually declare two unions: a `[Serializable]` authoring type and
+a runtime type without that attribute, containing only Burst-compatible fields.
+Convert between them explicitly, for example in an ECS baker. Removing
+`[SerializeField]` from a consuming field does not change the union's generated
+storage. Spire does not generate the second type or the conversion.
+
+For native Burst execution, use only supported unmanaged fields and prefer
+exhaustive switch statements. Switch expressions can synthesize a boxed
+unmatched-value exception path, which Burst rejects even when Spire proves the
+variants exhaustive. Unity-hosted accessors use Unity's assertion API; their
+nonserialized form uses a constant message compatible with Burst.
+
+The [path tracer](../examples/BurstPathTracerSpire/README.md) and
+[Firefighters](../examples/FirefightersSpire/README.md) siblings exercise real
+Burst rendering jobs and ECS state transitions. Their native validation is
+recorded in the [integration report](reviews/2026-10-27-spire-demo-integration.md).
 
 Add `System.Serializable` to the union. Generated public payload structs,
 including former-name aliases, receive the marker only with this opt-in:

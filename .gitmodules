@@ -1,6 +1,16 @@
-[submodule "boss-room"]
-	path = examples/BossRoom
-	url = https://github.com/Unity-Technologies/com.unity.multiplayer.samples.coop.git
-[submodule "chop-chop"]
-	path = examples/ChopChop
-	url = https://github.com/UnityTechnologies/open-project-1.git
+[submodule "boss-room-spire"]
+	path = examples/BossRoomSpire
+	url = https://github.com/Houtamelo/spire-example-boss-room.git
+	branch = with-spire
+[submodule "chop-chop-spire"]
+	path = examples/ChopChopSpire
+	url = https://github.com/Houtamelo/spire-example-chop-chop.git
+	branch = spire-item-so
+[submodule "burst-path-tracer-spire"]
+	path = examples/BurstPathTracerSpire
+	url = https://github.com/Houtamelo/spire-example-path-tracer.git
+	branch = with-spire
+[submodule "firefighters-spire"]
+	path = examples/FirefightersSpire
+	url = https://github.com/Houtamelo/spire-example-dots.git
+	branch = with-spire

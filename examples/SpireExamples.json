@@ -1,0 +1,28 @@
+{
+  "examples": [
+    {
+      "name": "BossRoomSpire",
+      "source": "https://github.com/Unity-Technologies/com.unity.multiplayer.samples.coop",
+      "baselineRef": "without-spire",
+      "revision": "1299ba4fc97d83b634e7d32a86c438ba668d7f9c"
+    },
+    {
+      "name": "BurstPathTracerSpire",
+      "source": "https://github.com/aras-p/ToyPathTracer",
+      "baselineRef": "without-spire",
+      "revision": "ff20bfe777f38632277b84831a1ac62a3eca5c32"
+    },
+    {
+      "name": "ChopChopSpire",
+      "source": "https://github.com/UnityTechnologies/open-project-1",
+      "baselineRef": "without-spire",
+      "revision": "608eac98df29cd97821a6115cd52dfb9027345b1"
+    },
+    {
+      "name": "FirefightersSpire",
+      "source": "https://github.com/Unity-Technologies/EntityComponentSystemSamples",
+      "baselineRef": "without-spire",
+      "revision": "6786a741ee1f118ed14cecfa02beae8e926937b0"
+    }
+  ]
+}
