@@ -184,6 +184,10 @@ from its regenerated IDE projects; configure its unions on the attribute.
 
 ## Unity and diagnostics
 
+Generated struct variant payloads receive `System.SerializableAttribute` only
+when the union itself has that attribute. This opt-in also applies to former-name
+payload aliases and is preserved when Unity references are unavailable.
+
 Mutable `[Serializable]` struct unions receive generated Unity callbacks and
 drawers when Unity references are present. Each variant has a concrete
 managed-reference wrapper derived from a shared generic base; its inherited

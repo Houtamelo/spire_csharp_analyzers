@@ -84,7 +84,6 @@ public static class StjShapeTypes {
     }
 
     public static class Variants {
-        [@Serializable]
         public struct Circle {
             double _value;
             public readonly double value => _value;
@@ -98,7 +97,6 @@ public static class StjShapeTypes {
             }
         }
 
-        [@Serializable]
         public struct Point {
             public readonly void Deconstruct() {}
         }

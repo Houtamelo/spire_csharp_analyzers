@@ -190,7 +190,8 @@ test inputs or exported sample assets.
 
 ## Serialize a union
 
-Add `System.Serializable` to the union:
+Add `System.Serializable` to the union. Generated public payload structs,
+including former-name aliases, receive the marker only with this opt-in:
 
 ```cs
 using System;

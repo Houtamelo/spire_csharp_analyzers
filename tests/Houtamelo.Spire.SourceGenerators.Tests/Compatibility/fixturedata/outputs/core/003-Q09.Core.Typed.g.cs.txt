@@ -111,7 +111,6 @@ public static class TypedTypes {
     }
 
     public static class Variants {
-        [@Serializable]
         public struct Value {
             int _value;
             public readonly int value => _value;
@@ -130,7 +129,6 @@ public static class TypedTypes {
             }
         }
 
-        [@Serializable]
         public struct Pair {
             (int X, string? Y) _pair;
             public readonly (int X, string? Y) pair => _pair;
@@ -144,7 +142,6 @@ public static class TypedTypes {
             }
         }
 
-        [@Serializable]
         public struct Empty {
             public readonly void Deconstruct() {}
         }

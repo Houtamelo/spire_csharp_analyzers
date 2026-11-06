@@ -189,7 +189,8 @@ internal static class VariantPayloadEmitter
         var constraints = DeclarationFormatting.FormatConstraints(union.TypeParameterConstraints);
         if (union.EmitUnitySerialization)
             sb.AppendLine($"[{GeneratedAliasEmitter.AttributeReference(union, "Preserve", "global::UnityEngine.Scripting.PreserveAttribute")}]");
-        sb.AppendLine($"[{GeneratedAliasEmitter.AttributeReference(union, "Serializable", "global::System.SerializableAttribute")}]");
+        if (union.IsUnitySerializable)
+            sb.AppendLine($"[{GeneratedAliasEmitter.AttributeReference(union, "Serializable", "global::System.SerializableAttribute")}]");
         sb.AppendLine($"public struct {IdentifierUtility.Escape(name)}{typeParams}{constraints}");
         sb.OpenBrace();
         for (var index = 0; index < variant.Fields.Length; index++)

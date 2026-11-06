@@ -137,12 +137,10 @@ public static class CompatTypedTypes {
     }
 
     public static class Variants {
-        [@Serializable]
         public struct Empty {
             public readonly void Deconstruct() {}
         }
 
-        [@Serializable]
         public struct Position {
             float _x;
             public readonly float x => _x;
@@ -161,7 +159,6 @@ public static class CompatTypedTypes {
             }
         }
 
-        [@Serializable]
         public struct Label {
             string _text;
             public readonly string text => _text;
@@ -175,7 +172,6 @@ public static class CompatTypedTypes {
             }
         }
 
-        [@Serializable]
         public struct Batch {
             int _count;
             public readonly int count => _count;

@@ -85,7 +85,6 @@ public static class BothShapeTypes {
     }
 
     public static class Variants {
-        [@Serializable]
         public struct Line {
             int _start;
             public readonly int start => _start;
@@ -104,7 +103,6 @@ public static class BothShapeTypes {
             }
         }
 
-        [@Serializable]
         public struct Empty {
             public readonly void Deconstruct() {}
         }

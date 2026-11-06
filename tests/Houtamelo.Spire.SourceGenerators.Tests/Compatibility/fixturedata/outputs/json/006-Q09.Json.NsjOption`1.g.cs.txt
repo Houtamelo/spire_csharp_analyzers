@@ -68,7 +68,6 @@ public partial struct NsjOption<T> : global::Houtamelo.Spire.IDiscriminatedUnion
 
 public static class NsjOptionTypes1 {
     public static class Variants {
-        [@Serializable]
         public struct Some<T> where T : unmanaged {
             T _value;
             public readonly T value => _value;
@@ -82,7 +81,6 @@ public static class NsjOptionTypes1 {
             }
         }
 
-        [@Serializable]
         public struct None<T> where T : unmanaged {
             public readonly void Deconstruct() {}
         }

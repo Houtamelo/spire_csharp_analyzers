@@ -221,7 +221,7 @@ public sealed class NamespaceAliasTests
         using Houtamelo.Spire;
         namespace Collision
         {
-            public sealed class Serializable { }
+            public sealed class EnforceInitialization { }
             [DiscriminatedUnion]
             public partial struct Shape
             {

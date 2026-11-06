@@ -92,7 +92,6 @@ public static class AutoTypes {
     }
 
     public static class Variants {
-        [@Serializable]
         public struct Array {
             int[] _values;
             public readonly int[] values => _values;
@@ -106,7 +105,6 @@ public static class AutoTypes {
             }
         }
 
-        [@Serializable]
         public struct Text {
             string? _text;
             public readonly string? text => _text;
@@ -120,7 +118,6 @@ public static class AutoTypes {
             }
         }
 
-        [@Serializable]
         public struct Empty {
             public readonly void Deconstruct() {}
         }
