@@ -1,0 +1,1 @@
+I'm Houtamelo, a C# and Rust developer building tools for game developers. I created Spire to help you catch errors before pressing Play, write less boilerplate, and model your game's data with confidence.

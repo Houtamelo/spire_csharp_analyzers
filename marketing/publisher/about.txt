@@ -1,0 +1,3 @@
+I work on game-engine tooling, code generation, and type-safe APIs. I like code that clearly expresses what it means, lets the compiler catch mistakes, and stays pleasant to work with as a project grows.
+
+Spire brings that approach to Unity with exhaustive matching and discriminated unions. My focus is on making these features practical in everyday development, from clear IDE diagnostics to working with your data in the Inspector, without losing sight of performance.
