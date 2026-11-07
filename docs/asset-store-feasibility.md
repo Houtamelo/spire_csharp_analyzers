@@ -1,5 +1,10 @@
 # Asset Store feasibility
 
+For current packaging options, see the [November 6 UPM feature inventory](reviews/2026-11-06-upm-feature-inventory.md).
+UPM enrollment is accepted, as confirmed by the publisher. The historical
+technical results below retain their dated scope; current compatibility is in
+the [Unity guide](unity.md).
+
 Updated October 11, 2026. Market comparisons remain the October 8 research
 snapshot. The October 10 review covered implementation, saved test reports,
 package contents, and publishing requirements; this update incorporates the

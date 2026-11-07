@@ -160,11 +160,11 @@
     },
     {
       "file": "portal-fields.json",
-      "sha256": "9d69d2b9b4366c6a07baaa5d27f6d1439df714b38aa9b3a7408e8f31de7d69ff"
+      "sha256": "fbcf737778ab56f395dc33230554e554560003cc7d280260ef3dddd2ed3e1fc5"
     },
     {
       "file": "README.md",
-      "sha256": "2ac74f791ab94e10a4974284eb93fd0dc619a55d14a2f3033ff406f97513d3cb"
+      "sha256": "e3852bf2dbe8a500a8297032ebbd25e7f8d40f60bab95f0c3a706e7808214be5"
     }
   ]
 }

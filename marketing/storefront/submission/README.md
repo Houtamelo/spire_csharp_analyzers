@@ -2,10 +2,10 @@
 
 Approved storefront images and listing copy, collected on 2026-11-06 (UTC).
 Regular price: **20 USD**, chosen by the publisher. The publisher already has an
-Asset Store profile and submitted UPM enrollment on November 3, 2026. Approval is
-pending; Unity quoted an estimated 5–7 business days. Windows / Visual Studio and
-three-version WebGL validation are complete within the listing's documented
-scope. Video is being handled in a separate session.
+Asset Store profile. UPM enrollment is accepted, as confirmed by the publisher on
+November 6, 2026. Windows / Visual Studio and three-version WebGL validation are
+complete within the listing's documented scope. Video is being handled in a
+separate session.
 
 ## Publisher Portal fields
 
@@ -38,12 +38,11 @@ The current [UPM revenue guide](https://docs.unity.com/en-us/asset-store/publish
 documents paid products; the older Unity 6000.3 guide's free-only note is not the
 current unversioned workflow.
 
-1. Monitor the submitted application on the
-   [enrollment page](https://cloud.unity.com/assetstore/publisher/enrollment/)
-   for the publisher organization. Unity documents **Active** as the
-   successful admittance status, with UPM Publisher Portal appearing in navigation.
-   See the [enrollment guide](https://docs.unity.com/en-us/asset-store/publishing/upm-packages/apply).
-2. Once UPM access is active, [create a single-package product draft](https://docs.unity.com/en-us/asset-store/publishing/upm-packages/create-draft).
+1. Select the enrolled publisher organization in the Cloud Dashboard and confirm
+   its publisher namespace. Enrollment acceptance is already recorded; the exact
+   reserved prefix has not been inspected in this handoff.
+2. [Create a product draft](https://docs.unity.com/en-us/asset-store/publishing/upm-packages/create-draft),
+   initially using one package as recommended by the current packaging inventory.
    Reserve the technical name that the publisher is entitled to use. The current
    local name is com.houtamelo.spire; the Portal reservation has not been checked.
 3. Build a release candidate with the existing package command, using a dedicated
@@ -64,7 +63,7 @@ cases after removal of an unrelated subprocess capability probe.
 
 ## Remaining publication inputs
 
-- UPM enrollment approval and reserved namespace.
+- Confirmed publisher namespace and reserved product/package technical name.
 - Final software bundle, release version, and declared minimum.
 - Existing publisher profile contact/website details and an online documentation
   URL if one will be advertised. The included offline guides are already listed.

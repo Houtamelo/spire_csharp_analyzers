@@ -245,9 +245,9 @@ workflow above as the opening video demonstration.
 ## Submission handoff
 
 The publisher chose a regular price of **20 USD**. A publisher profile already
-exists. UPM enrollment was submitted on November 3, 2026 and is awaiting approval;
-Unity quoted an estimated 5–7 business days. UPM is the planned delivery route,
-pending enrollment approval, and the existing package builder produces that format.
+exists. UPM enrollment was submitted on November 3, 2026 and is now **accepted**,
+as confirmed by the publisher on November 6. UPM is the planned delivery route,
+and the existing package builder produces that format.
 
 The [submission handoff](../marketing/storefront/submission/README.md) collects
 the approved cover v2, card v3, 160 x 160 icon, seven gallery v3 images, and the
@@ -255,13 +255,13 @@ listing fields. Its manifest records image dimensions and SHA-256 hashes; the
 gallery copies match the approved capture manifest. The regular price is stored
 in its portal-fields.json. [Download the handoff ZIP](../marketing/storefront/submission-handoff.zip).
 
-The next account milestone is approval of the submitted
-[UPM enrollment](https://cloud.unity.com/assetstore/publisher/enrollment/).
-Unity documents **Active** as the successful admittance status. Once active,
-create a single-package product draft and reserve the technical name before
-validating and uploading the software bundle. See the
-[current enrollment guide](https://docs.unity.com/en-us/asset-store/publishing/upm-packages/apply)
-and [product draft guide](https://docs.unity.com/en-us/asset-store/publishing/upm-packages/create-draft).
+Next, confirm the enrolled publisher namespace, create a product draft, and
+reserve the package technical name before validating and uploading the software
+bundle. The [UPM feature inventory](reviews/2026-11-06-upm-feature-inventory.md)
+recommends one core package initially, complete release metadata, a signed
+tarball workflow, and native Store acceptance. Multiple-package products remain
+an option for integrations or automatic Showcase dependencies. See the
+[product draft guide](https://docs.unity.com/en-us/asset-store/publishing/upm-packages/create-draft).
 
 No Portal draft or software upload has been created in this session. The handoff
 contains marketing material; the release bundle, final version, and declared

@@ -10,12 +10,9 @@
   "releaseVersion": null,
   "currentManifestMinimumUnityVersion": "6000.5.6f1",
   "publisherProfile": "exists",
-  "upmEnrollmentStatus": "submitted; awaiting approval",
+  "upmEnrollmentStatus": "accepted; publisher-confirmed",
   "upmEnrollmentSubmittedDate": "2026-11-03",
-  "upmEnrollmentReviewEstimateBusinessDays": [
-    5,
-    7
-  ],
+  "upmEnrollmentConfirmedDate": "2026-11-06",
   "supportUrl": "https://github.com/Houtamelo/spire_csharp_analyzers/issues",
   "publicDocumentationUrl": null,
   "videoUrl": null,
