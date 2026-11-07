@@ -1,8 +1,8 @@
 {
-  "preparedDate": "2026-11-06",
+  "preparedDate": "2026-11-07",
   "status": "marketing-ready; account and software delivery pending",
   "regularPriceUsd": 20,
-  "sourceListingSha256": "328f72ecc46634b3551838f5f72564952f8b104b83707cea6e2dbfaa513796da",
+  "sourceListingSha256": "e198b7b81e31b70aa2e2ecf72c45b403ca503fcb13a0268bff834e9d802e734d",
   "images": [
     {
       "role": "cover",
@@ -112,11 +112,11 @@
     },
     {
       "file": "listing/publisher-notes.md",
-      "sha256": "692c93462a7097e7ca1f346e43d5787f54383f12016c94558dbd1ab9cf8cefd1"
+      "sha256": "669e46ca704eedc4049ad2139a2f5908f87645504e791b5d4abfbaeedf46c94c"
     },
     {
       "file": "listing/approved-copy.md",
-      "sha256": "328f72ecc46634b3551838f5f72564952f8b104b83707cea6e2dbfaa513796da"
+      "sha256": "e198b7b81e31b70aa2e2ecf72c45b403ca503fcb13a0268bff834e9d802e734d"
     },
     {
       "file": "images/cover.png",
@@ -160,11 +160,11 @@
     },
     {
       "file": "portal-fields.json",
-      "sha256": "fbcf737778ab56f395dc33230554e554560003cc7d280260ef3dddd2ed3e1fc5"
+      "sha256": "9a54669291798357b39b6931316c713d942d8e4fbce671f1606ce1887e2e0b09"
     },
     {
       "file": "README.md",
-      "sha256": "e3852bf2dbe8a500a8297032ebbd25e7f8d40f60bab95f0c3a706e7808214be5"
+      "sha256": "3473b31483e28d797a4eaf8d03ca16c3fecf868a36b1abc6aabd7625b3f5de68"
     }
   ]
 }

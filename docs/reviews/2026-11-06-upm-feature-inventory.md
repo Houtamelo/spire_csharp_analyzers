@@ -10,15 +10,16 @@ repository code at `060db4f`. Enrollment is **accepted**, as confirmed by the
 publisher today. The subsequent [signing validation](2026-11-06-upm-signing-validation.md)
 uses the configured service account and organization to sign and install a real
 artifact. Enrolled namespace, product reservations, and account-specific
-publishing settings remain unchecked. Recommendations below remain proposals
-except where the signing follow-up records completed work. No Portal draft or
-software upload was created.
+publishing settings remain unchecked. The [release-tooling follow-up](2026-11-06-upm-release-tooling.md)
+adds tracked signing/tarball acceptance, metadata, and Quick Start. Remaining
+recommendations below are proposals. No Portal draft or software upload was created.
 
 ## Existing foundation
 
 The [packager](../../tools/Spire.Tool.Core/PackageWorkflow.cs) exports four DLLs,
 deterministic plugin metadata/GUIDs, runtime XML tooltips, licensing/notices,
-`Documentation~`, and one optional `Samples~/Showcase` entry. Only IMGUI and UI
+`Documentation~`, `CHANGELOG.md`, `LICENSE.md`, and optional Quick Start/Showcase
+samples. Quick Start has no additional dependencies. Only IMGUI and UI
 Elements modules are dependencies. URP 17.5.0 and Test Framework 1.7.0 are manual
 sample prerequisites. Compiler DLLs carry the `RoslynAnalyzer` label and are
 excluded from runtime imports; that policy must survive every distribution route.
@@ -26,8 +27,10 @@ excluded from runtime imports; that policy must survive every distribution route
 The [customer acceptance fixture](../../tests/UnityCustomerAcceptance/Assets/Editor/CustomerAcceptance.cs)
 uses `Client.Add("file:" + packagePath)` and Package Manager's sample API. Its
 workflow covers fresh installation and replacement from a local package folder.
-The separate signing follow-up covers signed-tarball installation and integrity
-on Unity 6000.5.6f1. Store acquisition, registry authentication, and Portal approval
+The tracked `unity-tarball` gate covers signed-tarball installation and Quick Start
+on all three validated Linux/Windows Editors. Modern signatures validate on Unity
+6000; 2022/2023 report Unsigned/Unchecked and require an explicit compatibility
+option. Store acquisition, registry authentication, and Portal approval
 remain separate gates. Existing runtime/version results remain in the
 [compatibility guide](../unity.md).
 
@@ -42,7 +45,7 @@ remain separate gates. Existing runtime/version results remain in the
 | Approval with manual publication | Complete review while controlling launch timing. | Prefer manual publication for the first release so documentation and media can be finalized before launch. Enrollment acceptance does not approve the product. | [Submission modes](https://docs.unity.com/en-us/asset-store/publishing/upm-packages/submit) |
 | Versioned updates and metadata-only revisions | Deliver fixes through Package Manager and update listing/media separately. | Keep the technical name stable, publish unique package versions, and attach compatibility/release notes to each release. | [Product updates](https://docs.unity.com/en-us/asset-store/publishing/upm-packages/update) |
 | My Assets installation and version selection | Give customers the native Store-to-Editor install flow. | Add acceptance through an acquired Store product after it is available. Unity documents this flow in 2022.3 and 2023.2 too; our local-folder tests have not exercised it. | [Unity 2022.3](https://docs.unity3d.com/2022.3/Documentation/Manual/upm-ui-install2.html), [Unity 2023.2](https://docs.unity3d.com/2023.2/Documentation/Manual/upm-ui-install2.html) |
-| Signed `.tgz` plus standalone UPM CLI | Produce an installable artifact for release automation and direct validation. | CLI 9.36.0 installed; service-account signing and a real tarball install pass on Unity 6000.5.6f1. Integrating these steps into the tracked release tooling remains work. | [CLI prerequisites](https://docs.unity.com/en-us/engine/6000.5/manual/packages-list/upm-signature-lp/upm-command-line/upm-cli-install), [Pack/sign](https://docs.unity.com/en-us/engine/6000.5/manual/packages-list/upm-signature-lp/upm-command-line/upm-cli-pack) |
+| Signed `.tgz` plus standalone UPM CLI | Produce an installable artifact for release automation and direct validation. | CLI 9.36.0 and service-account signing work. Tracked `package-sign`, `unity-tarball`, and `package-tamper` commands now cover delivery and failure controls; see the [release workflow](../upm-release.md). | [CLI prerequisites](https://docs.unity.com/en-us/engine/6000.5/manual/packages-list/upm-signature-lp/upm-command-line/upm-cli-install), [Pack/sign](https://docs.unity.com/en-us/engine/6000.5/manual/packages-list/upm-signature-lp/upm-command-line/upm-cli-pack) |
 | Signature status in Package Manager | Give consumers integrity/provenance information. | The valid artifact reports Valid; a one-byte payload change reports Invalid and fails acceptance. Signing is independent of runtime compatibility. | [Package signatures](https://docs.unity.com/en-us/engine/6000.3/manual/packages-list/upm-signature-lp/upm-signature) |
 
 The standalone CLI runs without an Editor and supports the Editor's platforms,
@@ -59,17 +62,17 @@ documented publishing workflow. [CLI workflow](https://docs.unity.com/en-us/engi
 
 | Feature | Use for Spire | Current state and recommendation | Official documentation |
 | --- | --- | --- | --- |
-| Manifest display/search/contact metadata | Improve discovery and the Package Manager details panel. | Add useful `keywords`, public author/support information, and refresh the description: it currently mentions only Unity 6000.5/Linux. | [Manifest fields](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/upm-manifest-pkg) |
-| Documentation, changelog, and license links | Make release guidance accessible from Package Manager, including offline fallbacks. | Offline guides exist. Add a package `CHANGELOG.md`, provide `LICENSE.md` for the license-link fallback, and add `documentationUrl`, `changelogUrl`, and `licensesUrl` once their public targets work. Preserve notices and XML tooltips. | [Manifest links/fallbacks](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/upm-manifest-pkg) |
+| Manifest display/search/contact metadata | Improve discovery and the Package Manager details panel. | Implemented keywords, public author/support URL, and the measured three-version Linux/Windows description. | [Manifest fields](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/upm-manifest-pkg) |
+| Documentation, changelog, and license links | Make release guidance accessible from Package Manager, including offline fallbacks. | Added `CHANGELOG.md`, `LICENSE.md`, and verified public documentation/license URLs. Changelog stays offline until its public page exists. Notices and XML tooltips remain. | [Manifest links/fallbacks](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/upm-manifest-pkg) |
 | `unity` and `unityRelease` minimum | Filter incompatible package versions. | Currently `6000.5` + `6f1`. Older versions have validation evidence, but changing the published minimum remains a release decision. | [Minimum version fields](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/upm-manifest-pkg) |
 | Transitive package dependencies | Automatically install packages that every consumer needs. | Existing Unity-module dependencies are appropriate. Keep URP/Test Framework out of core dependencies. A separate integration package can declare its own required dependencies. | [Dependency resolution](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/dependencies-lp/upm-dependencies) |
-| Multiple optional `Samples~` entries | Offer small learning paths without compiling them on installation. | Keep the Showcase. Add a render-pipeline-independent Quick Start sample for the three tested Editor versions; JSON or Burst examples could be separate entries when useful. Samples are copied into `Assets` on import. | [Package samples](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/cus-samples) |
+| Multiple optional `Samples~` entries | Offer small learning paths without compiling them on installation. | Showcase retained; Quick Start now imports and runs on all three tested Linux/Windows Editors without URP/Test Framework. JSON or Burst samples remain possible additions. | [Package samples](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/cus-samples) |
 | Conventional layout and stable `.meta` files | Preserve serialized asset references across package updates. | Already largely present. Keep authored GUIDs, deterministic generated GUIDs, and the explicit input allowlist. Imported sample assets still need their authored metadata even though Unity ignores `Samples~` itself. | [Package layout](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/cus-layout) |
 | Editor/runtime assembly definitions and `versionDefines` | Isolate future source-based integrations and compile optional APIs when a dependency is present. | Useful for new adapters, not a reason to replace the current precompiled DLL/plugin policy. Assembly conditions do not install missing packages. | [Assembly definitions](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/cus-asmdef) |
 | Package tests enabled through project `testables` | Let advanced users run focused smoke tests against the installed package. | Optional later addition. Put opt-in tests under package `Tests` with test asmdefs; do not ship our full Roslyn/SDK subprocess harness as a consumer dependency. Existing sample tests remain sample content. | [Package tests](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/cus-tests) |
 | SemVer and version-specific migration notes | Communicate breaking API/asset changes and support controlled upgrades. | Existing package project versions are synchronized. Add a customer changelog and exercise preserved assets through upgrade and downgrade candidates. Stable GUIDs are part of compatibility. | [Package versioning](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/upm-semver) |
-| Project lock files | Reproduce dependency resolution in customer-acceptance projects. | Preserve/audit resolved `Packages/packages-lock.json` in acceptance evidence alongside the package/DLL hashes. This is a project file, not a package payload file. | [Lock files](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/dependencies-lp/upm-conflicts-auto) |
-| Local folders, tarballs, and Git URLs | Support development, testing, and alternate distribution. | Local-folder acceptance exists; signed-tarball installation now passes its separate 6000.5.6f1 probe. A generated package-only Git branch/repository is a later option; the current source repository is not itself the built UPM bundle. | [Distribution methods](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/cus-share) |
+| Project lock files | Reproduce dependency resolution in customer-acceptance projects. | Tarball acceptance preserves the resolved lock file alongside artifact/payload evidence. This is a project file, not a package payload file. | [Lock files](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/dependencies-lp/upm-conflicts-auto) |
+| Local folders, tarballs, and Git URLs | Support development, testing, and alternate distribution. | Local-folder and three-version Linux/Windows tarball acceptance exist. A generated package-only Git branch/repository is a later option; the current source repository is not itself the built UPM bundle. | [Distribution methods](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/cus-share) |
 | Authenticated scoped registries | Deliver internal or beta packages independently of the Store. | Defer unless frequent private releases justify hosting and authentication. Enrollment does not require us to operate a registry. | [Scoped registries](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/upm-scoped) |
 
 ## Publisher operations
@@ -112,12 +115,11 @@ documented publishing workflow. [CLI workflow](https://docs.unity.com/en-us/engi
 
 1. Confirm enrolled namespace and product identity, choose the declared minimum,
    and retain one core package initially. No need to split the four DLLs.
-2. Complete manifest metadata, license/documentation links and changelog. Add a
-   minimal sample that runs without URP on each validated Editor family.
-3. Add a separate pack/sign step using the standalone CLI and scoped service
-   account. Keep credentials outside the repository. Validate the exact signed
-   artifact by installing it, inspecting hashes/import settings, and running the
-   relevant existing integration gates.
+2. Metadata, license/documentation links, offline changelog, and the non-URP
+   Quick Start sample are implemented and validated.
+3. Separate signing, exact tarball acceptance, and a one-byte tampering control
+   are implemented. Credentials stay outside the repository. The same artifact
+   passes payload/import/sample checks across three Linux/Windows Editor versions.
 4. Run Unity's UPM Validator, then use Uploader and Portal metadata for the release
    candidate. Exercise Store installation/version changes when available. Select
    manual publication when preparing the first reviewed release.
@@ -125,5 +127,6 @@ documented publishing workflow. [CLI workflow](https://docs.unity.com/en-us/engi
    setup to justify another version history and test matrix. Use Portal analytics
    after release to inform that decision.
 
-All automated preparation and acceptance inputs must remain under `tests/`, with
-outputs in disposable locations outside `examples/`.
+Canonical test/sample fixtures remain under `tests/`, with outputs in disposable
+locations outside `examples/`. Package exports retain explicit source and
+documentation allowlists.

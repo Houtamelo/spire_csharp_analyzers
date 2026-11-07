@@ -276,7 +276,7 @@ public sealed class UnityCustomerDeliveryTests
         Assert.False(dependencies.TryGetProperty("com.unity.render-pipelines.universal", out _));
         Assert.False(dependencies.TryGetProperty("com.unity.test-framework", out _));
 
-        var sample = manifest.GetProperty("samples").EnumerateArray().Single();
+        var sample = manifest.GetProperty("samples").EnumerateArray().Single(item => item.GetProperty("path").GetString() == "Samples~/Showcase");
         Assert.Equal("Unity Showcase (URP)", sample.GetProperty("displayName").GetString());
         Assert.Equal("Samples~/Showcase", sample.GetProperty("path").GetString());
         var description = sample.GetProperty("description").GetString()!;
@@ -501,6 +501,19 @@ public sealed class UnityCustomerDeliveryTests
 
             AssertMissingInputFailure(result, fixture, relative);
         }
+    }
+
+    [Theory]
+    [InlineData("tests/UnityQuickStart/sample-files.txt")]
+    [InlineData("tests/UnityQuickStart/Assets/QuickStart/QuickStart.cs")]
+    [InlineData("tests/UnityQuickStart/Assets/QuickStart/QuickStart.cs.meta")]
+    public async Task BuildPackage_MissingQuickStartInputFailsBeforeOutput(string relative)
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        using var fixture = CustomerPackageFixture.Create(repositoryRoot);
+        fixture.Remove(relative);
+        var result = await RunPackageBuilderAsync(repositoryRoot, fixture.OutputPath, fixture.Root);
+        AssertMissingInputFailure(result, fixture, relative);
     }
 
     [Fact]
@@ -803,6 +816,7 @@ public sealed class UnityCustomerDeliveryTests
                 UnityCustomerDeliveryTestSupport.SampleAssetsRoot(repositoryRoot),
                 Path.Combine(Root, "tests", "UnityPackageSample", "Assets"));
             CopyFile(repositoryRoot, "tests/UnityPackageSample/sample-files.txt");
+            CopyDirectory(Path.Combine(repositoryRoot, "tests", "UnityQuickStart"), Path.Combine(Root, "tests", "UnityQuickStart"));
         }
 
         private void CopyFile(string repositoryRoot, string relative)
@@ -907,6 +921,7 @@ internal static class UnityCustomerDeliveryTestSupport
     {
         yield return "LICENSE";
         yield return "docs/unity-package/README.md";
+        yield return "docs/unity-package/CHANGELOG.md";
         yield return "docs/unity-package/Third Party Notices.md";
         yield return "docs/unity-package/Showcase.md";
         yield return "docs/unity-package/documentation-files.txt";
@@ -940,6 +955,8 @@ internal static class UnityCustomerDeliveryTestSupport
             "package.json",
             "README.md",
             "LICENSE",
+            "LICENSE.md",
+            "CHANGELOG.md",
             "Third Party Notices.md",
         })
         {
@@ -977,6 +994,8 @@ internal static class UnityCustomerDeliveryTestSupport
         }
 
         AddGeneratedFile("Samples~/Showcase/README.md");
+        foreach (var relative in File.ReadAllLines(Path.Combine(repositoryRoot, "tests/UnityQuickStart/sample-files.txt")))
+            expected.Add("Samples~/QuickStart/" + relative);
 
         var actual = Directory.EnumerateFiles(outputRoot, "*", SearchOption.AllDirectories)
             .Select(path => RelativePath(outputRoot, path))
@@ -1005,6 +1024,8 @@ internal static class UnityCustomerDeliveryTestSupport
 
     internal static bool IsAuthoredShowcaseMeta(string relative, string repositoryRoot)
     {
+        if (relative.StartsWith("Samples~/QuickStart/", StringComparison.Ordinal) && relative.EndsWith(".meta", StringComparison.Ordinal))
+            return File.Exists(Path.Combine(repositoryRoot, "tests/UnityQuickStart/Assets/QuickStart", relative["Samples~/QuickStart/".Length..]));
         const string prefix = "Samples~/Showcase/";
         if (!relative.StartsWith(prefix, StringComparison.Ordinal) ||
             !relative.EndsWith(".meta", StringComparison.Ordinal))
@@ -1176,7 +1197,7 @@ internal static class UnityCustomerDeliveryTestSupport
     internal static void AssertImportableShowcaseShape(string outputRoot)
     {
         using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputRoot, "package.json")));
-        var sample = document.RootElement.GetProperty("samples").EnumerateArray().Single();
+        var sample = document.RootElement.GetProperty("samples").EnumerateArray().Single(item => item.GetProperty("path").GetString() == "Samples~/Showcase");
         var samplePath = sample.GetProperty("path").GetString()!;
         var sampleRoot = Path.Combine(outputRoot, samplePath.Replace('/', Path.DirectorySeparatorChar));
         Assert.True(Directory.Exists(sampleRoot), sampleRoot);

@@ -202,9 +202,10 @@ generator, Roslyn analyzer, IDE quick fixes, Unity Inspector, JSON, Burst, DOTS
   matrix; the release baseline remains a separate decision.
 - Confirm the Asset Store delivery format. The installation paragraph describes
   the verified UPM bundle workflow and should match the final customer download.
-- Publish the Unity-specific guides at a stable public URL before adding an
-  online documentation link. The proposed `unity-6000` Getting Started and Usage
-  URLs returned 404 during this review; the public issue tracker is accessible.
+- The public [Getting Started guide](https://github.com/Houtamelo/spire_csharp_analyzers/blob/unity-6000/docs/unity-package/Documentation~/GettingStarted.md)
+  and license URL were rechecked successfully on November 6. The package now
+  includes documentation/license links and offline guides/changelog. The new
+  changelog's public URL remains unset until that page is published.
 - Keep storage modes, boxing, serialization cache behavior, and detailed Burst
   restrictions in the user guides, following the approved marketing plan.
 - The short third-party notice and explicit requirements follow Unity's

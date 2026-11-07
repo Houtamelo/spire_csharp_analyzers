@@ -628,6 +628,9 @@ public sealed class UnityBehavioralRunnerTests
             repositoryRoot,
             isolatedRoot,
             "tests/UnityPackageSample/sample-files.txt");
+        CopyDirectory(
+            Path.Combine(repositoryRoot, "tests", "UnityQuickStart"),
+            Path.Combine(isolatedRoot, "tests", "UnityQuickStart"));
         foreach (var name in new[]
                  {
                      "Houtamelo.Spire",
@@ -810,15 +813,7 @@ public sealed class UnityBehavioralRunnerTests
 
         public string CreateIsolatedEditor()
         {
-            var installedEditor = Environment.GetEnvironmentVariable("SPIRE_UNITY_EDITOR") ??
-                Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                    "Unity",
-                    "Hub",
-                    "Editor",
-                    "6000.5.6f1",
-                    "Editor",
-                    "Unity");
+            var installedEditor = ToolContext.DefaultEditor;
             var installedNewtonsoft = Path.Combine(
                 Path.GetDirectoryName(installedEditor)!,
                 "Data",

@@ -386,7 +386,8 @@ namespace Spire.UnityCustomerAcceptance
                 return;
             }
 
-            var samples = Sample.FindByPackage(PackageName, package.version).ToArray();
+            var samples = Sample.FindByPackage(PackageName, package.version)
+                .Where(item => item.displayName == "Unity Showcase (URP)").ToArray();
             if (samples.Length != 1)
             {
                 Fail(

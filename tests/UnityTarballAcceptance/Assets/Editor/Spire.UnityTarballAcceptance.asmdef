@@ -1,0 +1,4 @@
+{
+  "name": "Spire.UnityTarballAcceptance",
+  "includePlatforms": ["Editor"]
+}

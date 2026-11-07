@@ -58,6 +58,11 @@ public sealed class ToolContext
 
 internal static class FileOps
 {
+    internal static string HashTextBytes(byte[] bytes)
+    {
+        using var hash = SHA256.Create();
+        return DevTools.ProcessCompatibility.ToHexString(hash.ComputeHash(bytes)).ToLowerInvariant();
+    }
     internal static readonly UTF8Encoding Utf8 = new(false);
     internal static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     internal static string FullPath(string path)

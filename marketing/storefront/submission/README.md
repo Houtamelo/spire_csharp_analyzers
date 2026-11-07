@@ -1,6 +1,6 @@
 # Spire Asset Store submission handoff
 
-Approved storefront images and listing copy, collected on 2026-11-06 (UTC).
+Approved storefront images and listing copy, collected on 2026-11-07 (UTC).
 Regular price: **20 USD**, chosen by the publisher. The publisher already has an
 Asset Store profile. UPM enrollment is accepted, as confirmed by the publisher on
 November 6, 2026. Windows / Visual Studio and three-version WebGL validation are
@@ -65,8 +65,8 @@ cases after removal of an unrelated subprocess capability probe.
 
 - Confirmed publisher namespace and reserved product/package technical name.
 - Final software bundle, release version, and declared minimum.
-- Existing publisher profile contact/website details and an online documentation
-  URL if one will be advertised. The included offline guides are already listed.
+- Existing publisher profile contact/website details. The public Getting Started
+  URL is verified and included; offline documentation and changelog also ship.
 - Video URL from the separate session when available.
 - Portal-required AI-assistance information for functional package content;
   see [Unity's submission guidelines, section 1.6](https://marketplace.unity.com/publishing/submission-guidelines).

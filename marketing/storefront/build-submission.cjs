@@ -73,7 +73,7 @@ const portalFields = {
     publisherProfile: 'exists', upmEnrollmentStatus: 'accepted; publisher-confirmed',
     upmEnrollmentSubmittedDate: '2026-11-03', upmEnrollmentConfirmedDate: '2026-11-06',
     supportUrl: 'https://github.com/Houtamelo/spire_csharp_analyzers/issues',
-    publicDocumentationUrl: null, videoUrl: null,
+    publicDocumentationUrl: 'https://github.com/Houtamelo/spire_csharp_analyzers/blob/unity-6000/docs/unity-package/Documentation~/GettingStarted.md', videoUrl: null,
     sourceListing: 'docs/asset_store_listing.md', sourceListingSha256: sourceListingHash,
     descriptionFile: 'listing/description.md', technicalDetailsFile: 'listing/technical-details.md',
     keywordsFile: 'listing/keywords.txt', media: images.map(({ role, file }) => ({ role, file })),
@@ -146,8 +146,8 @@ cases after removal of an unrelated subprocess capability probe.
 
 - Confirmed publisher namespace and reserved product/package technical name.
 - Final software bundle, release version, and declared minimum.
-- Existing publisher profile contact/website details and an online documentation
-  URL if one will be advertised. The included offline guides are already listed.
+- Existing publisher profile contact/website details. The public Getting Started
+  URL is verified and included; offline documentation and changelog also ship.
 - Video URL from the separate session when available.
 - Portal-required AI-assistance information for functional package content;
   see [Unity's submission guidelines, section 1.6](https://marketplace.unity.com/publishing/submission-guidelines).

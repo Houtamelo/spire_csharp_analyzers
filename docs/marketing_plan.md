@@ -258,8 +258,10 @@ in its portal-fields.json. [Download the handoff ZIP](../marketing/storefront/su
 Next, confirm the enrolled publisher namespace, create a product draft, and
 reserve the package technical name before validating and uploading the software
 bundle. The [UPM feature inventory](reviews/2026-11-06-upm-feature-inventory.md)
-recommends one core package initially, complete release metadata, a signed
-tarball workflow, and native Store acceptance. Multiple-package products remain
+recommends one core package initially. Release metadata, a minimal non-URP sample,
+and tracked signed-tarball acceptance are now implemented; see the
+[release workflow](upm-release.md). Native Store acceptance remains pending.
+Multiple-package products remain
 an option for integrations or automatic Showcase dependencies. See the
 [product draft guide](https://docs.unity.com/en-us/asset-store/publishing/upm-packages/create-draft).
 

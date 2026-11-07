@@ -22,7 +22,7 @@ public static class PackageWorkflow
             throw new InvalidOperationException("The three Spire package versions must match.");
         if (build) await context.BuildAsync("src/Houtamelo.Spire/Houtamelo.Spire.csproj", configuration).ConfigureAwait(false);
         var content = CustomerContent(context, configuration);
-        var textFiles = new[] { "package.json", "README.md", "LICENSE", "Third Party Notices.md", "Runtime/Houtamelo.Spire.xml", "Samples~/Showcase/README.md" };
+        var textFiles = new[] { "package.json", "README.md", "LICENSE", "LICENSE.md", "CHANGELOG.md", "Third Party Notices.md", "Runtime/Houtamelo.Spire.xml", "Samples~/Showcase/README.md" };
         var expected = new HashSet<string>(content.Keys, StringComparer.Ordinal);
         expected.UnionWith(textFiles.SelectMany(path => new[] { path, path + ".meta" }));
         foreach (var item in Assemblies)
@@ -60,7 +60,10 @@ public static class PackageWorkflow
             ["name"] = "com.houtamelo.spire",
             ["version"] = versions[0],
             ["displayName"] = "Houtamelo.Spire",
-            ["description"] = "Spire analyzers and discriminated unions for Unity 6000.5.6f1; validated with Mono and IL2CPP on Linux x64.",
+            ["description"] = "Type-safe discriminated unions, source generators, analyzers, and IDE quick fixes. Verified on Unity 2022.3.62f3, 2023.2.22f1, and 6000.5.6f1 on Linux and Windows x64, including Mono and IL2CPP players. See the included compatibility and serialization guidance.",
+            ["keywords"] = new JsonArray("discriminated-unions", "source-generator", "roslyn", "analyzers", "type-safety", "serialization"),
+            ["documentationUrl"] = "https://github.com/Houtamelo/spire_csharp_analyzers/blob/unity-6000/docs/unity-package/Documentation~/GettingStarted.md",
+            ["licensesUrl"] = "https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/LICENSE",
             ["unity"] = "6000.5",
             ["unityRelease"] = "6f1",
             ["dependencies"] = new JsonObject { ["com.unity.modules.imgui"] = "1.0.0", ["com.unity.modules.uielements"] = "1.0.0" },
@@ -68,12 +71,18 @@ public static class PackageWorkflow
             {
                 new JsonObject
                 {
+                    ["displayName"] = "Quick Start",
+                    ["description"] = "A minimal union and component, independent of the render pipeline. No additional package dependencies.",
+                    ["path"] = "Samples~/QuickStart",
+                },
+                new JsonObject
+                {
                     ["displayName"] = "Unity Showcase (URP)",
                     ["description"] = "Inspector, serialization, matching, and runtime examples. Requires URP 17.5.0 and Unity Test Framework 1.7.0 before import.",
                     ["path"] = "Samples~/Showcase",
                 },
             },
-            ["author"] = new JsonObject { ["name"] = "Houtamelo" },
+            ["author"] = new JsonObject { ["name"] = "Houtamelo", ["url"] = "https://github.com/Houtamelo/spire_csharp_analyzers/issues" },
             ["license"] = "MIT",
         });
         foreach (var name in textFiles)
@@ -93,6 +102,8 @@ public static class PackageWorkflow
         }
 
         Add("LICENSE", "LICENSE");
+        Add("LICENSE.md", "LICENSE");
+        Add("CHANGELOG.md", "docs/unity-package/CHANGELOG.md");
         Add("README.md", "docs/unity-package/README.md");
         Add("Third Party Notices.md", "docs/unity-package/Third Party Notices.md");
         Add("Runtime/Houtamelo.Spire.xml", "src/Houtamelo.Spire/bin/" + configuration + "/netstandard2.0/Houtamelo.Spire.xml");
@@ -109,6 +120,8 @@ public static class PackageWorkflow
         foreach (var relative in ReadInventory(inventory))
             Add("Samples~/Showcase/" + relative, sampleRoot + relative);
         Add("Samples~/Showcase/README.md", "docs/unity-package/Showcase.md");
+        foreach (var relative in ReadInventory(context.PathOf("tests/UnityQuickStart/sample-files.txt")))
+            Add("Samples~/QuickStart/" + relative, "tests/UnityQuickStart/Assets/QuickStart/" + relative);
         return content;
     }
 

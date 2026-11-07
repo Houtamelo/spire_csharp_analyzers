@@ -36,11 +36,16 @@ does not require unsafe code or an additional runtime Unsafe DLL.
    [Troubleshooting](Documentation~/Troubleshooting.md), and
    [Upgrading](Documentation~/Upgrading.md) as needed.
 
+The optional **Quick Start** sample demonstrates a union, its generated accessors,
+and a component Inspector without additional dependencies or a specific render
+pipeline. Import it from Package Manager's Samples tab.
+
 The optional **Unity Showcase (URP)** sample requires URP 17.5.0 and Unity Test
 Framework 1.7.0. Install those dependencies before importing it from Package
 Manager's Samples tab. Its [instructions](Samples~/Showcase/README.md) cover scene
 setup and tests. Spire itself does not require URP.
 
-The [MIT license](LICENSE) applies to Spire. Included third-party material is
+See the [changelog](CHANGELOG.md) for the current release candidate.
+The [MIT license](LICENSE.md) applies to Spire. Included third-party material is
 listed in [Third Party Notices](Third%20Party%20Notices.md). Compiler-host DLLs
 are supplied by Unity/Rider; this package does not install a compiler.

@@ -1,0 +1,8 @@
+QuickStart.cs
+QuickStart.cs.meta
+Houtamelo.Spire.QuickStart.asmdef
+Houtamelo.Spire.QuickStart.asmdef.meta
+csc.rsp
+csc.rsp.meta
+README.md
+README.md.meta

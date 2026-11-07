@@ -100,12 +100,16 @@ their compiler assemblies; the package does not contain Roslyn, Workspaces, or
 System.Collections.Immutable DLLs.
 
 The bundle also includes runtime XML documentation, Third Party Notices,
-offline guides under `Documentation~`, and an optional `Samples~/Showcase`.
+offline guides under `Documentation~`, a dependency-free `Samples~/QuickStart`,
+and an optional `Samples~/Showcase`.
 Install URP 17.5.0 and Unity Test Framework 1.7.0 before importing the sample
 from Package Manager. Its authored asset GUIDs are preserved, and its menus
 resolve the imported location instead of assuming a project-root folder.
 Importing the sample does not change render settings; its explicit configuration
 menu does. See the [customer getting-started guide](unity-package/Documentation~/GettingStarted.md).
+
+For signed artifacts, exact tarball acceptance, integrity failure controls, and
+the Publisher Portal handoff, see the [UPM release workflow](upm-release.md).
 
 The runtime DLL uses Auto Reference. Assemblies with Override References enabled
 must include `Houtamelo.Spire.dll` explicitly. Analyzer scope is separate from

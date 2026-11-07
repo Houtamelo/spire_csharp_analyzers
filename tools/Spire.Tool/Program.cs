@@ -6,10 +6,13 @@ try
     var options = Options.Parse(args);
     if (options.Help)
     {
-        Console.WriteLine("Spire.Tool: package | examples | unity-customer | unity-integration | unity-union-core | unity-behavioral | unity-web | unity-harness | unity-asmdefs | jetbrains | hook");
+        Console.WriteLine("Spire.Tool: package | package-sign | package-tamper | unity-tarball | examples | unity-customer | unity-integration | unity-union-core | unity-behavioral | unity-web | unity-harness | unity-asmdefs | jetbrains | hook");
         Console.WriteLine("Usage: dotnet run --project tools/Spire.Tool -- <command> [options]");
         Console.WriteLine("Common options: --root PATH --configuration Debug|Release --no-build --help");
         Console.WriteLine("package: --output PATH");
+        Console.WriteLine("package-sign: --package DIRECTORY --output EMPTY_DIRECTORY [--upm PATH]; credentials from UPM_SERVICE_ACCOUNT_KEY_ID, UPM_SERVICE_ACCOUNT_KEY_SECRET, UPM_ORGANIZATION_ID");
+        Console.WriteLine("package-tamper: --package SIGNED.tgz --output NEW.tgz (test-only one-byte integrity control)");
+        Console.WriteLine("unity-tarball: --package SIGNED.tgz --project PATH --editor PATH [--prepare-only] [--allow-unsupported-signature for Unity 2022/2023]");
         Console.WriteLine("examples: [--example NAME] (validate demo Git checkouts and build the local package)");
         Console.WriteLine("unity-customer: --package PATH [--baseline PATH] [--prepare-only] (real Package Manager/sample acceptance)");
         Console.WriteLine("Unity tests: --editor PATH --project PATH --timeout SECONDS");
@@ -41,6 +44,15 @@ try
     string Project(string name) => options.Value("project", context.PathOf("tmp/" + name));
     switch (options.Command)
     {
+        case "package-tamper":
+            UpmWorkflow.Tamper(context, options.Value("package", ""), options.Value("output", ""));
+            return 0;
+        case "package-sign":
+            await UpmWorkflow.SignAsync(context, options.Value("package", ""), options.Value("output", ""), options.Value("upm", "upm"), timeout);
+            return 0;
+        case "unity-tarball":
+            return await UpmWorkflow.ValidateAsync(context, options.Value("package", ""), Project("unity-tarball"), editor,
+                prepare, options.Flag("allow-unsupported-signature"), timeout);
         case "package":
             var output = await PackageWorkflow.BuildAsync(context, options.Value("output", context.PathOf("tmp/unity-package/com.houtamelo.spire")), configuration, build);
             Console.WriteLine("Unity package: " + output);
@@ -113,8 +125,8 @@ internal sealed class Options
     public static Options Parse(string[] args)
     {
         var options = new Options();
-        var flags = new HashSet<string>(new[] { "help", "no-build", "prepare-only", "graphics", "probe" }, StringComparer.Ordinal);
-        var values = new HashSet<string>(new[] { "root", "configuration", "editor", "project", "output", "timeout", "rider", "visual-studio", "cli", "stage", "method", "backend", "package", "baseline", "example" }, StringComparer.Ordinal);
+        var flags = new HashSet<string>(new[] { "help", "no-build", "prepare-only", "graphics", "probe", "allow-unsupported-signature" }, StringComparer.Ordinal);
+        var values = new HashSet<string>(new[] { "root", "configuration", "editor", "project", "output", "timeout", "rider", "visual-studio", "cli", "stage", "method", "backend", "package", "baseline", "example", "upm" }, StringComparer.Ordinal);
         for (var index = 0; index < args.Length; index++)
         {
             var argument = args[index];

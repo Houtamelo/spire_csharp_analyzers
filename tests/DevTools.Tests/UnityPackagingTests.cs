@@ -262,7 +262,16 @@ public sealed class UnityPackagingTests
         Assert.False(dependencies.TryGetProperty("com.unity.render-pipelines.universal", out _));
         Assert.False(dependencies.TryGetProperty("com.unity.test-framework", out _));
 
-        var sample = manifest.GetProperty("samples").EnumerateArray().Single();
+        Assert.Equal(2, manifest.GetProperty("samples").GetArrayLength());
+        var quickStart = manifest.GetProperty("samples").EnumerateArray().Single(item => item.GetProperty("path").GetString() == "Samples~/QuickStart");
+        Assert.Equal("Quick Start", quickStart.GetProperty("displayName").GetString());
+        Assert.Contains("Windows", manifest.GetProperty("description").GetString(), StringComparison.Ordinal);
+        Assert.Contains("2022.3.62f3", manifest.GetProperty("description").GetString(), StringComparison.Ordinal);
+        Assert.NotEmpty(manifest.GetProperty("keywords").EnumerateArray());
+        Assert.Equal("https://github.com/Houtamelo/spire_csharp_analyzers/blob/unity-6000/docs/unity-package/Documentation~/GettingStarted.md", manifest.GetProperty("documentationUrl").GetString());
+        Assert.Equal("https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/LICENSE", manifest.GetProperty("licensesUrl").GetString());
+        Assert.Equal("https://github.com/Houtamelo/spire_csharp_analyzers/issues", manifest.GetProperty("author").GetProperty("url").GetString());
+        var sample = manifest.GetProperty("samples").EnumerateArray().Single(item => item.GetProperty("path").GetString() == "Samples~/Showcase");
         Assert.Equal("Unity Showcase (URP)", sample.GetProperty("displayName").GetString());
         Assert.Equal("Samples~/Showcase", sample.GetProperty("path").GetString());
         var sampleDescription = sample.GetProperty("description").GetString()!;
@@ -275,7 +284,8 @@ public sealed class UnityPackagingTests
 
     private static void AssertPackageReadme(string outputPath)
     {
-        var readme = File.ReadAllText(Path.Combine(outputPath, "README.md"));
+        var readme = string.Join(" ", File.ReadAllText(Path.Combine(outputPath, "README.md"))
+            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
         Assert.Contains("Rider and Visual Studio Community", readme, StringComparison.Ordinal);
         Assert.Contains("Linux and Windows x64", readme, StringComparison.Ordinal);
