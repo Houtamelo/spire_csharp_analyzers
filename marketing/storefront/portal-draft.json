@@ -1,0 +1,55 @@
+{
+  "confirmedDate": "2026-11-07",
+  "source": "publisher-confirmed product draft",
+  "title": "Spire C# - Exhaustive Matching & Discriminated Unions",
+  "structure": "Single package",
+  "publisherNamespace": "individual.antonio-pedro-goncalves-ferreira",
+  "productNamespace": "spire",
+  "packageTechnicalName": "individual.antonio-pedro-goncalves-ferreira.spire",
+  "draftUrl": "https://cloud.unity.com/assetstore/publisher/products/6893155",
+  "descriptionPreviewStatus": "resolved; publisher-confirmed on 2026-11-07",
+  "submission": {
+    "status": "submitted-for-vetting",
+    "confirmedDate": "2026-11-07",
+    "source": "publisher-confirmed",
+    "version": "4.7.6",
+    "submittedBy": "publisher"
+  },
+  "identityVerification": {
+    "method": "official Unity publishing SDK",
+    "date": "2026-11-07",
+    "publisherId": "161892",
+    "productId": "6893155",
+    "manifestAuthorMatchesPublisher": true
+  },
+  "upload": {
+    "completedUtc": "2026-11-07T23:07:53.698Z",
+    "version": "4.7.6",
+    "minimumUnityVersion": "2022.3.62f3",
+    "artifactSha256": "d4a0482bdfa3fd8707f0e442c7af698338425d6e47e201692fa6b0d4297238bf",
+    "status": "Success",
+    "toolVersion": "0.3.3",
+    "editorVersion": "6000.5.6f1",
+    "validation": {
+      "passes": 46,
+      "warnings": 1,
+      "failures": 0
+    },
+    "submittedByAgent": false,
+    "publishedByAgent": false
+  },
+  "compatibility": {
+    "unityVersions": [
+      "2022.3",
+      "2023.2",
+      "6000.5"
+    ],
+    "validatedEditorVersions": [
+      "2022.3.62f3",
+      "2023.2.22f1",
+      "6000.5.6f1"
+    ],
+    "status": "Portal configuration not independently confirmed; publisher submitted the product for vetting",
+    "source": "docs/asset_store_listing.md; publisher-reported Portal state after upload"
+  }
+}

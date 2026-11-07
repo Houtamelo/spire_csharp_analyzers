@@ -1,6 +1,6 @@
 **Save time by catching errors at compile time.**
 
-Houtamelo.Spire brings exhaustive matching and discriminated unions to Unity.
+Spire brings exhaustive matching and discriminated unions to Unity.
 Catch forgotten cases as your game evolves, generate missing branches in your
 IDE, and give each variant the data it needs.
 
@@ -94,6 +94,7 @@ inside your job.
 - Runtime library, analyzers, source generator, and IDE quick fixes.
 - Generated Unity serialization and Inspector integration.
 - Offline documentation and runtime API tooltips.
+- Optional Quick Start sample without additional package dependencies.
 - Optional Unity Showcase sample with a runnable scene, Inspector-editable
   presets, and example tests.
 

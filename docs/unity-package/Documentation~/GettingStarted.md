@@ -1,5 +1,9 @@
 # Getting started
 
+The minimum Unity version is **2022.3.62f3**. On Unity 2022, use non-generic
+unions for native Unity serialization; generic unions remain usable for runtime
+code. The optional Quick Start sample works on this baseline without URP.
+
 Install Spire using Package Manager's **Install package from disk** action and
 select the bundle's `package.json`. Keep all four DLLs and their `.meta` files
 together: the runtime belongs to player builds, while the three compiler DLLs
@@ -35,7 +39,7 @@ Use [Usage](Usage.md) for matching and storage choices,
 [Serialization](Serialization.md) for persistence, or
 [Troubleshooting](Troubleshooting.md) if generation does not appear.
 
-To try the supplied scene, install URP **17.5.0** and Unity Test Framework **1.7.0**
+To try the supplied scene, use Unity **6000.5.6f1** and install URP **17.5.0** and Unity Test Framework **1.7.0**
 in your project, then import **Unity Showcase (URP)** from this package's Samples
 tab. The sample is optional and does not change your render pipeline until you invoke its setup
 menu. Follow its README before doing that.

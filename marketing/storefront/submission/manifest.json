@@ -1,8 +1,9 @@
 {
   "preparedDate": "2026-11-07",
-  "status": "marketing-ready; account and software delivery pending",
+  "status": "submitted-for-vetting; awaiting Unity review",
   "regularPriceUsd": 20,
-  "sourceListingSha256": "e198b7b81e31b70aa2e2ecf72c45b403ca503fcb13a0268bff834e9d802e734d",
+  "sourceListingSha256": "5e32fd66ffffa3ca81f7fa0727135e62352cf9dc77eb7196257e802c63694ee8",
+  "sourceDraftIdentitySha256": "289e97bff47cd44074db7886bea9cdac5e55bb279acac958b6814e07157ddc3c",
   "images": [
     {
       "role": "cover",
@@ -27,6 +28,15 @@
       "width": 160,
       "height": 160,
       "sha256": "2f07ccc60092e0b9cd11908a7ae5acdeb23f58ed797fa0edd0b79f09bfd6afef"
+    },
+    {
+      "role": "social",
+      "source": "marketing/storefront/social-card-v1.png",
+      "file": "images/social.png",
+      "width": 1200,
+      "height": 630,
+      "approvalStatus": "optional draft",
+      "sha256": "2246173f5ad5da8ca338f2acaa51defc242ca65ee536d1374333ec4ff845cf5a"
     },
     {
       "role": "gallery",
@@ -88,7 +98,7 @@
   "files": [
     {
       "file": "listing/title.txt",
-      "sha256": "0b6bd69f6262cf78430f23c2440d113e44ac5a0bfeca856329538bc862c0ae31"
+      "sha256": "81f1143aa956b988b6951ddaac86f898bfab917beaf325757a6a2ad9f08a9067"
     },
     {
       "file": "listing/summary.txt",
@@ -96,11 +106,11 @@
     },
     {
       "file": "listing/description.md",
-      "sha256": "1fbf4b99d7201e04608c474c5f5c69042526ad9eda763c0544c8ff6ca88fd4ef"
+      "sha256": "e8e25279f062d83b35fd71f26a5795c60fd5a2758aa6fd71b39f7b9650a45ead"
     },
     {
       "file": "listing/technical-details.md",
-      "sha256": "1d5a607b7f680adb31bcee66e0797a5cb8e165e6e87e32a958a4b7589c794258"
+      "sha256": "dfce4c10eee532a43ec12fca69c20de91da8379716331780947f958885dddba1"
     },
     {
       "file": "listing/documentation-and-support.md",
@@ -112,11 +122,27 @@
     },
     {
       "file": "listing/publisher-notes.md",
-      "sha256": "669e46ca704eedc4049ad2139a2f5908f87645504e791b5d4abfbaeedf46c94c"
+      "sha256": "d4b1f96bdef6949af56918b1dd3ee3a3894d61336d6902923496b967b30d4f5e"
+    },
+    {
+      "file": "listing/upm-description.md",
+      "sha256": "d0794af0a4e10a80ab4c591cce4a9817447adb9269b708d0340619d08932a8ab"
+    },
+    {
+      "file": "listing/upm-description-fragment.html",
+      "sha256": "4f36b84cf2a05ddce7ec4a84413c0374ab956a588bf0442a65f09ffa1979d770"
+    },
+    {
+      "file": "listing/upm-description.html",
+      "sha256": "1b935d3bdd0238dd63d81348cce7cd0a849097142204d14d8c78d062312f92a8"
+    },
+    {
+      "file": "listing/upm-description.txt",
+      "sha256": "6d87e563f13be505936531815192468dc57c57284f07569cae5013f7b848a10c"
     },
     {
       "file": "listing/approved-copy.md",
-      "sha256": "e198b7b81e31b70aa2e2ecf72c45b403ca503fcb13a0268bff834e9d802e734d"
+      "sha256": "5e32fd66ffffa3ca81f7fa0727135e62352cf9dc77eb7196257e802c63694ee8"
     },
     {
       "file": "images/cover.png",
@@ -129,6 +155,10 @@
     {
       "file": "images/icon.png",
       "sha256": "2f07ccc60092e0b9cd11908a7ae5acdeb23f58ed797fa0edd0b79f09bfd6afef"
+    },
+    {
+      "file": "images/social.png",
+      "sha256": "2246173f5ad5da8ca338f2acaa51defc242ca65ee536d1374333ec4ff845cf5a"
     },
     {
       "file": "images/gallery/01-exhaustive-matching.png",
@@ -160,11 +190,11 @@
     },
     {
       "file": "portal-fields.json",
-      "sha256": "9a54669291798357b39b6931316c713d942d8e4fbce671f1606ce1887e2e0b09"
+      "sha256": "295e9ef7fe98f7b19ad8b9f99c30c9a59d3af563f801b4d09a1d363ebde5cbf6"
     },
     {
       "file": "README.md",
-      "sha256": "3473b31483e28d797a4eaf8d03ca16c3fecf868a36b1abc6aabd7625b3f5de68"
+      "sha256": "261efac3b0ed5514cdc636bfbccf622660ec40d3de4ef6b76a47bb5ca02a0a98"
     }
   ]
 }

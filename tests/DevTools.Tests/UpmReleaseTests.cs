@@ -59,6 +59,7 @@ public sealed class UpmReleaseTests
     [InlineData("duplicate")]
     [InlineData("missing-dll")]
     [InlineData("wrong-name")]
+    [InlineData("legacy-name")]
     public async Task InvalidArchiveFailsBeforeProjectMutation(string kind)
     {
         using var fixture = new Fixture();
@@ -112,7 +113,7 @@ public sealed class UpmReleaseTests
     {
         internal readonly string Repo;
         internal readonly string Root;
-        internal string PackagePath => Path.Combine(Root, "com.houtamelo.spire");
+        internal string PackagePath => Path.Combine(Root, "individual.antonio-pedro-goncalves-ferreira.spire");
         internal string Project => Path.Combine(Root, "customer");
         internal string Tgz => Path.Combine(Root, "package.tgz");
         private readonly string configuration;
@@ -162,7 +163,9 @@ public sealed class UpmReleaseTests
                 if (kind == "missing-dll" && relative == "Runtime/Houtamelo.Spire.dll") continue;
                 var bytes = File.ReadAllBytes(path);
                 if (kind == "wrong-name" && relative == "package.json")
-                    bytes = Encoding.UTF8.GetBytes(Encoding.UTF8.GetString(bytes).Replace("com.houtamelo.spire", "com.example.other"));
+                    bytes = Encoding.UTF8.GetBytes(Encoding.UTF8.GetString(bytes).Replace("individual.antonio-pedro-goncalves-ferreira.spire", "com.example.other"));
+                if (kind == "legacy-name" && relative == "package.json")
+                    bytes = Encoding.UTF8.GetBytes(Encoding.UTF8.GetString(bytes).Replace("individual.antonio-pedro-goncalves-ferreira.spire", "com.houtamelo.spire"));
                 Entry("package/" + relative, bytes);
             }
             if (kind == "duplicate") Entry("package/package.json", File.ReadAllBytes(Path.Combine(PackagePath, "package.json")));

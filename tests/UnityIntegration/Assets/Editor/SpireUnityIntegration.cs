@@ -313,7 +313,7 @@ namespace Spire.UnityIntegration
         {
             Check(report, "RuntimeAndCompilerPluginPlatforms", () =>
             {
-                const string package = "Packages/com.houtamelo.spire/";
+                const string package = "Packages/individual.antonio-pedro-goncalves-ferreira.spire/";
                 var runtime = AssetImporter.GetAtPath(package + "Runtime/Houtamelo.Spire.dll") as PluginImporter;
                 Require(runtime != null, "The runtime DLL importer was not found.");
                 Require(runtime!.GetCompatibleWithAnyPlatform(), "The runtime DLL was not enabled for Any Platform.");

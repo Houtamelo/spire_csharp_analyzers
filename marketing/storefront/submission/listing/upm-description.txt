@@ -1,0 +1,107 @@
+Save time by catching errors at compile time.
+
+Spire brings exhaustive matching and discriminated unions to Unity. Catch forgotten cases as your game evolves, generate missing branches in your IDE, and give each variant the data it needs.
+
+Catch missing cases before you press Play
+
+Use exhaustive matching with enums, classes, interfaces, structs, and discriminated unions. Spire checks switch statements/expressions, reports a compile-time error when cases are missing, and lists exactly which cases you forgot. No default: or catch-all case is required.
+
+Added a new class implementing an interface? Spire immediately reports the switches that need updating. The same applies when you add an enum member or a union variant.
+
+Follow the diagnostics straight to the affected code. Use the IDE quick fix to generate the unhandled cases, then fill in their behavior.
+
+Give each variant its own data
+
+Have you ever looked at an enum and wished you could attach different data to each variant?
+
+C# Utopia:
+
+enum Command {
+    Move(Vector2 destination),
+    Patrol(List<Vector2> waypoints, int current),
+    Attack(Actor target),
+}
+
+Command command = Command.Move(new Vector2(6.9f, 4.20f));
+
+switch (command) {
+    case Command.Move(Vector2 destination): {
+        actor.position = destination;
+        break;
+    }
+    case Command.Patrol(List<Vector2> waypoints, int current):
+    ...
+}
+
+With Spire:
+
+[DiscriminatedUnion] // Spire's source generator takes care of all the plumbing
+public partial struct Command {
+    [Variant] public static partial Command Move(Vector2 destination);
+    [Variant] public static partial Command Attack(Actor target);
+    [Variant] public static partial Command Patrol(List<Vector2> waypoints, int current);
+}
+
+Command command = Command.Move(new Vector2(6.9f, 4.20f));
+
+switch (command) {
+    case { IsMove: true, move: var (destination) }: {
+        actor.position = destination;
+        break;
+    }
+    case { IsPatrol: true, patrol: var (waypoints, current) }:
+    ...
+}
+
+Spire generates the factories and typed payloads at compile time. Match the variant and deconstruct its data where you consume it. Different systems can react to the same command, state, or result in their own way, without putting every operation on the data type itself.
+
+Spire's struct-based unions are lightweight, with compact, allocation-free type-safe storage (No unsafe code!).
+
+Author unions in the Unity Inspector
+
+Add [Serializable] to your union and use it in serialized fields. Spire generates the variant picker and editable fields for the selected variant, including inside lists.
+
+Compatible with Odin Inspector. Odin is optional.
+
+Generate JSON serialization and deserialization
+
+Generate converters for System.Text.Json, Newtonsoft.Json, or both. Declare your variants and their data once; Spire generates the JSON serialization and deserialization code for you.
+
+Use typed polymorphic data in Burst and DOTS
+
+Bring struct-based discriminated unions into Burst jobs and DOTS. Store your polymorphic data in NativeArray<T>, switch on their variants, and deconstruct their payloads inside your job.
+
+Included
+
+• Runtime library, analyzers, source generator, and IDE quick fixes.
+• Generated Unity serialization and Inspector integration.
+• Offline documentation and runtime API tooltips.
+• Optional Quick Start sample without additional package dependencies.
+• Optional Unity Showcase sample with a runnable scene, Inspector-editable presets, and example tests.
+
+Installation
+
+Standard installation via Unity's Package Manager.
+
+For Rider support, make sure that Roslyn Analyzers are enabled: Editor > Inspection Settings > Roslyn Analyzers.
+
+Technical details
+
+• Validated Unity versions: 2022.3.62f3, 2023.2.22f1, and 6000.5.6f1.
+• Unity 2020: will not work.
+• Unity 2021: cannot load the current compiler extensions.
+• IDE support: Spire uses Roslyn's standard analysis/code-fix providers, any IDE that supports that should also support Spire. Verified in JetBrains Rider and Visual Studio Community.
+• Tested desktop platforms and backends: Linux x64 and Windows 10 x64 on all three versions, including Editor Mono, native serialization, rendered Inspector interaction, and standalone Mono/IL2CPP players.
+• Tested Web builds: WebGL2/IL2CPP on all three versions in Chrome and Firefox on desktop Linux, with High managed stripping and FullWithStacktrace exception support. Unity's default Web exception setting does not preserve all tested exception behavior. Other browsers and platforms require separate validation.
+• Unity 2022 serialization: non-generic unions pass native serialization; generic unions cannot use native Unity serialization on this version.
+• Package minimum: Unity 2022.3.62f3. The optional URP Showcase requires Unity 6000.5.6f1, URP 17.5.0, and Unity Test Framework 1.7.0; Quick Start has no additional package dependencies.
+• JSON: install the JSON library you select, System.Text.Json or Newtonsoft.Json, in your project.
+• Burst/DOTS: Spire does not have code that specifically targets Burst/DOTS, our discriminated unions are naturally Burst/DOTS compatible since they are struct-based. Note that the fields of the variants must also comply with Burst's restrictions (Spire isn't magic!). Consult the included Usage and Serialization guides for payload and serialization choices.
+• Unity 6000.6.5f1 limitation (Linux): an engine serialization bug affects generic unions with reference-type arguments, such as Command<string>. This crash is fixed in Unity 7000 (verified on 7000.0.0a12). We expect a backport to 6000.6.x soon, although its availability and timing remain unconfirmed.
+• Third-party notice: includes compiler compatibility definitions generated by PolySharp under the MIT license. See Third Party Notices in the package for details.
+
+Documentation and support
+
+Offline guides are included in the package: Getting Started, Usage, Serialization, Troubleshooting, and Upgrading.
+
+Support and bug reports: GitHub issue tracker (https://github.com/Houtamelo/spire_csharp_analyzers/issues).

@@ -1,4 +1,4 @@
-# Unity 6000
+# Unity integration
 
 **Unity 2020 will not work.** Its compiler lacks the source-generator support and
 C# 9 features required by Spire. Non-extended Unity 2021/2022 LTS results are
@@ -17,7 +17,7 @@ and actual Mono/IL2CPP player checks; Unity 2022 excludes unsupported native
 generic serialization. The separate rendered Inspector suite also passes on
 2022.3.62f3, 2023.2.22f1, and 6000.5.6f1 after two Editor drawer corrections;
 see the [rendered validation](reviews/2026-11-05-rendered-inspector-validation.md)
-for exact counts and revalidation scope. The declared minimum is unchanged.
+for exact counts and revalidation scope. The declared minimum is 2022.3.62f3.
 See the [current-package recheck](reviews/2026-11-05-unity-2022-2023-current-validation.md).
 Unity 2021's Roslyn 3.9 compiler cannot load the current Roslyn 4.3 extensions.
 
@@ -43,7 +43,7 @@ unresolved. The Roslyn 4.3.1 downgrade resolves the initial 6000.3.26f1 LTS
 compiler rejection. The historical Inspector fixture needed an additional
 runtime Unsafe DLL for the removed `UnsafeOverlap` mode. The current payload
 representation has no Unsafe dependency; its native validation is tracked separately.
-The shipping minimum and showcase requirements have not been lowered. See the
+The shipping minimum is 2022.3.62f3; the optional Showcase requires 6000.5.6f1. See the
 [LTS evaluation](issues/unity-6.3-roslyn-host-compatibility.md) and
 [commercial review](reviews/2026-10-11-commercial-readiness.md).
 
@@ -81,9 +81,9 @@ dotnet run -c Release --project tools/Spire.Tool -- package
 ```
 
 In Unity's Package Manager, choose **Add package from disk** and select
-`tmp/unity-package/com.houtamelo.spire/package.json`.
+`tmp/unity-package/individual.antonio-pedro-goncalves-ferreira.spire/package.json`.
 
-The manifest declares `6000.5.6f1` as its minimum version. This is not an upper
+The manifest declares `2022.3.62f3` as its minimum version. This is not an upper
 compatibility bound. On `6000.6.5f1`, the current package passes 126 native Editor
 serialization write checks and 87 fresh-process read checks. Generic unions
 closed over reference-type arguments, such as `UnityGenericUnion<string>`, still
@@ -102,7 +102,7 @@ System.Collections.Immutable DLLs.
 The bundle also includes runtime XML documentation, Third Party Notices,
 offline guides under `Documentation~`, a dependency-free `Samples~/QuickStart`,
 and an optional `Samples~/Showcase`.
-Install URP 17.5.0 and Unity Test Framework 1.7.0 before importing the sample
+For Showcase, use Unity 6000.5.6f1 and install URP 17.5.0 and Unity Test Framework 1.7.0 before importing the sample
 from Package Manager. Its authored asset GUIDs are preserved, and its menus
 resolve the imported location instead of assuming a project-root folder.
 Importing the sample does not change render settings; its explicit configuration

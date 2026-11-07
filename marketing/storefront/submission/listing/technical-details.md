@@ -11,8 +11,9 @@
   exception behavior. Other browsers and platforms require separate validation.
 - **Unity 2022 serialization:** non-generic unions pass native serialization;
   generic unions cannot use native Unity serialization on this version.
-- **Package minimum:** the manifest still declares 6000.5.6f1. Older-version
-  verification does not lower the package minimum or Showcase requirements.
+- **Package minimum:** Unity 2022.3.62f3. The optional URP Showcase requires
+  Unity 6000.5.6f1, URP 17.5.0, and Unity Test Framework 1.7.0; Quick Start has no
+  additional package dependencies.
 - **JSON:** install the JSON library you select, System.Text.Json or
   Newtonsoft.Json, in your project.
 - **Burst/DOTS:** Spire does not have code that specifically targets Burst/DOTS, our discriminated unions are naturally Burst/DOTS compatible since they are struct-based. Note that the fields of the variants must also comply with Burst's restrictions (Spire isn't magic!). Consult the included Usage and Serialization guides for payload and serialization choices.

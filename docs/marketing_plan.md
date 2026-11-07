@@ -102,17 +102,17 @@ The separate rendered Inspector suite now passes on 2022.3.62f3, 2023.2.22f1,
 and 6000.5.6f1 after two Editor drawer corrections. Unity 2022's unsupported
 closed-generic Inspector serialization case is explicitly not applicable.
 See the [rendered validation](reviews/2026-11-05-rendered-inspector-validation.md)
-for the later DLL and exact revalidation scope. Keep the published minimum
-unchanged. See the
+for the later DLL and exact revalidation scope. The publisher selected
+2022.3.62f3 as the package minimum on November 7, 2026. See the
 [current-package recheck](reviews/2026-11-05-unity-2022-2023-current-validation.md).
 
 The public validation list is **2022.3.62f3, 2023.2.22f1, and 6000.5.6f1**.
 All three pass applicable Editor, native serialization, rendered Inspector, and
 standalone Mono/IL2CPP checks on Linux x64 and Windows 10 x64. The Windows matrix
 passes 2,692 complete Editor cases per version and Visual Studio Community
-acceptance. Retain Unity 2022's native generic-serialization restriction and the
-current package minimum; validation does not change release metadata or the
-Unity 6000 Showcase requirements.
+acceptance. Retain Unity 2022's native generic-serialization restriction. The
+package minimum is 2022.3.62f3; the optional Showcase still requires Unity
+6000.5.6f1 and its URP/Test Framework dependencies.
 
 Release WebGL2/IL2CPP builds also pass on all three versions in Chrome and Firefox
 on desktop Linux: 100 original behavioral tests per browser, plus 59 native core
@@ -255,9 +255,13 @@ listing fields. Its manifest records image dimensions and SHA-256 hashes; the
 gallery copies match the approved capture manifest. The regular price is stored
 in its portal-fields.json. [Download the handoff ZIP](../marketing/storefront/submission-handoff.zip).
 
-Next, confirm the enrolled publisher namespace, create a product draft, and
-reserve the package technical name before validating and uploading the software
-bundle. The [UPM feature inventory](reviews/2026-11-06-upm-feature-inventory.md)
+On November 7, the publisher confirmed the single-package product draft
+**Spire C# - Exhaustive Matching & Discriminated Unions**, product namespace
+`spire`, full name `individual.antonio-pedro-goncalves-ferreira.spire`. Its prefix
+appears during draft creation. The exporter and acceptance fixtures now use that
+identity; old `com.houtamelo.spire` tarballs remain historical artifacts. The
+[draft record](../marketing/storefront/portal-draft.json) and handoff retain the
+exact values. The [UPM feature inventory](reviews/2026-11-06-upm-feature-inventory.md)
 recommends one core package initially. Release metadata, a minimal non-URP sample,
 and tracked signed-tarball acceptance are now implemented; see the
 [release workflow](upm-release.md). Native Store acceptance remains pending.
@@ -265,9 +269,13 @@ Multiple-package products remain
 an option for integrations or automatic Showcase dependencies. See the
 [product draft guide](https://docs.unity.com/en-us/asset-store/publishing/upm-packages/create-draft).
 
-No Portal draft or software upload has been created in this session. The handoff
-contains marketing material; the release bundle, final version, and declared
-minimum remain separate decisions. Completed compatibility results are recorded
+The publisher created the Portal draft and resolved its description preview
+issue. Version 4.7.6 has now uploaded successfully through Unity's official SDK,
+with declared minimum 2022.3.62f3. The complete official validator reports 46
+passes, one documented dependency warning, and zero failures. On November 7, the
+publisher confirmed submission for vetting; Unity approval and publication are
+pending. The handoff contains marketing material
+and the recorded upload metadata. Completed compatibility results are recorded
 above and in the listing. Rebuild the handoff with
 `node marketing/storefront/build-submission.cjs`.
 

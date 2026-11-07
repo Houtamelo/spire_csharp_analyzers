@@ -4,7 +4,7 @@ Run the actual Package Manager installation, sample import, serialized-value
 checks, offline documentation checks, and Showcase tests in an owned project:
 
 ```powershell
-dotnet run -c Release --project tools/Spire.Tool -- unity-customer --project tmp/customer-acceptance --package C:\Packages\com.houtamelo.spire
+dotnet run -c Release --project tools/Spire.Tool -- unity-customer --project tmp/customer-acceptance --package C:\Packages\individual.antonio-pedro-goncalves-ferreira.spire
 ```
 
 The Editor must be licensed. Use `--editor` for a non-default installation.
@@ -19,7 +19,7 @@ Package/baseline inputs and validation outputs inside that directory are rejecte
 The polling regression uses a separate clean project without an imported sample:
 
 ```powershell
-dotnet run -c Release --project tools/Spire.Tool -- unity-customer --prepare-only --project tmp/customer-polling --package C:\Packages\com.houtamelo.spire
+dotnet run -c Release --project tools/Spire.Tool -- unity-customer --prepare-only --project tmp/customer-polling --package C:\Packages\individual.antonio-pedro-goncalves-ferreira.spire
 & 'C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Unity.exe' -batchmode -nographics -projectPath "$PWD\tmp\customer-polling" -executeMethod Spire.UnityCustomerAcceptance.CustomerAcceptance.VerifyPollingTimeout -logFile "$PWD\tmp\customer-polling\polling.log"
 ```
 

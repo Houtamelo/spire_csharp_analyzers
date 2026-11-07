@@ -20,7 +20,7 @@ namespace Spire.UnityCustomerAcceptance
     [InitializeOnLoad]
     public static class CustomerAcceptance
     {
-        private const string PackageName = "com.houtamelo.spire";
+        private const string PackageName = "individual.antonio-pedro-goncalves-ferreira.spire";
         private const string PackagePathEnvironmentVariable = "SPIRE_CUSTOMER_PACKAGE";
         private const string PhaseEnvironmentVariable = "SPIRE_CUSTOMER_PHASE";
         private const string RuntimeAssemblyGuid = "de1fa9429c4a323daa60cd365f1c7de3";

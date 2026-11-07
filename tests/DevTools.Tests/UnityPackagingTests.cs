@@ -248,10 +248,10 @@ public sealed class UnityPackagingTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputPath, "package.json")));
         var manifest = document.RootElement;
-        Assert.Equal("com.houtamelo.spire", manifest.GetProperty("name").GetString());
+        Assert.Equal("individual.antonio-pedro-goncalves-ferreira.spire", manifest.GetProperty("name").GetString());
         Assert.Equal(expectedVersion, manifest.GetProperty("version").GetString());
-        Assert.Equal("6000.5", manifest.GetProperty("unity").GetString());
-        Assert.Equal("6f1", manifest.GetProperty("unityRelease").GetString());
+        Assert.Equal("2022.3", manifest.GetProperty("unity").GetString());
+        Assert.Equal("62f3", manifest.GetProperty("unityRelease").GetString());
 
         var dependencies = manifest.GetProperty("dependencies");
         Assert.Equal(
@@ -275,6 +275,7 @@ public sealed class UnityPackagingTests
         Assert.Equal("Unity Showcase (URP)", sample.GetProperty("displayName").GetString());
         Assert.Equal("Samples~/Showcase", sample.GetProperty("path").GetString());
         var sampleDescription = sample.GetProperty("description").GetString()!;
+        Assert.Contains("6000.5.6f1", sampleDescription, StringComparison.Ordinal);
         Assert.Contains("17.5.0", sampleDescription, StringComparison.Ordinal);
         Assert.Contains("1.7.0", sampleDescription, StringComparison.Ordinal);
         Assert.Contains("URP", sampleDescription, StringComparison.OrdinalIgnoreCase);
@@ -293,6 +294,7 @@ public sealed class UnityPackagingTests
         Assert.Contains("Unity 6000.6.5f1", readme, StringComparison.Ordinal);
         Assert.Contains("generic unions with reference-type arguments", readme, StringComparison.Ordinal);
         Assert.Contains("Unity 2020 will not work", readme, StringComparison.Ordinal);
+        Assert.Contains("Minimum Unity version: 2022.3.62f3", readme, StringComparison.Ordinal);
     }
 
     private static void AssertPluginMetadata(string outputPath, string relativeDll, bool analyzer)

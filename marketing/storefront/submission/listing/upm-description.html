@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Spire — description to copy</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { max-width: 860px; margin: 32px auto; padding: 0 24px; font: 16px/1.5 sans-serif; color: #222; }
+aside { padding: 16px; margin-bottom: 24px; background: #f0edf8; border: 1px solid #d2c6ee; }
+aside p { margin-top: 0; } button { padding: 8px 14px; font: inherit; cursor: pointer; }
+textarea { box-sizing: border-box; width: 100%; height: 220px; font: 13px/1.4 monospace; }
+</style></head><body>
+<aside><p>Click <strong>Select description</strong>, press Ctrl+C, then replace the Publisher Portal's
+Description using Ctrl+V (normal paste, with formatting). For a rich-text editor, copy the rendered
+description below. Only paste HTML source if the editor has an explicit HTML/source mode.
+Raw Markdown will not format. This page contains the repository's listing copy;
+retain any additional wording edits you made in the Portal and review its preview after pasting.</p>
+<p>Code examples use explicit line breaks and non-breaking spaces for indentation.
+They do not rely on code-block tags, custom fonts, or syntax highlighting.
+This local preview does not verify the Portal's rendering.</p>
+<button type="button" id="select">Select description</button>
+<details><summary>HTML source (for an explicit HTML/source mode only)</summary>
+<p>The same fragment is available in <a href="upm-description-fragment.html">upm-description-fragment.html</a>.</p>
+<button type="button" id="select-source">Select HTML source</button>
+<textarea id="source" aria-label="Description HTML source" readonly>&lt;p&gt;&lt;strong&gt;Save time by catching errors at compile time.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Spire brings exhaustive matching and discriminated unions to Unity. Catch forgotten cases as your game evolves, generate missing branches in your IDE, and give each variant the data it needs.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Catch missing cases before you press Play&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Use exhaustive matching with enums, classes, interfaces, structs, and discriminated unions. Spire checks switch statements/expressions, reports a compile-time error when cases are missing, and lists exactly which cases you forgot. No default: or catch-all case is required.&lt;/p&gt;
+&lt;p&gt;Added a new class implementing an interface? Spire immediately reports the switches that need updating. The same applies when you add an enum member or a union variant.&lt;/p&gt;
+&lt;p&gt;Follow the diagnostics straight to the affected code. Use the IDE quick fix to generate the unhandled cases, then fill in their behavior.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Give each variant its own data&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Have you ever looked at an enum and wished you could attach different data to each variant?&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;C# Utopia&lt;/em&gt;:&lt;/p&gt;
+&lt;p&gt;enum Command {&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Move(Vector2 destination),&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Patrol(List&amp;lt;Vector2&amp;gt; waypoints, int current),&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Attack(Actor target),&lt;br&gt;}&lt;br&gt;&lt;br&gt;Command command = Command.Move(new Vector2(6.9f, 4.20f));&lt;br&gt;&lt;br&gt;switch (command) {&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;case Command.Move(Vector2 destination): {&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;actor.position = destination;&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;break;&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;}&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;case Command.Patrol(List&amp;lt;Vector2&amp;gt; waypoints, int current):&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;...&lt;br&gt;}&lt;/p&gt;
+&lt;p&gt;With Spire:&lt;/p&gt;
+&lt;p&gt;[DiscriminatedUnion] // Spire's source generator takes care of all the plumbing&lt;br&gt;public partial struct Command {&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;[Variant] public static partial Command Move(Vector2 destination);&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;[Variant] public static partial Command Attack(Actor target);&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;[Variant] public static partial Command Patrol(List&amp;lt;Vector2&amp;gt; waypoints, int current);&lt;br&gt;}&lt;br&gt;&lt;br&gt;Command command = Command.Move(new Vector2(6.9f, 4.20f));&lt;br&gt;&lt;br&gt;switch (command) {&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;case { IsMove: true, move: var (destination) }: {&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;actor.position = destination;&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;break;&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;}&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;case { IsPatrol: true, patrol: var (waypoints, current) }:&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;...&lt;br&gt;}&lt;/p&gt;
+&lt;p&gt;Spire generates the factories and typed payloads at compile time. Match the variant and deconstruct its data where you consume it. Different systems can react to the same command, state, or result in their own way, without putting every operation on the data type itself.&lt;/p&gt;
+&lt;p&gt;Spire's struct-based unions are lightweight, with compact, allocation-free type-safe storage (No unsafe code!).&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Author unions in the Unity Inspector&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Add [Serializable] to your union and use it in serialized fields. Spire generates the variant picker and editable fields for the selected variant, including inside lists.&lt;/p&gt;
+&lt;p&gt;Compatible with Odin Inspector. Odin is optional.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Generate JSON serialization and deserialization&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Generate converters for System.Text.Json, Newtonsoft.Json, or both. Declare your variants and their data once; Spire generates the JSON serialization and deserialization code for you.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Use typed polymorphic data in Burst and DOTS&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Bring struct-based discriminated unions into Burst jobs and DOTS. Store your polymorphic data in NativeArray&amp;lt;T&amp;gt;, switch on their variants, and deconstruct their payloads inside your job.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Included&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;• Runtime library, analyzers, source generator, and IDE quick fixes.&lt;br&gt;• Generated Unity serialization and Inspector integration.&lt;br&gt;• Offline documentation and runtime API tooltips.&lt;br&gt;• Optional Quick Start sample without additional package dependencies.&lt;br&gt;• Optional Unity Showcase sample with a runnable scene, Inspector-editable presets, and example tests.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Installation&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Standard installation via Unity's Package Manager.&lt;/p&gt;
+&lt;p&gt;For Rider support, make sure that Roslyn Analyzers are enabled: &lt;strong&gt;Editor &amp;gt; Inspection Settings &amp;gt; Roslyn Analyzers&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Technical details&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;• &lt;strong&gt;Validated Unity versions:&lt;/strong&gt; 2022.3.62f3, 2023.2.22f1, and 6000.5.6f1.&lt;br&gt;• &lt;strong&gt;Unity 2020:&lt;/strong&gt; will not work.&lt;br&gt;• &lt;strong&gt;Unity 2021:&lt;/strong&gt; cannot load the current compiler extensions.&lt;br&gt;• &lt;strong&gt;IDE support:&lt;/strong&gt; Spire uses Roslyn's standard analysis/code-fix providers, any IDE that supports that should also support Spire. Verified in JetBrains Rider and Visual Studio Community.&lt;br&gt;• &lt;strong&gt;Tested desktop platforms and backends:&lt;/strong&gt; Linux x64 and Windows 10 x64 on all three versions, including Editor Mono, native serialization, rendered Inspector interaction, and standalone Mono/IL2CPP players.&lt;br&gt;• &lt;strong&gt;Tested Web builds:&lt;/strong&gt; WebGL2/IL2CPP on all three versions in Chrome and Firefox on desktop Linux, with High managed stripping and FullWithStacktrace exception support. Unity's default Web exception setting does not preserve all tested exception behavior. Other browsers and platforms require separate validation.&lt;br&gt;• &lt;strong&gt;Unity 2022 serialization:&lt;/strong&gt; non-generic unions pass native serialization; generic unions cannot use native Unity serialization on this version.&lt;br&gt;• &lt;strong&gt;Package minimum:&lt;/strong&gt; Unity 2022.3.62f3. The optional URP Showcase requires Unity 6000.5.6f1, URP 17.5.0, and Unity Test Framework 1.7.0; Quick Start has no additional package dependencies.&lt;br&gt;• &lt;strong&gt;JSON:&lt;/strong&gt; install the JSON library you select, System.Text.Json or Newtonsoft.Json, in your project.&lt;br&gt;• &lt;strong&gt;Burst/DOTS:&lt;/strong&gt; Spire does not have code that specifically targets Burst/DOTS, our discriminated unions are naturally Burst/DOTS compatible since they are struct-based. Note that the fields of the variants must also comply with Burst's restrictions (Spire isn't magic!). Consult the included Usage and Serialization guides for payload and serialization choices.&lt;br&gt;• &lt;strong&gt;Unity 6000.6.5f1 limitation (Linux):&lt;/strong&gt; an engine serialization bug affects generic unions with reference-type arguments, such as Command&amp;lt;string&amp;gt;. This crash is fixed in Unity 7000 (verified on 7000.0.0a12). We expect a backport to 6000.6.x soon, although its availability and timing remain unconfirmed.&lt;br&gt;• &lt;strong&gt;Third-party notice:&lt;/strong&gt; includes compiler compatibility definitions generated by PolySharp under the MIT license. See Third Party Notices in the package for details.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Documentation and support&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Offline guides are included in the package: Getting Started, Usage, Serialization, Troubleshooting, and Upgrading.&lt;/p&gt;
+&lt;p&gt;Support and bug reports: &lt;a href=&quot;https://github.com/Houtamelo/spire_csharp_analyzers/issues&quot;&gt;GitHub issue tracker&lt;/a&gt;.&lt;/p&gt;</textarea>
+</details></aside>
+<article id="description">
+<p><strong>Save time by catching errors at compile time.</strong></p>
+<p>Spire brings exhaustive matching and discriminated unions to Unity. Catch forgotten cases as your game evolves, generate missing branches in your IDE, and give each variant the data it needs.</p>
+<p><strong>Catch missing cases before you press Play</strong></p>
+<p>Use exhaustive matching with enums, classes, interfaces, structs, and discriminated unions. Spire checks switch statements/expressions, reports a compile-time error when cases are missing, and lists exactly which cases you forgot. No default: or catch-all case is required.</p>
+<p>Added a new class implementing an interface? Spire immediately reports the switches that need updating. The same applies when you add an enum member or a union variant.</p>
+<p>Follow the diagnostics straight to the affected code. Use the IDE quick fix to generate the unhandled cases, then fill in their behavior.</p>
+<p><strong>Give each variant its own data</strong></p>
+<p>Have you ever looked at an enum and wished you could attach different data to each variant?</p>
+<p><em>C# Utopia</em>:</p>
+<p>enum Command {<br>&nbsp;&nbsp;&nbsp;&nbsp;Move(Vector2 destination),<br>&nbsp;&nbsp;&nbsp;&nbsp;Patrol(List&lt;Vector2&gt; waypoints, int current),<br>&nbsp;&nbsp;&nbsp;&nbsp;Attack(Actor target),<br>}<br><br>Command command = Command.Move(new Vector2(6.9f, 4.20f));<br><br>switch (command) {<br>&nbsp;&nbsp;&nbsp;&nbsp;case Command.Move(Vector2 destination): {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;actor.position = destination;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;&nbsp;case Command.Patrol(List&lt;Vector2&gt; waypoints, int current):<br>&nbsp;&nbsp;&nbsp;&nbsp;...<br>}</p>
+<p>With Spire:</p>
+<p>[DiscriminatedUnion] // Spire's source generator takes care of all the plumbing<br>public partial struct Command {<br>&nbsp;&nbsp;&nbsp;&nbsp;[Variant] public static partial Command Move(Vector2 destination);<br>&nbsp;&nbsp;&nbsp;&nbsp;[Variant] public static partial Command Attack(Actor target);<br>&nbsp;&nbsp;&nbsp;&nbsp;[Variant] public static partial Command Patrol(List&lt;Vector2&gt; waypoints, int current);<br>}<br><br>Command command = Command.Move(new Vector2(6.9f, 4.20f));<br><br>switch (command) {<br>&nbsp;&nbsp;&nbsp;&nbsp;case { IsMove: true, move: var (destination) }: {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;actor.position = destination;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;&nbsp;case { IsPatrol: true, patrol: var (waypoints, current) }:<br>&nbsp;&nbsp;&nbsp;&nbsp;...<br>}</p>
+<p>Spire generates the factories and typed payloads at compile time. Match the variant and deconstruct its data where you consume it. Different systems can react to the same command, state, or result in their own way, without putting every operation on the data type itself.</p>
+<p>Spire's struct-based unions are lightweight, with compact, allocation-free type-safe storage (No unsafe code!).</p>
+<p><strong>Author unions in the Unity Inspector</strong></p>
+<p>Add [Serializable] to your union and use it in serialized fields. Spire generates the variant picker and editable fields for the selected variant, including inside lists.</p>
+<p>Compatible with Odin Inspector. Odin is optional.</p>
+<p><strong>Generate JSON serialization and deserialization</strong></p>
+<p>Generate converters for System.Text.Json, Newtonsoft.Json, or both. Declare your variants and their data once; Spire generates the JSON serialization and deserialization code for you.</p>
+<p><strong>Use typed polymorphic data in Burst and DOTS</strong></p>
+<p>Bring struct-based discriminated unions into Burst jobs and DOTS. Store your polymorphic data in NativeArray&lt;T&gt;, switch on their variants, and deconstruct their payloads inside your job.</p>
+<p><strong>Included</strong></p>
+<p>• Runtime library, analyzers, source generator, and IDE quick fixes.<br>• Generated Unity serialization and Inspector integration.<br>• Offline documentation and runtime API tooltips.<br>• Optional Quick Start sample without additional package dependencies.<br>• Optional Unity Showcase sample with a runnable scene, Inspector-editable presets, and example tests.</p>
+<p><strong>Installation</strong></p>
+<p>Standard installation via Unity's Package Manager.</p>
+<p>For Rider support, make sure that Roslyn Analyzers are enabled: <strong>Editor &gt; Inspection Settings &gt; Roslyn Analyzers</strong>.</p>
+<p><strong>Technical details</strong></p>
+<p>• <strong>Validated Unity versions:</strong> 2022.3.62f3, 2023.2.22f1, and 6000.5.6f1.<br>• <strong>Unity 2020:</strong> will not work.<br>• <strong>Unity 2021:</strong> cannot load the current compiler extensions.<br>• <strong>IDE support:</strong> Spire uses Roslyn's standard analysis/code-fix providers, any IDE that supports that should also support Spire. Verified in JetBrains Rider and Visual Studio Community.<br>• <strong>Tested desktop platforms and backends:</strong> Linux x64 and Windows 10 x64 on all three versions, including Editor Mono, native serialization, rendered Inspector interaction, and standalone Mono/IL2CPP players.<br>• <strong>Tested Web builds:</strong> WebGL2/IL2CPP on all three versions in Chrome and Firefox on desktop Linux, with High managed stripping and FullWithStacktrace exception support. Unity's default Web exception setting does not preserve all tested exception behavior. Other browsers and platforms require separate validation.<br>• <strong>Unity 2022 serialization:</strong> non-generic unions pass native serialization; generic unions cannot use native Unity serialization on this version.<br>• <strong>Package minimum:</strong> Unity 2022.3.62f3. The optional URP Showcase requires Unity 6000.5.6f1, URP 17.5.0, and Unity Test Framework 1.7.0; Quick Start has no additional package dependencies.<br>• <strong>JSON:</strong> install the JSON library you select, System.Text.Json or Newtonsoft.Json, in your project.<br>• <strong>Burst/DOTS:</strong> Spire does not have code that specifically targets Burst/DOTS, our discriminated unions are naturally Burst/DOTS compatible since they are struct-based. Note that the fields of the variants must also comply with Burst's restrictions (Spire isn't magic!). Consult the included Usage and Serialization guides for payload and serialization choices.<br>• <strong>Unity 6000.6.5f1 limitation (Linux):</strong> an engine serialization bug affects generic unions with reference-type arguments, such as Command&lt;string&gt;. This crash is fixed in Unity 7000 (verified on 7000.0.0a12). We expect a backport to 6000.6.x soon, although its availability and timing remain unconfirmed.<br>• <strong>Third-party notice:</strong> includes compiler compatibility definitions generated by PolySharp under the MIT license. See Third Party Notices in the package for details.</p>
+<p><strong>Documentation and support</strong></p>
+<p>Offline guides are included in the package: Getting Started, Usage, Serialization, Troubleshooting, and Upgrading.</p>
+<p>Support and bug reports: <a href="https://github.com/Houtamelo/spire_csharp_analyzers/issues">GitHub issue tracker</a>.</p>
+</article>
+<script>
+document.getElementById('select').addEventListener('click', () => {
+    const range = document.createRange();
+    range.selectNodeContents(document.getElementById('description'));
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+});
+document.getElementById('select-source').addEventListener('click', () => {
+    document.getElementById('source').select();
+});
+</script></body></html>

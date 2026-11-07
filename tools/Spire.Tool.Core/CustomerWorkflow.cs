@@ -33,7 +33,7 @@ public static class CustomerWorkflow
         {
             var manifestPath = Path.Combine(project, "Packages/manifest.json");
             var manifest = FileOps.ReadObject(manifestPath);
-            manifest["dependencies"]!["com.houtamelo.spire"] = "file:" + baseline;
+            manifest["dependencies"]!["individual.antonio-pedro-goncalves-ferreira.spire"] = "file:" + baseline;
             FileOps.WriteJson(manifestPath, manifest);
             FileOps.CopyDirectory(Path.Combine(baseline, "Samples~/Showcase"), Path.Combine(project, "Assets/Samples/SpireAcceptance"));
         }
@@ -137,8 +137,8 @@ public static class CustomerWorkflow
         package = FileOps.FullPath(package);
         var manifest = Path.Combine(package, "package.json");
         FileOps.RequireFile(manifest);
-        if (FileOps.ReadObject(manifest)["name"]?.GetValue<string>() != "com.houtamelo.spire")
-            throw new InvalidOperationException("Expected a com.houtamelo.spire package: " + manifest);
+        if (FileOps.ReadObject(manifest)["name"]?.GetValue<string>() != "individual.antonio-pedro-goncalves-ferreira.spire")
+            throw new InvalidOperationException("Expected a individual.antonio-pedro-goncalves-ferreira.spire package: " + manifest);
         foreach (var assembly in PackageWorkflow.Assemblies)
         {
             var dll = Path.Combine(package, assembly.Folder, assembly.Name + ".dll");

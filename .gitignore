@@ -44,6 +44,9 @@ feedback/summaries/
 # Project-local temp files
 tmp/
 
+# Local publishing credentials/configuration
+/.aws
+
 # Local-only projects; the Spire adaptations are submodules.
 /examples/UnityShowcase/
 /examples/2DPlatformer/

@@ -57,7 +57,7 @@ public static class TarballAcceptance
         try
         {
             var input = JsonUtility.FromJson<Inputs>(File.ReadAllText(Path.Combine(root, "tarball-inputs.json")));
-            var package = PackageInfo.FindForPackageName("com.houtamelo.spire");
+            var package = PackageInfo.FindForPackageName("individual.antonio-pedro-goncalves-ferreira.spire");
             Require(package != null, "Package Manager registered Spire", report);
             report.packageSource = package.source.ToString();
             report.packageVersion = package.version;
@@ -96,7 +96,7 @@ public static class TarballAcceptance
             }
             foreach (var name in new[] { "Houtamelo.Spire.Analyzers", "Houtamelo.Spire.PatternAnalysis", "Houtamelo.Spire.CodeFixes" })
             {
-                var asset = "Packages/com.houtamelo.spire/Analyzers/" + name + ".dll";
+                var asset = "Packages/individual.antonio-pedro-goncalves-ferreira.spire/Analyzers/" + name + ".dll";
                 var importer = AssetImporter.GetAtPath(asset) as PluginImporter;
                 Require(importer != null && !importer.GetCompatibleWithAnyPlatform() && !importer.GetCompatibleWithEditor(),
                     "Compiler DLL excluded from plugin imports: " + name, report);

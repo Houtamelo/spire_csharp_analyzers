@@ -4,8 +4,8 @@
   concrete wrappers; generic unions remain unsupported by its serializer.
   All three listed versions pass the full Editor harness, applicable native
   serialization, rendered Inspector interaction, and actual Mono/IL2CPP players
-  on Linux and Windows. Retain the currently declared minimum until release
-  metadata is finalized. See the
+  on Linux and Windows. The publisher selected 2022.3.62f3 as the package minimum
+  on November 7, 2026. See the
   [current validation](reviews/2026-11-05-unity-2022-2023-current-validation.md)
   and [rendered follow-up](reviews/2026-11-05-rendered-inspector-validation.md)
   for exact versions, DLLs, and test scope.
@@ -34,11 +34,13 @@
   run passes all 107 cases without filtering after removal of an unrelated
   subprocess capability probe.
   See the [validation report](reviews/2026-11-03-unity-7-il2cpp-validation.md).
-- Confirm the final minimum Unity version and supported platforms before
-  submission. This draft follows the current package documentation's validation
-  matrix; the release baseline remains a separate decision.
-- Confirm the Asset Store delivery format. The installation paragraph describes
-  the verified UPM bundle workflow and should match the final customer download.
+- The minimum Unity version is 2022.3.62f3, matching the oldest validated Editor.
+  Retain the documented platform and serialization limits; the optional URP
+  Showcase remains a Unity 6000 sample.
+- Delivery uses a single UPM package. Version 4.7.6 was uploaded through Unity's
+  official SDK, and the publisher confirmed submission for vetting on November 7.
+  Unity approval and published Store acquisition remain pending; see the
+  [submission evidence](reviews/2026-11-07-official-upm-validation.md).
 - The public [Getting Started guide](https://github.com/Houtamelo/spire_csharp_analyzers/blob/unity-6000/docs/unity-package/Documentation~/GettingStarted.md)
   and license URL were rechecked successfully on November 6. The package now
   includes documentation/license links and offline guides/changelog. The new

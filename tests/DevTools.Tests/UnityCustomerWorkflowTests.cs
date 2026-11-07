@@ -38,7 +38,7 @@ public sealed class UnityCustomerWorkflowTests
             Path.Combine(repositoryRoot, "tests", "UnityPackageSample", "ProjectSettings"),
             Path.Combine(fixture.ProjectPath, "ProjectSettings"));
         Assert.False(Directory.Exists(Path.Combine(fixture.ProjectPath, "Assets", "Samples", "SpireAcceptance")));
-        Assert.False(Directory.Exists(Path.Combine(fixture.ProjectPath, "Packages", "com.houtamelo.spire")));
+        Assert.False(Directory.Exists(Path.Combine(fixture.ProjectPath, "Packages", "individual.antonio-pedro-goncalves-ferreira.spire")));
         AssertSpirePackageDependency(fixture.ProjectPath, baseline: null);
         AssertCustomerInputs(fixture.ProjectPath, fixture.CandidatePath, baseline: null);
     }
@@ -290,15 +290,18 @@ public sealed class UnityCustomerWorkflowTests
 
     private static async Task<ProcessResult> RunCliAsync(string repositoryRoot, params string[] arguments)
     {
+        var launcherConfiguration = Environment.GetEnvironmentVariable("SPIRE_UNITY_TEST_CONFIGURATION") ??
+            (AppContext.BaseDirectory.Contains(Path.DirectorySeparatorChar + "Release" + Path.DirectorySeparatorChar,
+                StringComparison.Ordinal) ? "Release" : "Debug");
         var cliPath = Path.Combine(
             repositoryRoot,
             "tools",
             "Spire.Tool",
             "bin",
-            Configuration,
+            launcherConfiguration,
             "net10.0",
             "Spire.Tool.dll");
-        Assert.True(File.Exists(cliPath), $"Missing Debug Spire.Tool CLI: {cliPath}");
+        Assert.True(File.Exists(cliPath), $"Missing {launcherConfiguration} Spire.Tool CLI: {cliPath}");
 
         return await ProcessRunner.RunAsync(
             new ToolContext(repositoryRoot).Dotnet,
@@ -332,13 +335,13 @@ public sealed class UnityCustomerWorkflowTests
         var dependencies = document.RootElement.GetProperty("dependencies");
         if (baseline is null)
         {
-            Assert.False(dependencies.TryGetProperty("com.houtamelo.spire", out _));
+            Assert.False(dependencies.TryGetProperty("individual.antonio-pedro-goncalves-ferreira.spire", out _));
             return;
         }
 
         Assert.Equal(
             "file:" + Path.GetFullPath(baseline),
-            dependencies.GetProperty("com.houtamelo.spire").GetString());
+            dependencies.GetProperty("individual.antonio-pedro-goncalves-ferreira.spire").GetString());
     }
 
     private static void InvalidatePackage(string packagePath, string invalidKind)
@@ -348,8 +351,8 @@ public sealed class UnityCustomerWorkflowTests
             case "wrong-name":
                 var manifest = Path.Combine(packagePath, "package.json");
                 var text = File.ReadAllText(manifest);
-                Assert.Contains("com.houtamelo.spire", text, StringComparison.Ordinal);
-                File.WriteAllText(manifest, text.Replace("com.houtamelo.spire", "com.example.wrong", StringComparison.Ordinal));
+                Assert.Contains("individual.antonio-pedro-goncalves-ferreira.spire", text, StringComparison.Ordinal);
+                File.WriteAllText(manifest, text.Replace("individual.antonio-pedro-goncalves-ferreira.spire", "com.example.wrong", StringComparison.Ordinal));
                 break;
             case "missing-dll":
                 File.Delete(Path.Combine(packagePath, "Runtime", "Houtamelo.Spire.dll"));

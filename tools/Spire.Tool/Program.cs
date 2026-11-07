@@ -54,12 +54,12 @@ try
             return await UpmWorkflow.ValidateAsync(context, options.Value("package", ""), Project("unity-tarball"), editor,
                 prepare, options.Flag("allow-unsupported-signature"), timeout);
         case "package":
-            var output = await PackageWorkflow.BuildAsync(context, options.Value("output", context.PathOf("tmp/unity-package/com.houtamelo.spire")), configuration, build);
+            var output = await PackageWorkflow.BuildAsync(context, options.Value("output", context.PathOf("tmp/unity-package/individual.antonio-pedro-goncalves-ferreira.spire")), configuration, build);
             Console.WriteLine("Unity package: " + output);
             return 0;
         case "examples":
             var exampleProjects = ExamplesWorkflow.Prepare(context, options.Flag("example") ? options.Value("example", "") : null);
-            await PackageWorkflow.BuildAsync(context, context.PathOf("tmp/unity-package/com.houtamelo.spire"), configuration, build);
+            await PackageWorkflow.BuildAsync(context, context.PathOf("tmp/unity-package/individual.antonio-pedro-goncalves-ferreira.spire"), configuration, build);
             foreach (var example in exampleProjects)
                 Console.WriteLine("Unity example: " + example);
             return 0;
@@ -71,7 +71,7 @@ try
                 options.Value("method", "Spire.UnityVariantPayloadCore.CorePlayerBuild.BuildPlayers"), timeout, "tests/UnityVariantPayloadCore");
         case "unity-customer":
             return await CustomerWorkflow.RunAsync(context, Project("unity-customer"), editor,
-                options.Value("package", context.PathOf("tmp/unity-package/com.houtamelo.spire")),
+                options.Value("package", context.PathOf("tmp/unity-package/individual.antonio-pedro-goncalves-ferreira.spire")),
                 options.Flag("baseline") ? options.Value("baseline", "") : null, prepare, timeout);
         case "unity-behavioral":
             return await BehavioralWorkflow.RunAsync(context, Project(backend == "IL2CPP" ? "unity-il2cpp-behavioral" : "unity-behavioral"), editor, configuration, build, prepare, timeout, backend);

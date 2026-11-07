@@ -4,11 +4,11 @@ Discriminated unions, generated Inspector drawers, compiler diagnostics, and IDE
 code fixes. This bundle contains the runtime DLL, three compiler extensions,
 offline guides, API tooltips, and an optional URP showcase.
 
+**Minimum Unity version: 2022.3.62f3.**
 **Unity 2020 will not work.** Its compiler lacks features required by Spire.
 Concrete wrappers pass native serialization write/read checks for non-generic
 unions on Unity `2022.3.62f3`. Generic unions cannot use native serialization on
-Unity 2022. Keep the documented minimum version; older-Editor verification does
-not expand supported versions. See [Serialization](Documentation~/Serialization.md).
+Unity 2022. See [Serialization](Documentation~/Serialization.md).
 
 Validated on Unity 2022.3.62f3, 2023.2.22f1, and 6000.5.6f1 on Linux and Windows
 x64, with Editor Mono, applicable native serialization, rendered Inspector
@@ -29,7 +29,7 @@ remain those of the verified 6.5 environment. The current payload representation
 does not require unsafe code or an additional runtime Unsafe DLL.
 
 1. Add this folder using **Window → Package Manager → + → Install package from disk**
-   and select `package.json`, or copy it to `Packages/com.houtamelo.spire`.
+   and select `package.json`, or copy it to `Packages/individual.antonio-pedro-goncalves-ferreira.spire`.
 2. Follow [Getting started](Documentation~/GettingStarted.md) to enable Rider's
    Roslyn analyzers and compile your first union.
 3. Read [Usage](Documentation~/Usage.md), [Serialization](Documentation~/Serialization.md),
@@ -40,8 +40,8 @@ The optional **Quick Start** sample demonstrates a union, its generated accessor
 and a component Inspector without additional dependencies or a specific render
 pipeline. Import it from Package Manager's Samples tab.
 
-The optional **Unity Showcase (URP)** sample requires URP 17.5.0 and Unity Test
-Framework 1.7.0. Install those dependencies before importing it from Package
+The optional **Unity Showcase (URP)** sample requires Unity 6000.5.6f1, URP 17.5.0,
+and Unity Test Framework 1.7.0. Install those dependencies before importing it from Package
 Manager's Samples tab. Its [instructions](Samples~/Showcase/README.md) cover scene
 setup and tests. Spire itself does not require URP.
 

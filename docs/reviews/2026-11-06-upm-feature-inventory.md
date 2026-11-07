@@ -14,6 +14,12 @@ publishing settings remain unchecked. The [release-tooling follow-up](2026-11-06
 adds tracked signing/tarball acceptance, metadata, and Quick Start. Remaining
 recommendations below are proposals. No Portal draft or software upload was created.
 
+November 7 follow-up: the publisher confirmed a single-package draft with the
+technical name `individual.antonio-pedro-goncalves-ferreira.spire`. The namespace
+is exposed during draft creation. The exporter and acceptance fixtures now use
+that identity; see the [draft record](../../marketing/storefront/portal-draft.json).
+The earlier paragraphs describe the original research/signing session.
+
 ## Existing foundation
 
 The [packager](../../tools/Spire.Tool.Core/PackageWorkflow.cs) exports four DLLs,
@@ -38,7 +44,7 @@ remain separate gates. Existing runtime/version results remain in the
 
 | Feature | Use for Spire | Current state and recommendation | Official documentation |
 | --- | --- | --- | --- |
-| Publisher/product/package namespaces | Stable identity for releases and dependencies. | Enrollment is accepted. Confirm the enrolled prefix and reserve the product technical name before treating local `com.houtamelo.spire` as final. Folder and manifest names must match the reservation. | [Publishing workflow](https://docs.unity.com/en-us/asset-store/publishing/upm-packages/publish) |
+| Publisher/product/package namespaces | Stable identity for releases and dependencies. | Publisher-confirmed draft: `individual.antonio-pedro-goncalves-ferreira.spire`, one package. Exported folder/manifest names now match; `com.houtamelo.spire` is the former local identity. | [Publishing workflow](https://docs.unity.com/en-us/asset-store/publishing/upm-packages/publish) |
 | One product containing multiple packages | Sell one product with optional integrations, a Showcase package, or distinct compatibility requirements. Each package has its own version history. | Start with the current single package. Consider a Showcase package depending on core, URP, and Test Framework if automatic setup becomes valuable. | [Product structure](https://docs.unity.com/en-us/asset-store/publishing/upm-packages/create-draft) |
 | Package compatibility metadata | Declare supported Editor families and optionally render pipelines/build targets. | Enter only validated combinations. Keep the core independent of URP; a URP sample does not make the core URP-only. Choose the shipping minimum separately. | [Compatibility settings](https://docs.unity.com/en-us/asset-store/publishing/upm-packages/create-draft) |
 | UPM Validator and Uploader | Catch Store packaging issues and upload the real package. | Run in a clean publishing project with Validation Type UPM. The documented package size limit is 550 MB. This is additional to our behavioral acceptance. | [Validate and upload](https://docs.unity.com/en-us/asset-store/publishing/upm-packages/validate) |
@@ -64,7 +70,7 @@ documented publishing workflow. [CLI workflow](https://docs.unity.com/en-us/engi
 | --- | --- | --- | --- |
 | Manifest display/search/contact metadata | Improve discovery and the Package Manager details panel. | Implemented keywords, public author/support URL, and the measured three-version Linux/Windows description. | [Manifest fields](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/upm-manifest-pkg) |
 | Documentation, changelog, and license links | Make release guidance accessible from Package Manager, including offline fallbacks. | Added `CHANGELOG.md`, `LICENSE.md`, and verified public documentation/license URLs. Changelog stays offline until its public page exists. Notices and XML tooltips remain. | [Manifest links/fallbacks](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/upm-manifest-pkg) |
-| `unity` and `unityRelease` minimum | Filter incompatible package versions. | Currently `6000.5` + `6f1`. Older versions have validation evidence, but changing the published minimum remains a release decision. | [Minimum version fields](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/upm-manifest-pkg) |
+| `unity` and `unityRelease` minimum | Filter incompatible package versions. | Updated November 7 by publisher request to `2022.3` + `62f3`, matching the validated Unity 2022 baseline. The optional Showcase retains its Unity 6000 requirements. | [Minimum version fields](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/upm-manifest-pkg) |
 | Transitive package dependencies | Automatically install packages that every consumer needs. | Existing Unity-module dependencies are appropriate. Keep URP/Test Framework out of core dependencies. A separate integration package can declare its own required dependencies. | [Dependency resolution](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/dependencies-lp/upm-dependencies) |
 | Multiple optional `Samples~` entries | Offer small learning paths without compiling them on installation. | Showcase retained; Quick Start now imports and runs on all three tested Linux/Windows Editors without URP/Test Framework. JSON or Burst samples remain possible additions. | [Package samples](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/cus-samples) |
 | Conventional layout and stable `.meta` files | Preserve serialized asset references across package updates. | Already largely present. Keep authored GUIDs, deterministic generated GUIDs, and the explicit input allowlist. Imported sample assets still need their authored metadata even though Unity ignores `Samples~` itself. | [Package layout](https://docs.unity.com/en-us/engine/6000.0/manual/packages-list/cus-pkg-development/cus-layout) |
@@ -113,8 +119,9 @@ documented publishing workflow. [CLI workflow](https://docs.unity.com/en-us/engi
 
 ## Suggested implementation order
 
-1. Confirm enrolled namespace and product identity, choose the declared minimum,
-   and retain one core package initially. No need to split the four DLLs.
+1. Namespace and product identity are confirmed. The publisher selected a
+   2022.3.62f3 minimum on November 7. Retain one core package initially; no need
+   to split the four DLLs.
 2. Metadata, license/documentation links, offline changelog, and the non-URP
    Quick Start sample are implemented and validated.
 3. Separate signing, exact tarball acceptance, and a one-byte tampering control

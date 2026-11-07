@@ -1,14 +1,59 @@
 {
-  "title": "Houtamelo.Spire - Exhaustive Matching & Discriminated Unions",
+  "title": "Spire C# - Exhaustive Matching & Discriminated Unions",
   "summary": "Save time by catching errors at compile time. Exhaustive matching, IDE quick fixes, and lightweight discriminated unions with Inspector drawers, generated JSON converters, and Burst/DOTS support.",
   "regularPriceUsd": 20,
   "launchDiscountPercent": null,
   "proposedCategory": "Tools/Utilities",
   "proposedDeliveryFormat": "UPM, single-package product",
-  "currentPackageTechnicalName": "com.houtamelo.spire",
+  "currentPackageTechnicalName": "individual.antonio-pedro-goncalves-ferreira.spire",
   "currentSourceVersion": "4.7.6",
-  "releaseVersion": null,
-  "currentManifestMinimumUnityVersion": "6000.5.6f1",
+  "publisherNamespace": "individual.antonio-pedro-goncalves-ferreira",
+  "productNamespace": "spire",
+  "portalPackageTechnicalName": "individual.antonio-pedro-goncalves-ferreira.spire",
+  "portalIdentityConfirmedDate": "2026-11-07",
+  "portalDraftUrl": "https://cloud.unity.com/assetstore/publisher/products/6893155",
+  "productStructure": "Single package",
+  "packageIdentityMigrationRequired": false,
+  "releaseVersion": "4.7.6",
+  "lastUpload": {
+    "completedUtc": "2026-11-07T23:07:53.698Z",
+    "version": "4.7.6",
+    "minimumUnityVersion": "2022.3.62f3",
+    "artifactSha256": "d4a0482bdfa3fd8707f0e442c7af698338425d6e47e201692fa6b0d4297238bf",
+    "status": "Success",
+    "toolVersion": "0.3.3",
+    "editorVersion": "6000.5.6f1",
+    "validation": {
+      "passes": 46,
+      "warnings": 1,
+      "failures": 0
+    },
+    "submittedByAgent": false,
+    "publishedByAgent": false
+  },
+  "productSubmission": {
+    "status": "submitted-for-vetting",
+    "confirmedDate": "2026-11-07",
+    "source": "publisher-confirmed",
+    "version": "4.7.6",
+    "submittedBy": "publisher"
+  },
+  "currentManifestMinimumUnityVersion": "2022.3.62f3",
+  "portalCompatibility": {
+    "unityVersions": [
+      "2022.3",
+      "2023.2",
+      "6000.5"
+    ],
+    "validatedEditorVersions": [
+      "2022.3.62f3",
+      "2023.2.22f1",
+      "6000.5.6f1"
+    ],
+    "status": "Portal configuration not independently confirmed; publisher submitted the product for vetting",
+    "source": "docs/asset_store_listing.md; publisher-reported Portal state after upload"
+  },
+  "portalDescriptionPreviewStatus": "resolved; publisher-confirmed on 2026-11-07",
   "publisherProfile": "exists",
   "upmEnrollmentStatus": "accepted; publisher-confirmed",
   "upmEnrollmentSubmittedDate": "2026-11-03",
@@ -17,8 +62,13 @@
   "publicDocumentationUrl": "https://github.com/Houtamelo/spire_csharp_analyzers/blob/unity-6000/docs/unity-package/Documentation~/GettingStarted.md",
   "videoUrl": null,
   "sourceListing": "docs/asset_store_listing.md",
-  "sourceListingSha256": "e198b7b81e31b70aa2e2ecf72c45b403ca503fcb13a0268bff834e9d802e734d",
-  "descriptionFile": "listing/description.md",
+  "sourceListingSha256": "5e32fd66ffffa3ca81f7fa0727135e62352cf9dc77eb7196257e802c63694ee8",
+  "descriptionFile": "listing/upm-description.html",
+  "descriptionFormat": "conservative HTML subset (p, strong, em, a, br); copy rendered content into the rich-text editor and check Portal preview",
+  "descriptionHtmlSourceFile": "listing/upm-description-fragment.html",
+  "descriptionMarkdownFile": "listing/upm-description.md",
+  "descriptionPlainTextFile": "listing/upm-description.txt",
+  "featureDescriptionFile": "listing/description.md",
   "technicalDetailsFile": "listing/technical-details.md",
   "keywordsFile": "listing/keywords.txt",
   "media": [
@@ -33,6 +83,10 @@
     {
       "role": "icon",
       "file": "images/icon.png"
+    },
+    {
+      "role": "social",
+      "file": "images/social.png"
     },
     {
       "role": "gallery",

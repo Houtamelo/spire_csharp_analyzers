@@ -12,7 +12,7 @@ Build the CLI and package from a reviewed source checkout:
 ```sh
 dotnet build tools/Spire.Tool/Spire.Tool.csproj -c Release
 dotnet tools/Spire.Tool/bin/Release/net10.0/Spire.Tool.dll package \
-  --output tmp/release/package/com.houtamelo.spire
+  --output tmp/release/package/individual.antonio-pedro-goncalves-ferreira.spire
 ```
 
 In a separate shell scope, load the private credentials file and sign. Disable
@@ -24,7 +24,7 @@ with `--upm`; it need not be on PATH.
   set +x
   source "$HOME/.config/spire/upm-signing.env"
   dotnet tools/Spire.Tool/bin/Release/net10.0/Spire.Tool.dll package-sign \
-    --package tmp/release/package/com.houtamelo.spire \
+    --package tmp/release/package/individual.antonio-pedro-goncalves-ferreira.spire \
     --output tmp/release/signed --upm "$HOME/.upm/bin/upm"
 )
 ```
@@ -39,7 +39,7 @@ Install and validate the actual `.tgz` in an owned disposable project:
 
 ```sh
 dotnet tools/Spire.Tool/bin/Release/net10.0/Spire.Tool.dll unity-tarball \
-  --package tmp/release/signed/com.houtamelo.spire-4.7.6.tgz \
+  --package tmp/release/signed/individual.antonio-pedro-goncalves-ferreira.spire-4.7.6.tgz \
   --project tmp/release/customer-6000 \
   --editor /path/to/6000.5.6f1/Editor/Unity
 ```
@@ -71,7 +71,7 @@ data; it does not unpack and repack the archive.
 
 ```sh
 dotnet tools/Spire.Tool/bin/Release/net10.0/Spire.Tool.dll package-tamper \
-  --package tmp/release/signed/com.houtamelo.spire-4.7.6.tgz \
+  --package tmp/release/signed/individual.antonio-pedro-goncalves-ferreira.spire-4.7.6.tgz \
   --output tmp/release/tampered.tgz
 dotnet tools/Spire.Tool/bin/Release/net10.0/Spire.Tool.dll unity-tarball \
   --package tmp/release/tampered.tgz --project tmp/release/negative \
@@ -84,20 +84,40 @@ flagging it; our acceptance rejects it. Never upload the tampered artifact.
 
 ## Publisher Portal handoff
 
-1. Confirm the enrolled publisher namespace and reserve the technical name in a
-   single-package product draft. The current local name is `com.houtamelo.spire`.
-2. Choose the release version and declared minimum. The package remains `4.7.6`
-   with minimum `6000.5.6f1`; older-Editor validation has not changed that policy.
-3. Install current **Asset Store | Publishing Tools** from Unity's official
-   Store listing in the clean publishing project. The public GitHub 12.0.0
-   source lacks UPM validation mode; it cannot substitute for Store 12.0.6.
+1. The publisher confirmed a single-package draft on November 7, 2026:
+   `individual.antonio-pedro-goncalves-ferreira.spire`, product namespace `spire`.
+   The exporter and acceptance fixtures now match the
+   [recorded identity](../marketing/storefront/portal-draft.json). The previous
+   private name was `com.houtamelo.spire`; remove that local package before adding
+   the new identity to an existing project, to avoid duplicate Spire DLLs.
+2. The package remains `4.7.6`; the publisher selected `2022.3.62f3` as its minimum
+   on November 7, 2026. The optional Showcase still requires Unity 6000.5.6f1,
+   URP 17.5.0, and Unity Test Framework 1.7.0. Quick Start needs neither package.
+3. Install **Asset Store UPM | Publishing Tools** (`com.unity.upm-publishing-tools`)
+   from the current upload guide's official Store listing in a clean publishing
+   project. The listing reports version 0.3.3 on November 7, 2026. The historical
+   public GitHub 12.0.0 source lacks UPM validation mode and is not this package.
 4. Run **Window → Tools → Asset Store → Validator**, Validation Type **UPM**.
    Preserve its report and resolve findings before upload. Use Uploader's UPM
    Packages tab, then complete the Portal listing and approval submission.
+   In package metadata, set supported Unity families **2022.3, 2023.2, 6000.5**.
+   The default uploaded-from entry records the actual Editor used for upload;
+   uploader 0.3.3 does not send this supported-version list. The uploaded manifest
+   separately declares the minimum as 2022.3.62f3. No re-upload is needed to edit
+   Portal compatibility. Preserve the uploaded-from provenance.
 5. Choose manual publication for the first release. Once Store acquisition is
    available, verify My Assets installation and version changes separately.
 
 Unity requires a reserved draft/package identity before official UPM validation
 and upload. See [Unity's validation workflow](https://docs.unity.com/en-us/asset-store/publishing/upm-packages/validate)
-and [official Publishing Tools](https://assetstore.unity.com/packages/tools/utilities/asset-store-publishing-tools-115).
+and [official UPM Publishing Tools](https://assetstore.unity.com/packages/tools/asset-store-upm-publishing-tools-5368745).
 Local signing and customer acceptance do not establish Store approval.
+
+The [November 7 official validation](reviews/2026-11-07-official-upm-validation.md)
+records the acquired 0.3.3 tool's complete run against the current 4.7.6
+candidate: 46 passes, one retained dependency warning, zero failures. The exact
+signed 4.7.6 artifact has uploaded successfully through the official SDK from
+the Hub-authenticated Editor. On November 7, 2026, the publisher confirmed that
+the product was submitted for vetting. Unity approval and publication remain
+pending. Keep the optional-Showcase/generated-code warning explanation with the
+submission evidence.

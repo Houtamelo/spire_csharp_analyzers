@@ -249,7 +249,7 @@ public sealed class UnityAsmdefAcceptanceRunnerTests
                 .Select(path => RelativePath(sourceRoot, path)).OrderBy(path => path, StringComparer.Ordinal).ToArray();
             var actual = Directory.EnumerateFiles(targetRoot, "*", SearchOption.AllDirectories)
                 .Where(path => !string.Equals(Path.GetFileName(path), "csc.rsp", StringComparison.Ordinal))
-                .Where(path => directoryName != "Packages" || !RelativePath(targetRoot, path).StartsWith("com.houtamelo.spire/", StringComparison.Ordinal))
+                .Where(path => directoryName != "Packages" || !RelativePath(targetRoot, path).StartsWith("individual.antonio-pedro-goncalves-ferreira.spire/", StringComparison.Ordinal))
                 .Select(path => RelativePath(targetRoot, path)).OrderBy(path => path, StringComparer.Ordinal).ToArray();
             Assert.Equal(expected, actual);
             foreach (var relativePath in expected)
@@ -275,7 +275,7 @@ public sealed class UnityAsmdefAcceptanceRunnerTests
             Assert.Contains("-ruleset:Assets/Default.ruleset", File.ReadAllText(rsp));
         }
 
-        var sampleRoot = Path.Combine(projectPath, "Packages", "com.houtamelo.spire", "Samples~", "Showcase");
+        var sampleRoot = Path.Combine(projectPath, "Packages", "individual.antonio-pedro-goncalves-ferreira.spire", "Samples~", "Showcase");
         Assert.True(Directory.Exists(sampleRoot), sampleRoot);
         var sampleAsmdefs = Directory.EnumerateFiles(sampleRoot, "*.asmdef", SearchOption.AllDirectories).ToArray();
         Assert.NotEmpty(sampleAsmdefs);
@@ -353,13 +353,13 @@ public sealed class UnityAsmdefAcceptanceRunnerTests
 
     private static void AssertPackageProvenance(string repositoryRoot, string projectPath, string configuration)
     {
-        var packageRoot = Path.Combine(projectPath, "Packages", "com.houtamelo.spire");
+        var packageRoot = Path.Combine(projectPath, "Packages", "individual.antonio-pedro-goncalves-ferreira.spire");
         Assert.True(Directory.Exists(packageRoot), packageRoot);
         var packageJson = Path.Combine(packageRoot, "package.json");
         using var packageDocument = JsonDocument.Parse(File.ReadAllText(packageJson));
         var expectedVersion = XDocument.Load(Path.Combine(repositoryRoot, "src", "Houtamelo.Spire", "Houtamelo.Spire.csproj"))
             .Descendants("Version").Select(node => node.Value).Single();
-        Assert.Equal("com.houtamelo.spire", packageDocument.RootElement.GetProperty("name").GetString());
+        Assert.Equal("individual.antonio-pedro-goncalves-ferreira.spire", packageDocument.RootElement.GetProperty("name").GetString());
         Assert.Equal(expectedVersion, packageDocument.RootElement.GetProperty("version").GetString());
 
         var expectedAssemblies = new[]

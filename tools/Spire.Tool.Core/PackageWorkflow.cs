@@ -57,15 +57,15 @@ public static class PackageWorkflow
         }
         FileOps.WriteJson(Path.Combine(output, "package.json"), new JsonObject
         {
-            ["name"] = "com.houtamelo.spire",
+            ["name"] = "individual.antonio-pedro-goncalves-ferreira.spire",
             ["version"] = versions[0],
             ["displayName"] = "Houtamelo.Spire",
             ["description"] = "Type-safe discriminated unions, source generators, analyzers, and IDE quick fixes. Verified on Unity 2022.3.62f3, 2023.2.22f1, and 6000.5.6f1 on Linux and Windows x64, including Mono and IL2CPP players. See the included compatibility and serialization guidance.",
             ["keywords"] = new JsonArray("discriminated-unions", "source-generator", "roslyn", "analyzers", "type-safety", "serialization"),
             ["documentationUrl"] = "https://github.com/Houtamelo/spire_csharp_analyzers/blob/unity-6000/docs/unity-package/Documentation~/GettingStarted.md",
             ["licensesUrl"] = "https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/LICENSE",
-            ["unity"] = "6000.5",
-            ["unityRelease"] = "6f1",
+            ["unity"] = "2022.3",
+            ["unityRelease"] = "62f3",
             ["dependencies"] = new JsonObject { ["com.unity.modules.imgui"] = "1.0.0", ["com.unity.modules.uielements"] = "1.0.0" },
             ["samples"] = new JsonArray
             {
@@ -78,7 +78,7 @@ public static class PackageWorkflow
                 new JsonObject
                 {
                     ["displayName"] = "Unity Showcase (URP)",
-                    ["description"] = "Inspector, serialization, matching, and runtime examples. Requires URP 17.5.0 and Unity Test Framework 1.7.0 before import.",
+                    ["description"] = "Inspector, serialization, matching, and runtime examples. Requires Unity 6000.5.6f1, URP 17.5.0, and Unity Test Framework 1.7.0 before import.",
                     ["path"] = "Samples~/Showcase",
                 },
             },

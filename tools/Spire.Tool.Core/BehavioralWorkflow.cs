@@ -21,7 +21,7 @@ public static class BehavioralWorkflow
         FileOps.CopyDirectory(context.PathOf("tests/UnityBehavioral/Assets/Tests"), Path.Combine(project, "Assets/Tests"));
         FileOps.CopyDirectory(context.PathOf("tests/UnityBehavioral/Packages"), Path.Combine(project, "Packages"));
         FileOps.CopyDirectory(context.PathOf("tests/UnityIntegration/ProjectSettings"), Path.Combine(project, "ProjectSettings"));
-        await PackageWorkflow.BuildAsync(context, Path.Combine(project, "Packages/com.houtamelo.spire"), configuration, build).ConfigureAwait(false);
+        await PackageWorkflow.BuildAsync(context, Path.Combine(project, "Packages/individual.antonio-pedro-goncalves-ferreira.spire"), configuration, build).ConfigureAwait(false);
         if (build) await context.BuildAsync("tools/UnityTestDependencies/UnityTestDependencies.csproj", configuration).ConfigureAwait(false);
         var dependencyOutput = context.PathOf("tools/UnityTestDependencies/bin/" + configuration + "/netstandard2.1");
         var dependencies = Path.Combine(project, "Assets/Tests/Dependencies");

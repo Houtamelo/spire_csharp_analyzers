@@ -48,8 +48,8 @@ internal static class UpmWorkflow
         package = context.RequireOutsideExamples(package);
         output = context.RequireOutsideExamples(output);
         var manifest = FileOps.ReadObject(Path.Combine(package, "package.json"));
-        Require(manifest["name"]?.GetValue<string>() == "com.houtamelo.spire", "Expected a Spire package.");
-        Require(Path.GetFileName(package) == "com.houtamelo.spire", "Package folder must match its technical name.");
+        Require(manifest["name"]?.GetValue<string>() == "individual.antonio-pedro-goncalves-ferreira.spire", "Expected a Spire package.");
+        Require(Path.GetFileName(package) == "individual.antonio-pedro-goncalves-ferreira.spire", "Package folder must match its technical name.");
         var credentials = CredentialNames.ToDictionary(name => name, name => Environment.GetEnvironmentVariable(name));
         foreach (var item in credentials)
             Require(!string.IsNullOrWhiteSpace(item.Value), "Required environment variable is missing: " + item.Key);
@@ -69,7 +69,7 @@ internal static class UpmWorkflow
         text = Regex.Replace(text, @"(?i)(Basic|Bearer)\s+[A-Za-z0-9._~+/=-]+", "$1 [REDACTED]");
         FileOps.Write(Path.Combine(output, "signing.log"), text);
         Require(result.ExitCode == 0, "UPM signing failed (exit " + result.ExitCode + "); see the redacted signing.log.");
-        var archive = Path.Combine(output, "com.houtamelo.spire-" + manifest["version"]!.GetValue<string>() + ".tgz");
+        var archive = Path.Combine(output, "individual.antonio-pedro-goncalves-ferreira.spire-" + manifest["version"]!.GetValue<string>() + ".tgz");
         var payload = ReadArchive(archive);
         var packed = JsonNode.Parse(payload["package.json"])!.AsObject();
         var sourceManifest = manifest.DeepClone().AsObject();
@@ -108,7 +108,7 @@ internal static class UpmWorkflow
         }
         FileOps.WriteJson(Path.Combine(project, "tarball-inputs.json"), inputs);
         var manifest = FileOps.ReadObject(Path.Combine(project, "Packages/manifest.json"));
-        manifest["dependencies"]!["com.houtamelo.spire"] = "file:" + archive.Replace('\\', '/');
+        manifest["dependencies"]!["individual.antonio-pedro-goncalves-ferreira.spire"] = "file:" + archive.Replace('\\', '/');
         FileOps.WriteJson(Path.Combine(project, "Packages/manifest.json"), manifest);
         if (prepareOnly) return 0;
         FileOps.RequireFile(editor);
@@ -169,7 +169,7 @@ internal static class UpmWorkflow
         }
         Require(payload.TryGetValue("package.json", out var json), "Archive has no package.json.");
         var manifest = JsonNode.Parse(json!)!.AsObject();
-        Require(manifest["name"]?.GetValue<string>() == "com.houtamelo.spire", "Archive is not a Spire package.");
+        Require(manifest["name"]?.GetValue<string>() == "individual.antonio-pedro-goncalves-ferreira.spire", "Archive is not a Spire package.");
         foreach (var assembly in PackageWorkflow.Assemblies)
             foreach (var suffix in new[] { ".dll", ".dll.meta" })
                 Require(payload.ContainsKey(assembly.Folder + "/" + assembly.Name + suffix), "Archive is missing a product assembly or metadata.");

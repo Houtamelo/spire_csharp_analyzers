@@ -12,7 +12,7 @@ full exception support; see the [coverage and limitations](docs/unity.md#web-run
 extensions; see the [LTS validation](docs/reviews/2026-11-04-unity-lts-followup.md).
 Concrete per-variant wrappers pass native serialization write/read checks for
 non-generic unions on `2022.3.62f3`. Generic unions remain unsupported by that
-Editor's serializer. The minimum remains unchanged; see the
+Editor's serializer. The package minimum is **2022.3.62f3**; see the
 [wrapper validation](docs/reviews/2026-11-04-concrete-unity-wrappers.md).
 Build its local package:
 
@@ -20,7 +20,7 @@ Build its local package:
 dotnet run -c Release --project tools/Spire.Tool -- package
 ```
 
-Add `tmp/unity-package/com.houtamelo.spire/package.json` through Unity's Package
+Add `tmp/unity-package/individual.antonio-pedro-goncalves-ferreira.spire/package.json` through Unity's Package
 Manager. Apply `[Serializable]` to a mutable struct union to enable generated
 serialization and Inspector drawers. See [the Unity guide](docs/unity.md) for
 field support, asmdef references, and validation.

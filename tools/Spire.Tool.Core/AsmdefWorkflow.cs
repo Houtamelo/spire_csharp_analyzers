@@ -35,7 +35,7 @@ public static class AsmdefWorkflow
         foreach (var directory in Directory.EnumerateFiles(assets, "*.asmdef", SearchOption.AllDirectories)
                      .Select(path => Path.GetDirectoryName(path)!).Append(assets).Distinct(StringComparer.Ordinal))
             FileOps.Write(Path.Combine(directory, "csc.rsp"), "-langversion:9\n-ruleset:" + ruleset + "\n");
-        await PackageWorkflow.BuildAsync(context, Path.Combine(project, "Packages/com.houtamelo.spire"), configuration, build).ConfigureAwait(false);
+        await PackageWorkflow.BuildAsync(context, Path.Combine(project, "Packages/individual.antonio-pedro-goncalves-ferreira.spire"), configuration, build).ConfigureAwait(false);
         var matrix = context.PathOf("tests/UnityAsmdefIntegration/matrix.json");
         File.Copy(matrix, Path.Combine(project, "matrix.json"), true);
         FileOps.WriteJson(Path.Combine(project, "asmdef-inputs.json"), new JsonObject

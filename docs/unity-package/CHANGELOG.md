@@ -8,9 +8,10 @@
   using full exception support with stack traces.
 - Added a render-pipeline-independent Quick Start sample and signed-tarball
   delivery checks.
+- Lowered the declared minimum Unity version to 2022.3.62f3, matching the
+  validated Unity 2022 baseline.
 
-The declared package minimum remains Unity 6000.5.6f1 pending the publishing
-support decision. The URP Showcase has separate dependencies. Unity 2022 native
+The optional URP Showcase requires Unity 6000.5.6f1 and separate dependencies. Unity 2022 native
 serialization of generic unions is unsupported. Unity 6000.6.5f1 has a known
 generic-reference Editor crash. See the included README and serialization guide.
 

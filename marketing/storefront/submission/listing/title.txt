@@ -1,1 +1,1 @@
-Houtamelo.Spire - Exhaustive Matching & Discriminated Unions
+Spire C# - Exhaustive Matching & Discriminated Unions

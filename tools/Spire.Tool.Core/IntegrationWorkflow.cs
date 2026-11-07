@@ -16,7 +16,7 @@ public static class IntegrationWorkflow
         var sdkConfiguration = Path.Combine(fixture, "global.json");
         if (File.Exists(sdkConfiguration))
             File.Copy(sdkConfiguration, Path.Combine(project, "global.json"), true);
-        await PackageWorkflow.BuildAsync(context, Path.Combine(project, "Packages/com.houtamelo.spire"), configuration, build).ConfigureAwait(false);
+        await PackageWorkflow.BuildAsync(context, Path.Combine(project, "Packages/individual.antonio-pedro-goncalves-ferreira.spire"), configuration, build).ConfigureAwait(false);
         FileOps.Archive(project, Directory.EnumerateFiles(project).Where(path => Path.GetFileName(path).Contains("results") || Path.GetFileName(path).Contains("build-report") || Path.GetFileName(path).StartsWith("unity-integration-", StringComparison.Ordinal))
             .Append(Path.Combine(project, "Library/SpireUnityIntegration-stage.json")));
         ProcessResult? result = null;

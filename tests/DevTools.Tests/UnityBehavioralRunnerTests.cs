@@ -382,7 +382,7 @@ public sealed class UnityBehavioralRunnerTests
         var packageRuntime = Path.Combine(
             projectPath,
             "Packages",
-            "com.houtamelo.spire",
+            "individual.antonio-pedro-goncalves-ferreira.spire",
             "Runtime",
             "Houtamelo.Spire.dll");
         Assert.True(File.Exists(packageRuntime), packageRuntime);
