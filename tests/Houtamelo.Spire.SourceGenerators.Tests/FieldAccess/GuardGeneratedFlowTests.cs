@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -349,51 +350,98 @@ public sealed class GuardGeneratedFlowTests
         };
         worker.Start();
 
-        var completedBeforeCleanup = completed.Wait(TimeSpan.FromSeconds(10));
-        if (!completedBeforeCleanup)
+        Exception? assertionFailure = null;
+        try
         {
-            // A pre-fix implementation queues the await continuation here.
-            // Cleanup must not run on the Unity/test thread: reducer replay can
-            // synchronously wait for further continuations.
-            var cleanupCompleted = new ManualResetEventSlim(false);
-            var cleanup = new Thread(() =>
+            var signal = WaitHandle.WaitAny(
+                new[] { completed.WaitHandle, context.Posted.WaitHandle },
+                TimeSpan.FromSeconds(90));
+            var postedBeforeCleanup = signal == 1 || context.Posted.IsSet;
+            if (signal == WaitHandle.WaitTimeout)
             {
-                SynchronizationContext.SetSynchronizationContext(null);
+                assertionFailure = new TimeoutException(
+                    "Reducer worker neither completed nor posted a synchronization-context continuation within the 90-second watchdog.");
+            }
+            else
+            {
                 try
                 {
-                    var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
-                    while (!completed.IsSet && DateTime.UtcNow < deadline)
-                    {
-                        context.PumpAll();
-                        Thread.Sleep(10);
-                    }
-                    context.PumpAll();
+                    Assert.False(
+                        postedBeforeCleanup,
+                        "Reducer pipeline captured a non-pumping synchronization context before cleanup.");
                 }
-                finally
+                catch (Exception exception)
                 {
-                    cleanupCompleted.Set();
+                    // Preserve the observation made before any cleanup pump runs.
+                    assertionFailure = exception;
                 }
-            })
+            }
+        }
+        finally
+        {
+            var cleanupJoined = true;
+            if (!completed.IsSet)
             {
-                IsBackground = true,
-                Name = "Spire guard-flow synchronization-context cleanup",
-            };
-            cleanup.Start();
-            Assert.True(
-                cleanupCompleted.Wait(TimeSpan.FromSeconds(12)),
-                "Synchronization-context cleanup exceeded its watchdog.");
-            Assert.True(
-                completed.Wait(TimeSpan.FromSeconds(2)),
-                "Reducer worker did not exit after bounded synchronization-context cleanup.");
-            Assert.True(cleanup.Join(TimeSpan.FromSeconds(2)), "Synchronization-context cleanup did not join.");
-            cleanupCompleted.Dispose();
+                // A pre-fix implementation queues the await continuation here.
+                // Cleanup must not run on the Unity/test thread: reducer replay can
+                // synchronously wait for further continuations.
+                var cleanupCompleted = new ManualResetEventSlim(false);
+                Exception? cleanupFailure = null;
+                var cleanup = new Thread(() =>
+                {
+                    SynchronizationContext.SetSynchronizationContext(null);
+                    try
+                    {
+                        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+                        while (!completed.IsSet && DateTime.UtcNow < deadline)
+                        {
+                            context.PumpAll();
+                            Thread.Sleep(10);
+                        }
+                        context.PumpAll();
+                    }
+                    catch (Exception exception)
+                    {
+                        cleanupFailure = exception;
+                    }
+                    finally
+                    {
+                        cleanupCompleted.Set();
+                    }
+                })
+                {
+                    IsBackground = true,
+                    Name = "Spire guard-flow synchronization-context cleanup",
+                };
+                cleanup.Start();
+                var cleanupFinished = cleanupCompleted.Wait(TimeSpan.FromSeconds(35));
+                cleanupJoined = cleanup.Join(TimeSpan.FromSeconds(2));
+                if (!cleanupFinished)
+                    assertionFailure ??= new TimeoutException("Synchronization-context cleanup exceeded its watchdog.");
+                if (!cleanupJoined)
+                    assertionFailure ??= new TimeoutException("Synchronization-context cleanup did not join.");
+                else if (cleanupFailure is not null)
+                    assertionFailure ??= cleanupFailure;
+
+                if (!completed.Wait(TimeSpan.FromSeconds(5)))
+                    assertionFailure ??= new TimeoutException(
+                        "Reducer worker did not exit after bounded synchronization-context cleanup.");
+                if (cleanupJoined)
+                    cleanupCompleted.Dispose();
+            }
+
+            var workerJoined = worker.Join(TimeSpan.FromSeconds(5));
+            if (!workerJoined)
+                assertionFailure ??= new TimeoutException("Reducer worker did not join after completion.");
+            if (workerJoined && cleanupJoined)
+            {
+                completed.Dispose();
+                context.Dispose();
+            }
         }
 
-        Assert.True(worker.Join(TimeSpan.FromSeconds(2)), "Reducer worker did not join after completion.");
-        Assert.True(
-            completedBeforeCleanup,
-            "Reducer pipeline captured a non-pumping synchronization context before cleanup.");
-        completed.Dispose();
+        if (assertionFailure is not null)
+            ExceptionDispatchInfo.Capture(assertionFailure).Throw();
 
         var oracleFailure = Assert.IsType<GuardGeneratedFlowHarness.GuardFlowOracleException>(failure);
         Assert.Equal("AcceptedUnsafe", oracleFailure.Failure.Category);
@@ -701,17 +749,25 @@ public sealed class GuardGeneratedFlowTests
            $"if (GeneratedTrace.ActualKinds[{siteId}] != (int)Command.Kind.Move)\n" +
            $"    GeneratedTrace.MismatchSites[{siteId}] = 1;";
 
-    private sealed class NonPumpingSynchronizationContext : SynchronizationContext
+    private sealed class NonPumpingSynchronizationContext : SynchronizationContext, IDisposable
     {
         private readonly ConcurrentQueue<(SendOrPostCallback Callback, object? State)> _queued = new();
 
+        public ManualResetEventSlim Posted { get; } = new(false);
+
         public override void Post(SendOrPostCallback callback, object? state)
-            => _queued.Enqueue((callback, state));
+        {
+            Posted.Set();
+            _queued.Enqueue((callback, state));
+        }
 
         public void PumpAll()
         {
             while (_queued.TryDequeue(out var work))
                 work.Callback(work.State);
         }
+
+        public void Dispose()
+            => Posted.Dispose();
     }
 }

@@ -90,6 +90,13 @@ harness now avoids that context capture. A real non-pumping-context regression
 fails deterministically without the fix and passes with it, using bounded
 cleanup. The analyzer binary and its performance measurements were unchanged.
 
+Release CI subsequently exposed a timing assumption in that regression: a busy
+runner could exceed its ten-second completion deadline without capturing the
+context. The test now observes actual `SynchronizationContext.Post` calls and
+uses a separate completion watchdog. Removing the context-avoidance fix still
+fails on an observed capture; restoring it passes under constrained CPU. This
+correction changes only the test, with bounded cleanup on its failure paths.
+
 Counts overlap across host lanes and must not be added as independent semantic cases.
 These checks provide bounded integration evidence, not formal verification of
 all C# programs or a universal IDE latency guarantee.
