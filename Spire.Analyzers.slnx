@@ -14,6 +14,7 @@
     <Project Path="tests\Houtamelo.Spire.PatternAnalysis.Tests\Houtamelo.Spire.PatternAnalysis.Tests.csproj" />
     <Project Path="tests/UnityStructCatalog.Tests/UnityStructCatalog.Tests.csproj" />
     <Project Path="tests/Houtamelo.Spire.GlobalConfig.EndToEnd/Spire.GlobalConfig.EndToEnd.csproj" />
+    <Project Path="tests/Houtamelo.Spire.NuGet.Tests/Houtamelo.Spire.NuGet.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/DevTools/DevTools.csproj" />

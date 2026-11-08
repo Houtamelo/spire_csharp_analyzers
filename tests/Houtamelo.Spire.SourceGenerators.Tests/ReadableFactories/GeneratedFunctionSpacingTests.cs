@@ -27,7 +27,12 @@ public sealed class GeneratedFunctionSpacingTests
         Assert.Contains(
             result.GeneratedTrees.Select(tree => tree.GetText().ToString()),
             source => source.Contains("#pragma warning disable CS8619, CS8620", StringComparison.Ordinal));
+    }
 
+    [Fact]
+    [Trait("Environment", "Unity")]
+    public void UnityGeneratedFunctionMembersUseExactlyOneBlankLineWhenEitherIsMultiline()
+    {
         var unityResult = UnityGeneratorTestHarness.Run(
             UnitySource(),
             includeEditorReferences: true);
@@ -92,6 +97,7 @@ public sealed class GeneratedFunctionSpacingTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void AttributeTriviaDoesNotMakeAnExpressionBodiedMethodMultiline()
     {
         var result = UnityGeneratorTestHarness.Run(UnitySource());

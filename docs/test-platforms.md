@@ -1,5 +1,53 @@
 # Platform-specific test coverage
 
+## CoreCLR and Unity suites
+
+Run the portable CoreCLR/NuGet suite from the repository root:
+
+```sh
+bash tools/test-coreclr.sh
+```
+
+`tests/Spire.CoreCLR.slnx` retains the original analyzer, generator,
+PatternAnalysis, runtime behavioral, and MSBuild-configuration projects. It also
+tests installed local NuGet packages through complete and failing consumer
+builds. This suite needs the .NET 10 SDK, Bash, and `unzip`, with no Unity
+installation. CI runs it
+on pushes and pull requests, and the NuGet publishing workflow requires it.
+
+Tests that load installed Unity reference assemblies carry
+`[Trait("Environment", "Unity")]`; mixed tests keep their portable controls
+separate. The CoreCLR entry point excludes only that trait. To verify that no
+Unity installation is consulted, set `SPIRE_UNITY_EDITOR` to a nonexistent path.
+
+Run the Unity-reference generator suite with an installed Editor:
+
+```sh
+SPIRE_UNITY_EDITOR=/path/to/Editor/Unity bash tools/test-unity-metadata.sh
+```
+
+These tests compile generated callbacks and drawers against real Unity
+assemblies. They run in CoreCLR and do not replace the native Unity suites:
+
+```sh
+dotnet run -c Release --project tools/Spire.Tool -- unity-harness
+dotnet run -c Release --project tools/Spire.Tool -- unity-union-core
+dotnet run -c Release --project tools/Spire.Tool -- unity-behavioral --backend IL2CPP
+```
+
+The harness runs the shared compiler/analyzer and behavioral tests inside
+Editor Mono and verifies exact discovery/execution identities. The native
+union and player fixtures cover persistence, Inspector behavior, and runtime
+backends; see [Unity validation](unity.md). Keep both CoreCLR and native Unity
+gates when changing shared runtime or generation behavior. Benchmark correctness
+remains in the full solution and requires the .NET 11 preview compiler for its
+native C# union comparison types.
+
+The [suite isolation verification](reviews/2026-11-07-coreclr-unity-suite-isolation.md)
+records the current environment regressions, package consumers, and host results.
+
+## Operating systems
+
 Use `LinuxFact` or `WindowsFact` in `DevTools.Tests` when a test depends on that
 operating system's facilities. Ordinary `Fact` and `Theory` cases remain required
 on every host. A platform attribute declares a requirement; it must not be used

@@ -30,8 +30,9 @@ Twelve Linux-only cases are independently recorded as platform exclusions.
 
 The `unity-6000` compiler extensions target the Roslyn 4.3 API baseline. Native validation
 covers the versions and platform boundaries in the linked matrices; player
-serialization and stripping coverage are detailed below. The normal NuGet build
-remains on `main`. Other Unity versions and player platforms require separate
+serialization and stripping coverage are detailed below. The same sources also
+ship through NuGet; [CoreCLR and Unity suites](test-platforms.md) validate their
+separate compilation environments. Other Unity versions and player platforms require separate
 validation. Rider and Visual Studio Community have verified IDE workflows,
 including one representative live Quick Action and subsequent Unity recompilation.
 See the [current Windows validation evidence](reviews/2026-11-06-windows-unity-version-matrix.md)
@@ -245,6 +246,13 @@ public sealed class SpireExample : MonoBehaviour
 }
 ```
 
+Unity serialization also requires the target compilation's
+`UNITY_5_3_OR_NEWER` symbol and accessible Unity runtime APIs. Editor drawers
+additionally require `UNITY_EDITOR` and accessible Editor APIs. Ordinary .NET
+projects keep the normal `System.Serializable` payload markers without Unity
+generation or Unity serialization diagnostics, even if they reference Unity
+assemblies.
+
 Concrete unmanaged variant payloads overlap without unsafe code or manual size
 calculations. Generic-dependent fields use typed storage. Reference storage uses
 `ReferenceStorage.Auto`, `Typed`, or `Shared`, with Auto as the project default.
@@ -307,7 +315,9 @@ persisted.
 Variant changes initialize the new variant's fields to their defaults. Null,
 missing, or unrecognized payloads default to the first declared variant and emit
 `invalid union serialization data, defaulting to FirstVariantName` during
-deserialization. Drawer refresh does not repeat this warning.
+deserialization. The generated `__SpireCreateDefault(int kind)` helper also
+returns the first variant with default payload arguments for out-of-range
+integers. Drawer refresh does not repeat the deserialization warning.
 Unity's native normalization still applies, including null strings becoming
 empty strings and null inline helper objects becoming initialized objects. A
 managed-reference field preserves null instead.

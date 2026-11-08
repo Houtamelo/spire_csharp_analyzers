@@ -464,7 +464,7 @@ public sealed class UnityHarnessRunnerTests
                 StringComparison.Ordinal))
             .ToArray();
 
-        Assert.Equal(6, rows.Length);
+        Assert.Equal(5, rows.Length);
         Assert.Equal(
             rows.Length,
             rows.Select(value => value.GetProperty("identity").GetString()!)
@@ -475,23 +475,48 @@ public sealed class UnityHarnessRunnerTests
             var arguments = row.GetProperty("arguments");
             Assert.Equal(JsonValueKind.Array, arguments.ValueKind);
             Assert.Equal(3, arguments.GetArrayLength());
+            Assert.True(arguments[1].GetBoolean());
         });
 
-        foreach (var marker in new[]
-                 {
-                     "UnityNormalAdditive",
-                     "NoUnionInput",
-                     "UnityRecordRejectedInput",
-                     "UnityMissingEngineInput",
-                     "UnityZeroVariantInput",
-                     "UnityReadonlyRejectedInput",
-                 })
+        AssertTheoryRow(rows, "UnityNormalAdditive", expectedDiagnostic: null);
+        AssertTheoryRow(rows, "NoUnionInput", expectedDiagnostic: null);
+        AssertTheoryRow(rows, "UnityRecordRejectedInput", expectedDiagnostic: "SPIRE_DU013");
+        AssertTheoryRow(rows, "UnityZeroVariantInput", expectedDiagnostic: "SPIRE_DU003");
+        AssertTheoryRow(rows, "UnityReadonlyRejectedInput", expectedDiagnostic: "SPIRE_DU013");
+
+        const string portableIdentity =
+            "Houtamelo.Spire.SourceGenerators.Tests:" +
+            "Houtamelo.Spire.SourceGenerators.Tests.Unity.UnityDrawerSharedSupportTests." +
+            "EditorDrawer_NoSupportWithoutUnityReferences_RemainsCoreOnly()";
+        var portableCases = cases
+            .Where(row => string.Equals(
+                row.GetProperty("identity").GetString(),
+                portableIdentity,
+                StringComparison.Ordinal))
+            .ToArray();
+        Assert.Single(portableCases);
+        Assert.Equal(JsonValueKind.Array, portableCases[0].GetProperty("arguments").ValueKind);
+        Assert.Empty(portableCases[0].GetProperty("arguments").EnumerateArray());
+        Assert.Equal(JsonValueKind.Null, portableCases[0].GetProperty("row").ValueKind);
+
+        static void AssertTheoryRow(
+            JsonElement[] theoryRows,
+            string marker,
+            string? expectedDiagnostic)
         {
-            Assert.Contains(
-                rows,
-                row => row.GetProperty("arguments")[0].GetString()!.Contains(
+            var matching = theoryRows
+                .Where(row => row.GetProperty("arguments")[0].GetString()!.Contains(
                     marker,
-                    StringComparison.Ordinal));
+                    StringComparison.Ordinal))
+                .ToArray();
+            Assert.Single(matching);
+            var arguments = matching[0].GetProperty("arguments");
+            Assert.Equal(3, arguments.GetArrayLength());
+            Assert.True(arguments[1].GetBoolean());
+            if (expectedDiagnostic is null)
+                Assert.Equal(JsonValueKind.Null, arguments[2].ValueKind);
+            else
+                Assert.Equal(expectedDiagnostic, arguments[2].GetString());
         }
     }
 
@@ -511,13 +536,22 @@ public sealed class UnityHarnessRunnerTests
 
     private static string FindRepositoryRoot()
     {
+        var configured = Environment.GetEnvironmentVariable("SPIRE_UNITY_TEST_REPOSITORY_ROOT");
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            var full = Path.GetFullPath(configured);
+            if (IsRepositoryRoot(full))
+                return full;
+            throw new InvalidOperationException(
+                "Configured Unity test repository root is invalid: " + full);
+        }
+
         foreach (var startingPath in new[] { AppContext.BaseDirectory, Directory.GetCurrentDirectory() })
         {
             var directory = new DirectoryInfo(startingPath);
             while (directory is not null)
             {
-                if (File.Exists(Path.Combine(directory.FullName, "tools", "Spire.Tool", "Spire.Tool.csproj")) &&
-                    File.Exists(Path.Combine(directory.FullName, "src", "Houtamelo.Spire", "Houtamelo.Spire.csproj")))
+                if (IsRepositoryRoot(directory.FullName))
                 {
                     return directory.FullName;
                 }
@@ -528,6 +562,11 @@ public sealed class UnityHarnessRunnerTests
 
         throw new InvalidOperationException("Could not locate the repository root for Unity harness tests.");
     }
+
+    private static bool IsRepositoryRoot(string path)
+        => File.Exists(Path.Combine(path, "Spire.Analyzers.slnx")) &&
+            File.Exists(Path.Combine(path, "tools", "Spire.Tool", "Spire.Tool.csproj")) &&
+            File.Exists(Path.Combine(path, "tests", "UnityWebRuntime", "Assets", "Editor", "WebRuntimeBuild.cs"));
 
 #if !SPIRE_UNITY_TEST_HOST
     public sealed class HarnessBuildFixture : IAsyncLifetime

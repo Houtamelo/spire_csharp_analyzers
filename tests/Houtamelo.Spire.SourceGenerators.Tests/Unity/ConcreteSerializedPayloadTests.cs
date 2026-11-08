@@ -11,6 +11,7 @@ using Xunit;
 namespace Houtamelo.Spire.SourceGenerators.Tests.Unity;
 
 /// Behavioral contract for concrete Unity managed-reference payload wrappers.
+[Trait("Environment", "Unity")]
 public sealed class ConcreteSerializedPayloadTests
 {
     private const BindingFlags InstanceMembers =

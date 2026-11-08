@@ -297,7 +297,10 @@ public static class ProcessRunner
 
     public static void Kill(Process process, bool ownProcessGroup = false)
     {
-        if (ownProcessGroup && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) KillGroup(-process.Id, 9);
+        // A successful group kill already includes the root. Killing it again
+        // races process exit on Mono and can mask the caller's original error.
+        if (ownProcessGroup && RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && KillGroup(-process.Id, 9) == 0)
+            return;
         if (!process.HasExited) DevTools.ProcessCompatibility.KillTree(process);
     }
 

@@ -23,6 +23,7 @@ public sealed class UnityVariantPayloadGeneratorTests
         "Houtamelo.Spire.Generated.__SpireUnityVariantMetadata";
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void SerializableUnion_UsesSiblingMutablePayloadsAndOneSharedGenericWrapper()
     {
         var result = Run(BasicSource(), includeEditorReferences: true);
@@ -62,6 +63,7 @@ public sealed class UnityVariantPayloadGeneratorTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void SerializableUnion_PayloadFieldsCarryUnitySerializationPolicy()
     {
         var result = Run(ManagedReferencePayloadSource());
@@ -78,6 +80,7 @@ public sealed class UnityVariantPayloadGeneratorTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void SerializableUnion_RuntimeStorageIsNotSerializedAndFlatApiIsGone()
     {
         var result = Run(BasicSource());
@@ -99,6 +102,7 @@ public sealed class UnityVariantPayloadGeneratorTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void SerializableUnion_EmitsBridgeCallbacksAndNoEagerSnapshotFactoryAllocation()
     {
         var result = Run(BasicSource());
@@ -148,6 +152,7 @@ public sealed class UnityVariantPayloadGeneratorTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void SerializableUnion_GenericPayloadsPreserveConstraintsAndNestedScope()
     {
         var result = Run(GenericAndNestedSource());
@@ -165,6 +170,7 @@ public sealed class UnityVariantPayloadGeneratorTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void SerializableUnion_FormerVariantNameEmitsConcreteCanonicalAndFormerWrappers()
     {
         var result = Run(AliasSource());
@@ -193,6 +199,7 @@ public sealed class UnityVariantPayloadGeneratorTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void SerializableUnion_SharedEditorSupportIsOneGuardedSourceWithThinAdapters()
     {
         var result = Run(BasicSource(), includeEditorReferences: true);
@@ -230,6 +237,7 @@ public sealed class UnityVariantPayloadGeneratorTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void SerializableUnions_EmitOneWrapperAndOneEditorSupportPerCompilation()
     {
         var source = TwoSerializableUnionsSource();
@@ -269,6 +277,7 @@ public sealed class UnityVariantPayloadGeneratorTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void SharedEditorTemplate_IsAnEmbeddedCSharpSourceResource()
     {
         var generatorAssembly = typeof(DiscriminatedUnionGenerator).Assembly;
@@ -309,6 +318,7 @@ public sealed class UnityVariantPayloadGeneratorTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void SerializableUnion_GenericAncestorDiagnosticKeepsPayloadApi()
     {
         var result = Run(GenericAncestorSource());
@@ -322,7 +332,7 @@ public sealed class UnityVariantPayloadGeneratorTests
     }
 
     [Fact]
-    public void SerializableUnion_MissingUnityReferencesRetainsCoreApiAndDiagnostic()
+    public void SerializableUnion_MissingUnityReferencesRetainsCoreApiWithoutUnityOptIn()
     {
         var result = UnityGeneratorTestHarness.Run(
             """
@@ -336,10 +346,14 @@ public sealed class UnityVariantPayloadGeneratorTests
             """,
             includeUnityReferences: false);
 
-        Assert.Contains(result.GeneratorDiagnostics, diagnostic => diagnostic.Id == "SPIRE_DU016");
+        UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
         var union = FindUnion(result, "CoreOnly");
         Assert.NotEmpty(union.GetMembers("Value"));
         Assert.NotNull(result.OutputCompilation.GetTypeByMetadataName("CoreOnlyTypes+Variants+Value"));
+        Assert.DoesNotContain(
+            "ISerializationCallbackReceiver",
+            result.GeneratedSource,
+            StringComparison.Ordinal);
     }
 
     private static UnityGeneratorRun Run(string source, bool includeEditorReferences = false)

@@ -168,15 +168,13 @@ public partial struct Q09UnityGeneric<T> : global::Houtamelo.Spire.IDiscriminate
 
     [@EditorBrowsable(EditorBrowsableState.Never)]
     public static Q09UnityGeneric<T> __SpireCreateDefault(int kind) {
-        switch ((Kind)kind) {
-            case Kind.Some:
+        switch (kind) {
+            case (int)Kind.Some:
                 return Some(default(T)!);
-            case Kind.None:
+            case (int)Kind.None:
                 return None();
             default:
-                var unknown = default(Q09UnityGeneric<T>);
-                unknown._kind = (Kind)kind;
-                return unknown;
+                return Some(default(T)!);
         }
     }
 

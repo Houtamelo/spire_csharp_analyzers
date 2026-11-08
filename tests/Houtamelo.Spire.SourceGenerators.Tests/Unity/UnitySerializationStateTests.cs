@@ -10,6 +10,7 @@ using Xunit;
 namespace Houtamelo.Spire.SourceGenerators.Tests.Unity;
 
 /// Regression coverage for the single per-instance Unity serialization field.
+[Trait("Environment", "Unity")]
 public sealed class UnitySerializationStateTests
 {
     [Fact]

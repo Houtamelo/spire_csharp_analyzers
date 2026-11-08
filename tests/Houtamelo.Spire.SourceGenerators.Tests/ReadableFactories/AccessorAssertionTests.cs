@@ -18,6 +18,7 @@ namespace Houtamelo.Spire.SourceGenerators.Tests.ReadableFactories;
 public sealed class AccessorAssertionTests
 {
     [Fact]
+    [Trait("Environment", "Unity")]
     public void UnityFieldsKeepShortAttributesOnTheFieldLine()
     {
         var result = UnityGeneratorTestHarness.Run(
@@ -85,6 +86,7 @@ public sealed class AccessorAssertionTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void UnitySerializationPayloadBaseUsesAnAliasWhenItIsSafe()
     {
         var result = UnityGeneratorTestHarness.Run(UnitySource());
@@ -107,6 +109,7 @@ public sealed class AccessorAssertionTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void UnitySerializationPayloadBaseAliasIsSkippedWhenTheUnionOwnsThatName()
     {
         var result = UnityGeneratorTestHarness.Run(
@@ -152,6 +155,7 @@ public sealed class AccessorAssertionTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void UnityVariantAccessorsUseUnityAssertions()
     {
         var result = UnityGeneratorTestHarness.Run(UnitySource());
@@ -172,6 +176,7 @@ public sealed class AccessorAssertionTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void UnityAssertionsFollowTheUnityAssertionsSymbolInCSharp9Output()
     {
         var result = UnityGeneratorTestHarness.Run(

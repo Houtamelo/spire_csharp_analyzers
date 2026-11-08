@@ -4,7 +4,16 @@ Roslyn analyzers and source generators for C# type safety — struct initializat
 
 ## Installation
 
-This `unity-6000` branch validates Unity 2022.3.62f3, 2023.2.22f1, and 6000.5.6f1
+For ordinary .NET projects, install the NuGet bundle:
+
+```sh
+dotnet add package Houtamelo.Spire
+```
+
+NuGet and Unity use the same runtime, analyzers, and generators. Their separate
+test entry points are documented in [test platforms](docs/test-platforms.md).
+
+The Unity package validates Unity 2022.3.62f3, 2023.2.22f1, and 6000.5.6f1
 on Linux and Windows x64, including Editor Mono and standalone Mono/IL2CPP players.
 WebGL2/IL2CPP runtime checks also pass in Chrome and Firefox on desktop Linux with
 full exception support; see the [coverage and limitations](docs/unity.md#web-runtime).
@@ -28,12 +37,10 @@ field support, asmdef references, and validation.
 Annotate a variant parameter with `[UnitySerializeReference]` when its value needs
 to preserve null, derived types, or shared references through Unity serialization.
 
-Open the tracked [Unity showcase project](examples/UnityShowcase/README.md) for
+Open the tracked [Unity showcase project](tests/UnityPackageSample/README.md) for
 Inspector-editable presets, a runnable scene, and real Unity tests of the examples.
 The exported package includes the same showcase as an optional Package Manager
 sample, offline guides, runtime API tooltips, and third-party notices.
-
-The normal NuGet build is maintained on `main`.
 
 ## Rules
 

@@ -38,24 +38,27 @@ public sealed class VirtualDisplayTests
     [LinuxFact]
     public async Task RunAsync_PropagatesTheCallbackExceptionAndCleansUp()
     {
-        using var fixture = VirtualDisplayFixture.Create();
-        OwnedDisplay? ownedDisplay = null;
-        var sentinel = new InvalidOperationException("callback sentinel");
+        for (var iteration = 0; iteration < 16; iteration++)
+        {
+            using var fixture = VirtualDisplayFixture.Create();
+            OwnedDisplay? ownedDisplay = null;
+            var sentinel = new InvalidOperationException($"callback sentinel {iteration}");
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-            await InvokeRunAsync(
-                fixture.Root,
-                fixture.ErrorLog,
-                async display =>
-                {
-                    ownedDisplay = await CaptureDisplayAsync(fixture.Root, display);
-                    return await Task.FromException<string>(sentinel).ConfigureAwait(false);
-                }));
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                await InvokeRunAsync(
+                    fixture.Root,
+                    fixture.ErrorLog,
+                    async display =>
+                    {
+                        ownedDisplay = await CaptureDisplayAsync(fixture.Root, display);
+                        return await Task.FromException<string>(sentinel).ConfigureAwait(false);
+                    }));
 
-        Assert.True(File.Exists(fixture.ErrorLog), fixture.ErrorLog);
-        Assert.Same(sentinel, exception);
-        Assert.NotNull(ownedDisplay);
-        await AssertServerExitedAsync(ownedDisplay!);
+            Assert.True(File.Exists(fixture.ErrorLog), $"Iteration {iteration}: {fixture.ErrorLog}");
+            Assert.Same(sentinel, exception);
+            Assert.NotNull(ownedDisplay);
+            await AssertServerExitedAsync(ownedDisplay!);
+        }
     }
 
     [LinuxFact]

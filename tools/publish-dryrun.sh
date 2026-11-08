@@ -6,7 +6,7 @@ PROJECTS=(
     "src/Houtamelo.Spire.Analyzers/Houtamelo.Spire.Analyzers.csproj"
     "src/Houtamelo.Spire.CodeFixes/Houtamelo.Spire.CodeFixes.csproj"
 )
-SOLUTION="Spire.Analyzers.slnx"
+SOLUTION="tests/Spire.CoreCLR.slnx"
 
 # Validate repo root
 for CSPROJ in "${PROJECTS[@]}"; do
@@ -28,15 +28,16 @@ echo "=== Houtamelo.Spire v${VERSION} — dry run ==="
 
 echo ""
 echo "--- restore ---"
-dotnet restore "$SOLUTION"
+dotnet restore "$SOLUTION" -p:EnableSourceControlManagerQueries=false
 
 echo ""
 echo "--- build (Release) ---"
-dotnet build "$SOLUTION" -c Release --no-restore
+dotnet build "$SOLUTION" -c Release --no-restore -p:EnableSourceControlManagerQueries=false
 
 echo ""
 echo "--- test (Release) ---"
-dotnet test "$SOLUTION" -c Release --no-build --no-restore --logger trx
+dotnet test "$SOLUTION" -c Release --no-build --no-restore \
+    -p:EnableSourceControlManagerQueries=false --filter 'Environment!=Unity' --logger trx
 
 echo ""
 echo "--- pack (Release) ---"

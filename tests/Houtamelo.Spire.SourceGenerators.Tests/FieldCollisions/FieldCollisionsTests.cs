@@ -875,6 +875,7 @@ public sealed class FieldCollisionsTests : Behavioral.BehavioralTestBase
 public sealed class UnityFieldCollisionTests
 {
     [Fact]
+    [Trait("Environment", "Unity")]
     public void SerializablePayload_PreservesOriginalFactoryAndFieldSchema()
     {
         var result = UnityGeneratorTestHarness.Run("""
@@ -925,6 +926,7 @@ public sealed class UnityFieldCollisionTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void SerializablePayload_PreservesPerVariantReferenceNullability()
     {
         var result = UnityGeneratorTestHarness.Run("""
@@ -969,6 +971,7 @@ public sealed class UnityFieldCollisionTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void SerializableKeywordFields_KeepEscapedRuntimeAndPayloadNames()
     {
         var result = UnityGeneratorTestHarness.Run("""

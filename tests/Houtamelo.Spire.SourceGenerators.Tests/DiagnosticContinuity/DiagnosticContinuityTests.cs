@@ -35,6 +35,7 @@ public sealed class DiagnosticContinuityTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void InvalidFormerlySerializedAsAlias_DoesNotCorruptCanonicalPayloads()
     {
         var result = UnityGeneratorTestHarness.Run(InvalidAliasSource);
@@ -73,7 +74,7 @@ public sealed class DiagnosticContinuityTests
             out var diagnostics,
             path: "missing-unity-references.cs");
 
-        Assert.Contains(diagnostics, item => item.Id == "SPIRE_DU016");
+        Assert.DoesNotContain(diagnostics, item => item.Id == "SPIRE_DU016");
         AssertNoErrors(compilation);
         var union = Require(compilation.GetTypeByMetadataName("MissingUnityReferencesUnion"));
         Assert.NotEmpty(union.GetMembers("Value"));

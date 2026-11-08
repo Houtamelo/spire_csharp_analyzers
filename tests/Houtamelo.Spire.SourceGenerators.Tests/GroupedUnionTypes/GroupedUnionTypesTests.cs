@@ -270,6 +270,7 @@ public sealed class GroupedUnionTypesTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void UnityReferencePayloadUsesOnlySerializeReferenceAndKeepsFieldGetterAdjacent()
     {
         var result = UnityGeneratorTestHarness.Run(

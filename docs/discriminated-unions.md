@@ -69,6 +69,21 @@ deconstruction pattern: `{ IsVariant: true, variant: var (fields) }`. Prefix
 it with `case` in a switch statement. Fieldless variants need only the predicate.
 A captured payload's getters need no further kind guard.
 
+Guards follow short-circuit and nested control flow:
+
+```csharp
+bool PositiveCircle(Shape shape)
+    => shape.IsCircle && shape.circle.radius > 0;
+
+bool NotAPositiveCircle(Shape shape)
+    => !shape.IsCircle || shape.circle.radius <= 0;
+```
+
+The guard applies to the same unchanged value. Assignment, ref/out writes,
+mutable aliases, or calls that can change shared storage invalidate it. For a
+property or indexer result, capture a local snapshot and check that local before
+reading its payload. See [SPIRE014](rules/SPIRE014.md) for receiver stability.
+
 Variant accessors also assert the expected kind before reading their storage.
 Compilations with a usable Unity assertion API use `UnityEngine.Debug.Assert`
 (`UNITY_ASSERTIONS`); other hosts use `System.Diagnostics.Debug.Assert` (`DEBUG`).
@@ -191,7 +206,11 @@ when the union itself has that attribute. This opt-in also applies to former-nam
 payload aliases and is preserved when Unity references are unavailable.
 
 Mutable `[Serializable]` struct unions receive generated Unity callbacks and
-drawers when Unity references are present. Each variant has a concrete
+serialization only when the target compilation defines `UNITY_5_3_OR_NEWER`
+and references Unity's runtime APIs. Drawers additionally require `UNITY_EDITOR`
+and Editor APIs. `System.Serializable` alone, or merely referencing Unity
+assemblies in a normal .NET project, enables no Unity callbacks, drawers, or
+Unity-only validation. Each variant has a concrete
 managed-reference wrapper derived from a shared generic base; its inherited
 `value` field holds the public payload. Generic unions retain generic wrappers
 and cannot use native Unity serialization on Unity 2022. See [Unity](unity.md) for field
@@ -213,7 +232,7 @@ supported by Burst; unmanaged alone does not establish Burst compatibility.
 | [SPIRE013](rules/SPIRE013.md) | Wrong-variant accessor |
 | [SPIRE014](rules/SPIRE014.md) | Unguarded variant accessor |
 
-Non-record classes and ref structs are unsupported union declarations. Errors
+Non-record classes are unsupported union declarations. Errors
 are reported independently of source emission; unavailable optional components
 do not suppress an otherwise constructible core API.
 

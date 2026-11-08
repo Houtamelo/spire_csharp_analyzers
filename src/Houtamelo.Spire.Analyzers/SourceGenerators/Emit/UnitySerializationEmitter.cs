@@ -222,20 +222,26 @@ internal static class UnitySerializationEmitter
 
         AppendHidden(sb, union, $"public static {unionType} __SpireCreateDefault(int kind)");
         sb.OpenBrace();
-        sb.AppendLine("switch ((Kind)kind)");
+        sb.AppendLine("switch (kind)");
         sb.OpenBrace();
         foreach (var variant in union.Variants)
         {
-            sb.AppendLine($"case Kind.{IdentifierUtility.Escape(variant.Name)}:");
+            sb.AppendLine($"case (int)Kind.{IdentifierUtility.Escape(variant.Name)}:");
             sb.Indent();
             sb.AppendLine($"return {IdentifierUtility.Escape(variant.Name)}({string.Join(", ", variant.Fields.Select(field => $"default({field.TypeFullName})!"))});");
             sb.Dedent();
         }
         sb.AppendLine("default:");
         sb.Indent();
-        sb.AppendLine($"var unknown = default({unionType});");
-        sb.AppendLine($"unknown.{RuntimeKindFieldName} = (Kind)kind;");
-        sb.AppendLine("return unknown;");
+        if (union.Variants.Length == 0)
+        {
+            sb.AppendLine($"return default({unionType});");
+        }
+        else
+        {
+            var first = union.Variants[0];
+            sb.AppendLine($"return {IdentifierUtility.Escape(first.Name)}({string.Join(", ", first.Fields.Select(field => $"default({field.TypeFullName})!"))});");
+        }
         sb.Dedent();
         sb.CloseBrace();
         sb.CloseBrace();

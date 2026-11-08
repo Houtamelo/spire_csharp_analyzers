@@ -61,7 +61,9 @@ public static class PackageWorkflow
             ["version"] = versions[0],
             ["displayName"] = "Houtamelo.Spire",
             ["description"] = "Type-safe discriminated unions, source generators, analyzers, and IDE quick fixes. Verified on Unity 2022.3.62f3, 2023.2.22f1, and 6000.5.6f1 on Linux and Windows x64, including Mono and IL2CPP players. See the included compatibility and serialization guidance.",
-            ["keywords"] = new JsonArray("discriminated-unions", "source-generator", "roslyn", "analyzers", "type-safety", "serialization"),
+            // Unity can preload a JsonArray implementation without the newer span constructor.
+            ["keywords"] = new JsonArray(new JsonNode?[]
+                { "discriminated-unions", "source-generator", "roslyn", "analyzers", "type-safety", "serialization" }),
             ["documentationUrl"] = "https://github.com/Houtamelo/spire_csharp_analyzers/blob/unity-6000/docs/unity-package/Documentation~/GettingStarted.md",
             ["licensesUrl"] = "https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/LICENSE",
             ["unity"] = "2022.3",

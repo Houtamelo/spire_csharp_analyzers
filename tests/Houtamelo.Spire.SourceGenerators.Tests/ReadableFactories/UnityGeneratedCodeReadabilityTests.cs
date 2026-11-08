@@ -8,6 +8,7 @@ using Xunit;
 
 namespace Houtamelo.Spire.SourceGenerators.Tests.ReadableFactories;
 
+[Trait("Environment", "Unity")]
 public sealed class UnityGeneratedCodeReadabilityTests
 {
     [Fact]

@@ -2,7 +2,7 @@
   "Baseline": "46ac18b",
   "ProductionBuild": "Clean Release source build completed with 0 warnings and 0 errors before compatibility verification.",
   "CaptureMethod": "One-shot baseline generator-driver capture before emitter refactors; core/record/JSON/performance/benchmark bytes are in tmp/full-code-quality-review/batch2/raw and the expanded Unity bytes are in tmp/full-code-quality-review/batch2/raw-unity-expanded.",
-  "ApprovedChange": "The core, JSON struct, Unity base-union, and benchmark union fixtures include hand-authored public payload-to-union implicit conversion operators; affected hashes reflect that approved contract. Namespaced union fixtures also place generated aliases inside their namespace block. Generated variant payload structs now receive System.SerializableAttribute only when the union declaration opts into System.Serializable; affected unannotated core, JSON, and benchmark hashes reflect that opt-in boundary. The shared Unity drawer support now handles focus-event suppression on Unity 2022, which has no public FocusController.IgnoreEvent API. Unity serializable unions now emit internal sealed per-variant concrete SerializedPayloads wrappers with Preserve-marked public constructors, use those wrappers for canonical preparation/current-state checks while retaining generic-base compatibility for legacy restore, and resolve Inspector payload types through inherited value-field metadata; Unity player/editor hashes reflect this approved contract. The shared Unity drawer now preserves mixed-target values during binding, refreshes multi-object snapshots after edits, and bounds managed-reference alias traversal for cyclic graphs while accepting Unity's valid non-negative reference IDs; the affected shared-support hash reflects this approved contract.",
+  "ApprovedChange": "The core, JSON struct, Unity base-union, and benchmark union fixtures include hand-authored public payload-to-union implicit conversion operators; affected hashes reflect that approved contract. Namespaced union fixtures also place generated aliases inside their namespace block. Generated variant payload structs now receive System.SerializableAttribute only when the union declaration opts into System.Serializable; affected unannotated core, JSON, and benchmark hashes reflect that opt-in boundary. The shared Unity drawer support now handles focus-event suppression on Unity 2022, which has no public FocusController.IgnoreEvent API. Unity serializable unions now emit internal sealed per-variant concrete SerializedPayloads wrappers with Preserve-marked public constructors, use those wrappers for canonical preparation/current-state checks while retaining generic-base compatibility for legacy restore, and resolve Inspector payload types through inherited value-field metadata; Unity player/editor hashes reflect this approved contract. The shared Unity drawer now preserves mixed-target values during binding, refreshes multi-object snapshots after edits, and bounds managed-reference alias traversal for cyclic graphs while accepting Unity's valid non-negative reference IDs; the affected shared-support hash reflects this approved contract. Unity Q09 default construction now dispatches directly on the raw integer kind, handles only exact enum values, and falls back to the first declared variant for unknown values; the six affected Unity snapshot hashes reflect this helper contract.",
   "NewlinePolicy": "Compare exact UTF-8 source after normalizing CRLF or CR to LF only.",
   "Cases": [
     {
@@ -144,17 +144,17 @@
         {
           "Hint": "Q09UnityCommand.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-player/000-Q09UnityCommand.g.cs.txt",
-          "SourceSha256": "8cf6a47a4097ed982c381cd3686a6db29f913aba0345bedbc91feab3026ba89e"
+          "SourceSha256": "1f85bb3004f36ca013a5f0c2a59050eac0bd52442fff15e9c583cfafba6ff6d8"
         },
         {
           "Hint": "Q09UnityGeneric`1.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-player/001-Q09UnityGeneric`1.g.cs.txt",
-          "SourceSha256": "78526ba9e2c355cf23a9861270b6a3ad268a0c88d1b81cccd50976d14790ed75"
+          "SourceSha256": "57ce2c334cd2166a503d5af0a3fa94c79494945feae3a17ed1193a351b0126a0"
         },
         {
           "Hint": "Q09UnityPrivateContainer.event.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-player/002-Q09UnityPrivateContainer.event.g.cs.txt",
-          "SourceSha256": "71bd8fa9e5c05725584dd2a20576901e498200452628619c0892aee6c2888ee1"
+          "SourceSha256": "1dc75bbdb061724cdb3e78db681dfa9319356fadc01c9429594dc65859bf0d0e"
         },
         {
           "Hint": "Spire.UnitySerializationSupport.generated.cs",
@@ -176,7 +176,7 @@
         {
           "Hint": "Q09UnityCommand.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-editor/001-Q09UnityCommand.g.cs.txt",
-          "SourceSha256": "8cf6a47a4097ed982c381cd3686a6db29f913aba0345bedbc91feab3026ba89e"
+          "SourceSha256": "1f85bb3004f36ca013a5f0c2a59050eac0bd52442fff15e9c583cfafba6ff6d8"
         },
         {
           "Hint": "Q09UnityGeneric`1.UnityDrawer.g.cs",
@@ -186,7 +186,7 @@
         {
           "Hint": "Q09UnityGeneric`1.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-editor/003-Q09UnityGeneric`1.g.cs.txt",
-          "SourceSha256": "78526ba9e2c355cf23a9861270b6a3ad268a0c88d1b81cccd50976d14790ed75"
+          "SourceSha256": "57ce2c334cd2166a503d5af0a3fa94c79494945feae3a17ed1193a351b0126a0"
         },
         {
           "Hint": "Q09UnityPrivateContainer.event.UnityDrawer.g.cs",
@@ -196,7 +196,7 @@
         {
           "Hint": "Q09UnityPrivateContainer.event.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-editor/005-Q09UnityPrivateContainer.event.g.cs.txt",
-          "SourceSha256": "71bd8fa9e5c05725584dd2a20576901e498200452628619c0892aee6c2888ee1"
+          "SourceSha256": "1dc75bbdb061724cdb3e78db681dfa9319356fadc01c9429594dc65859bf0d0e"
         },
         {
           "Hint": "Spire.UnityDrawerSupport.generated.cs",

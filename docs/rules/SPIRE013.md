@@ -17,6 +17,14 @@ the accessor with its own variant.
 Generated `IsVariant` checks are equivalent to comparisons on `kind`, including
 negation, boolean comparisons, and property patterns. A negative check can leave
 multiple possible variants and does not prove a particular alternative.
+Nested conditions combine those constraints. Branches that rejoin contribute
+all remaining possibilities; an accessor is safe only when every possibility
+owns it. A payload restriction such as `speed: > 0` can fail while the variant
+still matches, so that pattern's failure does not exclude the whole variant.
+
+Receiver identity and proof invalidation follow the same rules as
+[SPIRE014](SPIRE014.md). An invalidated proof produces SPIRE014; a surviving
+proof that permits the wrong variant produces SPIRE013.
 
 The diagnostic names the accessed field, its required `kind`, and the kind known
 within the current scope. It also identifies the valid accessor when one is known.

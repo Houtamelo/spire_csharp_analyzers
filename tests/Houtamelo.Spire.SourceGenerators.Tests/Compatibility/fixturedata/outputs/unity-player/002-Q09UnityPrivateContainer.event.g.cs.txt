@@ -176,15 +176,13 @@ public partial class Q09UnityPrivateContainer {
 
         [@EditorBrowsable(EditorBrowsableState.Never)]
         public static @event __SpireCreateDefault(int kind) {
-            switch ((Kind)kind) {
-                case Kind.@new:
+            switch (kind) {
+                case (int)Kind.@new:
                     return @new(default(int)!, default(string)!);
-                case Kind.Empty:
+                case (int)Kind.Empty:
                     return Empty();
                 default:
-                    var unknown = default(@event);
-                    unknown._kind = (Kind)kind;
-                    return unknown;
+                    return @new(default(int)!, default(string)!);
             }
         }
 

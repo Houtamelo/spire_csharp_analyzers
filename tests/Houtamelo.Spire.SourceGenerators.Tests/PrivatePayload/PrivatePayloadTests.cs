@@ -137,6 +137,7 @@ public sealed class PrivatePayloadTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void UnityPayloadBackingFieldsCarrySerializationAttributes()
     {
         var result = UnityGeneratorTestHarness.Run(UnitySource());

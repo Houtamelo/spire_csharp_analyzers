@@ -217,17 +217,15 @@ public partial struct Q09UnityCommand : global::Houtamelo.Spire.IDiscriminatedUn
 
     [@EditorBrowsable(EditorBrowsableState.Never)]
     public static Q09UnityCommand __SpireCreateDefault(int kind) {
-        switch ((Kind)kind) {
-            case Kind.Move:
+        switch (kind) {
+            case (int)Kind.Move:
                 return Move(default(global::UnityEngine.Vector3)!, default(string?)!);
-            case Kind.ObjectRef:
+            case (int)Kind.ObjectRef:
                 return ObjectRef(default(global::UnityEngine.Texture2D)!);
-            case Kind.Empty:
+            case (int)Kind.Empty:
                 return Empty();
             default:
-                var unknown = default(Q09UnityCommand);
-                unknown._kind = (Kind)kind;
-                return unknown;
+                return Move(default(global::UnityEngine.Vector3)!, default(string?)!);
         }
     }
 

@@ -11,6 +11,7 @@ namespace Houtamelo.Spire.SourceGenerators.Tests.UnityMetadataRegressions;
 
 /// Unity-reference generator contracts that are independent of native asset
 /// persistence and Inspector interaction.
+[Trait("Environment", "Unity")]
 public sealed class UnityMetadataRegressionsTests
 {
     [Fact]

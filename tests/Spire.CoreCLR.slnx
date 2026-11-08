@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Houtamelo.Spire/Houtamelo.Spire.csproj" />
+    <Project Path="../src/Houtamelo.Spire.Analyzers/Houtamelo.Spire.Analyzers.csproj" />
+    <Project Path="../src/Houtamelo.Spire.CodeFixes/Houtamelo.Spire.CodeFixes.csproj" />
+    <Project Path="../src/Houtamelo.Spire.PatternAnalysis/Houtamelo.Spire.PatternAnalysis.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="Houtamelo.Spire.Analyzers.Tests/Houtamelo.Spire.Analyzers.Tests.csproj" />
+    <Project Path="Houtamelo.Spire.SourceGenerators.Tests/Houtamelo.Spire.SourceGenerators.Tests.csproj" />
+    <Project Path="Houtamelo.Spire.PatternAnalysis.Tests/Houtamelo.Spire.PatternAnalysis.Tests.csproj" />
+    <Project Path="Houtamelo.Spire.BehavioralTests/Spire.BehavioralTests.csproj" />
+    <Project Path="Houtamelo.Spire.GlobalConfig.EndToEnd/Spire.GlobalConfig.EndToEnd.csproj" />
+    <Project Path="Houtamelo.Spire.NuGet.Tests/Houtamelo.Spire.NuGet.Tests.csproj" />
+  </Folder>
+</Solution>

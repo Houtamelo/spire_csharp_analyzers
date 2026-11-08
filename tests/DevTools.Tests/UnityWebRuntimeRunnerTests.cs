@@ -279,10 +279,28 @@ public sealed class UnityWebRuntimeRunnerTests
 
     private static string FindRepositoryRoot()
     {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-            if (File.Exists(Path.Combine(directory.FullName, "Spire.Analyzers.slnx"))) return directory.FullName;
+        var configured = Environment.GetEnvironmentVariable("SPIRE_UNITY_TEST_REPOSITORY_ROOT");
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            var full = Path.GetFullPath(configured);
+            if (IsRepositoryRoot(full))
+                return full;
+            throw new InvalidOperationException("Configured Unity test repository root is invalid: " + full);
+        }
+
+        foreach (var startingPath in new[] { AppContext.BaseDirectory, Directory.GetCurrentDirectory() })
+        {
+            for (var directory = new DirectoryInfo(startingPath); directory is not null; directory = directory.Parent)
+                if (IsRepositoryRoot(directory.FullName)) return directory.FullName;
+        }
+
         throw new InvalidOperationException("Repository root not found.");
     }
+
+    private static bool IsRepositoryRoot(string path)
+        => File.Exists(Path.Combine(path, "Spire.Analyzers.slnx")) &&
+            File.Exists(Path.Combine(path, "tools", "Spire.Tool", "Spire.Tool.csproj")) &&
+            File.Exists(Path.Combine(path, "tests", "UnityWebRuntime", "Assets", "Editor", "WebRuntimeBuild.cs"));
 
     private sealed class PreparationFixture : IDisposable
     {

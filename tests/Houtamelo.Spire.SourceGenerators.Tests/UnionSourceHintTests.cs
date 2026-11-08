@@ -244,6 +244,7 @@ public sealed class UnionSourceHintTests : Behavioral.BehavioralTestBase
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void UnitySerializedNestedHostArities_CompileAgainstRealUnityReferences()
     {
         var result = UnityGeneratorTestHarness.Run("""

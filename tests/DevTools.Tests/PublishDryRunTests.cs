@@ -84,6 +84,22 @@ public sealed class PublishDryRunTests
         AssertNoBuildOutputs(fixture.Root);
     }
 
+    [Fact]
+    public async Task PublishDryRun_WithFailingPortableTestStopsBeforePacking()
+    {
+        using var fixture = Fixture.Create("1.2.3", "1.2.3", "1.2.3", failingPortableTest: true);
+
+        var result = await RunScriptAsync(
+            fixture.Root,
+            Path.Combine(fixture.Root, "tools", "publish-dryrun.sh"));
+
+        Assert.False(result.TimedOut, result.CombinedOutput);
+        Assert.NotEqual(0, result.ExitCode);
+        Assert.Contains("PortableFailure", result.CombinedOutput, StringComparison.Ordinal);
+        Assert.DoesNotContain("--- pack (Release) ---", result.CombinedOutput, StringComparison.Ordinal);
+        Assert.Empty(Directory.EnumerateFiles(fixture.Root, "*.nupkg", SearchOption.AllDirectories));
+    }
+
     private static async Task<ProcessResult> RunScriptAsync(string workingDirectory, string scriptPath)
     {
         using var process = new Process
@@ -194,7 +210,11 @@ public sealed class PublishDryRunTests
 
         public string Root { get; }
 
-        public static Fixture Create(string coreVersion, string analyzerVersion, string codeFixesVersion)
+        public static Fixture Create(
+            string coreVersion,
+            string analyzerVersion,
+            string codeFixesVersion,
+            bool failingPortableTest = false)
         {
             var fixture = new Fixture(Path.Combine(Path.GetTempPath(), $"spire-publish-{Guid.NewGuid():N}"));
             Directory.CreateDirectory(Path.Combine(fixture.Root, "tools"));
@@ -210,13 +230,17 @@ public sealed class PublishDryRunTests
             CreateProject(fixture.Root, Packages[0], coreVersion);
             CreateProject(fixture.Root, Packages[1], analyzerVersion);
             CreateProject(fixture.Root, Packages[2], codeFixesVersion);
+            CreateTestProject(fixture.Root, failingPortableTest);
             File.WriteAllText(
-                Path.Combine(fixture.Root, "Spire.Analyzers.slnx"),
+                Path.Combine(fixture.Root, "tests", "Spire.CoreCLR.slnx"),
                 "<Solution>\n" +
                 "  <Folder Name=\"/src/\">\n" +
-                "    <Project Path=\"src/Houtamelo.Spire/Houtamelo.Spire.csproj\" />\n" +
-                "    <Project Path=\"src/Houtamelo.Spire.Analyzers/Houtamelo.Spire.Analyzers.csproj\" />\n" +
-                "    <Project Path=\"src/Houtamelo.Spire.CodeFixes/Houtamelo.Spire.CodeFixes.csproj\" />\n" +
+                "    <Project Path=\"../src/Houtamelo.Spire/Houtamelo.Spire.csproj\" />\n" +
+                "    <Project Path=\"../src/Houtamelo.Spire.Analyzers/Houtamelo.Spire.Analyzers.csproj\" />\n" +
+                "    <Project Path=\"../src/Houtamelo.Spire.CodeFixes/Houtamelo.Spire.CodeFixes.csproj\" />\n" +
+                "  </Folder>\n" +
+                "  <Folder Name=\"/tests/\">\n" +
+                "    <Project Path=\"PublishFixture.Tests/PublishFixture.Tests.csproj\" />\n" +
                 "  </Folder>\n" +
                 "</Solution>\n");
 
@@ -251,6 +275,40 @@ public sealed class PublishDryRunTests
                 "public static class Marker\n" +
                 "{\n" +
                 "    public static int Value => 42;\n" +
+                "}\n");
+        }
+
+        private static void CreateTestProject(string root, bool failingPortableTest)
+        {
+            var projectDirectory = Path.Combine(root, "tests", "PublishFixture.Tests");
+            Directory.CreateDirectory(projectDirectory);
+            File.WriteAllText(
+                Path.Combine(projectDirectory, "PublishFixture.Tests.csproj"),
+                "<Project Sdk=\"Microsoft.NET.Sdk\">\n" +
+                "  <PropertyGroup>\n" +
+                "    <TargetFramework>net10.0</TargetFramework>\n" +
+                "    <IsTestProject>true</IsTestProject>\n" +
+                "    <ImplicitUsings>enable</ImplicitUsings>\n" +
+                "    <Nullable>enable</Nullable>\n" +
+                "  </PropertyGroup>\n" +
+                "  <ItemGroup>\n" +
+                "    <PackageReference Include=\"Microsoft.NET.Test.Sdk\" Version=\"17.12.0\" />\n" +
+                "    <PackageReference Include=\"xunit\" Version=\"2.9.3\" />\n" +
+                "    <PackageReference Include=\"xunit.runner.visualstudio\" Version=\"3.0.2\" />\n" +
+                "  </ItemGroup>\n" +
+                "</Project>\n");
+            File.WriteAllText(
+                Path.Combine(projectDirectory, "EnvironmentFixtureTests.cs"),
+                "using Xunit;\n\n" +
+                "public sealed class EnvironmentFixtureTests\n" +
+                "{\n" +
+                "    [Fact]\n" +
+                "    public void PortablePasses() { }\n\n" +
+                "    [Fact, Trait(\"Environment\", \"Unity\")]\n" +
+                "    public void UnityOnlyFailureIsFiltered() => Assert.True(false);\n" +
+                (failingPortableTest
+                    ? "\n    [Fact]\n    public void PortableFailure() => Assert.True(false);\n"
+                    : string.Empty) +
                 "}\n");
         }
     }

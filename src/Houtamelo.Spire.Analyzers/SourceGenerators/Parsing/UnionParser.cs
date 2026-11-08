@@ -28,7 +28,8 @@ internal static class UnionParser
         var rawConfig = ReadAttributeArgs(ctx.Attributes);
         var isGeneric = typeSymbol.TypeParameters.Length > 0;
         var isUnitySerializable = UnitySerializationValidation.HasSerializableAttribute(typeSymbol);
-        var useUnityAssertions = HasUsableUnityDebugAssert(ctx.SemanticModel.Compilation);
+        var useUnityAssertions = CompilationInfo.IsUnityCompilation(ctx.SemanticModel.Compilation) &&
+            HasUsableUnityDebugAssert(ctx.SemanticModel.Compilation);
         var unitySerializeReferenceAttribute = ctx.SemanticModel.Compilation.GetTypeByMetadataName(
             UnitySerializeReferenceAttributeMetadataName);
 

@@ -152,6 +152,7 @@ public sealed class VariantPayloadImplicitConversionTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void FormerNamePayload_IsCanonicalOnly()
     {
         var result = UnityGeneratorTestHarness.Run(

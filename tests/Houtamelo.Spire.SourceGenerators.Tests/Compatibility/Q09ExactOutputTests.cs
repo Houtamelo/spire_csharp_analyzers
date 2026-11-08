@@ -17,17 +17,21 @@ namespace Houtamelo.Spire.SourceGenerators.Tests.Compatibility;
 public sealed class Q09ExactOutputTests
 {
     [Fact]
-    public void BaselineManifest_ContainsEveryRequiredCaseAndExactGeneratedSource()
+    public void BaselineManifest_CoreCasesContainExactGeneratedSource()
     {
         var manifest = LoadManifest();
 
         Assert.Equal("46ac18b", manifest.Baseline);
-        Assert.Equal(30, manifest.Cases.Count);
+        var coreCases = manifest.Cases
+            .Where(caseInfo => !caseInfo.Kind.StartsWith("unity-", StringComparison.Ordinal))
+            .ToArray();
+
+        Assert.Equal(28, coreCases.Length);
         Assert.Equal(24, manifest.Cases.Count(caseInfo =>
             caseInfo.Kind.StartsWith("performance-", StringComparison.Ordinal)));
 
         var outputCount = 0;
-        foreach (var caseInfo in manifest.Cases)
+        foreach (var caseInfo in coreCases)
         {
             var source = ReadData(caseInfo.Input);
             var result = RunCase(caseInfo, source);
@@ -36,7 +40,31 @@ public sealed class Q09ExactOutputTests
             outputCount += caseInfo.Outputs.Count;
         }
 
-        Assert.Equal(77, outputCount);
+        Assert.Equal(65, outputCount);
+    }
+
+    [Fact]
+    [Trait("Environment", "Unity")]
+    public void BaselineManifest_UnityCasesContainExactGeneratedSource()
+    {
+        var manifest = LoadManifest();
+        var unityCases = manifest.Cases
+            .Where(caseInfo => caseInfo.Kind.StartsWith("unity-", StringComparison.Ordinal))
+            .ToArray();
+
+        Assert.Equal(2, unityCases.Length);
+
+        var outputCount = 0;
+        foreach (var caseInfo in unityCases)
+        {
+            var source = ReadData(caseInfo.Input);
+            var result = RunCase(caseInfo, source);
+            AssertExactOutputs(caseInfo, result.GeneratedTrees);
+            ArchiveActualOutputsIfRequested(caseInfo, result.GeneratedTrees);
+            outputCount += caseInfo.Outputs.Count;
+        }
+
+        Assert.Equal(12, outputCount);
     }
 
     [Fact]
@@ -56,7 +84,7 @@ public sealed class Q09ExactOutputTests
     }
 
     [Fact]
-    public void PerformanceAndUnitySupport_RemainStableAcrossRepeatedRuns()
+    public void PerformanceSupport_RemainsStableAcrossRepeatedRuns()
     {
         var manifest = LoadManifest();
 
@@ -66,7 +94,13 @@ public sealed class Q09ExactOutputTests
         var performanceFirst = RunInlinerStruct(performanceSource, "q09/performance-first.cs");
         var performanceSecond = RunInlinerStruct(performanceSource, "q09/performance-second.cs");
         AssertGeneratedSourcesEqual(performanceFirst.GeneratedTrees, performanceSecond.GeneratedTrees);
+    }
 
+    [Fact]
+    [Trait("Environment", "Unity")]
+    public void UnitySupport_RemainsStableAcrossRepeatedRuns()
+    {
+        var manifest = LoadManifest();
         var unityCase = manifest.Cases.Single(candidate => candidate.Id == "unity-editor");
         var unitySource = ReadData(unityCase.Input);
         var unityFirst = RunUnity(unitySource, includeEditorReferences: true);

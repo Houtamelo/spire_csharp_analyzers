@@ -21,6 +21,7 @@ public sealed class UnityDrawerSharedSupportTests
         "Houtamelo.Spire.Generated.__SpireUnityVariantMetadata";
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void EditorDrawer_EmitsOneSharedSupportTreePerCompilation()
     {
         var result = UnityGeneratorTestHarness.Run(
@@ -70,6 +71,7 @@ public sealed class UnityDrawerSharedSupportTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void EditorDrawer_SupportHintIsStableAndCompilationScoped()
     {
         var oneUnion = UnityGeneratorTestHarness.Run(
@@ -103,6 +105,7 @@ public sealed class UnityDrawerSharedSupportTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void EditorDrawer_MetadataPayloadTypesDistinguishUnionsWithTheSameVariantNames()
     {
         var result = UnityGeneratorTestHarness.Run(
@@ -143,6 +146,7 @@ public sealed class UnityDrawerSharedSupportTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void EditorDrawer_WrapperIdentityAndTargetArePreserved()
     {
         foreach (var (fixture, metadataName, wrapperName) in new[]
@@ -168,6 +172,7 @@ public sealed class UnityDrawerSharedSupportTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void EditorDrawer_MetadataIsCompleteAndImmutable()
     {
         var result = UnityGeneratorTestHarness.Run(
@@ -197,6 +202,7 @@ public sealed class UnityDrawerSharedSupportTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void EditorDrawer_OpenGenericMetadataUsesNullUnionType()
     {
         var result = UnityGeneratorTestHarness.Run(
@@ -214,6 +220,7 @@ public sealed class UnityDrawerSharedSupportTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void EditorDrawer_PrivateNestedWrapperPreservesContainingType()
     {
         const string source = """
@@ -247,6 +254,7 @@ public sealed class UnityDrawerSharedSupportTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void EditorDrawer_PlayerCompilationExcludesSupportAndWrappers()
     {
         var result = UnityGeneratorTestHarness.Run(
@@ -266,6 +274,7 @@ public sealed class UnityDrawerSharedSupportTests
 
     [Theory]
     [MemberData(nameof(NoSupportInputs))]
+    [Trait("Environment", "Unity")]
     public void EditorDrawer_NoSupportForNoUnionOrRejectedInput(
         string source,
         bool includeUnityReferences,
@@ -292,6 +301,7 @@ public sealed class UnityDrawerSharedSupportTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void EditorDrawer_MixedValidAndRejectedInputKeepsValidSupportSurface()
     {
         const string source = """
@@ -392,9 +402,12 @@ public sealed class UnityDrawerSharedSupportTests
             true,
             "SPIRE_DU013",
         },
-        new object[]
-        {
-            """
+    };
+
+    [Fact]
+    public void EditorDrawer_NoSupportWithoutUnityReferences_RemainsCoreOnly()
+    {
+        const string source = """
             using System;
             using Houtamelo.Spire;
 
@@ -404,13 +417,20 @@ public sealed class UnityDrawerSharedSupportTests
             {
                 [Variant] public static partial UnityMissingEngineInput Value(int value);
             }
-            """,
-            false,
-            "SPIRE_DU016",
-        },
-    };
+            """;
+
+        var result = UnityGeneratorTestHarness.Run(
+            source,
+            includeUnityReferences: false,
+            includeEditorReferences: false);
+
+        UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
+        UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
+        AssertNoSharedSupport(result);
+    }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void EditorDrawer_CrossAssemblyInternalHelperIsolation()
     {
         var assemblyA = UnityGeneratorTestHarness.Run(

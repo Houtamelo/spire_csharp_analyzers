@@ -71,12 +71,18 @@ internal static class UnityGeneratorTestHarness
         IReadOnlyDictionary<string, string>? globalOptions = null,
         LanguageVersion languageVersion = LanguageVersion.Preview,
         IEnumerable<MetadataReference>? additionalReferences = null,
-        bool allowUnsafe = true)
+        bool allowUnsafe = true,
+        IEnumerable<string>? preprocessorSymbols = null)
     {
+        var symbols = preprocessorSymbols?.ToArray() ??
+            (includeUnityReferences
+                ? includeEditorReferences
+                    ? new[] { "UNITY_5_3_OR_NEWER", "UNITY_EDITOR" }
+                    : new[] { "UNITY_5_3_OR_NEWER" }
+                : Array.Empty<string>());
         var parseOptions = CSharpParseOptions.Default
             .WithLanguageVersion(languageVersion)
-            .WithPreprocessorSymbols(
-                includeEditorReferences ? new[] { "UNITY_EDITOR" } : Array.Empty<string>());
+            .WithPreprocessorSymbols(symbols);
 
         var syntaxTree = CSharpSyntaxTree.ParseText(
             source,
@@ -116,6 +122,59 @@ internal static class UnityGeneratorTestHarness
             out var outputCompilation,
             out var generatorDiagnostics);
 
+        return new UnityGeneratorRun(
+            outputCompilation,
+            generatorDiagnostics,
+            driver.GetRunResult());
+    }
+
+    internal static GeneratorDriver CreateDriver(
+        IEnumerable<string>? preprocessorSymbols = null)
+    {
+        var parseOptions = CSharpParseOptions.Default
+            .WithLanguageVersion(LanguageVersion.Preview)
+            .WithPreprocessorSymbols(preprocessorSymbols ?? Array.Empty<string>());
+        return CSharpGeneratorDriver.Create(
+            generators: new[] { new DiscriminatedUnionGenerator().AsSourceGenerator() },
+            parseOptions: parseOptions);
+    }
+
+    internal static UnityGeneratorRun RunWithDriver(
+        GeneratorDriver driver,
+        string source,
+        bool includeUnityReferences,
+        bool includeEditorReferences,
+        IEnumerable<string> preprocessorSymbols,
+        out GeneratorDriver updatedDriver)
+    {
+        var parseOptions = CSharpParseOptions.Default
+            .WithLanguageVersion(LanguageVersion.Preview)
+            .WithPreprocessorSymbols(preprocessorSymbols);
+        var syntaxTree = CSharpSyntaxTree.ParseText(
+            source,
+            parseOptions,
+            path: "environment-isolation.cs");
+        var references = GetReferences(includeUnityReferences, includeEditorReferences);
+        var compatibilityTree = TestHarnessEnvironment.CreateRuntimeCompatibilityTree(
+            parseOptions,
+            references);
+        var compilation = CSharpCompilation.Create(
+            $"EnvironmentIsolation_{Guid.NewGuid():N}",
+            compatibilityTree is null
+                ? new[] { syntaxTree }
+                : new[] { syntaxTree, compatibilityTree },
+            references,
+            new CSharpCompilationOptions(
+                OutputKind.DynamicallyLinkedLibrary,
+                allowUnsafe: true,
+                nullableContextOptions: NullableContextOptions.Enable));
+
+        driver = driver.WithUpdatedParseOptions(parseOptions);
+        driver = driver.RunGeneratorsAndUpdateCompilation(
+            compilation,
+            out var outputCompilation,
+            out var generatorDiagnostics);
+        updatedDriver = driver;
         return new UnityGeneratorRun(
             outputCompilation,
             generatorDiagnostics,

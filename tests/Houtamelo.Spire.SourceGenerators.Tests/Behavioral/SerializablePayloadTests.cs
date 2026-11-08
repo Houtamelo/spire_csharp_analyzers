@@ -9,13 +9,10 @@ namespace Houtamelo.Spire.SourceGenerators.Tests.Behavioral;
 
 public sealed class SerializablePayloadTests
 {
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void UnannotatedUnion_FieldedAndFieldlessPayloadsAreNotSerializable(
-        bool includeUnityReferences)
+    [Fact]
+    public void UnannotatedUnion_FieldedAndFieldlessPayloadsAreNotSerializable()
     {
-        var result = Generate(UnannotatedUnionSource(), includeUnityReferences);
+        var result = Generate(UnannotatedUnionSource(), includeUnityReferences: false);
         AssertNoGeneratorErrors(result);
         UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
 
@@ -25,6 +22,20 @@ public sealed class SerializablePayloadTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
+    public void UnannotatedUnion_WithUnityReferencesStillHasNoUnitySerializationSurface()
+    {
+        var result = Generate(UnannotatedUnionSource(), includeUnityReferences: true);
+        AssertNoGeneratorErrors(result);
+        UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
+
+        AssertPayloadSerializable(result.OutputCompilation, "PlainUnionTypes", "Value", expected: false);
+        AssertPayloadSerializable(result.OutputCompilation, "PlainUnionTypes", "Empty", expected: false);
+        Assert.DoesNotContain("ISerializationCallbackReceiver", result.GeneratedSource, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Environment", "Unity")]
     public void SerializableUnion_FieldedAndFieldlessPayloadsAreSerializable()
     {
         var result = Generate(SerializableUnionSource(), includeUnityReferences: true);
@@ -42,7 +53,7 @@ public sealed class SerializablePayloadTests
         var result = Generate(SerializableUnionSource(), includeUnityReferences: false);
         AssertNoGeneratorErrors(result);
         UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
-        Assert.Contains(result.GeneratorDiagnostics, diagnostic => diagnostic.Id == "SPIRE_DU016");
+        Assert.DoesNotContain(result.GeneratorDiagnostics, diagnostic => diagnostic.Id == "SPIRE_DU016");
 
         AssertPayloadSerializable(result.OutputCompilation, "SerializableUnionTypes", "Value", expected: true);
         AssertPayloadSerializable(result.OutputCompilation, "SerializableUnionTypes", "Empty", expected: true);
@@ -152,8 +163,7 @@ public sealed class SerializablePayloadTests
     private static void AssertNoGeneratorErrors(UnityGeneratorRun result)
     {
         var errors = result.GeneratorDiagnostics
-            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error &&
-                                 diagnostic.Id != "SPIRE_DU016")
+            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
             .ToArray();
         Assert.True(
             errors.Length == 0,

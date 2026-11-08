@@ -24,6 +24,11 @@ internal static class UnitySerializationValidation
     {
         invalidAliasVariants = ImmutableArray<string>.Empty;
 
+        // Former-name payloads exist outside Unity too; their names must remain
+        // valid even when System.Serializable enables no Unity serialization.
+        if (!CompilationInfo.IsUnityCompilation(compilation))
+            return ValidateAliases(union, syntax, variants, out invalidAliasVariants);
+
         if (union.TypeKind != TypeKind.Struct ||
             syntax is RecordDeclarationSyntax ||
             union.IsRefLikeType ||
@@ -40,7 +45,7 @@ internal static class UnitySerializationValidation
                 "Union declaration cannot use Unity serialization: Unity serialization requires a mutable struct union.");
         }
 
-        if (compilation.GetTypeByMetadataName(UnityCallbackReceiver) is null)
+        if (!CompilationInfo.HasAccessibleType(compilation, UnityCallbackReceiver))
         {
             _ = ValidateAliases(union, syntax, variants, out invalidAliasVariants);
             return CreateDiagnostic(

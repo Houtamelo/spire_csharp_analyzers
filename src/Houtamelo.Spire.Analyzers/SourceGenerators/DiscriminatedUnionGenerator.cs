@@ -25,6 +25,7 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
 
         var compilationInfo = context.CompilationProvider.Select(static (comp, _) =>
         {
+            var isUnity = CompilationInfo.IsUnityCompilation(comp);
             return new CompilationInfo(
                 HasSystemTextJson: comp.GetTypeByMetadataName(
                     "System.Text.Json.Serialization.JsonConverter`1") is not null,
@@ -32,9 +33,10 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
                     "Newtonsoft.Json.JsonConverter") is not null,
                 HasInitProperties: CompilationInfo.HasAccessibleType(
                     comp, "System.Runtime.CompilerServices.IsExternalInit"),
-                HasUnitySerialization: CompilationInfo.HasAccessibleType(
+                HasUnitySerialization: isUnity && CompilationInfo.HasAccessibleType(
                     comp, "UnityEngine.ISerializationCallbackReceiver"),
-                HasUnityEditor: CompilationInfo.HasAccessibleType(comp, "UnityEditor.PropertyDrawer"));
+                HasUnityEditor: isUnity && CompilationInfo.HasPreprocessorSymbol(comp, "UNITY_EDITOR") &&
+                    CompilationInfo.HasAccessibleType(comp, "UnityEditor.PropertyDrawer"));
         });
 
         var combined = unions

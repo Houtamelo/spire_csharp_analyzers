@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Houtamelo.Spire.SourceGenerators.Tests.Unity;
 using Xunit;
@@ -10,7 +11,9 @@ public sealed class UnityRuntimeAssertionTests
     [Fact]
     public void UsableUnityDebugAssertIsCalledAtRuntimeWithoutAddingManagedStorage()
     {
-        var result = Generate(UsableUnityDebugSource());
+        var result = Generate(
+            UsableUnityDebugSource(),
+            new[] { "UNITY_5_3_OR_NEWER" });
         var source = result.GeneratedSource;
 
         Assert.Contains("global::UnityEngine.Debug.Assert", source, StringComparison.Ordinal);
@@ -76,11 +79,14 @@ public sealed class UnityRuntimeAssertionTests
         Assert.Equal(3, payload.GetType().GetProperty("distance")!.GetValue(payload));
     }
 
-    private static UnityGeneratorRun Generate(string source)
+    private static UnityGeneratorRun Generate(
+        string source,
+        IEnumerable<string>? preprocessorSymbols = null)
     {
         var result = UnityGeneratorTestHarness.Run(
             source,
-            includeUnityReferences: false);
+            includeUnityReferences: false,
+            preprocessorSymbols: preprocessorSymbols);
         UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
         UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
         return result;

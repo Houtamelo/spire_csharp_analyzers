@@ -1,0 +1,22 @@
+name: CoreCLR and NuGet tests
+
+on:
+  push:
+    branches: [main, unity-6000]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  coreclr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - name: Test CoreCLR and packed NuGet consumers without Unity
+        env:
+          SPIRE_UNITY_EDITOR: ${{ runner.temp }}/unity-not-installed
+        run: bash tools/test-coreclr.sh

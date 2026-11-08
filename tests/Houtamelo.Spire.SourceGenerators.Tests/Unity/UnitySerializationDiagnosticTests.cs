@@ -12,6 +12,7 @@ namespace Houtamelo.Spire.SourceGenerators.Tests.Unity;
 public sealed class UnitySerializationDiagnosticTests
 {
     [Fact]
+    [Trait("Environment", "Unity")]
     public void ReservedGeneratedSurface_ReportsDU015()
     {
         const string source = """
@@ -32,6 +33,7 @@ public sealed class UnitySerializationDiagnosticTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void SerializablePayload_EmitsTypedUnityOwnedFields()
     {
         const string source = """
@@ -69,6 +71,7 @@ public sealed class UnitySerializationDiagnosticTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void FormerlySerializedAs_EmitsCanonicalAndFormerPayloadTypes()
     {
         const string source = """
@@ -95,6 +98,7 @@ public sealed class UnitySerializationDiagnosticTests
     }
 
     [Fact]
+    [Trait("Environment", "Unity")]
     public void NamespaceLevelGenericUnion_EmitsClosedPayloadField()
     {
         const string source = """
@@ -125,7 +129,7 @@ public sealed class UnitySerializationDiagnosticTests
     }
 
     [Fact]
-    public void SerializableUnionWithoutUnityReferences_ReportsDU016()
+    public void SerializableUnionWithoutUnityReferences_RemainsCoreOnly()
     {
         const string source = """
             using System;
@@ -140,7 +144,12 @@ public sealed class UnitySerializationDiagnosticTests
             """;
 
         var result = UnityGeneratorTestHarness.Run(source, includeUnityReferences: false);
-        Assert.Contains(result.GeneratorDiagnostics, diagnostic => diagnostic.Id == "SPIRE_DU016");
+        UnityGeneratorTestHarness.AssertNoGeneratorErrors(result);
+        UnityGeneratorTestHarness.AssertNoCompilationErrors(result);
+        Assert.DoesNotContain(
+            "ISerializationCallbackReceiver",
+            result.GeneratedSource,
+            StringComparison.Ordinal);
     }
 
     private static IEnumerable<INamedTypeSymbol> AllNamedTypes(INamespaceSymbol root)
