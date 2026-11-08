@@ -32,6 +32,9 @@ same effect on shared storage. An ordinary unescaped value local can retain its
 proof across unrelated calls, `await`, and `yield`. An `in` parameter remains a
 view of caller-owned storage, so its readonly modifier does not guarantee that
 the caller's value stays unchanged.
+Indirect writes through ref fields, ref-return indexers, or escaped pointers
+also invalidate related checks. A user getter inside a property pattern can
+change the discriminator before a later payload subpattern is evaluated.
 
 Repeated property getters, indexers, calls, and volatile receiver paths do not
 identify one stable value. Copy their result to a local and guard that snapshot.

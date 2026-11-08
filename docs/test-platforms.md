@@ -46,6 +46,26 @@ native C# union comparison types.
 The [suite isolation verification](reviews/2026-11-07-coreclr-unity-suite-isolation.md)
 records the current environment regressions, package consumers, and host results.
 
+Guard-flow tests include generated consumers that execute bounded inputs and
+compare each payload read with its actual discriminator. They run in both the
+portable suite and the Editor Mono harness. See the
+[model invariants and validation boundaries](guard-flow.md).
+C# 11 ref-field regressions instead compile and run installed NuGet consumers
+in CoreCLR: Unity's target runtime does not support ref fields. Portable
+ref-return, pointer, and alias regressions remain in the shared suite.
+
+Measure compiler-analysis scaling separately from xUnit timing:
+
+```sh
+dotnet run -c Release --project tools/Spire.GuardFlow.Performance -- \
+  --output tmp/guard-flow-performance.json
+```
+
+The [runner](../tools/Spire.GuardFlow.Performance/README.md) records raw timings,
+allocation deltas, diagnostic identities, and cancellation observations. The
+CoreCLR workflow runs its shorter `--quick` profile and retains the JSON with
+GitHub's [artifact action](https://github.com/actions/upload-artifact).
+
 ## Operating systems
 
 Use `LinuxFact` or `WindowsFact` in `DevTools.Tests` when a test depends on that

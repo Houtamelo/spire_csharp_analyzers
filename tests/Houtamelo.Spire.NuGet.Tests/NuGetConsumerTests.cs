@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Spire.Tool;
 using Xunit;
@@ -15,6 +16,10 @@ namespace Houtamelo.Spire.NuGet.Tests;
 public sealed class NuGetConsumerTests
 {
     private static readonly TimeSpan ProcessTimeout = TimeSpan.FromMinutes(3);
+
+    private static readonly Regex ConsumerDiagnosticRegex = new(
+        @"Program\.cs\((?<line>\d+),(?<column>\d+)\): (?<severity>warning|error) (?<id>SPIRE013|SPIRE014):",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     private static readonly PackageDefinition[] Packages =
     [
@@ -122,6 +127,59 @@ public sealed class NuGetConsumerTests
             Assert.All(ReadGeneratedSources(projectRoot), AssertContainsNoUnitySurface);
     }
 
+    [Fact]
+    public async Task RuntimePackage_RefFieldAliasEffectsAreDiagnosedAndStableCopiesRun()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        using var fixture = PackageFixture.Create(repositoryRoot);
+        var version = await PackAllAsync(repositoryRoot, fixture.FeedPath);
+        CopyFrameworkPackagesToFeed(fixture.FeedPath);
+
+        var (build, projectRoot) = await RunConsumerAsync(
+            repositoryRoot,
+            fixture,
+            version,
+            "ref-field-guard-consumer",
+            RefFieldGuardConsumerSource,
+            outputType: "Exe",
+            treatWarningsAsErrors: false);
+
+        var output = CombinedOutput(build);
+        Assert.Equal(0, build.ExitCode);
+        Assert.DoesNotContain("AD0001", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("error CS", output, StringComparison.Ordinal);
+
+        var expectedDiagnostics = new[]
+        {
+            ExpectedConsumerDiagnostic("REF_DIRECT_WRITE", "command.move"),
+            ExpectedConsumerDiagnostic("REF_ROOT_WRITE", "box.Value.move"),
+            ExpectedConsumerDiagnostic("REF_REBIND", "box.Value.move"),
+            ExpectedConsumerDiagnostic("REF_HELPER_WRITE", "command.move"),
+        };
+        var actualDiagnostics = output
+            .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => ConsumerDiagnosticRegex.Match(line))
+            .Where(match => match.Success)
+            .Select(match => string.Join(
+                "|",
+                match.Groups["id"].Value,
+                match.Groups["severity"].Value,
+                match.Groups["line"].Value,
+                match.Groups["column"].Value))
+            .ToHashSet(StringComparer.Ordinal);
+        Assert.Equal(
+            expectedDiagnostics.OrderBy(value => value, StringComparer.Ordinal),
+            actualDiagnostics.OrderBy(value => value, StringComparer.Ordinal));
+
+        var run = await ProcessRunner.RunAsync(
+            new ToolContext(repositoryRoot).Dotnet,
+            new[] { "run", "--project", "Consumer.csproj", "-c", "Release", "--no-build", "--no-restore", "--nologo", "--tl:off" },
+            projectRoot,
+            ProcessTimeout,
+            ProcessEnvironment());
+        Assert.Equal(0, run.ExitCode);
+    }
+
     private static async Task<string> PackAllAsync(string repositoryRoot, string feedPath)
     {
         var versions = Packages
@@ -156,7 +214,8 @@ public sealed class NuGetConsumerTests
         string version,
         string name,
         string source,
-        string outputType)
+        string outputType,
+        bool treatWarningsAsErrors = true)
     {
         var projectRoot = Path.Combine(fixture.RootPath, name);
         Directory.CreateDirectory(projectRoot);
@@ -171,7 +230,7 @@ public sealed class NuGetConsumerTests
                 <LangVersion>preview</LangVersion>
                 <Nullable>enable</Nullable>
                 <ImplicitUsings>enable</ImplicitUsings>
-                <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+                <TreatWarningsAsErrors>{(treatWarningsAsErrors ? "true" : "false")}</TreatWarningsAsErrors>
                 <UseAppHost>false</UseAppHost>
                 <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
                 <CompilerGeneratedFilesOutputPath>generated</CompilerGeneratedFilesOutputPath>
@@ -306,6 +365,18 @@ public sealed class NuGetConsumerTests
     private static string CombinedOutput(ProcessResult result)
         => result.StandardOutput + Environment.NewLine + result.StandardError;
 
+    private string ExpectedConsumerDiagnostic(string marker, string expression)
+    {
+        var lines = RefFieldGuardConsumerSource.Split('\n');
+        var lineIndex = Array.FindIndex(
+            lines,
+            line => line.Contains(marker, StringComparison.Ordinal));
+        Assert.True(lineIndex >= 0, $"Could not find source marker '{marker}'.");
+        var expressionIndex = lines[lineIndex].IndexOf(expression, StringComparison.Ordinal);
+        Assert.True(expressionIndex >= 0, $"Could not find expression '{expression}' for '{marker}'.");
+        return string.Join("|", "SPIRE014", "warning", lineIndex + 1, expressionIndex + 1);
+    }
+
     private static string FindRepositoryRoot()
     {
         foreach (var startingPath in new[] { AppContext.BaseDirectory, Directory.GetCurrentDirectory() })
@@ -424,6 +495,124 @@ public sealed class NuGetConsumerTests
             {
                 { kind: Command.Kind.Move, move: var (distance) } => distance,
             };
+        }
+        """;
+
+    private const string RefFieldGuardConsumerSource = """
+        using System;
+        using Houtamelo.Spire;
+
+        [DiscriminatedUnion]
+        public partial struct Command
+        {
+            [Variant] public static partial Command Move(int distance);
+            [Variant] public static partial Command Stop();
+        }
+
+        public ref struct Box
+        {
+            public ref Command Value;
+
+            public Box(ref Command command)
+                => Value = ref command;
+        }
+
+        public static class Program
+        {
+            private static int WriteThroughRefField(Command command)
+            {
+                var box = new Box(ref command);
+                if (command.IsMove)
+                {
+                    box.Value = Command.Stop();
+                    return command.move.distance; // REF_DIRECT_WRITE
+                }
+
+                return 0;
+            }
+
+            private static int WriteRootAfterFieldGuard(Command command)
+            {
+                var box = new Box(ref command);
+                if (box.Value.IsMove)
+                {
+                    command = Command.Stop();
+                    return box.Value.move.distance; // REF_ROOT_WRITE
+                }
+
+                return 0;
+            }
+
+            private static int RebindRefField(Command command, Command other)
+            {
+                var box = new Box(ref command);
+                if (command.IsMove)
+                {
+                    box.Value = ref other;
+                    return box.Value.move.distance; // REF_REBIND
+                }
+
+                return 0;
+            }
+
+            private static void Replace(ref Box box)
+                => box.Value = Command.Stop();
+
+            private static int HelperMutatesRefField(Command command)
+            {
+                var box = new Box(ref command);
+                if (command.IsMove)
+                {
+                    Replace(ref box);
+                    return command.move.distance; // REF_HELPER_WRITE
+                }
+
+                return 0;
+            }
+
+            private static int ReadThroughStableRefField(Command command)
+            {
+                var box = new Box(ref command);
+                if (box.Value.IsMove)
+                    return box.Value.move.distance;
+
+                return 0;
+            }
+
+            private static int ReadStableCopyAfterRefFieldWrite(Command command)
+            {
+                var snapshot = command;
+                if (snapshot.IsMove)
+                {
+                    var box = new Box(ref command);
+                    box.Value = Command.Stop();
+                    return snapshot.move.distance;
+                }
+
+                return 0;
+            }
+
+            private static int ReadAfterFreshRootGuard(Command command)
+            {
+                var box = new Box(ref command);
+                box.Value = Command.Stop();
+                if (command.IsMove)
+                    return command.move.distance;
+
+                return 0;
+            }
+
+            public static int Main()
+            {
+                var command = Command.Move(7);
+                if (ReadThroughStableRefField(command) != 7)
+                    return 10;
+                if (ReadStableCopyAfterRefFieldWrite(command) != 7)
+                    return 11;
+                if (ReadAfterFreshRootGuard(command) != 0)
+                    return 12;
+                return 0;
+            }
         }
         """;
 }

@@ -1,0 +1,898 @@
+{
+  "SchemaVersion": 1,
+  "GeneratedAtUtc": "2026-11-08T11:06:52.8013621+00:00",
+  "Commit": "18a8e0794abc3fda426dcfbbee41ea0c062c82ca",
+  "Configuration": "Release",
+  "Quick": false,
+  "Host": {
+    "Runtime": ".NET 10.0.12",
+    "OS": "openSUSE Tumbleweed",
+    "Architecture": "X64",
+    "ProcessorCount": 24,
+    "Roslyn": "4.10.0.0",
+    "SdkVersion": "10.0.401",
+    "AnalyzerAssemblyPath": "/home/houtamelo/Documents/projects/libraries/csharp_analyzer/tools/Spire.GuardFlow.Performance/bin/Release/net10.0/Houtamelo.Spire.Analyzers.dll",
+    "AnalyzerAssemblySha256": "B9FEB4901341CA60993EC4C21681FC862E69C4B77B6460FFA5E85A1ED24675F1",
+    "WorktreeState": "dirty"
+  },
+  "WarmupRuns": 1,
+  "MeasuredRuns": 3,
+  "AnalysisBudgetMilliseconds": 30000,
+  "Workloads": [
+    {
+      "Name": "branches-2",
+      "Branches": 2,
+      "Receivers": 1,
+      "Aliases": 0,
+      "RecursiveFunctions": 0,
+      "IncludeAccessor": true,
+      "Complexity": 2,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 38.4599,
+          "EmitMilliseconds": 6.4885,
+          "AnalyzerMilliseconds": 7.1395,
+          "AnalyzerAllocatedBytes": 907616,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1045,
+          "SyntaxNodeCount": 708
+        },
+        {
+          "GenerationMilliseconds": 45.2428,
+          "EmitMilliseconds": 6.7727,
+          "AnalyzerMilliseconds": 8.457,
+          "AnalyzerAllocatedBytes": 919344,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1045,
+          "SyntaxNodeCount": 708
+        },
+        {
+          "GenerationMilliseconds": 34.5308,
+          "EmitMilliseconds": 6.5597,
+          "AnalyzerMilliseconds": 7.0123,
+          "AnalyzerAllocatedBytes": 906152,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1045,
+          "SyntaxNodeCount": 708
+        }
+      ]
+    },
+    {
+      "Name": "branches-8",
+      "Branches": 8,
+      "Receivers": 1,
+      "Aliases": 0,
+      "RecursiveFunctions": 0,
+      "IncludeAccessor": true,
+      "Complexity": 8,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 47.1167,
+          "EmitMilliseconds": 10.9285,
+          "AnalyzerMilliseconds": 17.1556,
+          "AnalyzerAllocatedBytes": 1222664,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1549,
+          "SyntaxNodeCount": 774
+        },
+        {
+          "GenerationMilliseconds": 35.3141,
+          "EmitMilliseconds": 8.38,
+          "AnalyzerMilliseconds": 8.789,
+          "AnalyzerAllocatedBytes": 1229528,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1549,
+          "SyntaxNodeCount": 774
+        },
+        {
+          "GenerationMilliseconds": 41.4436,
+          "EmitMilliseconds": 8.2113,
+          "AnalyzerMilliseconds": 9.0573,
+          "AnalyzerAllocatedBytes": 1217024,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1549,
+          "SyntaxNodeCount": 774
+        }
+      ]
+    },
+    {
+      "Name": "branches-32",
+      "Branches": 32,
+      "Receivers": 1,
+      "Aliases": 0,
+      "RecursiveFunctions": 0,
+      "IncludeAccessor": true,
+      "Complexity": 32,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 59.2051,
+          "EmitMilliseconds": 13.9227,
+          "AnalyzerMilliseconds": 28.2168,
+          "AnalyzerAllocatedBytes": 2422384,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 3609,
+          "SyntaxNodeCount": 1038
+        },
+        {
+          "GenerationMilliseconds": 34.7017,
+          "EmitMilliseconds": 16.2975,
+          "AnalyzerMilliseconds": 20.0782,
+          "AnalyzerAllocatedBytes": 2428192,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 3609,
+          "SyntaxNodeCount": 1038
+        },
+        {
+          "GenerationMilliseconds": 39.4857,
+          "EmitMilliseconds": 16.5169,
+          "AnalyzerMilliseconds": 19.4434,
+          "AnalyzerAllocatedBytes": 2437096,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 3609,
+          "SyntaxNodeCount": 1038
+        }
+      ]
+    },
+    {
+      "Name": "branches-128",
+      "Branches": 128,
+      "Receivers": 1,
+      "Aliases": 0,
+      "RecursiveFunctions": 0,
+      "IncludeAccessor": true,
+      "Complexity": 128,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 39.6473,
+          "EmitMilliseconds": 38.3284,
+          "AnalyzerMilliseconds": 58.8629,
+          "AnalyzerAllocatedBytes": 7513352,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 11921,
+          "SyntaxNodeCount": 2094
+        },
+        {
+          "GenerationMilliseconds": 33.9704,
+          "EmitMilliseconds": 36.7742,
+          "AnalyzerMilliseconds": 54.2749,
+          "AnalyzerAllocatedBytes": 7335800,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 11921,
+          "SyntaxNodeCount": 2094
+        },
+        {
+          "GenerationMilliseconds": 34.5816,
+          "EmitMilliseconds": 34.7808,
+          "AnalyzerMilliseconds": 42.9665,
+          "AnalyzerAllocatedBytes": 7352744,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 11921,
+          "SyntaxNodeCount": 2094
+        }
+      ]
+    },
+    {
+      "Name": "branches-256",
+      "Branches": 256,
+      "Receivers": 1,
+      "Aliases": 0,
+      "RecursiveFunctions": 0,
+      "IncludeAccessor": true,
+      "Complexity": 256,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 45.5009,
+          "EmitMilliseconds": 65.8889,
+          "AnalyzerMilliseconds": 103.0674,
+          "AnalyzerAllocatedBytes": 13929376,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 23185,
+          "SyntaxNodeCount": 3502
+        },
+        {
+          "GenerationMilliseconds": 34.5603,
+          "EmitMilliseconds": 63.6853,
+          "AnalyzerMilliseconds": 99.0369,
+          "AnalyzerAllocatedBytes": 13935528,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 23185,
+          "SyntaxNodeCount": 3502
+        },
+        {
+          "GenerationMilliseconds": 31.7776,
+          "EmitMilliseconds": 67.9692,
+          "AnalyzerMilliseconds": 93.1509,
+          "AnalyzerAllocatedBytes": 14045400,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 23185,
+          "SyntaxNodeCount": 3502
+        }
+      ]
+    },
+    {
+      "Name": "receivers-1",
+      "Branches": 2,
+      "Receivers": 1,
+      "Aliases": 0,
+      "RecursiveFunctions": 0,
+      "IncludeAccessor": true,
+      "Complexity": 2,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 32.7454,
+          "EmitMilliseconds": 10.4243,
+          "AnalyzerMilliseconds": 10.1368,
+          "AnalyzerAllocatedBytes": 901568,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1045,
+          "SyntaxNodeCount": 708
+        },
+        {
+          "GenerationMilliseconds": 31.4688,
+          "EmitMilliseconds": 8.4472,
+          "AnalyzerMilliseconds": 9.6647,
+          "AnalyzerAllocatedBytes": 901936,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1045,
+          "SyntaxNodeCount": 708
+        },
+        {
+          "GenerationMilliseconds": 36.9134,
+          "EmitMilliseconds": 8.5404,
+          "AnalyzerMilliseconds": 9.746,
+          "AnalyzerAllocatedBytes": 925976,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1045,
+          "SyntaxNodeCount": 708
+        }
+      ]
+    },
+    {
+      "Name": "receivers-4",
+      "Branches": 2,
+      "Receivers": 4,
+      "Aliases": 0,
+      "RecursiveFunctions": 0,
+      "IncludeAccessor": true,
+      "Complexity": 8,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 39.43,
+          "EmitMilliseconds": 8.6019,
+          "AnalyzerMilliseconds": 16.3109,
+          "AnalyzerAllocatedBytes": 1146056,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1438,
+          "SyntaxNodeCount": 786
+        },
+        {
+          "GenerationMilliseconds": 29.1414,
+          "EmitMilliseconds": 23.3161,
+          "AnalyzerMilliseconds": 10.0782,
+          "AnalyzerAllocatedBytes": 1153560,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1438,
+          "SyntaxNodeCount": 786
+        },
+        {
+          "GenerationMilliseconds": 25.2838,
+          "EmitMilliseconds": 8.1125,
+          "AnalyzerMilliseconds": 8.8984,
+          "AnalyzerAllocatedBytes": 1149040,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1438,
+          "SyntaxNodeCount": 786
+        }
+      ]
+    },
+    {
+      "Name": "receivers-16",
+      "Branches": 2,
+      "Receivers": 16,
+      "Aliases": 0,
+      "RecursiveFunctions": 0,
+      "IncludeAccessor": true,
+      "Complexity": 32,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 29.1405,
+          "EmitMilliseconds": 8.1604,
+          "AnalyzerMilliseconds": 12.2883,
+          "AnalyzerAllocatedBytes": 2259672,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 3034,
+          "SyntaxNodeCount": 1098
+        },
+        {
+          "GenerationMilliseconds": 30.3278,
+          "EmitMilliseconds": 8.4027,
+          "AnalyzerMilliseconds": 12.352,
+          "AnalyzerAllocatedBytes": 2255808,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 3034,
+          "SyntaxNodeCount": 1098
+        },
+        {
+          "GenerationMilliseconds": 36.0546,
+          "EmitMilliseconds": 8.0793,
+          "AnalyzerMilliseconds": 11.9354,
+          "AnalyzerAllocatedBytes": 2262896,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 3034,
+          "SyntaxNodeCount": 1098
+        }
+      ]
+    },
+    {
+      "Name": "receivers-32",
+      "Branches": 2,
+      "Receivers": 32,
+      "Aliases": 0,
+      "RecursiveFunctions": 0,
+      "IncludeAccessor": true,
+      "Complexity": 64,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 23.3266,
+          "EmitMilliseconds": 10.0842,
+          "AnalyzerMilliseconds": 14.4246,
+          "AnalyzerAllocatedBytes": 4187584,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 5194,
+          "SyntaxNodeCount": 1514
+        },
+        {
+          "GenerationMilliseconds": 30.966,
+          "EmitMilliseconds": 7.5745,
+          "AnalyzerMilliseconds": 15.436,
+          "AnalyzerAllocatedBytes": 4169160,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 5194,
+          "SyntaxNodeCount": 1514
+        },
+        {
+          "GenerationMilliseconds": 38.7618,
+          "EmitMilliseconds": 7.7425,
+          "AnalyzerMilliseconds": 21.4309,
+          "AnalyzerAllocatedBytes": 4167720,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 5194,
+          "SyntaxNodeCount": 1514
+        }
+      ]
+    },
+    {
+      "Name": "receivers-64",
+      "Branches": 2,
+      "Receivers": 64,
+      "Aliases": 0,
+      "RecursiveFunctions": 0,
+      "IncludeAccessor": true,
+      "Complexity": 128,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 23.5767,
+          "EmitMilliseconds": 10.5713,
+          "AnalyzerMilliseconds": 39.3984,
+          "AnalyzerAllocatedBytes": 9429232,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 9514,
+          "SyntaxNodeCount": 2346
+        },
+        {
+          "GenerationMilliseconds": 26.9127,
+          "EmitMilliseconds": 9.8128,
+          "AnalyzerMilliseconds": 32.7531,
+          "AnalyzerAllocatedBytes": 9316152,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 9514,
+          "SyntaxNodeCount": 2346
+        },
+        {
+          "GenerationMilliseconds": 46.2389,
+          "EmitMilliseconds": 8.7924,
+          "AnalyzerMilliseconds": 30.0737,
+          "AnalyzerAllocatedBytes": 9323232,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 9514,
+          "SyntaxNodeCount": 2346
+        }
+      ]
+    },
+    {
+      "Name": "aliases-0",
+      "Branches": 2,
+      "Receivers": 1,
+      "Aliases": 0,
+      "RecursiveFunctions": 0,
+      "IncludeAccessor": true,
+      "Complexity": 1,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 22.4844,
+          "EmitMilliseconds": 5.5087,
+          "AnalyzerMilliseconds": 5.5508,
+          "AnalyzerAllocatedBytes": 902376,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1045,
+          "SyntaxNodeCount": 708
+        },
+        {
+          "GenerationMilliseconds": 35.1759,
+          "EmitMilliseconds": 5.0444,
+          "AnalyzerMilliseconds": 5.5845,
+          "AnalyzerAllocatedBytes": 914912,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1045,
+          "SyntaxNodeCount": 708
+        },
+        {
+          "GenerationMilliseconds": 35.7984,
+          "EmitMilliseconds": 5.8869,
+          "AnalyzerMilliseconds": 5.1974,
+          "AnalyzerAllocatedBytes": 902592,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1045,
+          "SyntaxNodeCount": 708
+        }
+      ]
+    },
+    {
+      "Name": "aliases-4",
+      "Branches": 2,
+      "Receivers": 4,
+      "Aliases": 4,
+      "RecursiveFunctions": 0,
+      "IncludeAccessor": true,
+      "Complexity": 13,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 28.3761,
+          "EmitMilliseconds": 4.831,
+          "AnalyzerMilliseconds": 5.1945,
+          "AnalyzerAllocatedBytes": 1582848,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1974,
+          "SyntaxNodeCount": 898
+        },
+        {
+          "GenerationMilliseconds": 22.0249,
+          "EmitMilliseconds": 4.8984,
+          "AnalyzerMilliseconds": 5.2586,
+          "AnalyzerAllocatedBytes": 1589560,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1974,
+          "SyntaxNodeCount": 898
+        },
+        {
+          "GenerationMilliseconds": 22.757,
+          "EmitMilliseconds": 5.0413,
+          "AnalyzerMilliseconds": 4.9712,
+          "AnalyzerAllocatedBytes": 1589968,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1974,
+          "SyntaxNodeCount": 898
+        }
+      ]
+    },
+    {
+      "Name": "aliases-16",
+      "Branches": 2,
+      "Receivers": 16,
+      "Aliases": 16,
+      "RecursiveFunctions": 0,
+      "IncludeAccessor": true,
+      "Complexity": 49,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 22.9008,
+          "EmitMilliseconds": 4.8258,
+          "AnalyzerMilliseconds": 13.5251,
+          "AnalyzerAllocatedBytes": 7239784,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 5202,
+          "SyntaxNodeCount": 1546
+        },
+        {
+          "GenerationMilliseconds": 26.4078,
+          "EmitMilliseconds": 16.2983,
+          "AnalyzerMilliseconds": 13.4687,
+          "AnalyzerAllocatedBytes": 7253320,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 5202,
+          "SyntaxNodeCount": 1546
+        },
+        {
+          "GenerationMilliseconds": 26.1412,
+          "EmitMilliseconds": 4.6295,
+          "AnalyzerMilliseconds": 13.0312,
+          "AnalyzerAllocatedBytes": 7229304,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 5202,
+          "SyntaxNodeCount": 1546
+        }
+      ]
+    },
+    {
+      "Name": "aliases-32",
+      "Branches": 2,
+      "Receivers": 32,
+      "Aliases": 32,
+      "RecursiveFunctions": 0,
+      "IncludeAccessor": true,
+      "Complexity": 97,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 27.4814,
+          "EmitMilliseconds": 6.7272,
+          "AnalyzerMilliseconds": 56.2556,
+          "AnalyzerAllocatedBytes": 27882576,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 9570,
+          "SyntaxNodeCount": 2410
+        },
+        {
+          "GenerationMilliseconds": 28.2747,
+          "EmitMilliseconds": 5.9986,
+          "AnalyzerMilliseconds": 58.8529,
+          "AnalyzerAllocatedBytes": 27886144,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 9570,
+          "SyntaxNodeCount": 2410
+        },
+        {
+          "GenerationMilliseconds": 22.8177,
+          "EmitMilliseconds": 5.8305,
+          "AnalyzerMilliseconds": 47.5345,
+          "AnalyzerAllocatedBytes": 27876744,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 9570,
+          "SyntaxNodeCount": 2410
+        }
+      ]
+    },
+    {
+      "Name": "recursive-1",
+      "Branches": 2,
+      "Receivers": 1,
+      "Aliases": 0,
+      "RecursiveFunctions": 1,
+      "IncludeAccessor": true,
+      "Complexity": 6,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 27.5411,
+          "EmitMilliseconds": 3.9489,
+          "AnalyzerMilliseconds": 4.0251,
+          "AnalyzerAllocatedBytes": 1060976,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1366,
+          "SyntaxNodeCount": 757
+        },
+        {
+          "GenerationMilliseconds": 21.9466,
+          "EmitMilliseconds": 3.8366,
+          "AnalyzerMilliseconds": 5.5301,
+          "AnalyzerAllocatedBytes": 1066000,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1366,
+          "SyntaxNodeCount": 757
+        },
+        {
+          "GenerationMilliseconds": 25.0283,
+          "EmitMilliseconds": 3.768,
+          "AnalyzerMilliseconds": 4.5519,
+          "AnalyzerAllocatedBytes": 1099520,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 1366,
+          "SyntaxNodeCount": 757
+        }
+      ]
+    },
+    {
+      "Name": "recursive-4",
+      "Branches": 2,
+      "Receivers": 1,
+      "Aliases": 0,
+      "RecursiveFunctions": 4,
+      "IncludeAccessor": true,
+      "Complexity": 18,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 29.7383,
+          "EmitMilliseconds": 4.176,
+          "AnalyzerMilliseconds": 17.2,
+          "AnalyzerAllocatedBytes": 1401448,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 2008,
+          "SyntaxNodeCount": 862
+        },
+        {
+          "GenerationMilliseconds": 21.7235,
+          "EmitMilliseconds": 3.7765,
+          "AnalyzerMilliseconds": 3.9768,
+          "AnalyzerAllocatedBytes": 1395344,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 2008,
+          "SyntaxNodeCount": 862
+        },
+        {
+          "GenerationMilliseconds": 22.109,
+          "EmitMilliseconds": 6.6239,
+          "AnalyzerMilliseconds": 4.3792,
+          "AnalyzerAllocatedBytes": 1431296,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 2008,
+          "SyntaxNodeCount": 862
+        }
+      ]
+    },
+    {
+      "Name": "recursive-16",
+      "Branches": 2,
+      "Receivers": 1,
+      "Aliases": 0,
+      "RecursiveFunctions": 16,
+      "IncludeAccessor": true,
+      "Complexity": 66,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 26.7235,
+          "EmitMilliseconds": 3.7116,
+          "AnalyzerMilliseconds": 18.7359,
+          "AnalyzerAllocatedBytes": 2768856,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 4588,
+          "SyntaxNodeCount": 1282
+        },
+        {
+          "GenerationMilliseconds": 27.0128,
+          "EmitMilliseconds": 4.0934,
+          "AnalyzerMilliseconds": 7.4141,
+          "AnalyzerAllocatedBytes": 2762848,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 4588,
+          "SyntaxNodeCount": 1282
+        },
+        {
+          "GenerationMilliseconds": 23.2214,
+          "EmitMilliseconds": 3.8141,
+          "AnalyzerMilliseconds": 7.3738,
+          "AnalyzerAllocatedBytes": 2751360,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 4588,
+          "SyntaxNodeCount": 1282
+        }
+      ]
+    },
+    {
+      "Name": "recursive-32",
+      "Branches": 2,
+      "Receivers": 1,
+      "Aliases": 0,
+      "RecursiveFunctions": 32,
+      "IncludeAccessor": true,
+      "Complexity": 130,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 24.8143,
+          "EmitMilliseconds": 4.579,
+          "AnalyzerMilliseconds": 10.4127,
+          "AnalyzerAllocatedBytes": 4612568,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 8044,
+          "SyntaxNodeCount": 1842
+        },
+        {
+          "GenerationMilliseconds": 27.6663,
+          "EmitMilliseconds": 4.2373,
+          "AnalyzerMilliseconds": 26.4302,
+          "AnalyzerAllocatedBytes": 4667528,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 8044,
+          "SyntaxNodeCount": 1842
+        },
+        {
+          "GenerationMilliseconds": 24.226,
+          "EmitMilliseconds": 4.6309,
+          "AnalyzerMilliseconds": 12.9304,
+          "AnalyzerAllocatedBytes": 4621288,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 8044,
+          "SyntaxNodeCount": 1842
+        }
+      ]
+    },
+    {
+      "Name": "irrelevant-128",
+      "Branches": 128,
+      "Receivers": 1,
+      "Aliases": 0,
+      "RecursiveFunctions": 0,
+      "IncludeAccessor": false,
+      "Complexity": 1,
+      "ExpectedDiagnostics": [],
+      "Diagnostics": [],
+      "DiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 24.7233,
+          "EmitMilliseconds": 7.5935,
+          "AnalyzerMilliseconds": 10.4789,
+          "AnalyzerAllocatedBytes": 1345104,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 11877,
+          "SyntaxNodeCount": 2082
+        },
+        {
+          "GenerationMilliseconds": 28.2159,
+          "EmitMilliseconds": 8.0613,
+          "AnalyzerMilliseconds": 8.7821,
+          "AnalyzerAllocatedBytes": 1352152,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 11877,
+          "SyntaxNodeCount": 2082
+        },
+        {
+          "GenerationMilliseconds": 35.7633,
+          "EmitMilliseconds": 7.7063,
+          "AnalyzerMilliseconds": 8.5347,
+          "AnalyzerAllocatedBytes": 1349104,
+          "DiagnosticCount": 0,
+          "SourceCharacters": 11877,
+          "SyntaxNodeCount": 2082
+        }
+      ]
+    },
+    {
+      "Name": "diagnostic-controls",
+      "Branches": 1,
+      "Receivers": 1,
+      "Aliases": 0,
+      "RecursiveFunctions": 0,
+      "IncludeAccessor": true,
+      "Complexity": 10,
+      "ExpectedDiagnostics": [
+        {
+          "Id": "SPIRE014",
+          "Severity": "Warning",
+          "Path": "diagnostic-controls.cs",
+          "Start": 967,
+          "Length": 12,
+          "Text": "command.move",
+          "MessageFragment": "within this scope, the value of \u0027kind\u0027 is unknown."
+        },
+        {
+          "Id": "SPIRE013",
+          "Severity": "Error",
+          "Path": "diagnostic-controls.cs",
+          "Start": 1163,
+          "Length": 12,
+          "Text": "command.move",
+          "MessageFragment": "within this scope, it is statically known that \u0027kind=Stop\u0027."
+        }
+      ],
+      "Diagnostics": [
+        {
+          "Id": "SPIRE014",
+          "Severity": "Warning",
+          "Path": "diagnostic-controls.cs",
+          "Start": 967,
+          "Length": 12,
+          "Text": "command.move",
+          "Message": "The field \u0027move\u0027 only contains valid data when \u0027kind=Move\u0027, but within this scope, the value of \u0027kind\u0027 is unknown.\nHelp 1: Check if \u0027kind=Move\u0027 before accessing the field \u0027move\u0027.\nHelp 2: If you are absolutely sure that \u0027kind=Move\u0027, you can suppress this diagnostic with \u0060#pragma warning disable SPIRE014\u0060."
+        },
+        {
+          "Id": "SPIRE013",
+          "Severity": "Error",
+          "Path": "diagnostic-controls.cs",
+          "Start": 1163,
+          "Length": 12,
+          "Text": "command.move",
+          "Message": "The field \u0027move\u0027 only contains valid data when \u0027kind=Move\u0027, but within this scope, it is statically known that \u0027kind=Stop\u0027.\nHelp: Within this scope, only the field \u0027stop\u0027 contains valid data."
+        }
+      ],
+      "DiagnosticsHash": "3F23901468A2D897CBC5B67FF84CCA4008755226D4AFFC57DFAC71DD6DF9047A",
+      "MeasuredRuns": [
+        {
+          "GenerationMilliseconds": 23.8018,
+          "EmitMilliseconds": 3.0824,
+          "AnalyzerMilliseconds": 3.2853,
+          "AnalyzerAllocatedBytes": 949232,
+          "DiagnosticCount": 2,
+          "SourceCharacters": 1319,
+          "SyntaxNodeCount": 733
+        },
+        {
+          "GenerationMilliseconds": 21.4262,
+          "EmitMilliseconds": 3.1412,
+          "AnalyzerMilliseconds": 3.5216,
+          "AnalyzerAllocatedBytes": 968384,
+          "DiagnosticCount": 2,
+          "SourceCharacters": 1319,
+          "SyntaxNodeCount": 733
+        },
+        {
+          "GenerationMilliseconds": 21.0778,
+          "EmitMilliseconds": 3.1488,
+          "AnalyzerMilliseconds": 3.441,
+          "AnalyzerAllocatedBytes": 956520,
+          "DiagnosticCount": 2,
+          "SourceCharacters": 1319,
+          "SyntaxNodeCount": 733
+        }
+      ]
+    }
+  ],
+  "Cancellation": {
+    "Workload": "branches-256-cancellation",
+    "Complexity": 1256,
+    "BaselineAnalyzerMilliseconds": 325.8663,
+    "BaselineAnalyzerAllocatedBytes": 223674848,
+    "BaselineDiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "PreCancelledObserved": true,
+    "PreCancelledMilliseconds": 0.9571,
+    "TimedCancellationObserved": true,
+    "CancellationRequestedAtUtc": "2026-11-08T11:06:52.4774112+00:00",
+    "TimedCancellationReturnLatencyMilliseconds": 34.4618,
+    "CleanRunAfterCancellation": true,
+    "CleanRunAnalyzerMilliseconds": 289.337,
+    "CleanRunDiagnosticsHash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "CancellationRequestedAfterAnalyzerEntry": true,
+    "Note": "Cancellation is requested after the analyzer API entry signal; Roslyn does not identify which internal analyzer phase consumed the token."
+  }
+}

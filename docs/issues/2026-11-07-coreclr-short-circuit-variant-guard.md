@@ -58,3 +58,7 @@ Evidence: `/tmp/spire-guard-flow-v4-coreclr.log`,
 `/tmp/spire-guard-flow-v4-unity-metadata.log`,
 `/tmp/spire-guard-flow-v4-unity-native.log`, and
 `tmp/variant-guard-flow-v4-review.md`.
+
+The subsequent [whole-model hardening review](../reviews/2026-11-08-guard-flow-whole-model-review.md)
+records broader composition findings, their regressions, and generated/runtime
+and performance validation beyond that original audit's scope.

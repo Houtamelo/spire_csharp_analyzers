@@ -20,6 +20,10 @@ Compiler (csc / VS / Rider)
 
 Analyzers live in `src/Houtamelo.Spire.Analyzers/Rules/`, one file per rule. Each inherits `DiagnosticAnalyzer`, declares `SupportedDiagnostics`, and registers callbacks in `Initialize()`. Detection strategy and conventions are in `.codex/rules/analyzer-conventions.md`.
 
+The generator-coupled SPIRE013/SPIRE014 analyzer uses receiver-aware CFG analysis.
+Its [guard-flow model](guard-flow.md) documents snapshot, join, mutation, and
+callable-summary invariants and the validation boundaries.
+
 ## Package Layout
 
 ```

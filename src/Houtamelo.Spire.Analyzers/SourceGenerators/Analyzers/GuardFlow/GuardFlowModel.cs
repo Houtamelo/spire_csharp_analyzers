@@ -118,6 +118,9 @@ internal sealed class AliasTargetSet
     public static AliasTargetSet Unknown()
         => new(ImmutableHashSet<ReceiverPath>.Empty, true);
 
+    public static AliasTargetSet Unknown(IEnumerable<ReceiverPath> paths)
+        => new(paths.ToImmutableHashSet(), true);
+
     public AliasTargetSet Union(AliasTargetSet other)
         => new(Paths.Union(other.Paths), IsUnknown || other.IsUnknown);
 
@@ -325,6 +328,15 @@ internal sealed class PredicateFact
             trueReachable,
             falseReachable);
     }
+
+    public PredicateFact WithReachability(
+        bool trueReachable,
+        bool falseReachable)
+        => FromConstraints(
+            Constraints,
+            UnsafeForSource,
+            trueReachable,
+            falseReachable);
 
     public static PredicateFact MergeAlternatives(
         PredicateFact left,
@@ -734,7 +746,44 @@ internal sealed class GuardFlowState
             return;
         }
 
-        Proofs[path] = allowedSet;
+        // A definite ref alias is another view of the same storage. Preserve
+        // the proof under both the stable alias view and its concrete target,
+        // so a guard through either spelling is usable by the other. Ambiguous
+        // aliases deliberately remain symbolic: refining every possible target
+        // would manufacture a proof for storage that was not actually tested.
+        var proofPaths = new List<ReceiverPath> { path };
+        if (path.Segments.Length > 0 &&
+            Aliases.TryGetValue(path.Segments[0], out var alias) &&
+            alias.IsSingle(out var target))
+        {
+            foreach (var segment in path.Segments.Skip(1))
+                target = target.Append(segment);
+            proofPaths.Add(target);
+        }
+
+        foreach (var proofPath in proofPaths)
+        {
+            var refined = allowedSet;
+            if (Proofs.TryGetValue(proofPath, out var existingProof))
+                refined = existingProof.Intersect(refined);
+            if (refined.Count == 0)
+            {
+                IsReachable = false;
+                Proofs.Clear();
+                return;
+            }
+            Proofs[proofPath] = refined;
+        }
+    }
+
+    public void MarkUnreachable()
+    {
+        IsReachable = false;
+        Proofs.Clear();
+        Captures.Clear();
+        OperationFacts.Clear();
+        EvaluatedConditions.Clear();
+        BooleanFacts.Clear();
     }
 
     public void SetAlias(ISymbol alias, AliasTargetSet targets)
@@ -865,14 +914,31 @@ internal sealed class GuardFlowState
     public void ApplyOpaqueEffects(EffectSummary summary)
     {
         foreach (var path in summary.ImmediateWrites)
+        {
+            if (IsReferenceStoragePath(path))
+                DetachAliasesUnder(path);
+        }
+        foreach (var path in summary.ImmediateWrites)
             Invalidate(path);
         foreach (var path in summary.EscapedCallbackWrites)
         {
             MarkEscapedCallback(path);
         }
         if (summary.MayInvokeEscapedCallbacks)
+        {
+            // An unresolved user-code boundary may replace an intermediate
+            // reference object. Existing ref locals must not be retargeted to
+            // the same textual path after that replacement.
+            DetachAliasesAtOpaqueBoundary();
             InvalidateEscapedCallbacks();
-        if (summary.MayWriteExposed)
+        }
+        // Once a value's address has escaped, every opaque user-code
+        // boundary that may write shared state can also reach that value
+        // through a stored pointer/ref, even when the boundary has no pointer
+        // argument of its own. Generated pure projections do not set either
+        // capability and therefore retain their precise snapshots.
+        if (summary.MayWriteExposed ||
+            summary.MayWriteShared && AddressExposed.Count > 0)
             InvalidateAll();
         else if (summary.MayWriteShared)
             InvalidateShared();
@@ -883,6 +949,70 @@ internal sealed class GuardFlowState
         if (IsReachable)
             AddressExposed.Add(path);
     }
+
+    public void DetachAliasesUnder(ReceiverPath target)
+    {
+        foreach (var pair in Aliases.ToArray())
+        {
+            var affected = pair.Value.Paths
+                .Where(path => path.StartsWith(target))
+                .ToImmutableHashSet();
+            if (affected.Count == 0)
+                continue;
+
+            var aliasPath = new ReceiverPath(pair.Key);
+            Invalidate(aliasPath, includeAliases: false);
+            var remaining = pair.Value.Paths.Except(affected);
+            Aliases[pair.Key] = AliasTargetSet.Unknown(remaining);
+        }
+    }
+
+    private void DetachAliasesAtOpaqueBoundary()
+    {
+        foreach (var pair in Aliases.ToArray())
+        {
+            var affected = pair.Value.Paths
+                .Where(HasMutableReferencePrefix)
+                .ToImmutableHashSet();
+            if (affected.Count == 0)
+                continue;
+
+            var aliasPath = new ReceiverPath(pair.Key);
+            Invalidate(aliasPath, includeAliases: false);
+            var remaining = pair.Value.Paths.Except(affected);
+            Aliases[pair.Key] = AliasTargetSet.Unknown(remaining);
+        }
+    }
+
+    private static bool HasMutableReferencePrefix(ReceiverPath path)
+    {
+        for (var index = 0; index + 1 < path.Segments.Length; index++)
+        {
+            // A by-value local/parameter receiver cannot itself be rebound by
+            // an opaque call. Only reference-typed fields (or deeper members)
+            // represent mutable object-location prefixes here.
+            if (index == 0 &&
+                path.Segments[index] is ILocalSymbol or IParameterSymbol)
+                continue;
+            if (IsReferenceTyped(path.Segments[index]))
+                return true;
+        }
+        return false;
+    }
+
+    private static bool IsReferenceStoragePath(ReceiverPath path)
+        => path.Segments.Length > 0 &&
+           IsReferenceTyped(path.Segments[path.Segments.Length - 1]);
+
+    private static bool IsReferenceTyped(ISymbol symbol)
+        => symbol switch
+        {
+            IFieldSymbol field => field.Type.IsReferenceType,
+            ILocalSymbol local => local.Type.IsReferenceType,
+            IParameterSymbol parameter => parameter.Type.IsReferenceType,
+            IPropertySymbol property => property.Type.IsReferenceType,
+            _ => false
+        };
 
     public void Invalidate(ReceiverPath? target)
     {
@@ -936,21 +1066,28 @@ internal sealed class GuardFlowState
 
     public void InvalidateShared()
     {
-        foreach (var path in Proofs.Keys.Where(p => p.IsSharedStorage).ToArray())
+        // A synthetic ref-local path is not itself marked shared. Its target
+        // set is the storage identity, so shared invalidation must inspect the
+        // current alias view before retaining facts under that local spelling.
+        foreach (var path in Proofs.Keys.Where(PathMayBeShared).ToArray())
             Proofs.Remove(path);
         foreach (var pair in Captures.Where(pair => CaptureHasSharedPath(pair.Value)).ToArray())
             Captures.Remove(pair.Key);
-        foreach (var pair in BooleanFacts.Where(pair => pair.Value.Constraints.Keys.Any(path => path.IsSharedStorage)).ToArray())
+        foreach (var pair in BooleanFacts.Where(pair => PredicateHasSharedPath(pair.Value)).ToArray())
             BooleanFacts.Remove(pair.Key);
-        foreach (var pair in OperationFacts.Where(pair =>
-                     pair.Value.Constraints.Keys.Any(path => path.IsSharedStorage)).ToArray())
+        foreach (var pair in OperationFacts.Where(pair => PredicateHasSharedPath(pair.Value)).ToArray())
             OperationFacts.Remove(pair.Key);
+        // Delegate maps describe executable effect capabilities, not facts
+        // about the current discriminator values. A shared write invalidates
+        // their dependent proofs, but must not erase a callback's known write
+        // set; the callback may execute later against a fresh guard.
     }
 
     public void InvalidateSuspension()
     {
+        InvalidateEscapedCallbacks();
         InvalidateShared();
-        foreach (var writes in DelegateWrites.Values)
+        foreach (var writes in DelegateWrites.Values.ToArray())
         {
             foreach (var path in writes)
                 Invalidate(path);
@@ -1019,9 +1156,33 @@ internal sealed class GuardFlowState
         => MayAffect(capture.Path, target) ||
            capture.Predicate is not null && capture.Predicate.Affects(target);
 
-    private static bool CaptureHasSharedPath(CaptureValue capture)
-        => capture.Path?.IsSharedStorage == true ||
-           capture.Predicate is not null && capture.Predicate.Constraints.Keys.Any(path => path.IsSharedStorage);
+    private bool PathMayBeShared(ReceiverPath path)
+    {
+        if (path.IsSharedStorage)
+            return true;
+        if (path.Segments.Length == 0 ||
+            !Aliases.TryGetValue(path.Segments[0], out var aliases))
+            return false;
+        if (aliases.IsUnknown)
+            return true;
+
+        foreach (var target in aliases.Paths)
+        {
+            var candidate = target;
+            foreach (var segment in path.Segments.Skip(1))
+                candidate = candidate.Append(segment);
+            if (candidate.IsSharedStorage)
+                return true;
+        }
+        return false;
+    }
+
+    private bool PredicateHasSharedPath(PredicateFact predicate)
+        => predicate.Constraints.Keys.Any(PathMayBeShared);
+
+    private bool CaptureHasSharedPath(CaptureValue capture)
+        => capture.Path is not null && PathMayBeShared(capture.Path) ||
+           capture.Predicate is not null && PredicateHasSharedPath(capture.Predicate);
 
     private static bool SamePredicate(PredicateFact left, PredicateFact right)
     {

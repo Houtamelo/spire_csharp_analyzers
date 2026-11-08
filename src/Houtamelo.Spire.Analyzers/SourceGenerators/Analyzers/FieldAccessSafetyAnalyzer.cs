@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Collections.Concurrent;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Analyzers.GuardFlow;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -25,8 +26,12 @@ public sealed class FieldAccessSafetyAnalyzer : DiagnosticAnalyzer
             if (discriminatedUnionAttribute is null)
                 return;
 
+            var reported = new ConcurrentDictionary<GuardFlowAnalyzer.ReportKey, byte>();
             compilationContext.RegisterOperationBlockAction(operationBlockContext =>
-                GuardFlowAnalyzer.Analyze(operationBlockContext, discriminatedUnionAttribute));
+                GuardFlowAnalyzer.Analyze(
+                    operationBlockContext,
+                    discriminatedUnionAttribute,
+                    reported));
         });
     }
 }

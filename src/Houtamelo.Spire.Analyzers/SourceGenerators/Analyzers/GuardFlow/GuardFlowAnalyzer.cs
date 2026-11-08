@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 using Houtamelo.Spire.PatternAnalysis;
 using Microsoft.CodeAnalysis;
@@ -18,17 +20,20 @@ internal static class GuardFlowAnalyzer
 {
     public static void Analyze(
         OperationBlockAnalysisContext context,
-        INamedTypeSymbol discriminatedUnionAttribute)
+        INamedTypeSymbol discriminatedUnionAttribute,
+        ConcurrentDictionary<ReportKey, byte>? reported = null)
     {
         var accessCache = new Dictionary<INamedTypeSymbol, AccessModel>(
             SymbolEqualityComparer.Default);
+        reported ??= new ConcurrentDictionary<ReportKey, byte>();
         foreach (var operationBlock in context.OperationBlocks)
         {
             context.CancellationToken.ThrowIfCancellationRequested();
             if (!ContainsRelevantAccessor(
                     operationBlock,
                     discriminatedUnionAttribute,
-                    accessCache))
+                    accessCache,
+                    context.CancellationToken))
                 continue;
             var cfg = context.GetControlFlowGraph(operationBlock);
             if (cfg is null)
@@ -39,24 +44,35 @@ internal static class GuardFlowAnalyzer
                 discriminatedUnionAttribute,
                 cfg,
                 operationBlock,
-                accessCache).Run();
+                accessCache,
+                reported).Run();
         }
     }
 
     private static bool ContainsRelevantAccessor(
         ControlFlowGraph cfg,
         INamedTypeSymbol discriminatedUnionAttribute,
-        Dictionary<INamedTypeSymbol, AccessModel> accessCache)
+        Dictionary<INamedTypeSymbol, AccessModel> accessCache,
+        System.Threading.CancellationToken cancellationToken)
     {
         foreach (var block in cfg.Blocks)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             foreach (var operation in block.Operations)
             {
-                if (ContainsRelevantAccessor(operation, discriminatedUnionAttribute, accessCache))
+                if (ContainsRelevantAccessor(
+                        operation,
+                        discriminatedUnionAttribute,
+                        accessCache,
+                        cancellationToken))
                     return true;
             }
             if (block.BranchValue is not null &&
-                ContainsRelevantAccessor(block.BranchValue, discriminatedUnionAttribute, accessCache))
+                ContainsRelevantAccessor(
+                    block.BranchValue,
+                    discriminatedUnionAttribute,
+                    accessCache,
+                    cancellationToken))
             {
                 return true;
             }
@@ -67,13 +83,19 @@ internal static class GuardFlowAnalyzer
     private static bool ContainsRelevantAccessor(
         IOperation operation,
         INamedTypeSymbol discriminatedUnionAttribute,
-        Dictionary<INamedTypeSymbol, AccessModel> accessCache)
+        Dictionary<INamedTypeSymbol, AccessModel> accessCache,
+        System.Threading.CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (TryGetAccessInfo(operation, discriminatedUnionAttribute, out _, accessCache))
             return true;
         foreach (var child in operation.ChildOperations)
         {
-            if (ContainsRelevantAccessor(child, discriminatedUnionAttribute, accessCache))
+            if (ContainsRelevantAccessor(
+                    child,
+                    discriminatedUnionAttribute,
+                    accessCache,
+                    cancellationToken))
                 return true;
         }
         return false;
@@ -178,6 +200,42 @@ internal static class GuardFlowAnalyzer
         }
     }
 
+    internal readonly struct ReportKey : IEquatable<ReportKey>
+    {
+        private readonly string _id;
+        private readonly SyntaxTree? _tree;
+        private readonly int _start;
+        private readonly int _length;
+
+        public ReportKey(string id, SyntaxNode syntax)
+        {
+            _id = id;
+            _tree = syntax.SyntaxTree;
+            _start = syntax.SpanStart;
+            _length = syntax.Span.Length;
+        }
+
+        public bool Equals(ReportKey other)
+            => string.Equals(_id, other._id, StringComparison.Ordinal) &&
+               ReferenceEquals(_tree, other._tree) &&
+               _start == other._start &&
+               _length == other._length;
+
+        public override bool Equals(object? obj)
+            => obj is ReportKey other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hash = StringComparer.Ordinal.GetHashCode(_id);
+                hash = (hash * 397) ^ (_tree is null ? 0 : RuntimeHelpers.GetHashCode(_tree));
+                hash = (hash * 397) ^ _start;
+                return (hash * 397) ^ _length;
+            }
+        }
+    }
+
     private sealed class BodyAnalysis
     {
         private readonly OperationBlockAnalysisContext _context;
@@ -188,7 +246,7 @@ internal static class GuardFlowAnalyzer
         private readonly GuardFlowState?[] _inputs;
         private readonly GuardFlowState?[] _outputs;
         private readonly Dictionary<int, ImmutableArray<int>> _handlerSeeds;
-        private readonly HashSet<IOperation> _reported = new();
+        private readonly ConcurrentDictionary<ReportKey, byte> _reported;
         private readonly Dictionary<IMethodSymbol, EffectSummary> _localEffectSummaries =
             new(SymbolEqualityComparer.Default);
         private bool _localEffectsBuilt;
@@ -229,13 +287,15 @@ internal static class GuardFlowAnalyzer
             INamedTypeSymbol duAttribute,
             ControlFlowGraph cfg,
             IOperation operationBlock,
-            Dictionary<INamedTypeSymbol, AccessModel> accessCache)
+            Dictionary<INamedTypeSymbol, AccessModel> accessCache,
+            ConcurrentDictionary<ReportKey, byte> reported)
         {
             _context = context;
             _duAttribute = duAttribute;
             _cfg = cfg;
             _operationBlock = operationBlock;
             _accessCache = accessCache;
+            _reported = reported;
             _inputs = new GuardFlowState?[cfg.Blocks.Length];
             _outputs = new GuardFlowState?[cfg.Blocks.Length];
             _handlerSeeds = BuildHandlerSeeds(cfg);
@@ -280,57 +340,94 @@ internal static class GuardFlowAnalyzer
                 EvaluateBlock(block, input.Clone(), report: true, exceptionalSeed: null);
             }
 
+
             AnalyzeDeclaredNestedFunctions();
         }
 
         private void AnalyzeDeclaredNestedFunctions()
         {
-            foreach (var nestedOperation in _operationBlock.DescendantsAndSelf()
-                         .Where(operation => !ReferenceEquals(operation, _operationBlock)))
+            var localFunctions = _operationBlock.DescendantsAndSelf()
+                .OfType<ILocalFunctionOperation>()
+                .Where(IsOwnedByCurrentBody)
+                .ToArray();
+            foreach (var local in localFunctions)
             {
                 _context.CancellationToken.ThrowIfCancellationRequested();
-                ControlFlowGraph? nested = null;
-                if (nestedOperation is IAnonymousFunctionOperation anonymous)
-                {
-                    var flowAnonymous = _cfg.Blocks
-                        .SelectMany(block => block.Operations.Concat(
-                            block.BranchValue is null
-                                ? Enumerable.Empty<IOperation>()
-                                : new[] { block.BranchValue }))
-                        .SelectMany(operation => operation.DescendantsAndSelf())
-                        .OfType<IFlowAnonymousFunctionOperation>()
-                        .FirstOrDefault(candidate => candidate.Syntax.Span == anonymous.Syntax.Span);
-                    if (flowAnonymous is not null)
-                    {
-                        nested = _cfg.GetAnonymousFunctionControlFlowGraphInScope(
-                            flowAnonymous,
-                            _context.CancellationToken);
-                    }
-                }
-                else if (nestedOperation is ILocalFunctionOperation local)
-                {
-                    if (local.Body is not null)
-                    {
-                        nested = _cfg.GetLocalFunctionControlFlowGraphInScope(
-                            local.Symbol,
-                            _context.CancellationToken);
-                    }
-                }
-                else
+                if (local.Body is null ||
+                    !ContainsRelevantAccessor(
+                        local.Body,
+                        _duAttribute,
+                        _accessCache,
+                        _context.CancellationToken))
                     continue;
 
-                if (nested is not null &&
-                    ContainsRelevantAccessor(nested, _duAttribute, _accessCache))
-                {
-                    new BodyAnalysis(
-                        _context,
-                        _duAttribute,
+                var nested = _cfg.GetLocalFunctionControlFlowGraph(
+                    local.Symbol,
+                    _context.CancellationToken);
+                new BodyAnalysis(
+                    _context,
+                    _duAttribute,
+                    nested,
+                    nested.OriginalOperation,
+                    _accessCache,
+                    _reported).Run();
+            }
+
+            var anonymousFunctions = _operationBlock.DescendantsAndSelf()
+                .OfType<IAnonymousFunctionOperation>()
+                .Where(IsOwnedByCurrentBody)
+                .ToArray();
+            foreach (var anonymous in anonymousFunctions)
+            {
+                _context.CancellationToken.ThrowIfCancellationRequested();
+                var flowAnonymous = FindOwnedFlowAnonymousFunction(anonymous);
+                if (flowAnonymous is null)
+                    continue;
+                var nested = _cfg.GetAnonymousFunctionControlFlowGraph(
+                    flowAnonymous,
+                    _context.CancellationToken);
+                if (!ContainsRelevantAccessor(
                         nested,
-                        nestedOperation,
-                        _accessCache).Run();
-                }
+                        _duAttribute,
+                        _accessCache,
+                        _context.CancellationToken))
+                    continue;
+                new BodyAnalysis(
+                    _context,
+                    _duAttribute,
+                    nested,
+                    nested.OriginalOperation,
+                    _accessCache,
+                    _reported).Run();
             }
         }
+
+        private bool IsOwnedByCurrentBody(IOperation operation)
+        {
+            var current = operation.Parent;
+            while (current is not null && !ReferenceEquals(current, _operationBlock))
+            {
+                if (current is ILocalFunctionOperation or
+                    IAnonymousFunctionOperation or
+                    IFlowAnonymousFunctionOperation)
+                {
+                    return false;
+                }
+                current = current.Parent;
+            }
+            return ReferenceEquals(current, _operationBlock);
+        }
+
+        private IFlowAnonymousFunctionOperation? FindOwnedFlowAnonymousFunction(
+            IAnonymousFunctionOperation anonymous)
+            => _cfg.Blocks
+                .SelectMany(block => block.Operations.Concat(
+                    block.BranchValue is null
+                        ? Enumerable.Empty<IOperation>()
+                        : new[] { block.BranchValue }))
+                .SelectMany(operation => operation.DescendantsAndSelf())
+                .OfType<IFlowAnonymousFunctionOperation>()
+                .FirstOrDefault(candidate => candidate.Syntax.Span == anonymous.Syntax.Span);
 
         private void EvaluateBlock(
             BasicBlock block,
@@ -808,6 +905,11 @@ internal static class GuardFlowAnalyzer
                         InvalidateTargets(state, targets);
                     }
                 }
+                // A dynamic dispatch may invoke callbacks registered in heap
+                // storage even though Roslyn cannot resolve the target. Keep
+                // this boundary consistent with the ordinary opaque-call
+                // transfer before applying the exposed-storage fallback.
+                state.InvalidateEscapedCallbacks();
                 state.InvalidateUnknownDelegateEffects();
                 state.InvalidateAll();
                 return;
@@ -889,13 +991,13 @@ internal static class GuardFlowAnalyzer
                 case ICompoundAssignmentOperation compound:
                     EvaluateOperation(compound.Target, state, report, pattern);
                     EvaluateOperation(compound.Value, state, report, pattern);
-                    state.Invalidate(GetPath(compound.Target, state));
+                    InvalidateWriteTarget(compound.Target, state);
                     return;
 
                 case IDeconstructionAssignmentOperation deconstruction:
                     EvaluateOperation(deconstruction.Target, state, report, pattern);
                     EvaluateOperation(deconstruction.Value, state, report, pattern);
-                    InvalidateAssignmentTarget(deconstruction.Target, state);
+                    InvalidateWriteTarget(deconstruction.Target, state);
                     if (TryGetDeconstructMethod(deconstruction) is { } deconstruct &&
                         !IsGeneratedPureDeconstruct(deconstruct, deconstruction.Value))
                     {
@@ -907,7 +1009,7 @@ internal static class GuardFlowAnalyzer
 
                 case IIncrementOrDecrementOperation increment:
                     EvaluateOperation(increment.Target, state, report, pattern);
-                    state.Invalidate(GetPath(increment.Target, state));
+                    InvalidateWriteTarget(increment.Target, state);
                     return;
 
                 case IAwaitOperation awaitOperation:
@@ -1029,15 +1131,30 @@ internal static class GuardFlowAnalyzer
                 propertyTarget.Instance is not null)
             {
                 // A setter does not evaluate the getter. Evaluate its receiver
-                // first, then the RHS, and apply the setter's mutation only
-                // after the value has been consumed.
+                // and index arguments first, then the RHS, and apply the
+                // setter's mutation only after all values have been consumed.
                 EvaluateOperation(propertyTarget.Instance, state, report, pattern);
+                foreach (var argument in propertyTarget.Arguments)
+                    EvaluateOperation(argument.Value, state, report, pattern);
             }
             else
             {
                 EvaluateOperation(assignment.Target, state, report, pattern);
             }
             EvaluateOperation(assignment.Value, state, report, pattern);
+            DetachReferenceRebindAliases(assignment.Target, state);
+
+            if (IsRefStorageWriteTarget(assignment.Target))
+            {
+                // A by-ref field/indexer writes through the referenced cell,
+                // while the receiver path itself remains a useful storage
+                // identity for proofs obtained through that member. Invalidate
+                // both views, and any previously address-exposed roots.
+                InvalidateTargets(state, GetMayTargets(assignment.Target, state));
+                state.Invalidate(GetPath(assignment.Target, state));
+                state.InvalidateAll();
+                return;
+            }
 
             if (IsPointerIndirectionTarget(assignment.Target))
             {
@@ -1108,12 +1225,19 @@ internal static class GuardFlowAnalyzer
                 {
                     RegisterEscapedCallback(state, assignedDelegateSummary);
                 }
+                if (state.AddressExposed.Contains(new ReceiverPath(local.Local)))
+                    state.InvalidateAll();
                 if (!hadAlias)
                     state.Aliases.Remove(local.Local);
                 return;
             }
 
             state.Invalidate(GetPath(assignment.Target, state));
+            if (assignment.Target is IParameterReferenceOperation parameterTarget &&
+                state.AddressExposed.Contains(new ReceiverPath(parameterTarget.Parameter)))
+            {
+                state.InvalidateAll();
+            }
             if (assignment.Target is IPropertyReferenceOperation propertyAssignment)
             {
                 if (propertyAssignment.Instance is { } instance &&
@@ -1167,19 +1291,51 @@ internal static class GuardFlowAnalyzer
             return false;
         }
 
+        private static bool IsRefStorageWriteTarget(IOperation target)
+            => target is IFieldReferenceOperation field &&
+                   field.Field.RefKind != RefKind.None ||
+               target is IPropertyReferenceOperation property &&
+                   property.Property.GetMethod is { } getter &&
+                   (getter.ReturnsByRef || getter.ReturnsByRefReadonly);
+
+        private void DetachReferenceRebindAliases(
+            IOperation target,
+            GuardFlowState state)
+        {
+            if (target.Type?.IsReferenceType != true ||
+                GetPath(target, state) is not { } path)
+                return;
+            state.DetachAliasesUnder(path);
+        }
+
         private void InvalidateAssignmentTarget(
             IOperation target,
             GuardFlowState state)
         {
             if (target is ILocalReferenceOperation local)
             {
+                DetachReferenceRebindAliases(target, state);
                 InvalidateTargets(state, GetMayTargets(target, state));
                 return;
             }
 
             if (target is IParameterReferenceOperation parameter)
             {
+                DetachReferenceRebindAliases(target, state);
                 InvalidateTargets(state, GetMayTargets(target, state));
+                return;
+            }
+
+            // Writing a member changes that member's storage, not the
+            // receiver object as a whole. The receiver may carry an
+            // independent discriminator proof (for example holder.command
+            // while holder.Count is updated).
+            if (target is IFieldReferenceOperation or
+                IPropertyReferenceOperation or
+                IArrayElementReferenceOperation)
+            {
+                DetachReferenceRebindAliases(target, state);
+                state.Invalidate(GetPath(target, state));
                 return;
             }
 
@@ -1187,18 +1343,52 @@ internal static class GuardFlowAnalyzer
                 InvalidateAssignmentTarget(child, state);
         }
 
-        private static void InvalidateTargets(
-            GuardFlowState state,
-            AliasTargetSet targets)
+        private void InvalidateWriteTarget(
+            IOperation target,
+            GuardFlowState state)
         {
-            if (targets.IsUnknown)
+            if (IsRefStorageWriteTarget(target))
+            {
+                InvalidateTargets(state, GetMayTargets(target, state));
+                state.Invalidate(GetPath(target, state));
+                state.InvalidateAll();
+                return;
+            }
+
+            if (IsPointerIndirectionTarget(target))
             {
                 state.InvalidateAll();
                 return;
             }
 
+            InvalidateAssignmentTarget(target, state);
+            state.Invalidate(GetPath(target, state));
+            if (target is ILocalReferenceOperation local &&
+                state.AddressExposed.Contains(new ReceiverPath(local.Local)) ||
+                target is IParameterReferenceOperation parameter &&
+                state.AddressExposed.Contains(new ReceiverPath(parameter.Parameter)))
+            {
+                state.InvalidateAll();
+            }
+
+            if (target is IPropertyReferenceOperation property &&
+                property.Property.SetMethod is not null &&
+                !IsGeneratedPureProperty(property.Property, property.Instance))
+            {
+                state.ApplyOpaqueEffects(new EffectSummary(
+                    mayInvokeEscapedCallbacks: true,
+                    mayWriteShared: true));
+            }
+        }
+
+        private static void InvalidateTargets(
+            GuardFlowState state,
+            AliasTargetSet targets)
+        {
             foreach (var path in targets.Paths)
                 state.Invalidate(path);
+            if (targets.IsUnknown)
+                state.InvalidateAll();
         }
 
         private void EvaluateInvocation(
@@ -1282,7 +1472,8 @@ internal static class GuardFlowAnalyzer
             {
                 state.ApplyOpaqueEffects(new EffectSummary(
                     mayInvokeEscapedCallbacks: true,
-                    mayWriteShared: true));
+                    mayWriteShared: true,
+                    mayWriteExposed: state.AddressExposed.Count > 0));
             }
         }
 
@@ -1429,6 +1620,14 @@ internal static class GuardFlowAnalyzer
                 // A non-readonly struct getter can replace its receiver even
                 // when the getter is syntactically a read.
                 InvalidateTargets(state, GetMayTargets(property.Instance, state));
+                var receiverPath = GetPath(property.Instance, state);
+                if (pattern is not null &&
+                    pattern.SourcePath is { } sourcePath &&
+                    receiverPath is { } &&
+                    (receiverPath.Equals(sourcePath) || receiverPath.StartsWith(sourcePath)))
+                {
+                    pattern.InvalidateSource(state);
+                }
             }
 
             // A user getter is opaque for shared paths. It can replace a
@@ -1474,6 +1673,7 @@ internal static class GuardFlowAnalyzer
             {
                 if (isPattern.Value.Type?.IsValueType == true)
                     InvalidateTargets(state, GetMayTargets(isPattern.Value, state));
+                context?.InvalidateSource(state);
                 state.ApplyOpaqueEffects(new EffectSummary(
                     mayInvokeEscapedCallbacks: true,
                     mayWriteShared: true));
@@ -1491,21 +1691,17 @@ internal static class GuardFlowAnalyzer
             GuardFlowState state,
             PatternContext? pattern)
         {
-            if (!_reported.Add(operation))
-                return;
-
-
-
-
-
             var guarded = TryGetGuardedVariants(access, state, pattern);
             if (guarded is null)
             {
-                _context.ReportDiagnostic(Diagnostic.Create(
-                    AnalyzerDescriptors.SPIRE014_UnguardedFieldAccess,
-                    operation.Syntax!.GetLocation(),
-                    access.Member.Name,
-                    FirstOwningVariant(access)));
+                if (TryMarkReported(operation, AnalyzerDescriptors.SPIRE014_UnguardedFieldAccess.Id))
+                {
+                    _context.ReportDiagnostic(Diagnostic.Create(
+                        AnalyzerDescriptors.SPIRE014_UnguardedFieldAccess,
+                        operation.Syntax!.GetLocation(),
+                        access.Member.Name,
+                        FirstOwningVariant(access)));
+                }
                 return;
             }
 
@@ -1517,11 +1713,14 @@ internal static class GuardFlowAnalyzer
                 guarded = null;
             if (guarded is null)
             {
-                _context.ReportDiagnostic(Diagnostic.Create(
-                    AnalyzerDescriptors.SPIRE014_UnguardedFieldAccess,
-                    operation.Syntax!.GetLocation(),
-                    access.Member.Name,
-                    FirstOwningVariant(access)));
+                if (TryMarkReported(operation, AnalyzerDescriptors.SPIRE014_UnguardedFieldAccess.Id))
+                {
+                    _context.ReportDiagnostic(Diagnostic.Create(
+                        AnalyzerDescriptors.SPIRE014_UnguardedFieldAccess,
+                        operation.Syntax!.GetLocation(),
+                        access.Member.Name,
+                        FirstOwningVariant(access)));
+                }
                 return;
             }
 
@@ -1533,13 +1732,25 @@ internal static class GuardFlowAnalyzer
             var help = ordered.Count == 1
                 ? $"Within this scope, only the field '{VariantNaming.AccessorName(ordered[0], access.Info.VariantNames)}' contains valid data."
                 : "Check 'kind' again before accessing variant data; this scope can contain more than one variant.";
-            _context.ReportDiagnostic(Diagnostic.Create(
-                AnalyzerDescriptors.SPIRE013_WrongVariantFieldAccess,
-                operation.Syntax!.GetLocation(),
-                access.Member.Name,
-                FirstOwningVariant(access),
-                display,
-                help));
+            if (TryMarkReported(operation, AnalyzerDescriptors.SPIRE013_WrongVariantFieldAccess.Id))
+            {
+                _context.ReportDiagnostic(Diagnostic.Create(
+                    AnalyzerDescriptors.SPIRE013_WrongVariantFieldAccess,
+                    operation.Syntax!.GetLocation(),
+                    access.Member.Name,
+                    FirstOwningVariant(access),
+                    display,
+                    help));
+            }
+        }
+
+        private bool TryMarkReported(IOperation operation, string diagnosticId)
+        {
+            if (operation.Syntax is null)
+                return true;
+            return _reported.TryAdd(
+                new ReportKey(diagnosticId, operation.Syntax),
+                0);
         }
 
         private ImmutableHashSet<string>? TryGetGuardedVariants(
@@ -1551,6 +1762,7 @@ internal static class GuardFlowAnalyzer
                 return ImmutableHashSet.Create(StringComparer.Ordinal, factoryVariant);
 
             if (pattern is not null &&
+                !pattern.UnsafeForSource &&
                 SymbolEqualityComparer.Default.Equals(
                     pattern.UnionType,
                     access.Info.KindEnumType?.ContainingType) &&
@@ -1560,9 +1772,44 @@ internal static class GuardFlowAnalyzer
             }
 
             var path = GetPath(access.Instance, state);
-            return path is not null && state.Proofs.TryGetValue(path, out var variants)
+            return path is not null && TryGetProof(path, state, out var variants)
                 ? variants
                 : null;
+        }
+
+        private static bool TryGetProof(
+            ReceiverPath path,
+            GuardFlowState state,
+            out ImmutableHashSet<string> variants)
+        {
+            if (state.Proofs.TryGetValue(path, out variants!))
+                return true;
+            if (path.IsThis || path.Segments.Length == 0 ||
+                !state.Aliases.TryGetValue(path.Segments[0], out var aliases) ||
+                aliases.IsUnknown)
+            {
+                variants = ImmutableHashSet<string>.Empty;
+                return false;
+            }
+
+            var suffix = path.Segments.Skip(1);
+            var found = false;
+            var combined = ImmutableHashSet<string>.Empty;
+            foreach (var target in aliases.Paths)
+            {
+                var candidate = target;
+                foreach (var segment in suffix)
+                    candidate = candidate.Append(segment);
+                if (!state.Proofs.TryGetValue(candidate, out var targetVariants))
+                {
+                    variants = ImmutableHashSet<string>.Empty;
+                    return false;
+                }
+                found = true;
+                combined = combined.Union(targetVariants);
+            }
+            variants = combined;
+            return found;
         }
 
         private static string FirstOwningVariant(AccessInfo access)
@@ -1675,6 +1922,14 @@ internal static class GuardFlowAnalyzer
 
             if (operation is IIsPatternOperation isPattern)
                 return TryGetPatternFacts(isPattern, state)?.ToPredicateFact();
+
+            if (TryGetBooleanConstant(operation, out var constant))
+            {
+                return PredicateFact.FromConstraints(
+                    Array.Empty<KeyValuePair<ReceiverPath, PredicateConstraint>>(),
+                    trueReachable: constant,
+                    falseReachable: !constant);
+            }
 
             return null;
         }
@@ -1859,11 +2114,16 @@ internal static class GuardFlowAnalyzer
                         falseSet,
                         falseKnown);
             }
+            var trueReachable = left.TrueReachable && right.TrueReachable;
+            var falseReachable = left.FalseReachable ||
+                left.TrueReachable && right.FalseReachable;
             return constraints.Count == 0
                 ? null
                 : PredicateFact.FromConstraints(
                     constraints,
-                    left.UnsafeForSource || right.UnsafeForSource);
+                    left.UnsafeForSource || right.UnsafeForSource,
+                    trueReachable,
+                    falseReachable);
         }
 
         private static PredicateFact? CombineOr(PredicateFact? left, PredicateFact? right)
@@ -1896,11 +2156,44 @@ internal static class GuardFlowAnalyzer
                         falseSet,
                         falseKnown);
             }
+            if (!left.TrueReachable && left.FalseReachable && right.TrueReachable)
+            {
+                foreach (var pair in right.Constraints)
+                {
+                    if (pair.Value.TrueKnown)
+                    {
+                        constraints[pair.Key] = new PredicateConstraint(
+                            pair.Value.TrueSet,
+                            true,
+                            pair.Value.FalseSet,
+                            pair.Value.FalseKnown);
+                    }
+                }
+            }
+            else if (!right.TrueReachable && right.FalseReachable && left.TrueReachable)
+            {
+                foreach (var pair in left.Constraints)
+                {
+                    if (pair.Value.TrueKnown)
+                    {
+                        constraints[pair.Key] = new PredicateConstraint(
+                            pair.Value.TrueSet,
+                            true,
+                            pair.Value.FalseSet,
+                            pair.Value.FalseKnown);
+                    }
+                }
+            }
+            var trueReachable = left.TrueReachable ||
+                left.FalseReachable && right.TrueReachable;
+            var falseReachable = left.FalseReachable && right.FalseReachable;
             return constraints.Count == 0
                 ? null
                 : PredicateFact.FromConstraints(
                     constraints,
-                    left.UnsafeForSource || right.UnsafeForSource);
+                    left.UnsafeForSource || right.UnsafeForSource,
+                    trueReachable,
+                    falseReachable);
         }
 
         private static PredicateFact? CombineBitwiseAnd(PredicateFact? left, PredicateFact? right)
@@ -1928,11 +2221,16 @@ internal static class GuardFlowAnalyzer
                 if (trueKnown)
                     constraints[path] = new PredicateConstraint(trueSet, true, null, false);
             }
+            var trueReachable = left.TrueReachable && right.TrueReachable;
+            var falseReachable = left.FalseReachable ||
+                left.TrueReachable && right.FalseReachable;
             return constraints.Count == 0
                 ? null
                 : PredicateFact.FromConstraints(
                     constraints,
-                    left.UnsafeForSource || right.UnsafeForSource);
+                    left.UnsafeForSource || right.UnsafeForSource,
+                    trueReachable,
+                    falseReachable);
         }
 
         private static PredicateFact? CombineBitwiseOr(PredicateFact? left, PredicateFact? right)
@@ -1955,11 +2253,16 @@ internal static class GuardFlowAnalyzer
                 if (falseKnown)
                     constraints[path] = new PredicateConstraint(null, false, falseSet, true);
             }
+            var trueReachable = left.TrueReachable ||
+                left.FalseReachable && right.TrueReachable;
+            var falseReachable = left.FalseReachable && right.FalseReachable;
             return constraints.Count == 0
                 ? null
                 : PredicateFact.FromConstraints(
                     constraints,
-                    left.UnsafeForSource || right.UnsafeForSource);
+                    left.UnsafeForSource || right.UnsafeForSource,
+                    trueReachable,
+                    falseReachable);
         }
 
         private static PredicateFact RetainAndTrueFacts(PredicateFact source)
@@ -1970,7 +2273,11 @@ internal static class GuardFlowAnalyzer
                     pair.Key,
                     new PredicateConstraint(pair.Value.TrueSet, true, null, false)))
                 .ToArray();
-            return PredicateFact.FromConstraints(constraints, source.UnsafeForSource);
+            return PredicateFact.FromConstraints(
+                constraints,
+                source.UnsafeForSource,
+                source.TrueReachable,
+                true);
         }
 
         private GuardFlowState ApplyBranch(
@@ -1979,7 +2286,14 @@ internal static class GuardFlowAnalyzer
             bool conditionTrue)
         {
             var result = state.Clone();
-            if (facts is null || facts.UnsafeForSource)
+            if (facts is null)
+                return result;
+            if (!(conditionTrue ? facts.TrueReachable : facts.FalseReachable))
+            {
+                result.MarkUnreachable();
+                return result;
+            }
+            if (facts.UnsafeForSource)
                 return result;
             foreach (var pair in facts.EnumerateConstraints())
             {
@@ -2216,9 +2530,7 @@ internal static class GuardFlowAnalyzer
             {
                 case ILocalReferenceOperation local:
                     if (state.Aliases.TryGetValue(local.Local, out var alias))
-                        return alias.IsSingle(out var single)
-                            ? single
-                            : new ReceiverPath(local.Local);
+                        return new ReceiverPath(local.Local);
                     return new ReceiverPath(local.Local);
                 case IParameterReferenceOperation parameter:
                     return new ReceiverPath(parameter.Parameter);
@@ -2736,6 +3048,11 @@ internal static class GuardFlowAnalyzer
             GuardFlowState state,
             EffectAccumulator effects)
         {
+            if (IsRefStorageWriteTarget(target))
+            {
+                effects.MayWriteExposed = true;
+                return;
+            }
             if (IsPointerIndirectionTarget(target))
             {
                 effects.MayWriteExposed = true;
@@ -3055,7 +3372,7 @@ internal static class GuardFlowAnalyzer
         {
             public INamedTypeSymbol UnionType { get; }
             public ImmutableHashSet<string> Variants { get; }
-            public bool UnsafeForSource { get; }
+            public bool UnsafeForSource { get; private set; }
             public ReceiverPath? SourcePath { get; }
 
             public PatternContext(
@@ -3068,6 +3385,12 @@ internal static class GuardFlowAnalyzer
                 Variants = variants;
                 UnsafeForSource = unsafeForSource;
                 SourcePath = sourcePath;
+            }
+
+            public void InvalidateSource(GuardFlowState state)
+            {
+                UnsafeForSource = true;
+                state.Invalidate(SourcePath);
             }
         }
 
