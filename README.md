@@ -10,6 +10,9 @@ For ordinary .NET projects, install the NuGet bundle:
 dotnet add package Houtamelo.Spire
 ```
 
+Upgrading from 4.x? See the [5.0.0 release notes and migration guide](https://github.com/Houtamelo/spire_csharp_analyzers/blob/v5.0.0/docs/releases/5.0.0.md)
+for the new variant payload API and replacement storage settings.
+
 NuGet and Unity use the same runtime, analyzers, and generators. Their separate
 test entry points are documented in [test platforms](docs/test-platforms.md).
 
