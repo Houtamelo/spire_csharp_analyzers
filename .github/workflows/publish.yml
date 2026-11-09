@@ -4,26 +4,69 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to publish
+        required: true
+        type: string
+
+concurrency:
+  group: nuget-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
     steps:
+      - name: Validate release request
+        shell: bash
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            printf '%s\n' 'ERROR: Release tag must use v{major}.{minor}.{patch}[-prerelease].' >&2
+            exit 1
+          fi
+          case "$GITHUB_EVENT_NAME" in
+            push)
+              if [[ "$GITHUB_REF" != "refs/tags/$RELEASE_TAG" ]]; then
+                printf '%s\n' 'ERROR: Automatic publication requires the matching tag ref.' >&2
+                exit 1
+              fi
+              ;;
+            workflow_dispatch)
+              if [[ "$GITHUB_REF" != 'refs/heads/main' ]]; then
+                printf '%s\n' 'ERROR: Dispatch the publishing workflow from main.' >&2
+                exit 1
+              fi
+              ;;
+            *)
+              printf '%s\n' 'ERROR: Unsupported publishing event.' >&2
+              exit 1
+              ;;
+          esac
+
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
+          persist-credentials: false
 
-      # Install .NET 10+ SDK. Remove this step once runners ship with it.
-      # If .NET 10 is still in preview, add: include-prerelease: true
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
 
       - name: Validate tag matches .csproj version
-        run: ./tools/check-tag-version.sh "${GITHUB_REF_NAME}"
+        shell: bash
+        run: |
+          ./tools/check-tag-version.sh "$RELEASE_TAG"
+          printf 'Release tag: %s\nRelease commit: %s\n' "$RELEASE_TAG" "$(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Restore
         run: dotnet restore tests/Spire.CoreCLR.slnx -p:EnableSourceControlManagerQueries=false
@@ -42,10 +85,18 @@ jobs:
           dotnet pack src/Houtamelo.Spire.Analyzers/ -c Release --no-build -o ./nupkgs
           dotnet pack src/Houtamelo.Spire.CodeFixes/ -c Release --no-build -o ./nupkgs
 
+      - name: Authenticate with NuGet
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        id: login
+        with:
+          user: houtamelo
+
       - name: Push to NuGet
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
         run: >
           dotnet nuget push
           ./nupkgs/*.nupkg
           --source https://api.nuget.org/v3/index.json
-          --api-key ${{ secrets.NUGET_API_KEY }}
+          --api-key "$NUGET_API_KEY"
           --skip-duplicate

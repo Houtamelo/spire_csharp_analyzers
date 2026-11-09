@@ -11,9 +11,11 @@ bash tools/test-coreclr.sh
 `tests/Spire.CoreCLR.slnx` retains the original analyzer, generator,
 PatternAnalysis, runtime behavioral, and MSBuild-configuration projects. It also
 tests installed local NuGet packages through complete and failing consumer
-builds. This suite needs the .NET 10 SDK, Bash, and `unzip`, with no Unity
+builds. This suite needs the .NET 10 SDK, Bash, Git, and `unzip`, with no Unity
 installation. CI runs it
 on pushes and pull requests, and the NuGet publishing workflow requires it.
+See [NuGet publishing](nuget-release.md) for Trusted Publishing setup and retries
+that preserve an existing release tag.
 
 Tests that load installed Unity reference assemblies carry
 `[Trait("Environment", "Unity")]`; mixed tests keep their portable controls
