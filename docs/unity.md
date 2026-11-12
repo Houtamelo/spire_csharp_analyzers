@@ -75,7 +75,32 @@ foreground Unity process. Run rendered checks with other guest dialogs closed.
 
 ## Install
 
-From this branch, build the local Unity package:
+To build a self-contained `.unitypackage`, run:
+
+```sh
+dotnet run -c Release --project tools/Spire.Tool -- unitypackage
+```
+
+The command builds Spire, stages an isolated project under `tmp/unitypackage-export`,
+and uses Unity's [`-exportPackage`](https://docs.unity.com/en-us/engine/6000.6/manual/unity-editor/command-line-arguments/editor) to produce
+`tmp/unity-package/Spire-6.0.0.unitypackage`. The filename follows the current package
+version. The default Editor is `6000.5.6f1`; select another installation with
+`--editor /path/to/Editor/Unity` or `SPIRE_UNITY_EDITOR`. Use `--output FILE.unitypackage`
+to choose the archive location. This workflow requires an installed, licensed Editor
+and, on Linux, `Xvfb`.
+
+In the receiving project, remove any existing Spire UPM installation, then use
+**Assets → Import Package → Custom Package** and select the archive. Keep all DLLs
+and their metadata selected. The imported runtime, compiler extensions, and offline
+guides live under `Assets/Spire`, so the archive and export project can be deleted
+after import. This export includes no samples or URP dependency; samples remain
+available through the UPM package. The DLL `.meta` files retain their GUIDs, compiler
+labels, and plugin import settings across both formats.
+The [archive acceptance fixture](../tests/UnityAssetPackageAcceptance/README.md)
+verifies a fresh import, generated APIs and drawers, native JSON persistence,
+and an unsafe consumer rejected by SPIRE014.
+
+For a local UPM package, run:
 
 ```sh
 dotnet run -c Release --project tools/Spire.Tool -- package
@@ -83,6 +108,8 @@ dotnet run -c Release --project tools/Spire.Tool -- package
 
 In Unity's Package Manager, choose **Add package from disk** and select
 `tmp/unity-package/individual.antonio-pedro-goncalves-ferreira.spire/package.json`.
+This installation references the source folder directly; keep it in place, or copy
+the whole package into your project's `Packages` folder for an embedded installation.
 
 The manifest declares `2022.3.62f3` as its minimum version. This is not an upper
 compatibility bound. On `6000.6.5f1`, the current package passes 126 native Editor
@@ -113,7 +140,10 @@ For signed artifacts, exact tarball acceptance, integrity failure controls, and
 the Publisher Portal handoff, see the [UPM release workflow](upm-release.md).
 
 The runtime DLL uses Auto Reference. Assemblies with Override References enabled
-must include `Houtamelo.Spire.dll` explicitly. Analyzer scope is separate from
+must include `Houtamelo.Spire.dll` explicitly, including assemblies that only
+consume unions defined in another asmdef. Without that reference, SPIRE009 cannot
+resolve Spire's exhaustiveness attributes and skips analysis.
+Analyzer scope is separate from
 runtime DLL references; verify that every intended consuming asmdef receives
 the analyzer. Code fixes execute in the IDE, while Unity executes analyzers and
 source generators.
@@ -571,7 +601,7 @@ archived under `TestResults`.
 Roslyn, Workspaces, and test dependencies are confined to the disposable test
 project's Editor-only assets. One MSBuild dependency graph resolves their
 versions; conflicting copies are rejected. The shipped Unity package remains
-limited to Spire's four DLLs. Analyzer and snapshot tests use .NET reference
+limited to Spire's five DLLs, including the Functional runtime. Analyzer and snapshot tests use .NET reference
 assemblies as compiler inputs, while runtime tests load generated assemblies
 against Unity Mono. Preparation builds portable test assemblies and runs the
 net10.0 independent discovery tool through `dotnet`. DevTools preparation tests

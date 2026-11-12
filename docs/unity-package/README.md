@@ -1,8 +1,10 @@
 # Houtamelo.Spire for Unity
 
 Discriminated unions, generated Inspector drawers, compiler diagnostics, and IDE
-code fixes. This bundle contains the runtime DLL, three compiler extensions,
-offline guides, API tooltips, and an optional URP showcase.
+code fixes. This bundle contains the core and Functional runtime DLLs, three
+compiler extensions, offline guides, API tooltips, and an optional URP showcase.
+The [Functional guide](Documentation~/Functional.md) covers results and nullable
+option operations; no separate package installation is needed.
 
 **Minimum Unity version: 2022.3.62f3.**
 **Unity 2020 will not work.** Its compiler lacks features required by Spire.

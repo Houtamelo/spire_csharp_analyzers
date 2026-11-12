@@ -5,6 +5,7 @@ PROJECTS=(
     "src/Houtamelo.Spire/Houtamelo.Spire.csproj"
     "src/Houtamelo.Spire.Analyzers/Houtamelo.Spire.Analyzers.csproj"
     "src/Houtamelo.Spire.CodeFixes/Houtamelo.Spire.CodeFixes.csproj"
+    "src/Houtamelo.Spire.Functional/Houtamelo.Spire.Functional.csproj"
 )
 SOLUTION="tests/Spire.CoreCLR.slnx"
 

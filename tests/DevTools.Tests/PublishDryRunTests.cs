@@ -18,13 +18,14 @@ public sealed class PublishDryRunTests
     [
         new("Houtamelo.Spire", "src/Houtamelo.Spire/Houtamelo.Spire.csproj"),
         new("Houtamelo.Spire.Analyzers", "src/Houtamelo.Spire.Analyzers/Houtamelo.Spire.Analyzers.csproj"),
-        new("Houtamelo.Spire.CodeFixes", "src/Houtamelo.Spire.CodeFixes/Houtamelo.Spire.CodeFixes.csproj")
+        new("Houtamelo.Spire.CodeFixes", "src/Houtamelo.Spire.CodeFixes/Houtamelo.Spire.CodeFixes.csproj"),
+        new("Houtamelo.Spire.Functional", "src/Houtamelo.Spire.Functional/Houtamelo.Spire.Functional.csproj")
     ];
 
     [Fact]
     public async Task PublishDryRun_BuildsTestsPacksAndInspectsAllPackages()
     {
-        using var fixture = Fixture.Create("1.2.3", "1.2.3", "1.2.3");
+        using var fixture = Fixture.Create("1.2.3", "1.2.3", "1.2.3", "1.2.3");
 
         var result = await RunScriptAsync(
             fixture.Root,
@@ -69,7 +70,7 @@ public sealed class PublishDryRunTests
     [Fact]
     public async Task PublishDryRun_WithMismatchedProjectVersionFailsBeforeBuild()
     {
-        using var fixture = Fixture.Create("1.2.3", "1.2.4", "1.2.3");
+        using var fixture = Fixture.Create("1.2.3", "1.2.4", "1.2.3", "1.2.3");
 
         var result = await RunScriptAsync(
             fixture.Root,
@@ -85,9 +86,27 @@ public sealed class PublishDryRunTests
     }
 
     [Fact]
+    public async Task PublishDryRun_WithMismatchedFunctionalVersionFailsBeforeBuild()
+    {
+        using var fixture = Fixture.Create("1.2.3", "1.2.3", "1.2.3", "1.2.4");
+
+        var result = await RunScriptAsync(
+            fixture.Root,
+            Path.Combine(fixture.Root, "tools", "publish-dryrun.sh"));
+
+        Assert.False(result.TimedOut, result.CombinedOutput);
+        Assert.NotEqual(0, result.ExitCode);
+        Assert.Contains("Houtamelo.Spire.Functional", result.CombinedOutput, StringComparison.Ordinal);
+        Assert.Contains("1.2.4", result.CombinedOutput, StringComparison.Ordinal);
+        Assert.Contains("version", result.CombinedOutput, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("--- restore ---", result.CombinedOutput, StringComparison.OrdinalIgnoreCase);
+        AssertNoBuildOutputs(fixture.Root);
+    }
+
+    [Fact]
     public async Task PublishDryRun_WithFailingPortableTestStopsBeforePacking()
     {
-        using var fixture = Fixture.Create("1.2.3", "1.2.3", "1.2.3", failingPortableTest: true);
+        using var fixture = Fixture.Create("1.2.3", "1.2.3", "1.2.3", "1.2.3", failingPortableTest: true);
 
         var result = await RunScriptAsync(
             fixture.Root,
@@ -214,6 +233,7 @@ public sealed class PublishDryRunTests
             string coreVersion,
             string analyzerVersion,
             string codeFixesVersion,
+            string functionalVersion,
             bool failingPortableTest = false)
         {
             var fixture = new Fixture(Path.Combine(Path.GetTempPath(), $"spire-publish-{Guid.NewGuid():N}"));
@@ -230,6 +250,7 @@ public sealed class PublishDryRunTests
             CreateProject(fixture.Root, Packages[0], coreVersion);
             CreateProject(fixture.Root, Packages[1], analyzerVersion);
             CreateProject(fixture.Root, Packages[2], codeFixesVersion);
+            CreateProject(fixture.Root, Packages[3], functionalVersion);
             CreateTestProject(fixture.Root, failingPortableTest);
             File.WriteAllText(
                 Path.Combine(fixture.Root, "tests", "Spire.CoreCLR.slnx"),
@@ -238,6 +259,7 @@ public sealed class PublishDryRunTests
                 "    <Project Path=\"../src/Houtamelo.Spire/Houtamelo.Spire.csproj\" />\n" +
                 "    <Project Path=\"../src/Houtamelo.Spire.Analyzers/Houtamelo.Spire.Analyzers.csproj\" />\n" +
                 "    <Project Path=\"../src/Houtamelo.Spire.CodeFixes/Houtamelo.Spire.CodeFixes.csproj\" />\n" +
+                "    <Project Path=\"../src/Houtamelo.Spire.Functional/Houtamelo.Spire.Functional.csproj\" />\n" +
                 "  </Folder>\n" +
                 "  <Folder Name=\"/tests/\">\n" +
                 "    <Project Path=\"PublishFixture.Tests/PublishFixture.Tests.csproj\" />\n" +

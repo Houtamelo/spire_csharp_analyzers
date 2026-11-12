@@ -1,5 +1,17 @@
 # Changelog
 
+## 6.0.0
+
+- Bundle `Houtamelo.Spire.Functional.dll` and its XML documentation alongside
+  the core runtime. Add the offline Result and Option guide.
+- Mark closure inliner attributes, interfaces, and generated APIs experimental.
+  Supporting compilers require opting in by suppressing `SPIREEXP001`; older
+  Unity compilers may ignore the annotation.
+- Add self-contained `.unitypackage` export with fresh-import acceptance tests.
+
+The new Functional runtime was exercised in Unity 6000.5.6f1 Editor Mono.
+That check does not extend the existing player validation to the new API.
+
 ## 4.7.6 — release candidate
 
 - Verified Unity 2022.3.62f3, 2023.2.22f1, and 6000.5.6f1 on Linux and Windows

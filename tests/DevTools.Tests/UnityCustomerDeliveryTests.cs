@@ -205,10 +205,16 @@ public sealed class UnityCustomerDeliveryTests
         AssertSuccess(result);
         var runtimeDll = Path.Combine(fixture.OutputPath, "Runtime", "Houtamelo.Spire.dll");
         var runtimeXml = Path.Combine(fixture.OutputPath, "Runtime", "Houtamelo.Spire.xml");
+        var functionalDll = Path.Combine(fixture.OutputPath, "Runtime", "Houtamelo.Spire.Functional.dll");
+        var functionalXml = Path.Combine(fixture.OutputPath, "Runtime", "Houtamelo.Spire.Functional.xml");
         Assert.True(File.Exists(runtimeDll), runtimeDll);
         Assert.True(File.Exists(runtimeXml), runtimeXml);
+        Assert.True(File.Exists(functionalDll), functionalDll);
+        Assert.True(File.Exists(functionalXml), functionalXml);
         Assert.NotEmpty(File.ReadAllText(runtimeXml));
+        Assert.NotEmpty(File.ReadAllText(functionalXml));
         Assert.NotEqual(File.ReadAllText(runtimeDll), File.ReadAllText(runtimeXml));
+        Assert.NotEqual(File.ReadAllText(functionalDll), File.ReadAllText(functionalXml));
     }
 
     [Fact]
@@ -523,6 +529,7 @@ public sealed class UnityCustomerDeliveryTests
         foreach (var project in new[]
         {
             "Houtamelo.Spire",
+            "Houtamelo.Spire.Functional",
             "Houtamelo.Spire.Analyzers",
             "Houtamelo.Spire.CodeFixes",
         })
@@ -791,6 +798,7 @@ public sealed class UnityCustomerDeliveryTests
             foreach (var project in new[]
             {
                 "Houtamelo.Spire",
+                "Houtamelo.Spire.Functional",
                 "Houtamelo.Spire.Analyzers",
                 "Houtamelo.Spire.CodeFixes",
             })
@@ -803,6 +811,9 @@ public sealed class UnityCustomerDeliveryTests
             CopyFile(
                 repositoryRoot,
                 $"src/Houtamelo.Spire/bin/{BuildConfiguration()}/netstandard2.0/Houtamelo.Spire.xml");
+            CopyFile(
+                repositoryRoot,
+                $"src/Houtamelo.Spire.Functional/bin/{BuildConfiguration()}/netstandard2.0/Houtamelo.Spire.Functional.xml");
 
             CopyDirectory(
                 Path.Combine(repositoryRoot, "docs", "unity-package"),
@@ -874,6 +885,7 @@ internal static class UnityCustomerDeliveryTestSupport
     internal static IEnumerable<string> AssemblyArtifactPaths(string configuration)
     {
         yield return $"src/Houtamelo.Spire/bin/{configuration}/netstandard2.0/Houtamelo.Spire.dll";
+        yield return $"src/Houtamelo.Spire.Functional/bin/{configuration}/netstandard2.0/Houtamelo.Spire.Functional.dll";
         yield return $"src/Houtamelo.Spire.Analyzers/bin/{configuration}/netstandard2.0/Houtamelo.Spire.Analyzers.dll";
         yield return $"src/Houtamelo.Spire.PatternAnalysis/bin/{configuration}/netstandard2.0/Houtamelo.Spire.PatternAnalysis.dll";
         yield return $"src/Houtamelo.Spire.CodeFixes/bin/{configuration}/netstandard2.0/Houtamelo.Spire.CodeFixes.dll";
@@ -926,6 +938,7 @@ internal static class UnityCustomerDeliveryTestSupport
         yield return "docs/unity-package/Showcase.md";
         yield return "docs/unity-package/documentation-files.txt";
         yield return $"src/Houtamelo.Spire/bin/{BuildConfiguration()}/netstandard2.0/Houtamelo.Spire.xml";
+        yield return $"src/Houtamelo.Spire.Functional/bin/{BuildConfiguration()}/netstandard2.0/Houtamelo.Spire.Functional.xml";
 
         foreach (var source in DocumentationSourceFiles(repositoryRoot))
             yield return Path.GetRelativePath(repositoryRoot, source);
@@ -966,7 +979,9 @@ internal static class UnityCustomerDeliveryTestSupport
         foreach (var relative in new[]
         {
             "Runtime/Houtamelo.Spire.dll",
+            "Runtime/Houtamelo.Spire.Functional.dll",
             "Runtime/Houtamelo.Spire.xml",
+            "Runtime/Houtamelo.Spire.Functional.xml",
             "Analyzers/Houtamelo.Spire.Analyzers.dll",
             "Analyzers/Houtamelo.Spire.PatternAnalysis.dll",
             "Analyzers/Houtamelo.Spire.CodeFixes.dll",

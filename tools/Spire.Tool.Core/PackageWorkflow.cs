@@ -7,7 +7,8 @@ public static class PackageWorkflow
 {
     internal static readonly (string Name, string Folder, bool Analyzer)[] Assemblies =
     {
-        ("Houtamelo.Spire", "Runtime", false), ("Houtamelo.Spire.Analyzers", "Analyzers", true),
+        ("Houtamelo.Spire", "Runtime", false), ("Houtamelo.Spire.Functional", "Runtime", false),
+        ("Houtamelo.Spire.Analyzers", "Analyzers", true),
         ("Houtamelo.Spire.PatternAnalysis", "Analyzers", true), ("Houtamelo.Spire.CodeFixes", "Analyzers", true),
     };
     internal static string Guid(string relative) => FileOps.HashText("Houtamelo.Spire.Unity/" + relative).Substring(0, 32);
@@ -15,14 +16,10 @@ public static class PackageWorkflow
     public static async Task<string> BuildAsync(ToolContext context, string output, string configuration, bool build)
     {
         output = context.RequireOutsideExamples(output);
-        var versions = new[] { "Houtamelo.Spire", "Houtamelo.Spire.Analyzers", "Houtamelo.Spire.CodeFixes" }
-            .Select(name => XDocument.Load(context.PathOf("src/" + name + "/" + name + ".csproj"))
-                .Root?.Element("PropertyGroup")?.Element("Version")?.Value).Distinct().ToArray();
-        if (versions.Length != 1 || string.IsNullOrEmpty(versions[0]))
-            throw new InvalidOperationException("The three Spire package versions must match.");
-        if (build) await context.BuildAsync("src/Houtamelo.Spire/Houtamelo.Spire.csproj", configuration).ConfigureAwait(false);
+        var version = ReadVersion(context);
+        if (build) await context.BuildAsync("src/Houtamelo.Spire.Functional/Houtamelo.Spire.Functional.csproj", configuration).ConfigureAwait(false);
         var content = CustomerContent(context, configuration);
-        var textFiles = new[] { "package.json", "README.md", "LICENSE", "LICENSE.md", "CHANGELOG.md", "Third Party Notices.md", "Runtime/Houtamelo.Spire.xml", "Samples~/Showcase/README.md" };
+        var textFiles = new[] { "package.json", "README.md", "LICENSE", "LICENSE.md", "CHANGELOG.md", "Third Party Notices.md", "Runtime/Houtamelo.Spire.xml", "Runtime/Houtamelo.Spire.Functional.xml", "Samples~/Showcase/README.md" };
         var expected = new HashSet<string>(content.Keys, StringComparer.Ordinal);
         expected.UnionWith(textFiles.SelectMany(path => new[] { path, path + ".meta" }));
         foreach (var item in Assemblies)
@@ -58,13 +55,13 @@ public static class PackageWorkflow
         FileOps.WriteJson(Path.Combine(output, "package.json"), new JsonObject
         {
             ["name"] = "individual.antonio-pedro-goncalves-ferreira.spire",
-            ["version"] = versions[0],
+            ["version"] = version,
             ["displayName"] = "Houtamelo.Spire",
-            ["description"] = "Type-safe discriminated unions, source generators, analyzers, and IDE quick fixes. Verified on Unity 2022.3.62f3, 2023.2.22f1, and 6000.5.6f1 on Linux and Windows x64, including Mono and IL2CPP players. See the included compatibility and serialization guidance.",
+            ["description"] = "Type-safe discriminated unions, functional results and options, source generators, analyzers, and IDE quick fixes. Verified on Unity 2022.3.62f3, 2023.2.22f1, and 6000.5.6f1 on Linux and Windows x64, including Mono and IL2CPP players. See the included compatibility and serialization guidance.",
             // Unity can preload a JsonArray implementation without the newer span constructor.
             ["keywords"] = new JsonArray(new JsonNode?[]
                 { "discriminated-unions", "source-generator", "roslyn", "analyzers", "type-safety", "serialization" }),
-            ["documentationUrl"] = "https://github.com/Houtamelo/spire_csharp_analyzers/blob/unity-6000/docs/unity-package/Documentation~/GettingStarted.md",
+            ["documentationUrl"] = "https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/docs/unity-package/Documentation~/GettingStarted.md",
             ["licensesUrl"] = "https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/LICENSE",
             ["unity"] = "2022.3",
             ["unityRelease"] = "62f3",
@@ -93,6 +90,16 @@ public static class PackageWorkflow
         return output;
     }
 
+    internal static string ReadVersion(ToolContext context)
+    {
+        var versions = new[] { "Houtamelo.Spire", "Houtamelo.Spire.Analyzers", "Houtamelo.Spire.CodeFixes", "Houtamelo.Spire.Functional" }
+            .Select(name => XDocument.Load(context.PathOf("src/" + name + "/" + name + ".csproj"))
+                .Root?.Element("PropertyGroup")?.Element("Version")?.Value).Distinct().ToArray();
+        if (versions.Length != 1 || string.IsNullOrEmpty(versions[0]))
+            throw new InvalidOperationException("The four Spire package versions must match.");
+        return versions[0]!;
+    }
+
     private static Dictionary<string, string> CustomerContent(ToolContext context, string configuration)
     {
         var content = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -109,6 +116,7 @@ public static class PackageWorkflow
         Add("README.md", "docs/unity-package/README.md");
         Add("Third Party Notices.md", "docs/unity-package/Third Party Notices.md");
         Add("Runtime/Houtamelo.Spire.xml", "src/Houtamelo.Spire/bin/" + configuration + "/netstandard2.0/Houtamelo.Spire.xml");
+        Add("Runtime/Houtamelo.Spire.Functional.xml", "src/Houtamelo.Spire.Functional/bin/" + configuration + "/netstandard2.0/Houtamelo.Spire.Functional.xml");
         var documents = context.PathOf("docs/unity-package/documentation-files.txt");
         FileOps.RequireFile(documents);
         foreach (var relative in ReadInventory(documents))

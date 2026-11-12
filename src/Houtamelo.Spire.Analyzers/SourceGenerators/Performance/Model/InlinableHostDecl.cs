@@ -30,5 +30,6 @@ internal sealed record InlinableHostDecl(
     string OriginalBody,
     EquatableArray<string> UsingDirectives,
     string HintName,
+    bool HasExperimentalAttribute,
     InlinerDiagnostic? Diagnostic
 ) : IEquatable<InlinableHostDecl>;

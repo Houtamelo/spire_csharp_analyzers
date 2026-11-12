@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Houtamelo.Spire;
 
@@ -10,12 +11,17 @@ namespace Houtamelo.Spire;
 /// <c>.Invoke(...)</c> on the generic struct, enabling JIT monomorphization.
 /// </summary>
 /// <remarks>
+/// This feature is experimental and may change or be removed. Suppress
+/// <c>SPIREEXP001</c> to opt in when using a compiler that recognizes this annotation.
+/// <para>
 /// The containing type (and every enclosing type) must be <c>partial</c>. Delegate
 /// arity must be ≤ 8. Nullability of the delegate parameter is preserved as
 /// <see cref="Nullable{T}"/> on the twin. The parameter may only appear as the
 /// target of an invocation or inside a single-assignment <c>var</c> alias; other
 /// uses produce SPIRE021.
+/// </para>
 /// </remarks>
+[Experimental("SPIREEXP001")]
 [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
 public sealed class InlinableAttribute : Attribute
 {

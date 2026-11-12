@@ -237,7 +237,11 @@ public sealed class DiagnosticContinuityTests
             "StandaloneInlinable",
             new[] { tree },
             references,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                .WithSpecificDiagnosticOptions(
+                    ImmutableDictionary<string, ReportDiagnostic>.Empty.SetItem(
+                        GeneratorTestHelper.InlinerExperimentalDiagnosticId,
+                        ReportDiagnostic.Suppress)));
         return RunInlinableAnalyzer(compilation);
     }
 

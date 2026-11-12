@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Houtamelo.Spire;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Performance.Analyzers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -223,11 +224,20 @@ public abstract class AnalyzerTestBase<TAnalyzer> where TAnalyzer : DiagnosticAn
         if (sharedSource != null)
             trees.Add(CSharpSyntaxTree.ParseText(sharedSource, parseOptions, path: "_shared.cs"));
 
+        var compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary);
+        if (typeof(TAnalyzer) == typeof(InlinableUsageAnalyzer))
+        {
+            compilationOptions = compilationOptions.WithSpecificDiagnosticOptions(
+                compilationOptions.SpecificDiagnosticOptions.SetItem(
+                    "SPIREEXP001",
+                    ReportDiagnostic.Suppress));
+        }
+
         var compilation = CSharpCompilation.Create(
             "TestAssembly",
             trees,
             references,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            compilationOptions);
 
         // Fail fast if the test code doesn't compile
         var compilerErrors = compilation.GetDiagnostics()

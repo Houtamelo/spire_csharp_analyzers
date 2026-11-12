@@ -11,6 +11,8 @@ namespace Houtamelo.Spire.SourceGenerators.Tests;
 
 internal static class GeneratorTestHelper
 {
+    internal const string InlinerExperimentalDiagnosticId = "SPIREEXP001";
+
     private static readonly MetadataReference CoreAssemblyReference =
         MetadataReference.CreateFromFile(typeof(EnforceInitializationAttribute).Assembly.Location);
 
@@ -29,6 +31,31 @@ internal static class GeneratorTestHelper
         out Compilation outputCompilation,
         out ImmutableArray<Microsoft.CodeAnalysis.Diagnostic> diagnostics,
         string path = "test.cs")
+        => RunGeneratorCore(
+            source,
+            out outputCompilation,
+            out diagnostics,
+            path,
+            suppressInlinerExperimentalDiagnostic: false);
+
+    internal static GeneratorDriverRunResult RunGeneratorWithInlinerExperimentalSuppression(
+        string source,
+        out Compilation outputCompilation,
+        out ImmutableArray<Microsoft.CodeAnalysis.Diagnostic> diagnostics,
+        string path = "test.cs")
+        => RunGeneratorCore(
+            source,
+            out outputCompilation,
+            out diagnostics,
+            path,
+            suppressInlinerExperimentalDiagnostic: true);
+
+    private static GeneratorDriverRunResult RunGeneratorCore(
+        string source,
+        out Compilation outputCompilation,
+        out ImmutableArray<Microsoft.CodeAnalysis.Diagnostic> diagnostics,
+        string path,
+        bool suppressInlinerExperimentalDiagnostic)
     {
         var syntaxTree = CSharpSyntaxTree.ParseText(source,
             CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest),
@@ -38,8 +65,7 @@ internal static class GeneratorTestHelper
             "TestAssembly",
             new[] { syntaxTree },
             BaseReferences,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
-                allowUnsafe: true));
+            CreateInlinerCompilationOptions(suppressInlinerExperimentalDiagnostic));
 
         var generator = new DiscriminatedUnionGenerator();
         var driver = CSharpGeneratorDriver.Create(generator)
@@ -55,18 +81,13 @@ internal static class GeneratorTestHelper
         string source,
         out Compilation outputCompilation,
         out ImmutableArray<Microsoft.CodeAnalysis.Diagnostic> diagnostics,
-        string path = "test.cs")
+        string path = "test.cs",
+        bool suppressInlinerExperimentalDiagnostic = true)
     {
-        var syntaxTree = CSharpSyntaxTree.ParseText(source,
-            CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest),
-            path: path);
-
-        var compilation = CSharpCompilation.Create(
-            "TestAssembly",
-            new[] { syntaxTree },
-            BaseReferences,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
-                allowUnsafe: true));
+        var compilation = CreateInlinerCompilation(
+            source,
+            path,
+            suppressInlinerExperimentalDiagnostic);
 
         var generator = new Houtamelo.Spire.Analyzers.SourceGenerators.Performance.InlinerStructGenerator();
         var driver = CSharpGeneratorDriver.Create(generator)
@@ -90,18 +111,13 @@ internal static class GeneratorTestHelper
         string source,
         out Compilation outputCompilation,
         out ImmutableArray<Microsoft.CodeAnalysis.Diagnostic> diagnostics,
-        string path = "test.cs")
+        string path = "test.cs",
+        bool suppressInlinerExperimentalDiagnostic = true)
     {
-        var syntaxTree = CSharpSyntaxTree.ParseText(source,
-            CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest),
-            path: path);
-
-        var compilation = CSharpCompilation.Create(
-            "TestAssembly",
-            new[] { syntaxTree },
-            BaseReferences,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
-                allowUnsafe: true));
+        var compilation = CreateInlinerCompilation(
+            source,
+            path,
+            suppressInlinerExperimentalDiagnostic);
 
         var generator = new Houtamelo.Spire.Analyzers.SourceGenerators.Performance.InlinableTwinGenerator();
         var driver = CSharpGeneratorDriver.Create(generator)
@@ -119,6 +135,30 @@ internal static class GeneratorTestHelper
             .Where(t => System.IO.Path.GetFileName(t.FilePath).EndsWith(".InlinableTwin.g.cs"))
             .Select(t => t.GetText().ToString())
             .FirstOrDefault();
+    }
+
+    internal static GeneratorDriverRunResult RunAllInlinerGenerators(
+        string source,
+        out Compilation outputCompilation,
+        out ImmutableArray<Microsoft.CodeAnalysis.Diagnostic> diagnostics,
+        string path = "test.cs",
+        bool suppressInlinerExperimentalDiagnostic = true)
+    {
+        var compilation = CreateInlinerCompilation(
+            source,
+            path,
+            suppressInlinerExperimentalDiagnostic);
+        var driver = CSharpGeneratorDriver.Create(
+                new Houtamelo.Spire.Analyzers.SourceGenerators.Performance.InlinerStructGenerator()
+                    .AsSourceGenerator(),
+                new Houtamelo.Spire.Analyzers.SourceGenerators.Performance.InlinableTwinGenerator()
+                    .AsSourceGenerator())
+            .RunGeneratorsAndUpdateCompilation(
+                compilation,
+                out outputCompilation,
+                out diagnostics);
+
+        return driver.GetRunResult();
     }
 
     public static string? GetUnionGeneratedSource(GeneratorDriverRunResult result)
@@ -185,4 +225,74 @@ internal static class GeneratorTestHelper
             Assert.Fail($"Generator reported {errors.Count} diagnostic(s):\n{messages}");
         }
     }
+
+    private static CSharpCompilationOptions CreateInlinerCompilationOptions(
+        bool suppressInlinerExperimentalDiagnostic)
+    {
+        var options = new CSharpCompilationOptions(
+            OutputKind.DynamicallyLinkedLibrary,
+            allowUnsafe: true);
+
+        if (suppressInlinerExperimentalDiagnostic)
+        {
+            options = options.WithSpecificDiagnosticOptions(
+                options.SpecificDiagnosticOptions.SetItem(
+                    InlinerExperimentalDiagnosticId,
+                    ReportDiagnostic.Suppress));
+        }
+
+        return options;
+    }
+
+    private static CSharpCompilation CreateInlinerCompilation(
+        string source,
+        string path,
+        bool suppressInlinerExperimentalDiagnostic)
+    {
+        var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest);
+        var syntaxTree = CSharpSyntaxTree.ParseText(source, parseOptions, path: path);
+        var compilation = CSharpCompilation.Create(
+            "TestAssembly",
+            new[] { syntaxTree },
+            BaseReferences,
+            CreateInlinerCompilationOptions(suppressInlinerExperimentalDiagnostic));
+
+        if (!HasAccessibleExperimentalAttribute(compilation))
+        {
+            compilation = compilation.AddSyntaxTrees(
+                CSharpSyntaxTree.ParseText(
+                    ExperimentalAttributeShimSource,
+                    parseOptions,
+                    path: "__SpireExperimentalAttributeShim.cs"));
+        }
+
+        return compilation;
+    }
+
+    private static bool HasAccessibleExperimentalAttribute(Compilation compilation)
+    {
+        var type = compilation.GetTypeByMetadataName(
+            "System.Diagnostics.CodeAnalysis.ExperimentalAttribute");
+        return type is not null
+            && compilation.IsSymbolAccessibleWithin(type, compilation.Assembly);
+    }
+
+    private const string ExperimentalAttributeShimSource = """
+        using System;
+
+        namespace System.Diagnostics.CodeAnalysis
+        {
+            [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Module | AttributeTargets.Class |
+                            AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Constructor |
+                            AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field |
+                            AttributeTargets.Event | AttributeTargets.Interface | AttributeTargets.Delegate,
+                            Inherited = false)]
+            internal sealed class ExperimentalAttribute : Attribute
+            {
+                public ExperimentalAttribute(string diagnosticId) => DiagnosticId = diagnosticId;
+
+                public string DiagnosticId { get; }
+            }
+        }
+        """;
 }

@@ -1,0 +1,5 @@
+{
+  "name": "Spire.UnityAssetPackageAcceptance",
+  "rootNamespace": "Spire.UnityAssetPackageAcceptance",
+  "includePlatforms": ["Editor"]
+}

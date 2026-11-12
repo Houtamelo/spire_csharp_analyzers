@@ -150,6 +150,14 @@ public static class BehavioralWorkflow
 
 internal static class UnityRunner
 {
+    internal static Task<ProcessResult> ExportPackageAsync(ToolContext context, string project, string editor,
+        string assets, string output, string log, TimeSpan timeout)
+        => RunWithDisplayAsync(project, FileOps.FullPath(editor), new[]
+        {
+            "-batchmode", "-nographics", "-quit", "-projectPath", project,
+            "-exportPackage", assets, output, "-logFile", log,
+        }, context.Root, timeout, displayLog: log + ".xvfb.log");
+
     internal static Task<ProcessResult> TestsWithGraphicsAsync(ToolContext context, string project, string editor,
         string assemblies, string report, string log, TimeSpan timeout)
         => RunWithDisplayAsync(project, FileOps.FullPath(editor), new[]

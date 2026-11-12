@@ -25,5 +25,6 @@ internal sealed record InlinerStructDecl(
     EquatableArray<string> TypeParameterConstraints,
     EquatableArray<InlinerParamInfo> Parameters,
     string HintName,
+    bool HasExperimentalAttribute,
     InlinerDiagnostic? Diagnostic
 ) : IEquatable<InlinerStructDecl>;

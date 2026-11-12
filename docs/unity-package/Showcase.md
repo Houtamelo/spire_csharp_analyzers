@@ -2,7 +2,7 @@
 
 This sample demonstrates variant payloads, Inspector authoring, variant rename
 aliases, managed-reference nulls/sharing, property patterns, checked enum
-conversion, filtering, and struct inliners. It includes a saved scene, preset,
+conversion, filtering, and experimental struct inliners. It includes a saved scene, preset,
 and real Unity Test Framework tests.
 
 Before importing, install URP 17.5.0 and Unity Test Framework 1.7.0. Import the

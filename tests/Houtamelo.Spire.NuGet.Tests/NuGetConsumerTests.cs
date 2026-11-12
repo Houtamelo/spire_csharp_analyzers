@@ -8,6 +8,7 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Spire.Tool;
 using Xunit;
 
@@ -26,6 +27,7 @@ public sealed class NuGetConsumerTests
         new("Houtamelo.Spire", "src/Houtamelo.Spire/Houtamelo.Spire.csproj"),
         new("Houtamelo.Spire.Analyzers", "src/Houtamelo.Spire.Analyzers/Houtamelo.Spire.Analyzers.csproj"),
         new("Houtamelo.Spire.CodeFixes", "src/Houtamelo.Spire.CodeFixes/Houtamelo.Spire.CodeFixes.csproj"),
+        new("Houtamelo.Spire.Functional", "src/Houtamelo.Spire.Functional/Houtamelo.Spire.Functional.csproj"),
     ];
 
     private static readonly string BuildConfiguration =
@@ -46,6 +48,9 @@ public sealed class NuGetConsumerTests
 
             using var archive = ZipFile.OpenRead(path);
             AssertExpectedAssets(package.Id, archive);
+
+            if (package.Id == "Houtamelo.Spire.Functional")
+                AssertFunctionalPackageMetadata(archive, version);
 
             foreach (var entry in archive.Entries.Where(entry =>
                          entry.FullName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)))
@@ -180,6 +185,83 @@ public sealed class NuGetConsumerTests
         Assert.Equal(0, run.ExitCode);
     }
 
+    [Fact]
+    public async Task FunctionalPackage_CompilesAndRunsWithOnlyTheFunctionalReference()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        using var fixture = PackageFixture.Create(repositoryRoot);
+        var version = await PackAllAsync(repositoryRoot, fixture.FeedPath);
+        CopyFrameworkPackagesToFeed(fixture.FeedPath);
+
+        var (build, projectRoot) = await RunConsumerAsync(
+            repositoryRoot,
+            fixture,
+            version,
+            "functional-consumer",
+            FunctionalConsumerSource,
+            outputType: "Exe",
+            packageId: "Houtamelo.Spire.Functional");
+
+        Assert.Equal(0, build.ExitCode);
+        Assert.DoesNotContain("AD0001", CombinedOutput(build), StringComparison.Ordinal);
+        Assert.DoesNotContain("CS1591", CombinedOutput(build), StringComparison.Ordinal);
+        Assert.All(ReadGeneratedSources(projectRoot), AssertContainsNoUnitySurface);
+
+        var run = await ProcessRunner.RunAsync(
+            new ToolContext(repositoryRoot).Dotnet,
+            new[] { "run", "--project", "Consumer.csproj", "-c", "Release", "--no-build", "--no-restore", "--nologo", "--tl:off" },
+            projectRoot,
+            ProcessTimeout,
+            ProcessEnvironment());
+        Assert.Equal(0, run.ExitCode);
+    }
+
+    [Fact]
+    public async Task FunctionalPackage_IncompleteResultSwitchFailsWithSpireDiagnosticOnly()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        using var fixture = PackageFixture.Create(repositoryRoot);
+        var version = await PackAllAsync(repositoryRoot, fixture.FeedPath);
+        CopyFrameworkPackagesToFeed(fixture.FeedPath);
+
+        var (build, _) = await RunConsumerAsync(
+            repositoryRoot,
+            fixture,
+            version,
+            "functional-incomplete-result-consumer",
+            IncompleteFunctionalResultConsumerSource,
+            outputType: "Library",
+            packageId: "Houtamelo.Spire.Functional");
+
+        var output = CombinedOutput(build);
+        Assert.NotEqual(0, build.ExitCode);
+        Assert.Contains("SPIRE009", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("AD0001", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task FunctionalPackage_InspectErrCannotBeAssignedToResult()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        using var fixture = PackageFixture.Create(repositoryRoot);
+        var version = await PackAllAsync(repositoryRoot, fixture.FeedPath);
+        CopyFrameworkPackagesToFeed(fixture.FeedPath);
+
+        var (build, _) = await RunConsumerAsync(
+            repositoryRoot,
+            fixture,
+            version,
+            "functional-inspect-error-consumer",
+            InspectErrConsumerSource,
+            outputType: "Library",
+            packageId: "Houtamelo.Spire.Functional");
+
+        var output = CombinedOutput(build);
+        Assert.NotEqual(0, build.ExitCode);
+        Assert.Contains("CS0029", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("AD0001", output, StringComparison.Ordinal);
+    }
+
     private static async Task<string> PackAllAsync(string repositoryRoot, string feedPath)
     {
         var versions = Packages
@@ -215,7 +297,8 @@ public sealed class NuGetConsumerTests
         string name,
         string source,
         string outputType,
-        bool treatWarningsAsErrors = true)
+        bool treatWarningsAsErrors = true,
+        string packageId = "Houtamelo.Spire")
     {
         var projectRoot = Path.Combine(fixture.RootPath, name);
         Directory.CreateDirectory(projectRoot);
@@ -239,7 +322,7 @@ public sealed class NuGetConsumerTests
                 <NuGetAudit>false</NuGetAudit>
               </PropertyGroup>
               <ItemGroup>
-                <PackageReference Include="Houtamelo.Spire" Version="{version}" />
+                <PackageReference Include="{packageId}" Version="{version}" />
               </ItemGroup>
             </Project>
             """);
@@ -280,9 +363,53 @@ public sealed class NuGetConsumerTests
             case "Houtamelo.Spire.CodeFixes":
                 Assert.Contains("analyzers/dotnet/cs/Houtamelo.Spire.CodeFixes.dll", files);
                 break;
+            case "Houtamelo.Spire.Functional":
+                Assert.Contains("lib/netstandard2.0/Houtamelo.Spire.Functional.dll", files);
+                Assert.Contains("lib/netstandard2.0/Houtamelo.Spire.Functional.xml", files);
+                Assert.Contains("README.md", files);
+                break;
             default:
                 throw new InvalidOperationException($"Unexpected package '{packageId}'.");
         }
+    }
+
+    private static void AssertFunctionalPackageMetadata(ZipArchive archive, string version)
+    {
+        var nuspec = Assert.Single(
+            archive.Entries,
+            entry => entry.FullName.EndsWith(".nuspec", StringComparison.OrdinalIgnoreCase));
+        using var stream = nuspec.Open();
+        var document = XDocument.Load(stream);
+        var dependencies = document
+            .Descendants()
+            .Where(element => element.Name.LocalName == "dependency")
+            .Select(element => element.Attribute("id")?.Value)
+            .Where(id => id is not null)
+            .Cast<string>()
+            .ToArray();
+
+        Assert.Equal(new[] { "Houtamelo.Spire" }, dependencies);
+        Assert.Contains(
+            document.Descendants().Where(element => element.Name.LocalName == "dependency"),
+            dependency => dependency.Attribute("id")?.Value == "Houtamelo.Spire" &&
+                dependency.Attribute("version")?.Value == version);
+
+        var functionalDll = Assert.Single(
+            archive.Entries,
+            entry => entry.FullName.Equals(
+                "lib/netstandard2.0/Houtamelo.Spire.Functional.dll",
+                StringComparison.OrdinalIgnoreCase));
+        using var image = new MemoryStream();
+        using (var entryStream = functionalDll.Open())
+            entryStream.CopyTo(image);
+        image.Position = 0;
+        using var peReader = new PEReader(image);
+        var metadata = peReader.GetMetadataReader();
+        var references = metadata.AssemblyReferences
+            .Select(handle => metadata.GetString(metadata.GetAssemblyReference(handle).Name))
+            .ToArray();
+        Assert.DoesNotContain("JetBrains.Annotations", references, StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain(references, reference => reference.StartsWith("Unity", StringComparison.OrdinalIgnoreCase));
     }
 
     private static string[] ReadGeneratedSources(string projectRoot)
@@ -425,6 +552,57 @@ public sealed class NuGetConsumerTests
     }
 
     private sealed record PackageDefinition(string Id, string ProjectPath);
+
+    private const string FunctionalConsumerSource = """
+        using Houtamelo.Spire;
+        using Houtamelo.Spire.Functional;
+
+        [DiscriminatedUnion]
+        public partial struct LocalChoice
+        {
+            [Variant] public static partial LocalChoice Value(int value);
+            [Variant] public static partial LocalChoice Empty();
+        }
+
+        public static class Program
+        {
+            public static int Main()
+            {
+                var result = ResultImpl.Ok(5).map(value => value + 1);
+                var option = OptionImpl.Some(4).map(value => value + 1);
+                var choice = LocalChoice.Value(7);
+                var matched = choice switch
+                {
+                    { IsValue: true, value: var (value) } => value,
+                    { IsEmpty: true } => -1,
+                };
+
+                return result.unwrap() == 6 && option == 5 && matched == 7 ? 0 : 1;
+            }
+        }
+        """;
+
+    private const string IncompleteFunctionalResultConsumerSource = """
+        using Houtamelo.Spire.Functional;
+
+        public static class Consumer
+        {
+            public static int Match(Result<int> result) => result switch
+            {
+                { IsOk: true, ok: var (value) } => value,
+            };
+        }
+        """;
+
+    private const string InspectErrConsumerSource = """
+        using Houtamelo.Spire.Functional;
+
+        public static class Consumer
+        {
+            public static Result Observe(Result result)
+                => result.inspect_err(_ => { });
+        }
+        """;
 
     private const string ValidConsumerSource = """
         using System;

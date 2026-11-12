@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Houtamelo.Spire.Analyzers.SourceGenerators.Performance.Analyzers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -39,7 +40,7 @@ public abstract class GeneratorAnalyzerTestBase
 
         var strippedSource = StripComments(caseSource);
 
-        GeneratorTestHelper.RunGenerator(strippedSource,
+        RunGeneratorForAnalyzer(strippedSource,
             out var outputCompilation, out _, path: "case.cs");
 
         var analyzerDiags = await RunAnalyzers(outputCompilation);
@@ -80,7 +81,7 @@ public abstract class GeneratorAnalyzerTestBase
 
         var strippedSource = StripComments(caseSource);
 
-        GeneratorTestHelper.RunGenerator(strippedSource,
+        RunGeneratorForAnalyzer(strippedSource,
             out var outputCompilation, out _, path: "case.cs");
 
         var analyzerDiags = await RunAnalyzers(outputCompilation);
@@ -100,6 +101,29 @@ public abstract class GeneratorAnalyzerTestBase
         var withAnalyzers = compilation.WithAnalyzers(GetAnalyzers());
         var allDiags = await withAnalyzers.GetAnalyzerDiagnosticsAsync();
         return allDiags.Where(IsRelevantDiagnostic).ToList();
+    }
+
+    private void RunGeneratorForAnalyzer(
+        string source,
+        out Compilation outputCompilation,
+        out ImmutableArray<Microsoft.CodeAnalysis.Diagnostic> diagnostics,
+        string path)
+    {
+        if (GetAnalyzers().Any(analyzer => analyzer is InlinableUsageAnalyzer))
+        {
+            GeneratorTestHelper.RunGeneratorWithInlinerExperimentalSuppression(
+                source,
+                out outputCompilation,
+                out diagnostics,
+                path);
+            return;
+        }
+
+        GeneratorTestHelper.RunGenerator(
+            source,
+            out outputCompilation,
+            out diagnostics,
+            path);
     }
 
     private (string caseSource, List<int> expectedDiagnosticLines) LoadAndParse(string caseName)

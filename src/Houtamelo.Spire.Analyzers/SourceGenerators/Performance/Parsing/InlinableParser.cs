@@ -141,6 +141,8 @@ internal static class InlinableParser
             OriginalBody: bodyText,
             UsingDirectives: new EquatableArray<string>(usings.ToImmutableArray()),
             HintName: InlinerHintNaming.ForInlinableTwin(method),
+            HasExperimentalAttribute: CompilationInfo.HasAccessibleType(
+                compilation, "System.Diagnostics.CodeAnalysis.ExperimentalAttribute"),
             Diagnostic: diagnostic);
     }
 

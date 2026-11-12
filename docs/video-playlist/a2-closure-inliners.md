@@ -4,6 +4,9 @@ An optional advanced walkthrough: investigate callback allocation and dispatch
 in a gameplay operation, then compare generated struct callbacks with the
 existing code and a straightforward loop.
 
+The entire closure inliner feature is experimental and may change or be removed.
+Explain the `SPIREEXP001` opt-in on compilers that recognize `ExperimentalAttribute`.
+
 ## Example and feature grouping
 
 Chop Chop's
@@ -14,7 +17,7 @@ not an established game bottleneck.
 
 Group `[InlinerStruct]`, `[Inlinable]` delegate parameters, generated generic
 overloads, and the matching action/function inliner interfaces. The existing
-[showcase algorithms](../../examples/UnityShowcase/Assets/Scripts/ShowcaseAlgorithms.cs)
+[showcase algorithms](../../tests/UnityPackageSample/Assets/Scripts/ShowcaseAlgorithms.cs)
 illustrate the API but are not the main gameplay demonstration.
 
 ## Demonstration sequence

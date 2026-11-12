@@ -18,6 +18,8 @@
                       ReferenceOutputAssembly="false" PrivateAssets="all" />
     <ProjectReference Include="../../src/Houtamelo.Spire/Houtamelo.Spire.csproj"
                       ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <ProjectReference Include="../../src/Houtamelo.Spire.Functional/Houtamelo.Spire.Functional.csproj"
+                      ReferenceOutputAssembly="false" PrivateAssets="all" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" Condition="'$(SpireUnityTestHost)' != 'true'" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2" Condition="'$(SpireUnityTestHost)' != 'true'" />

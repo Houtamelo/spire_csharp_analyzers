@@ -4,7 +4,7 @@
 |---|---|
 | Unity 2020 cannot load Spire or generate factories | Unity 2020 will not work. Its compiler lacks the source-generator support and C# 9 features required by Spire. |
 | Unity 2022 loses serialized union payloads | Generic unions are unsupported by this Editor's serializer. Non-generic unions use concrete wrappers. For assets written with the previous generic wrapper, update and resave in a newer supported Editor before moving them to Unity 2022. |
-| Partial factories have no implementation | Start with Unity's first compiler/generator error. Confirm `partial` on the union and all containing types, all four DLLs, and `RoslynAnalyzer` labels in their metadata. |
+| Partial factories have no implementation | Start with Unity's first compiler/generator error. Confirm `partial` on the union and all containing types, all five DLLs, and `RoslynAnalyzer` labels on the three compiler DLLs. |
 | Unity compiles but Rider lacks generated members or fixes | Enable Rider's Roslyn Analyzers, refresh the Unity project model, and check the IDE's analyzer errors. |
 | Analyzer works in one assembly only | Keep analyzer `.meta` files with the DLLs; inspect the owning asmdef and compiler response file for analyzer loading. |
 | SPIRE_DU018 for a nested union | Move the union outside its generic containing type. The union itself may be generic. |

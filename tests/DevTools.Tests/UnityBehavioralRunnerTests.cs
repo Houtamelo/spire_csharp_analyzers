@@ -563,6 +563,7 @@ public sealed class UnityBehavioralRunnerTests
         foreach (var name in new[]
                  {
                      "Houtamelo.Spire",
+                     "Houtamelo.Spire.Functional",
                      "Houtamelo.Spire.Analyzers",
                      "Houtamelo.Spire.PatternAnalysis",
                      "Houtamelo.Spire.CodeFixes",
@@ -615,6 +616,10 @@ public sealed class UnityBehavioralRunnerTests
             repositoryRoot,
             isolatedRoot,
             $"src/Houtamelo.Spire/bin/{configuration}/netstandard2.0/Houtamelo.Spire.xml");
+        CopyFile(
+            repositoryRoot,
+            isolatedRoot,
+            $"src/Houtamelo.Spire.Functional/bin/{configuration}/netstandard2.0/Houtamelo.Spire.Functional.xml");
         CopyDirectory(
             Path.Combine(repositoryRoot, "docs", "unity-package"),
             Path.Combine(isolatedRoot, "docs", "unity-package"));
@@ -634,6 +639,7 @@ public sealed class UnityBehavioralRunnerTests
         foreach (var name in new[]
                  {
                      "Houtamelo.Spire",
+                     "Houtamelo.Spire.Functional",
                      "Houtamelo.Spire.Analyzers",
                      "Houtamelo.Spire.CodeFixes",
                  })

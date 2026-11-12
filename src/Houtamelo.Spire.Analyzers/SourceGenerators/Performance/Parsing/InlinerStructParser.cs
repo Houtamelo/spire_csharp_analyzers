@@ -76,6 +76,8 @@ internal static class InlinerStructParser
             TypeParameterConstraints: typeParameterConstraints,
             Parameters: parameters,
             HintName: InlinerHintNaming.ForInlinerStruct(method),
+            HasExperimentalAttribute: CompilationInfo.HasAccessibleType(
+                ctx.SemanticModel.Compilation, "System.Diagnostics.CodeAnalysis.ExperimentalAttribute"),
             Diagnostic: diagnostic);
     }
 

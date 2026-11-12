@@ -1,0 +1,59 @@
+using System;
+using System.Globalization;
+using Houtamelo.Spire;
+using Houtamelo.Spire.Functional;
+using UnityEngine;
+
+namespace Spire.AssetPackageProbe
+{
+    [Serializable]
+    [DiscriminatedUnion]
+    public partial struct Command
+    {
+        [Variant] public static partial Command Idle();
+        [Variant] public static partial Command Move(Vector3 destination, float speed);
+        [Variant] public static partial Command Speak(string text);
+    }
+
+    public sealed class ProbeComponent : MonoBehaviour
+    {
+        [SerializeField]
+        private Command command = Command.Idle();
+
+        public static Command MakeIdle() => Command.Idle();
+        public static Command MakeMove() => Command.Move(new Vector3(3f, 4f, 5f), 2.5f);
+        public static Command MakeSpeak() => Command.Speak("Imported");
+
+        public static string Describe(Command value)
+        {
+            if (value.IsIdle)
+                return "Idle";
+            if (value.IsMove)
+            {
+                var payload = value.move;
+                return "Move:" + payload.destination.x.ToString("0", CultureInfo.InvariantCulture) + "," +
+                    payload.destination.y.ToString("0", CultureInfo.InvariantCulture) + "," +
+                    payload.destination.z.ToString("0", CultureInfo.InvariantCulture) + ":" +
+                    payload.speed.ToString("0.0", CultureInfo.InvariantCulture);
+            }
+            if (value.IsSpeak)
+                return "Speak:" + value.speak.text;
+            return "Unknown";
+        }
+    }
+
+    public static class FunctionalProbe
+    {
+        public static int ExerciseFunctional()
+        {
+            var result = Result<int>.Ok(20).map(value => value + 1);
+            var value = result switch
+            {
+                { IsOk: true, ok: var (success) } => success,
+                { IsErr: true, err: var (error) } => throw error,
+            };
+            var conditional = true.then(() => value + 1);
+            return OptionImpl.Some(conditional.Value).map_or(mapped => mapped * 2, -1);
+        }
+    }
+}

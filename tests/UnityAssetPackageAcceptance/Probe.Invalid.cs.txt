@@ -1,0 +1,21 @@
+using System;
+using Houtamelo.Spire;
+
+namespace Spire.AssetPackageProbe
+{
+    [Serializable]
+    [DiscriminatedUnion]
+    public partial struct InvalidCommand
+    {
+        [Variant] public static partial InvalidCommand Idle();
+        [Variant] public static partial InvalidCommand Move(float speed);
+    }
+
+    public static class InvalidProbe
+    {
+        public static float ReadSpeed(InvalidCommand command)
+        {
+            return command.move.speed;
+        }
+    }
+}

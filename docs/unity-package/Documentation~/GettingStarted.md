@@ -5,9 +5,12 @@ unions for native Unity serialization; generic unions remain usable for runtime
 code. The optional Quick Start sample works on this baseline without URP.
 
 Install Spire using Package Manager's **Install package from disk** action and
-select the bundle's `package.json`. Keep all four DLLs and their `.meta` files
-together: the runtime belongs to player builds, while the three compiler DLLs
+select the bundle's `package.json`. Keep all five DLLs and their `.meta` files
+together: the core and Functional runtimes belong to player builds, while the three compiler DLLs
 are labeled `RoslynAnalyzer` and excluded from runtime plugin imports.
+
+The included [Functional library](Functional.md) provides `Result`, `Result<T>`,
+and nullable option operations under `Houtamelo.Spire.Functional`.
 
 In Rider, enable **Settings → Editor → Inspection Settings → Roslyn Analyzers**.
 Allow Unity to compile and Rider to refresh its project model. Rebuilding the

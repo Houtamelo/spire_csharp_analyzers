@@ -6,10 +6,11 @@ try
     var options = Options.Parse(args);
     if (options.Help)
     {
-        Console.WriteLine("Spire.Tool: package | package-sign | package-tamper | unity-tarball | examples | unity-customer | unity-integration | unity-union-core | unity-behavioral | unity-web | unity-harness | unity-asmdefs | jetbrains | hook");
+        Console.WriteLine("Spire.Tool: package | unitypackage | package-sign | package-tamper | unity-tarball | examples | unity-customer | unity-integration | unity-union-core | unity-behavioral | unity-web | unity-harness | unity-asmdefs | jetbrains | hook");
         Console.WriteLine("Usage: dotnet run --project tools/Spire.Tool -- <command> [options]");
         Console.WriteLine("Common options: --root PATH --configuration Debug|Release --no-build --help");
         Console.WriteLine("package: --output PATH");
+        Console.WriteLine("unitypackage: [--output FILE.unitypackage] [--editor PATH] [--project PATH] [--prepare-only] (copies into Assets/Spire on import)");
         Console.WriteLine("package-sign: --package DIRECTORY --output EMPTY_DIRECTORY [--upm PATH]; credentials from UPM_SERVICE_ACCOUNT_KEY_ID, UPM_SERVICE_ACCOUNT_KEY_SECRET, UPM_ORGANIZATION_ID");
         Console.WriteLine("package-tamper: --package SIGNED.tgz --output NEW.tgz (test-only one-byte integrity control)");
         Console.WriteLine("unity-tarball: --package SIGNED.tgz --project PATH --editor PATH [--prepare-only] [--allow-unsupported-signature for Unity 2022/2023]");
@@ -57,6 +58,9 @@ try
             var output = await PackageWorkflow.BuildAsync(context, options.Value("output", context.PathOf("tmp/unity-package/individual.antonio-pedro-goncalves-ferreira.spire")), configuration, build);
             Console.WriteLine("Unity package: " + output);
             return 0;
+        case "unitypackage":
+            return await AssetPackageWorkflow.RunAsync(context, Project("unitypackage-export"),
+                options.Flag("output") ? options.Value("output", "") : null, editor, configuration, build, prepare, timeout);
         case "examples":
             var exampleProjects = ExamplesWorkflow.Prepare(context, options.Flag("example") ? options.Value("example", "") : null);
             await PackageWorkflow.BuildAsync(context, context.PathOf("tmp/unity-package/individual.antonio-pedro-goncalves-ferreira.spire"), configuration, build);

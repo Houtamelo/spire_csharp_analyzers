@@ -10,7 +10,18 @@ For ordinary .NET projects, install the NuGet bundle:
 dotnet add package Houtamelo.Spire
 ```
 
-Upgrading from 4.x? See the [5.0.0 release notes and migration guide](https://github.com/Houtamelo/spire_csharp_analyzers/blob/v5.0.0/docs/releases/5.0.0.md)
+For result and nullable option operations, install `Houtamelo.Spire.Functional`.
+It depends on the Spire bundle and targets .NET Standard 2.0:
+
+```sh
+dotnet add package Houtamelo.Spire.Functional
+```
+
+See the [Functional API guide](src/Houtamelo.Spire.Functional/README.md).
+The Unity distribution includes both runtime libraries and their XML documentation.
+
+See the [6.0.0 release notes](docs/releases/6.0.0.md) for the Functional package
+and experimental inliner opt-in. Upgrading from 4.x? See the [5.0.0 migration guide](https://github.com/Houtamelo/spire_csharp_analyzers/blob/v5.0.0/docs/releases/5.0.0.md)
 for the new variant payload API and replacement storage settings.
 
 NuGet and Unity use the same runtime, analyzers, and generators. Their separate
@@ -26,7 +37,18 @@ Concrete per-variant wrappers pass native serialization write/read checks for
 non-generic unions on `2022.3.62f3`. Generic unions remain unsupported by that
 Editor's serializer. The package minimum is **2022.3.62f3**; see the
 [wrapper validation](docs/reviews/2026-11-04-concrete-unity-wrappers.md).
-Build its local package:
+Build an importable `.unitypackage` (requires an installed Unity Editor):
+
+```sh
+dotnet run -c Release --project tools/Spire.Tool -- unitypackage
+```
+
+Import `tmp/unity-package/Spire-6.0.0.unitypackage` through **Assets → Import Package →
+Custom Package**. Its files are copied into `Assets/Spire`; the archive and build
+directory can be deleted afterward. See [Unity installation](docs/unity.md#install)
+for Editor selection and UPM installation.
+
+To build a local UPM package instead:
 
 ```sh
 dotnet run -c Release --project tools/Spire.Tool -- package
@@ -44,6 +66,21 @@ Open the tracked [Unity showcase project](tests/UnityPackageSample/README.md) fo
 Inspector-editable presets, a runnable scene, and real Unity tests of the examples.
 The exported package includes the same showcase as an optional Package Manager
 sample, offline guides, runtime API tooltips, and third-party notices.
+
+## Experimental closure inliners
+
+`[InlinerStruct]`, `[Inlinable]`, and every `IActionInliner` / `IFuncInliner`
+interface are experimental and may change or be removed. Compilers that recognize
+`ExperimentalAttribute` report `SPIREEXP001`; suppress that diagnostic to opt in:
+
+```xml
+<NoWarn>$(NoWarn);SPIREEXP001</NoWarn>
+```
+
+Generated structs and overloads also carry the annotation when the consuming
+project provides `ExperimentalAttribute`. Their XML docs identify them as
+experimental on every target. Older compilers may ignore the annotation.
+See the [closure inliner guide](docs/rules/SPIRE017-SPIRE027.md).
 
 ## Rules
 

@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src\Houtamelo.Spire.Analyzers\Houtamelo.Spire.Analyzers.csproj" />
     <Project Path="src\Houtamelo.Spire.CodeFixes\Houtamelo.Spire.CodeFixes.csproj" />
+    <Project Path="src\Houtamelo.Spire.Functional\Houtamelo.Spire.Functional.csproj" />
     <Project Path="src\Houtamelo.Spire\Houtamelo.Spire.csproj" />
     <Project Path="src\Houtamelo.Spire.PatternAnalysis\Houtamelo.Spire.PatternAnalysis.csproj" />
   </Folder>
@@ -15,6 +16,7 @@
     <Project Path="tests/UnityStructCatalog.Tests/UnityStructCatalog.Tests.csproj" />
     <Project Path="tests/Houtamelo.Spire.GlobalConfig.EndToEnd/Spire.GlobalConfig.EndToEnd.csproj" />
     <Project Path="tests/Houtamelo.Spire.NuGet.Tests/Houtamelo.Spire.NuGet.Tests.csproj" />
+    <Project Path="tests/Houtamelo.Spire.Functional.Tests/Houtamelo.Spire.Functional.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/DevTools/DevTools.csproj" />

@@ -2,6 +2,26 @@
 
 Source-generator and analyzer rules for `[InlinerStruct]` and `[Inlinable]` — the closure inliner feature that replaces delegate indirection with JIT-monomorphizable struct dispatch.
 
+The entire closure inliner API is experimental and may change or be removed:
+both attributes, all `IActionInliner` / `IFuncInliner` arities and their `Invoke`
+members, generated inliner structs and `Invoke` methods, and generated twin overloads.
+Compilers that recognize `ExperimentalAttribute` report **SPIREEXP001** as an error
+unless the consumer opts in. Suppress only this diagnostic in the project file:
+
+```xml
+<NoWarn>$(NoWarn);SPIREEXP001</NoWarn>
+```
+
+For a local opt-in, surround the declarations and calls with
+`#pragma warning disable SPIREEXP001` / `#pragma warning restore SPIREEXP001`.
+This does not suppress SPIRE017–SPIRE027 or unrelated compiler diagnostics.
+
+The runtime library retains .NET Standard 2.0 compatibility through its private
+PolySharp dependency. Generated APIs receive `ExperimentalAttribute` when that
+type is accessible in the consuming compilation; otherwise their XML docs still
+mark them experimental. No additional runtime dependency is required. Older
+compilers, including Unity's older Roslyn versions, may ignore the annotation.
+
 ## Feature in one paragraph
 
 `[InlinerStruct]` on a method emits a sibling `readonly struct` implementing `IActionInliner<...>` or `IFuncInliner<..., TR>` that forwards calls to the attributed method. `[Inlinable]` on a delegate-typed parameter emits a twin overload of the containing method where the parameter is replaced by a generic struct constrained to the matching inliner interface; direct invocations are rewritten to `.Invoke(...)`. Consumers pass the generated struct (or any hand-written inliner) and get monomorphization instead of delegate indirection.
@@ -34,7 +54,7 @@ See `docs/superpowers/specs/2026-04-14-closure-inliner-generator-design.md` for 
   #pragma warning restore SPIRE021
   ```
 
-- **All other IDs are Error**: they either block compilation of the generated twin (SPIRE022–026) or describe an invalid `[InlinerStruct]` setup that cannot produce a working sibling struct (SPIRE017–020, 023, 027). Fix the offending source rather than suppress.
+- **All other SPIRE017–SPIRE027 IDs are Error**: they either block compilation of the generated twin (SPIRE022–026) or describe an invalid `[InlinerStruct]` setup that cannot produce a working sibling struct (SPIRE017–020, 023, 027). Fix the offending source rather than suppress.
 
 ## Minimal examples
 

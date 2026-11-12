@@ -2,7 +2,7 @@
 
 Roslyn-based C# analyzer
 
-- **Packages**: `Houtamelo.Spire` (attributes + utilities + vendored analyzers), `Houtamelo.Spire.Analyzers` (analyzers + source generator), `Houtamelo.Spire.CodeFixes`, `Houtamelo.Spire.PatternAnalysis`
+- **Packages**: `Houtamelo.Spire` (attributes + utilities + vendored analyzers), `Houtamelo.Spire.Analyzers` (analyzers + source generator), `Houtamelo.Spire.CodeFixes`, `Houtamelo.Spire.Functional` (results + nullable option operations); `Houtamelo.Spire.PatternAnalysis` is a vendored analyzer dependency
 - **Rule prefix**: `SPIRE` (SPIRE001, SPIRE002, ...)
 - **User-facing API** in `Houtamelo.Spire` (namespace `Houtamelo.Spire`) — `EnforceInitializationAttribute`, `EnforceExhaustivenessAttribute`, `DiscriminatedUnionAttribute`, `VariantAttribute`, `ReferenceStorage`, `JsonLibrary`, `JsonNameAttribute`, `IDiscriminatedUnion<TEnum>`, `SpireLINQ.OfKind`, `SpireEnum<TEnum>` (safe integer-to-enum conversions), `InlinerStructAttribute`, `InlinableAttribute`, `IActionInliner` / `IActionInliner<T1..T8>`, `IFuncInliner<TR>` / `IFuncInliner<T1..T8, TR>` (JIT-monomorphizable dispatch)
 - **Global config** via MSBuild properties (`CompilerVisibleProperty` in `build/Houtamelo.Spire.props`) — DU defaults (`Spire_DU_Default{ReferenceStorage,Json,JsonDiscriminator}`) and analyzer enforcement (`Spire_EnforceExhaustivenessOnAllEnumTypes`)
@@ -25,6 +25,7 @@ dotnet run -c Release --project benchmarks/Houtamelo.Spire.Benchmarks/ -- --filt
 ```
 src/Houtamelo.Spire/                        # User-facing API: attributes, utilities, vendors analyzer DLLs (netstandard2.0)
   build/Houtamelo.Spire.props               # CompilerVisibleProperty declarations (packed into NuGet)
+src/Houtamelo.Spire.Functional/             # Result and nullable option APIs (netstandard2.0); depends on Houtamelo.Spire
 src/Houtamelo.Spire.Analyzers/              # Analyzers + source generator (netstandard2.0)
   Rules/                                    # One file per rule
   Descriptors.cs                            # Central DiagnosticDescriptor registry
@@ -35,7 +36,7 @@ src/Houtamelo.Spire.Analyzers/              # Analyzers + source generator (nets
     Analyzers/                              # Generator-coupled analyzers — delegates to PatternAnalysis
     Model/                                  # Union declaration model types
     Parsing/                                # Attribute parsing
-    Performance/                            # Closure inliner generator ([InlinerStruct]/[Inlinable])
+    Performance/                            # Experimental closure inliners ([InlinerStruct]/[Inlinable], SPIREEXP001)
       Emit/                                 # InlinerStructEmitter, InlinableTwinEmitter, InlinableBodyRewriter
       Analyzers/                            # InlinableUsageAnalyzer (SPIRE021-026)
       Model/                                # InlinerStructDecl, InlinableHostDecl, diagnostics
@@ -61,6 +62,7 @@ tests/DevTools.Tests/                      # DevTools filesystem integration tes
 tests/Houtamelo.Spire.BehavioralTests/      # Compile-time behavioral tests (generator runs at build time)
   Types/                                    # Union definitions per strategy
   Tests/                                    # Type-safe tests with real switch/pattern matching
+tests/Houtamelo.Spire.Functional.Tests/     # Real runtime tests of Result, OptionImpl, and collection operations
 benchmarks/Houtamelo.Spire.Benchmarks/      # BenchmarkDotNet performance tests
   Types/                                    # Union type declarations ([BenchmarkUnion] + hand-written)
   Benchmarks/                               # Hand-written benchmark classes (UpdateLoop, Match, Micro, JSON, etc.)
@@ -153,4 +155,4 @@ Codex discovers task skills in `.agents/skills/` and named agents in `.codex/age
 
 When editing agent guidance or documentation, consult `.codex/rules/cross-reference-check.md` for affected references. Keep public documentation aligned with changed behavior. After editing C# files, format the changed files with `dotnet format --include` and run the relevant real test projects. Report validation results.
 
-When changing a package version, keep the three package project versions synchronized; see `.codex/rules/csproj-version-sync.md`.
+When changing a package version, keep the four package project versions synchronized; see `.codex/rules/csproj-version-sync.md`.

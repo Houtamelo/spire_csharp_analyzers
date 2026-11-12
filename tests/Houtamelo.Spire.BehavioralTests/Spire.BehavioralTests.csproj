@@ -6,7 +6,8 @@
     <IsTestProject>true</IsTestProject>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn);SPIRE001;SPIRE009;SPIRE014;CS8604;CS8669</NoWarn>
+    <!-- Exercise the experimental closure inliner API. -->
+    <NoWarn>$(NoWarn);SPIRE001;SPIRE009;SPIRE014;SPIREEXP001;CS8604;CS8669</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

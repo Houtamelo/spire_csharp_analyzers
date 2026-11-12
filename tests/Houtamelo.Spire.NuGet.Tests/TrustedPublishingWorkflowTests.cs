@@ -116,6 +116,7 @@ public sealed class TrustedPublishingWorkflowTests
         Assert.Equal("4.9.0", ReadProjectVersion(fixture.RootPath, "Houtamelo.Spire"));
         Assert.Equal("4.9.0", ReadProjectVersion(fixture.RootPath, "Houtamelo.Spire.Analyzers"));
         Assert.Equal("4.9.0", ReadProjectVersion(fixture.RootPath, "Houtamelo.Spire.CodeFixes"));
+        Assert.Equal("4.9.0", ReadProjectVersion(fixture.RootPath, "Houtamelo.Spire.Functional"));
     }
 
     [Fact]
@@ -145,8 +146,144 @@ public sealed class TrustedPublishingWorkflowTests
         var output = versionCheck.StandardOutput + versionCheck.StandardError;
         Assert.Contains("does not match", output, StringComparison.Ordinal);
         Assert.Contains("4.9.1", output, StringComparison.Ordinal);
+        Assert.Contains("4.9.2", output, StringComparison.Ordinal);
         Assert.False(File.Exists(fixture.PublishMarkerPath));
         Assert.False(File.Exists(fixture.SummaryPath));
+    }
+
+    [Fact]
+    public async Task VersionCheck_RejectsMissingFunctionalPackageVersionBeforePublishMarker()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        using var fixture = TempFixture.Create(repositoryRoot);
+        await InitializeVersionedRepositoryAsync(repositoryRoot, fixture.RootPath, "4.9.0");
+
+        var functionalProject = Path.Combine(
+            fixture.RootPath,
+            "src",
+            "Houtamelo.Spire.Functional",
+            "Houtamelo.Spire.Functional.csproj");
+        File.WriteAllText(
+            functionalProject,
+            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>netstandard2.0</TargetFramework></PropertyGroup></Project>\n");
+        Assert.Equal(0, (await RunGitAsync(fixture.RootPath, "add", ".")).ExitCode);
+        Assert.Equal(0, (await RunGitAsync(fixture.RootPath, "commit", "-m", "remove functional version")).ExitCode);
+        Assert.Equal(0, (await RunGitAsync(fixture.RootPath, "tag", "v5.0.0")).ExitCode);
+
+        var versionCheck = await RunTaggedVersionFlowAsync(repositoryRoot, fixture, "v5.0.0");
+
+        Assert.NotEqual(0, versionCheck.ExitCode);
+        var output = versionCheck.StandardOutput + versionCheck.StandardError;
+        Assert.Contains("Could not extract <Version>", output, StringComparison.Ordinal);
+        Assert.Contains("Houtamelo.Spire.Functional", output, StringComparison.Ordinal);
+        Assert.False(File.Exists(fixture.PublishMarkerPath));
+        Assert.False(File.Exists(fixture.SummaryPath));
+    }
+
+    [Fact]
+    public async Task PublishWorkflow_PackStepPacksAllFourProjects()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        using var fixture = TempFixture.Create(repositoryRoot);
+        foreach (var package in PackageNames)
+            CreateMinimalPackageProject(fixture.RootPath, package, "5.0.0");
+
+        foreach (var package in PackageNames)
+        {
+            var build = await ProcessRunner.RunAsync(
+                new ToolContext(repositoryRoot).Dotnet,
+                new[]
+                {
+                    "build",
+                    Path.Combine("src", package, package + ".csproj"),
+                    "-c", "Release",
+                    "--nologo", "--tl:off",
+                },
+                fixture.RootPath,
+                ProcessTimeout,
+                CommandEnvironment());
+            Assert.True(
+                build.ExitCode == 0,
+                $"Building the minimal package fixture failed for {package}.\n{build.StandardOutput}\n{build.StandardError}");
+        }
+
+        var packScript = Path.Combine(fixture.RootPath, "pack-projects.sh");
+        File.WriteAllText(
+            packScript,
+            "#!/usr/bin/env bash\nset -euo pipefail\n" +
+            ExtractStepScript(repositoryRoot, "Pack all projects") + "\n");
+        var pack = await ProcessRunner.RunAsync(
+            BashExecutable,
+            new[] { "--noprofile", "--norc", "-e", "-o", "pipefail", packScript },
+            fixture.RootPath,
+            ProcessTimeout,
+            CommandEnvironment());
+
+        Assert.Equal(0, pack.ExitCode);
+        var output = Path.Combine(fixture.RootPath, "nupkgs");
+        foreach (var package in PackageNames)
+        {
+            var archive = Path.Combine(output, package + ".5.0.0.nupkg");
+            Assert.True(File.Exists(archive), $"The extracted workflow pack step did not create {archive}.\n{pack.StandardOutput}\n{pack.StandardError}");
+        }
+
+        Assert.Equal(
+            PackageNames.OrderBy(package => package, StringComparer.Ordinal),
+            Directory.EnumerateFiles(output, "*.nupkg")
+                .Select(path => Path.GetFileNameWithoutExtension(path).Replace(".5.0.0", string.Empty, StringComparison.Ordinal))
+                .OrderBy(package => package, StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task PublishWorkflow_PackStepSupportsOlderTagsWithoutFunctionalProject()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        using var fixture = TempFixture.Create(repositoryRoot);
+        var legacyPackages = PackageNames.Take(3).ToArray();
+        foreach (var package in legacyPackages)
+            CreateMinimalPackageProject(fixture.RootPath, package, "4.9.0");
+
+        foreach (var package in legacyPackages)
+        {
+            var build = await ProcessRunner.RunAsync(
+                new ToolContext(repositoryRoot).Dotnet,
+                new[]
+                {
+                    "build",
+                    Path.Combine("src", package, package + ".csproj"),
+                    "-c", "Release",
+                    "--nologo", "--tl:off",
+                },
+                fixture.RootPath,
+                ProcessTimeout,
+                CommandEnvironment());
+            Assert.True(
+                build.ExitCode == 0,
+                $"Building the legacy package fixture failed for {package}.\n{build.StandardOutput}\n{build.StandardError}");
+        }
+
+        var packScript = Path.Combine(fixture.RootPath, "pack-legacy-projects.sh");
+        File.WriteAllText(
+            packScript,
+            "#!/usr/bin/env bash\nset -euo pipefail\n" +
+            ExtractStepScript(repositoryRoot, "Pack all projects") + "\n");
+        var pack = await ProcessRunner.RunAsync(
+            BashExecutable,
+            new[] { "--noprofile", "--norc", "-e", "-o", "pipefail", packScript },
+            fixture.RootPath,
+            ProcessTimeout,
+            CommandEnvironment());
+
+        Assert.Equal(0, pack.ExitCode);
+        var output = Path.Combine(fixture.RootPath, "nupkgs");
+        var actualPackages = Directory.EnumerateFiles(output, "*.nupkg")
+            .Select(path => Path.GetFileNameWithoutExtension(path).Replace(".4.9.0", string.Empty, StringComparison.Ordinal))
+            .OrderBy(package => package, StringComparer.Ordinal)
+            .ToArray();
+        Assert.Equal(legacyPackages.OrderBy(package => package, StringComparer.Ordinal), actualPackages);
+        Assert.DoesNotContain(
+            actualPackages,
+            package => package == "Houtamelo.Spire.Functional");
     }
 
     private static async Task<ProcessResult> RunValidationStepAsync(
@@ -236,6 +373,7 @@ public sealed class TrustedPublishingWorkflowTests
         WriteProjectVersion(path, "Houtamelo.Spire", "4.9.0");
         WriteProjectVersion(path, "Houtamelo.Spire.Analyzers", "4.9.1");
         WriteProjectVersion(path, "Houtamelo.Spire.CodeFixes", "4.9.0");
+        WriteProjectVersion(path, "Houtamelo.Spire.Functional", "4.9.2");
         CopyVersionCheckScript(repositoryRoot, path);
         Assert.Equal(0, (await RunGitAsync(path, "add", ".")).ExitCode);
         Assert.Equal(0, (await RunGitAsync(path, "update-index", "--chmod=+x", "--", "tools/check-tag-version.sh")).ExitCode);
@@ -263,6 +401,14 @@ public sealed class TrustedPublishingWorkflowTests
                 ["CI"] = "true",
                 ["GIT_TERMINAL_PROMPT"] = "0",
             });
+
+    private static Dictionary<string, string?> CommandEnvironment() => new()
+    {
+        ["CI"] = "true",
+        ["MSBUILDDISABLENODEREUSE"] = "1",
+        ["MSBUILDTERMINALLOGGER"] = "off",
+        ["NUGET_AUDIT"] = "false",
+    };
 
     private static async Task<string> ReadGitRevisionAsync(string workingDirectory, string reference)
     {
@@ -343,6 +489,28 @@ public sealed class TrustedPublishingWorkflowTests
             $"<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><Version>{version}</Version></PropertyGroup></Project>\n");
     }
 
+    private static void CreateMinimalPackageProject(string root, string package, string version)
+    {
+        var projectDirectory = Path.Combine(root, "src", package);
+        Directory.CreateDirectory(projectDirectory);
+        File.WriteAllText(
+            Path.Combine(projectDirectory, package + ".csproj"),
+            $"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+                <LangVersion>latest</LangVersion>
+                <PackageId>{package}</PackageId>
+                <Version>{version}</Version>
+                <GenerateDocumentationFile>false</GenerateDocumentationFile>
+              </PropertyGroup>
+            </Project>
+            """);
+        File.WriteAllText(
+            Path.Combine(projectDirectory, "Marker.cs"),
+            $"namespace {package.Replace('.', '_')};\npublic static class Marker {{ public static int Value => 42; }}\n");
+    }
+
     private static string ReadProjectVersion(string root, string package)
     {
         var path = Path.Combine(root, "src", package, package + ".csproj");
@@ -375,6 +543,7 @@ public sealed class TrustedPublishingWorkflowTests
         "Houtamelo.Spire",
         "Houtamelo.Spire.Analyzers",
         "Houtamelo.Spire.CodeFixes",
+        "Houtamelo.Spire.Functional",
     ];
 
     private sealed class TempFixture : IDisposable

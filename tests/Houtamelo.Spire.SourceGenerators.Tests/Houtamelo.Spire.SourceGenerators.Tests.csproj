@@ -6,7 +6,7 @@
     <IsTestProject Condition="'$(SpireUnityTestHost)' != 'true'">true</IsTestProject>
     <DefineConstants Condition="'$(SpireUnityTestHost)' == 'true'">$(DefineConstants);SPIRE_UNITY_TEST_HOST</DefineConstants>
     <CopyLocalLockFileAssemblies Condition="'$(SpireUnityTestHost)' == 'true'">true</CopyLocalLockFileAssemblies>
-    <NoWarn>$(NoWarn);NU1701;xUnit1003</NoWarn>
+    <NoWarn>$(NoWarn);NU1701;xUnit1003;SPIREEXP001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

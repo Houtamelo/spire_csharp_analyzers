@@ -2,7 +2,7 @@
   "Baseline": "46ac18b",
   "ProductionBuild": "Clean Release source build completed with 0 warnings and 0 errors before compatibility verification.",
   "CaptureMethod": "One-shot baseline generator-driver capture before emitter refactors; core/record/JSON/performance/benchmark bytes are in tmp/full-code-quality-review/batch2/raw and the expanded Unity bytes are in tmp/full-code-quality-review/batch2/raw-unity-expanded.",
-  "ApprovedChange": "The core, JSON struct, Unity base-union, and benchmark union fixtures include hand-authored public payload-to-union implicit conversion operators; affected hashes reflect that approved contract. Namespaced union fixtures also place generated aliases inside their namespace block. Generated variant payload structs now receive System.SerializableAttribute only when the union declaration opts into System.Serializable; affected unannotated core, JSON, and benchmark hashes reflect that opt-in boundary. The shared Unity drawer support now handles focus-event suppression on Unity 2022, which has no public FocusController.IgnoreEvent API. Unity serializable unions now emit internal sealed per-variant concrete SerializedPayloads wrappers with Preserve-marked public constructors, use those wrappers for canonical preparation/current-state checks while retaining generic-base compatibility for legacy restore, and resolve Inspector payload types through inherited value-field metadata; Unity player/editor hashes reflect this approved contract. The shared Unity drawer now preserves mixed-target values during binding, refreshes multi-object snapshots after edits, and bounds managed-reference alias traversal for cyclic graphs while accepting Unity's valid non-negative reference IDs; the affected shared-support hash reflects this approved contract. Unity Q09 default construction now dispatches directly on the raw integer kind, handles only exact enum values, and falls back to the first declared variant for unknown values; the six affected Unity snapshot hashes reflect this helper contract.",
+  "ApprovedChange": "The core, JSON struct, Unity base-union, and benchmark union fixtures include hand-authored public payload-to-union implicit conversion operators; affected hashes reflect that approved contract. Namespaced union fixtures also place generated aliases inside their namespace block. Generated variant payload structs now receive System.SerializableAttribute only when the union declaration opts into System.Serializable; affected unannotated core, JSON, and benchmark hashes reflect that opt-in boundary. The shared Unity drawer support now handles focus-event suppression on Unity 2022, which has no public FocusController.IgnoreEvent API. Unity serializable unions now emit internal sealed per-variant concrete SerializedPayloads wrappers with Preserve-marked public constructors, use those wrappers for canonical preparation/current-state checks while retaining generic-base compatibility for legacy restore, and resolve Inspector payload types through inherited value-field metadata; Unity player/editor hashes reflect this approved contract. The shared Unity drawer now preserves mixed-target values during binding, refreshes multi-object snapshots after edits, and bounds managed-reference alias traversal for cyclic graphs while accepting Unity's valid non-negative reference IDs; the affected shared-support hash reflects this approved contract. Unity Q09 default construction now dispatches directly on the raw integer kind, handles only exact enum values, and falls back to the first declared variant for unknown values; the six affected Unity snapshot hashes reflect this helper contract. The inliner performance fixtures now include the generated experimental API remarks, SPIREEXP001 annotations, and generated-file suppression required by the experimental closure-inliner contract.",
   "NewlinePolicy": "Compare exact UTF-8 source after normalizing CRLF or CR to LF only.",
   "Cases": [
     {
@@ -320,7 +320,7 @@
         {
           "Hint": "M_TestNs_Runner_Repeat_System_Int32_System_Action_.2ba50ad4e2e265435701cc7425926d98191d02270fa5544ff3ec56f62d7c71af.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-action_arity0/000-Runner.Repeat.InlinableTwin.g.cs.txt",
-          "SourceSha256": "1f6226cd797b9e5e74270ee9c16a7aa04eebdc8c58c64442a105af46c963299e"
+          "SourceSha256": "663f706c9c2f3eba049e86d1b85be9d9e5fce1c1843aa641abb0cfba87729486"
         }
       ]
     },
@@ -332,7 +332,7 @@
         {
           "Hint": "M_TestNs_Runner_Run_System_Action_System_Int32_System_Int32_System_Int32__System.00401157b4b928fd7655c4f4c81ecb5e8f424d88a8c8653e34730208aeaccce9.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-action_arity3/000-Runner.Run.InlinableTwin.g.cs.txt",
-          "SourceSha256": "cc714cf79e921a594b11ac2fe8cd586007a338cc537990689fddde9a223e0dc7"
+          "SourceSha256": "9c16db8e92d77f9f806f40d022613f497273b16b0642b22d1eefcf0457a2b54a"
         }
       ]
     },
@@ -344,7 +344,7 @@
         {
           "Hint": "M_TestNs_Runner_Run_System_Action_System_Int32_System_Int32_System_Int32_System_.eae3ba8e4a794fc45888ba0d7cc4029c67d66036cb2b5d37658947a0ef0a69ea.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-action_arity8/000-Runner.Run.InlinableTwin.g.cs.txt",
-          "SourceSha256": "8be7e99722ab578ba933ffd4d499118abf9349dd9dee2c3f5ed9db123e131055"
+          "SourceSha256": "f7f42244a630c82193fe18da6c3bb5b61e4ea182a95026e891cddff40b1f918f"
         }
       ]
     },
@@ -356,7 +356,7 @@
         {
           "Hint": "M_TestNs_ListExt_ForEach__1_System_Collections_Generic_List___0__System_Action__.9c1d0ba402fc25e8389c28c20538bd3f8a665c0de473fa9931b4312a4539a583.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-action_t_direct/000-ListExt.ForEach.InlinableTwin.g.cs.txt",
-          "SourceSha256": "6a5894e740f8d8acbe3d2c1a752875a2a034c51c07f11b2b83435b46f602cf4c"
+          "SourceSha256": "a9d67482bedf442d0381d28c00867d71d5f75108607c3c59ef88a98129ff1297"
         }
       ]
     },
@@ -368,7 +368,7 @@
         {
           "Hint": "M_TestNs_Aliases_Run_System_Boolean_System_Int32_System_Action_System_Int32__.475c726adcfa40d7f4a54c42c0595e46c2894fb663ea12b667e7fcf7ad532a05.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-alias_ternary/000-Aliases.Run.InlinableTwin.g.cs.txt",
-          "SourceSha256": "3ff6f40339f980d8af72d4c04ffae58ffa015afea29ef0282156f80b80a1baaa"
+          "SourceSha256": "1738c2bc7bc3adaadff76372dcc78f7b22d2caeafdd2070a088d7b691b7e0149"
         }
       ]
     },
@@ -380,7 +380,7 @@
         {
           "Hint": "M_TestNs_Aliases_Run_System_Int32_System_Action_System_Int32__.149f33c1183e9df94a418c1675f69cf8dda0ad3f35b0ca1787b26e38cfd443c6.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-alias_transitive/000-Aliases.Run.InlinableTwin.g.cs.txt",
-          "SourceSha256": "e1ed382eaef3e625915ff1fa686b74ad522d7ee2453c8676ac873ea04cdec9c6"
+          "SourceSha256": "49e503c46ce64764047a8eb53db26a6d8d38d0cacdda9e84cc91f55edb0f803f"
         }
       ]
     },
@@ -392,7 +392,7 @@
         {
           "Hint": "M_TestNs_Aliases_Run_System_Int32_System_Action_System_Int32__.149f33c1183e9df94a418c1675f69cf8dda0ad3f35b0ca1787b26e38cfd443c6.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-alias_var/000-Aliases.Run.InlinableTwin.g.cs.txt",
-          "SourceSha256": "3173fb70403a96fbd0b7f6445b383b80922dc933ca066d9948c51113566fec5a"
+          "SourceSha256": "f6b267f2f8420e403c1266eeb486c1462a8f80be5857ec1c8fa1cf5eab707e97"
         }
       ]
     },
@@ -404,7 +404,7 @@
         {
           "Hint": "M_TestNs_Lazy_Get__1_System_Func___0__.d557178ee0c4fdea64d233dff9b2b4234d3dfd7161c25182ddabc93088d174b5.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-func_r_arity0/000-Lazy.Get.InlinableTwin.g.cs.txt",
-          "SourceSha256": "fbcadb28e2e05a25b4a34ac10a83c663459472ac87af752e876f09855648b3ce"
+          "SourceSha256": "dbe282298eb99bbe66dffe3d9952e409cdcbabbc2a0bfaa7c837375c3cb4f142"
         }
       ]
     },
@@ -416,7 +416,7 @@
         {
           "Hint": "M_TestNs_ListExt_Map__2_System_Collections_Generic_List___0__System_Func___0___1.66ad9156c14c0b5bcb6aed6536fc7f8948cf03e1a4cc91e04a6fc93db1dad88b.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-func_t_r_direct/000-ListExt.Map.InlinableTwin.g.cs.txt",
-          "SourceSha256": "683c8c62798db8a7d4d086ea98dcf12ab385bfbda4036e003041241364127c4e"
+          "SourceSha256": "062905f2de396f7f5b514e1c02e7dd4fd1b48668abb08211d99c827eb891ab5d"
         }
       ]
     },
@@ -428,7 +428,7 @@
         {
           "Hint": "M_TestNs_Pipeline_Run__2___0_System_Func___0___0__System_Func___0___1__.5f19d99f02318f79a02519f55c3cddf97ae0e8796510a63afb5a1ce5effebac7.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-multi_inlinable/000-Pipeline.Run.InlinableTwin.g.cs.txt",
-          "SourceSha256": "9672351ea62ed91bf8bf3a4d61b0681593cf679e0c75f8d264f54d3f385db4c6"
+          "SourceSha256": "50f38a94de8f055555ff8f1fb1071a5e92cd0642fc6bf8180d5ab38e889314f9"
         }
       ]
     },
@@ -440,7 +440,7 @@
         {
           "Hint": "M_TestNs_Notifier_Fire_System_Int32_System_Action_System_Int32__.b296d27f64598f592561ec42b0f2a0a2a67ae63eb2726369a8dad2a8abb67312.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-nonnull_strip_null_check/000-Notifier.Fire.InlinableTwin.g.cs.txt",
-          "SourceSha256": "7f1d0d6a86276670e5f48e06ed6f839e53a6c5ff8fd48a0bc20343115db48ac6"
+          "SourceSha256": "709b5ef566be9594f5914a1e44fcf7922c057c9dbd83894c839a9e3702dcffed"
         }
       ]
     },
@@ -452,7 +452,7 @@
         {
           "Hint": "M_TestNs_Notifier_Fire_System_Int32_System_Action_System_Int32__.b296d27f64598f592561ec42b0f2a0a2a67ae63eb2726369a8dad2a8abb67312.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-nullable_cond_invoke/000-Notifier.Fire.InlinableTwin.g.cs.txt",
-          "SourceSha256": "84d93e996b107f8ff9e83d366fe8ab1b5280701d8a37f4d65c96939ababf5619"
+          "SourceSha256": "169221f06194730bbc00b8d026c3b7f06ae720ba82a711b1e21e983f11fed87b"
         }
       ]
     },
@@ -464,7 +464,7 @@
         {
           "Hint": "M_TestNs_Runner_Run_System_Int32__System_Action_.4d7c7f8e828f29a5cbcfb14ef4efa3f35eae2d50d84c7ba5ae21e9da0ce6578f.InlinableTwin.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-Inlinable-ref_readonly_host_parameter/000-Runner.Run.InlinableTwin.g.cs.txt",
-          "SourceSha256": "edbe85671747c7a2ed2025419df964c2e41856c55873c5716faaa925b3a857b9"
+          "SourceSha256": "4a0f62eb37203f196faf7259f902bfa4720102e3a8416571aeb4adc5c70f813b"
         }
       ]
     },
@@ -476,7 +476,7 @@
         {
           "Hint": "M_TestNs_Samples_Log__1___0_.2601eb37232a0c79f08f5f2922d7ae217dd6e863256c03499e43c31c43d9c227.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-generic_method/000-Samples.Log.InlinerStruct.g.cs.txt",
-          "SourceSha256": "3fe0d8ea31658ec823d60e0722a4ff6e8d6cc396fce93f8b32e952065cacb7ff"
+          "SourceSha256": "a80acd5d9bb75cb102a92bdbdc40f440fcbc32ccd351531dbcc7b1e29e124521"
         }
       ]
     },
@@ -488,7 +488,7 @@
         {
           "Hint": "M_TestNs_Box_1_Get.36383573e707b5bdb437baa5cfe10be55914dca293fef9c9e8fcdbd6f05ad2dc.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-generic_type/000-Box.Get.InlinerStruct.g.cs.txt",
-          "SourceSha256": "4c4143345fa0e669b0f12203684eaaf66b448a447b50772a60675fc0cf59ffeb"
+          "SourceSha256": "f1710e169d1bfb837116deadcdd1ab52e144229779fae6ace7927c01e158c464"
         }
       ]
     },
@@ -500,7 +500,7 @@
         {
           "Hint": "M_TestNs_Calc_Mul_System_Int32_System_Int32_.5c6f7ac00834065310a8b3f283d3d4df25a9362c32813fd2963f50bcc0bd3f6c.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-instance_func_arity2/000-Calc.Mul.InlinerStruct.g.cs.txt",
-          "SourceSha256": "ecc4edb636e4f186773a43a4caf6d2f6e17bfb2b334dccdaa040259da0193ad9"
+          "SourceSha256": "d83d29bf93d442645fa4ff31412649d54e535c8eb805040aa0f2cfa1e9298358"
         }
       ]
     },
@@ -512,7 +512,7 @@
         {
           "Hint": "M_TestNs_Widget_Set_System_Int32_.a36eca25284730de0d34ba14ce4d989c7921143bb87e6672b00e1c72bff94b1a.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-instance_void_arity1/000-Widget.Set.InlinerStruct.g.cs.txt",
-          "SourceSha256": "eda9936edf683aeee14842ec5775d422b6df454809ccda3719ca54295fb80716"
+          "SourceSha256": "3db595b2007c71c9309d0d8d66abff1481dda030f9e280e5e70eb192bc6820e5"
         }
       ]
     },
@@ -524,7 +524,7 @@
         {
           "Hint": "M_TestNs_Outer_Inner_Double_System_Int32_.2925e51d2353fbe5e7a51306e5370fc105e392577d5b64e991f40cb51dc266f2.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-nested_types/000-Inner.Double.InlinerStruct.g.cs.txt",
-          "SourceSha256": "4549eac2d3079e725edd206100659c306a510c33b537e4e8cbabe8e4fa3d4900"
+          "SourceSha256": "70812b52c4e8b6ec79c07492ec6f93cd1d459e578762f342c0356b893bf43240"
         }
       ]
     },
@@ -536,7 +536,7 @@
         {
           "Hint": "M_TestNs_Samples_Zero.c74dea7f6fbc8c56e01dbbc4e48dff680ffe24502ceb871537deec315a9a72fe.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-static_func_arity0/000-Samples.Zero.InlinerStruct.g.cs.txt",
-          "SourceSha256": "06bafc2373673f8ca2b6c006b7cf5f0343162d60df5e995d54d9af02f885944f"
+          "SourceSha256": "39ebd66ecce545831989cb82548775c5112817555c3060b9c263da76ec9d16f8"
         }
       ]
     },
@@ -548,7 +548,7 @@
         {
           "Hint": "M_TestNs_Samples_Double_System_Int32_.7607517f0abd8e6eb2c4bb2dfdc40c80690880b1bac4e58b703558d6d968e51e.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-static_func_arity1/000-Samples.Double.InlinerStruct.g.cs.txt",
-          "SourceSha256": "2509f0b1601b2e81478c1a806abfa6e166a13d9f5f963c36105cafc2dfd216d7"
+          "SourceSha256": "f1fce7c183d4e0dd0991a2385d7acd4355bdde3a6cac4250fe5f383f18b85fe9"
         }
       ]
     },
@@ -560,7 +560,7 @@
         {
           "Hint": "M_TestNs_Samples_Run.11479b3fe047ee2259c1db0f69bd43d4bbb7928b66d2b55a0814b3d076e181b8.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-static_void_arity0/000-Samples.Run.InlinerStruct.g.cs.txt",
-          "SourceSha256": "39839f582fe21bd243e644ccafa2da515bc8867d807f49eb71a2b4ce78d26bfb"
+          "SourceSha256": "3e8889efd02a94ab0d6ade279f565f3bed46f0c8dbc79921877d252da4072018"
         }
       ]
     },
@@ -572,7 +572,7 @@
         {
           "Hint": "M_TestNs_Samples_Log_System_String_.19abb4b08e115b3e7805194c022b611f93c49a5f257e222aa28b170d77da25d4.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-static_void_arity1/000-Samples.Log.InlinerStruct.g.cs.txt",
-          "SourceSha256": "9f4a596a9cf7220f4cc2751980f0c701c1705fe836ad2f863a45fbfbaf550bd5"
+          "SourceSha256": "fbd84d89b19212a958915f3dbc37c4379ced42ece0c3462889034f37f58cf1d5"
         }
       ]
     },
@@ -584,7 +584,7 @@
         {
           "Hint": "M_TestNs_Samples_Op_System_Int32_System_Int32_System_Int32_.04234c443160da03662dd7cd65dee6c977295cb2861eef2ca9a06067ef8b7217.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-static_void_arity3/000-Samples.Op.InlinerStruct.g.cs.txt",
-          "SourceSha256": "31050c69ea73550bc0cfc97aa5416f347e29e250389b309a81c15d82cf2aac13"
+          "SourceSha256": "a7e7225fb6c56b04af849955b723f1d69aeb5536fce45d84518f8891ce2e6d47"
         }
       ]
     },
@@ -596,7 +596,7 @@
         {
           "Hint": "M_TestNs_Samples_Big_System_Int32_System_Int32_System_Int32_System_Int32_System_.3a653780ce5641ff793b65238ff5bb7d53ef84343fe09c3eb20aafe49ed18ad1.InlinerStruct.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/performance-InlinerStruct-static_void_arity8/000-Samples.Big.InlinerStruct.g.cs.txt",
-          "SourceSha256": "c0b00da13d603110f92324d079c06f8d6a2fdb528b6d6235d10815819af5d424"
+          "SourceSha256": "f3de0692d28f38dc76d2726189a8e1550173c02b091d79e28cdc6d987c101072"
         }
       ]
     }

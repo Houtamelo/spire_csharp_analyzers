@@ -18,6 +18,7 @@ public sealed class UnityPackagingTests
     internal static readonly string[] ExpectedDlls =
     [
         "Runtime/Houtamelo.Spire.dll",
+        "Runtime/Houtamelo.Spire.Functional.dll",
         "Analyzers/Houtamelo.Spire.Analyzers.dll",
         "Analyzers/Houtamelo.Spire.PatternAnalysis.dll",
         "Analyzers/Houtamelo.Spire.CodeFixes.dll",
@@ -46,6 +47,7 @@ public sealed class UnityPackagingTests
             repositoryRoot,
             fixture.OutputPath);
         AssertPluginMetadata(fixture.OutputPath, "Runtime/Houtamelo.Spire.dll", analyzer: false);
+        AssertPluginMetadata(fixture.OutputPath, "Runtime/Houtamelo.Spire.Functional.dll", analyzer: false);
         AssertPluginMetadata(
             fixture.OutputPath,
             "Analyzers/Houtamelo.Spire.Analyzers.dll",
@@ -197,7 +199,9 @@ public sealed class UnityPackagingTests
         {
             var sourceName = Path.GetFileName(relativePath);
             var sourceDirectory = relativePath.StartsWith("Runtime/", StringComparison.Ordinal)
-                ? "Houtamelo.Spire"
+                ? sourceName.StartsWith("Houtamelo.Spire.Functional", StringComparison.Ordinal)
+                    ? "Houtamelo.Spire.Functional"
+                    : "Houtamelo.Spire"
                 : sourceName.StartsWith("Houtamelo.Spire.Analyzers", StringComparison.Ordinal)
                     ? "Houtamelo.Spire.Analyzers"
                     : sourceName.StartsWith("Houtamelo.Spire.PatternAnalysis", StringComparison.Ordinal)
@@ -227,6 +231,18 @@ public sealed class UnityPackagingTests
         Assert.True(
             File.Exists(xmlPath),
             $"Runtime XML artifact is missing; build the core project before running this --no-build test: {xmlPath}");
+
+        var functionalXmlPath = Path.Combine(
+            repositoryRoot,
+            "src",
+            "Houtamelo.Spire.Functional",
+            "bin",
+            configuration,
+            "netstandard2.0",
+            "Houtamelo.Spire.Functional.xml");
+        Assert.True(
+            File.Exists(functionalXmlPath),
+            $"Functional XML artifact is missing; build the Functional project before running this --no-build test: {functionalXmlPath}");
     }
 
     internal static void AssertDllWhitelist(string outputPath)
@@ -268,7 +284,7 @@ public sealed class UnityPackagingTests
         Assert.Contains("Windows", manifest.GetProperty("description").GetString(), StringComparison.Ordinal);
         Assert.Contains("2022.3.62f3", manifest.GetProperty("description").GetString(), StringComparison.Ordinal);
         Assert.NotEmpty(manifest.GetProperty("keywords").EnumerateArray());
-        Assert.Equal("https://github.com/Houtamelo/spire_csharp_analyzers/blob/unity-6000/docs/unity-package/Documentation~/GettingStarted.md", manifest.GetProperty("documentationUrl").GetString());
+        Assert.Equal("https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/docs/unity-package/Documentation~/GettingStarted.md", manifest.GetProperty("documentationUrl").GetString());
         Assert.Equal("https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/LICENSE", manifest.GetProperty("licensesUrl").GetString());
         Assert.Equal("https://github.com/Houtamelo/spire_csharp_analyzers/issues", manifest.GetProperty("author").GetProperty("url").GetString());
         var sample = manifest.GetProperty("samples").EnumerateArray().Single(item => item.GetProperty("path").GetString() == "Samples~/Showcase");
@@ -350,6 +366,7 @@ public sealed class UnityPackagingTests
     private static void CreateVersionFixture(string root)
     {
         CreateVersionProject(root, "Houtamelo.Spire", "1.0.0");
+        CreateVersionProject(root, "Houtamelo.Spire.Functional", "1.0.0");
         CreateVersionProject(root, "Houtamelo.Spire.Analyzers", "1.0.1");
         CreateVersionProject(root, "Houtamelo.Spire.CodeFixes", "1.0.0");
     }

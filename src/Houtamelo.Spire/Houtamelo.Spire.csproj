@@ -5,8 +5,8 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- NuGet package metadata -->
     <PackageId>Houtamelo.Spire</PackageId>
-    <Version>5.0.0</Version>
-    <PackageReleaseNotes>Breaking changes: variant payload API and ReferenceStorage replace the previous layout and deconstruction options. Migration guide: https://github.com/Houtamelo/spire_csharp_analyzers/blob/v5.0.0/docs/releases/5.0.0.md</PackageReleaseNotes>
+    <Version>6.0.0</Version>
+    <PackageReleaseNotes>Add Houtamelo.Spire.Functional with Result and Option APIs and bundle it with Unity. Closure inliner APIs are now experimental and require SPIREEXP001 opt-in on supporting compilers. Release notes: https://github.com/Houtamelo/spire_csharp_analyzers/blob/v6.0.0/docs/releases/6.0.0.md</PackageReleaseNotes>
     <Authors>houtamelo</Authors>
     <Copyright>Copyright (c) 2026 houtamelo</Copyright>
     <Description>Spire: attributes, utilities, analyzers, source generator, and code fixes for C# struct correctness.</Description>

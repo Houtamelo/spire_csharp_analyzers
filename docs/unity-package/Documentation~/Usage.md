@@ -71,9 +71,12 @@ converters retain the logical variant/field wire format; request
 library. Caller options still determine how nested user types serialize.
 
 Other APIs include `SpireLINQ.OfKind`, `SpireEnum<TEnum>`,
-`[EnforceInitialization]`, and `[EnforceExhaustiveness]`. `[InlinerStruct]`
+`[EnforceInitialization]`, and `[EnforceExhaustiveness]`. The experimental `[InlinerStruct]`
 generates struct method forwarders; `[Inlinable]` generates overloads accepting
-them. Their desktop JIT benefits are not a Unity player performance guarantee.
+them. Both attributes, all action/function inliner interfaces, and their generated
+APIs may change or be removed. Compilers that recognize `ExperimentalAttribute`
+require opting in by suppressing `SPIREEXP001`; older Unity compilers may ignore
+the annotation. Their desktop JIT benefits are not a Unity player performance guarantee.
 
 The [rule reference](Reference/rules/SPIRE009.md) describes union exhaustiveness;
 individual SPIRE pages ship beside it. See [Serialization](Serialization.md)
