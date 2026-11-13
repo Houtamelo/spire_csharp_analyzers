@@ -2,7 +2,7 @@
   "Baseline": "46ac18b",
   "ProductionBuild": "Clean Release source build completed with 0 warnings and 0 errors before compatibility verification.",
   "CaptureMethod": "One-shot baseline generator-driver capture before emitter refactors; core/record/JSON/performance/benchmark bytes are in tmp/full-code-quality-review/batch2/raw and the expanded Unity bytes are in tmp/full-code-quality-review/batch2/raw-unity-expanded.",
-  "ApprovedChange": "The core, JSON struct, Unity base-union, and benchmark union fixtures include hand-authored public payload-to-union implicit conversion operators; affected hashes reflect that approved contract. Namespaced union fixtures also place generated aliases inside their namespace block. Generated variant payload structs now receive System.SerializableAttribute only when the union declaration opts into System.Serializable; affected unannotated core, JSON, and benchmark hashes reflect that opt-in boundary. The shared Unity drawer support now handles focus-event suppression on Unity 2022, which has no public FocusController.IgnoreEvent API. Unity serializable unions now emit internal sealed per-variant concrete SerializedPayloads wrappers with Preserve-marked public constructors, use those wrappers for canonical preparation/current-state checks while retaining generic-base compatibility for legacy restore, and resolve Inspector payload types through inherited value-field metadata; Unity player/editor hashes reflect this approved contract. The shared Unity drawer now preserves mixed-target values during binding, refreshes multi-object snapshots after edits, and bounds managed-reference alias traversal for cyclic graphs while accepting Unity's valid non-negative reference IDs; the affected shared-support hash reflects this approved contract. Unity Q09 default construction now dispatches directly on the raw integer kind, handles only exact enum values, and falls back to the first declared variant for unknown values; the six affected Unity snapshot hashes reflect this helper contract. The inliner performance fixtures now include the generated experimental API remarks, SPIREEXP001 annotations, and generated-file suppression required by the experimental closure-inliner contract.",
+  "ApprovedChange": "The core, JSON struct, Unity base-union, and benchmark union fixtures include hand-authored public payload-to-union implicit conversion operators; affected hashes reflect that approved contract. Namespaced union fixtures also place generated aliases inside their namespace block. Generated variant payload structs now receive System.SerializableAttribute only when the union declaration opts into System.Serializable; affected unannotated core, JSON, and benchmark hashes reflect that opt-in boundary. The shared Unity drawer support now handles focus-event suppression on Unity 2022, which has no public FocusController.IgnoreEvent API. Unity serializable unions now emit internal sealed per-variant concrete SerializedPayloads wrappers with Preserve-marked public constructors, use those wrappers for canonical preparation/current-state checks while retaining generic-base compatibility for legacy restore, and resolve Inspector payload types through inherited value-field metadata; Unity player/editor hashes reflect this approved contract. The shared Unity drawer now preserves mixed-target values during binding, refreshes multi-object snapshots after edits, and bounds managed-reference alias traversal for cyclic graphs while accepting Unity's valid non-negative reference IDs; the affected shared-support hash reflects this approved contract. Unity Q09 default construction now dispatches directly on the raw integer kind, handles only exact enum values, and falls back to the first declared variant for unknown values; the six affected Unity snapshot hashes reflect this helper contract. The inliner performance fixtures now include the generated experimental API remarks, SPIREEXP001 annotations, and generated-file suppression required by the experimental closure-inliner contract. Ordinary struct union fixtures now include tag plus active logical-field equality through IEquatable, object equality, hashes, and union/payload == and != operators; serialization payloads, caches, inactive slots, and other implementation storage remain excluded.",
   "NewlinePolicy": "Compare exact UTF-8 source after normalizing CRLF or CR to LF only.",
   "Cases": [
     {
@@ -13,22 +13,22 @@
         {
           "Hint": "Q09.Core.Auto.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/core/000-Q09.Core.Auto.g.cs.txt",
-          "SourceSha256": "dd3ee605d2c76b951d2b904d632100a9598edd64a7066f7f128fd25d84923c19"
+          "SourceSha256": "4c241ce2175abc0613b480b331b0f8e03cbde8574593a8582c0fac935d2b1f3a"
         },
         {
           "Hint": "Q09.Core.Container.event\u00601.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/core/001-Q09.Core.Container.event\u00601.g.cs.txt",
-          "SourceSha256": "788753544b9ccb38f0a4e0a02142332a57fde79004f1a99ff10366856f3990d1"
+          "SourceSha256": "1e6a25ceea4c912ed198c11b12531637d577a3f5d45ec412c8c1108fbefe06c5"
         },
         {
           "Hint": "Q09.Core.Shared\u00601.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/core/002-Q09.Core.Shared\u00601.g.cs.txt",
-          "SourceSha256": "84ebcbd0912c4b3036ee7c9267c7f3816290e42c1d312798a3db2b310100cd3d"
+          "SourceSha256": "c23f1ebfddf9247d28b12605a4300153079557f243290a895ee389f71d308e58"
         },
         {
           "Hint": "Q09.Core.Typed.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/core/003-Q09.Core.Typed.g.cs.txt",
-          "SourceSha256": "2ad2c1f9d0df89ad8882a5fe5ba5185dcca0718a85ff054fc0129f166926655a"
+          "SourceSha256": "a9bc43bcc7a5f9827f26ec0edf2eef06bbfb694ef665aea9d08663b395fa1807"
         }
       ]
     },
@@ -82,7 +82,7 @@
         {
           "Hint": "Q09.Json.BothShape.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/json/003-Q09.Json.BothShape.g.cs.txt",
-          "SourceSha256": "1b1c368cacd115c79466154bd7efe337aebfff2ccaf5de1c70cca4025990af4f"
+          "SourceSha256": "23ddf3eaab1b5cb0363a8bdcd489c6cee743ba012dc7a20c3dcf3ca7ed64ebc6"
         },
         {
           "Hint": "Q09.Json.NsjOption\u00601.Nsj.g.cs",
@@ -97,7 +97,7 @@
         {
           "Hint": "Q09.Json.NsjOption\u00601.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/json/006-Q09.Json.NsjOption\u00601.g.cs.txt",
-          "SourceSha256": "68361fcd312ae24aea2f67387e9df2c8e12b59e08e5899f83619b4cb722ead85"
+          "SourceSha256": "8fa64dc6852bba15fb1f6189cfbac2298afbd1c7037d156e600b030864220e60"
         },
         {
           "Hint": "Q09.Json.SchemaShape\u00601.Nsj.g.cs",
@@ -132,7 +132,7 @@
         {
           "Hint": "Q09.Json.StjShape.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/json/013-Q09.Json.StjShape.g.cs.txt",
-          "SourceSha256": "89a7299822178bb11949dfe2eb5a4bf48fb60595ca426289647b72c8832decb0"
+          "SourceSha256": "61fa55cac16d5c200db88829e1cb2ff20e85a6e830370446322fd395b3cc8837"
         }
       ]
     },
@@ -144,17 +144,17 @@
         {
           "Hint": "Q09UnityCommand.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-player/000-Q09UnityCommand.g.cs.txt",
-          "SourceSha256": "1f85bb3004f36ca013a5f0c2a59050eac0bd52442fff15e9c583cfafba6ff6d8"
+          "SourceSha256": "57a848d0bed2de30865efd2cc91a1623ba20ada5ee54eaba141b695a966feacd"
         },
         {
           "Hint": "Q09UnityGeneric`1.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-player/001-Q09UnityGeneric`1.g.cs.txt",
-          "SourceSha256": "57ce2c334cd2166a503d5af0a3fa94c79494945feae3a17ed1193a351b0126a0"
+          "SourceSha256": "fcf04c65d2c35bacf1c59196ae726ff5b7638508c0aab7c507ba00a619577304"
         },
         {
           "Hint": "Q09UnityPrivateContainer.event.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-player/002-Q09UnityPrivateContainer.event.g.cs.txt",
-          "SourceSha256": "1dc75bbdb061724cdb3e78db681dfa9319356fadc01c9429594dc65859bf0d0e"
+          "SourceSha256": "d2c119f050c5f9c7adbe895d2eede1a07e387dc580905da80e873edacc72e106"
         },
         {
           "Hint": "Spire.UnitySerializationSupport.generated.cs",
@@ -176,7 +176,7 @@
         {
           "Hint": "Q09UnityCommand.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-editor/001-Q09UnityCommand.g.cs.txt",
-          "SourceSha256": "1f85bb3004f36ca013a5f0c2a59050eac0bd52442fff15e9c583cfafba6ff6d8"
+          "SourceSha256": "57a848d0bed2de30865efd2cc91a1623ba20ada5ee54eaba141b695a966feacd"
         },
         {
           "Hint": "Q09UnityGeneric`1.UnityDrawer.g.cs",
@@ -186,7 +186,7 @@
         {
           "Hint": "Q09UnityGeneric`1.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-editor/003-Q09UnityGeneric`1.g.cs.txt",
-          "SourceSha256": "57ce2c334cd2166a503d5af0a3fa94c79494945feae3a17ed1193a351b0126a0"
+          "SourceSha256": "fcf04c65d2c35bacf1c59196ae726ff5b7638508c0aab7c507ba00a619577304"
         },
         {
           "Hint": "Q09UnityPrivateContainer.event.UnityDrawer.g.cs",
@@ -196,7 +196,7 @@
         {
           "Hint": "Q09UnityPrivateContainer.event.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/unity-editor/005-Q09UnityPrivateContainer.event.g.cs.txt",
-          "SourceSha256": "1dc75bbdb061724cdb3e78db681dfa9319356fadc01c9429594dc65859bf0d0e"
+          "SourceSha256": "d2c119f050c5f9c7adbe895d2eede1a07e387dc580905da80e873edacc72e106"
         },
         {
           "Hint": "Spire.UnityDrawerSupport.generated.cs",
@@ -228,7 +228,7 @@
         {
           "Hint": "CompatAuto.Bench.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/benchmark/002-CompatAuto.Bench.g.cs.txt",
-          "SourceSha256": "a5229c690009de022c571667a014ac92f9b18aa8dcebb3e403ea1b2f17867283"
+          "SourceSha256": "8faea73f22cde78435d4c427db0581ef5b3d3393d39da04e715c734e6b6ef4c6"
         },
         {
           "Hint": "CompatAuto.BenchDecl.g.cs",
@@ -248,7 +248,7 @@
         {
           "Hint": "CompatInput.Bench.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/benchmark/006-CompatInput.Bench.g.cs.txt",
-          "SourceSha256": "fdac3c9402c95988af3164aa4187bd85906a176402e47cc1b94ae5a5715c0e23"
+          "SourceSha256": "a2da9fc434c6717ca1cd10de7ff6490fb0f62e0680ad8adc3c3d6733dec61993"
         },
         {
           "Hint": "CompatRecord.Bench.g.cs",
@@ -273,7 +273,7 @@
         {
           "Hint": "CompatShared.Bench.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/benchmark/011-CompatShared.Bench.g.cs.txt",
-          "SourceSha256": "d4e004e1f378cde23b14dfa65aaabb140cfbb5379ab04be64f006ddd53aab948"
+          "SourceSha256": "4d7ecb87b5428987c3aa855a6cc769fd6ce330a00ebf412c4f67472772e93014"
         },
         {
           "Hint": "CompatShared.BenchDecl.g.cs",
@@ -293,7 +293,7 @@
         {
           "Hint": "CompatTyped.Bench.g.cs",
           "Expected": "Compatibility/fixturedata/outputs/benchmark/015-CompatTyped.Bench.g.cs.txt",
-          "SourceSha256": "8d08f2c3eabdfc49fe9db296f71c1fe6c978fc72d30001d5fe49a2925730263a"
+          "SourceSha256": "df8ad62fe2e15273c4cfc80b1e1a42cd689026b1831e25917ebc8a3539896e96"
         },
         {
           "Hint": "CompatTyped.BenchDecl.g.cs",

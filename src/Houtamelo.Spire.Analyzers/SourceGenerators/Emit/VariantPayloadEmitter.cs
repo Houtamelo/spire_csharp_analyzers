@@ -257,9 +257,15 @@ internal static class VariantPayloadEmitter
             ? $", {GeneratedAliasEmitter.Reference(union, "ISerializationCallbackReceiver", "global::UnityEngine.ISerializationCallbackReceiver")}"
             : string.Empty;
         const string unionInterface = "global::Houtamelo.Spire.IDiscriminatedUnion";
+        var equalityInterfaces = union.DeclarationKeyword == "struct" && !union.IsRefStruct
+            ? $", global::System.IEquatable<{unionType}>" + string.Concat(
+                variants.Select(variant =>
+                    $", global::System.IEquatable<{GeneratedAliasEmitter.VariantPayloadReference(union, variant.Name)}>")
+                    )
+            : string.Empty;
         var interfaces = union.IsRefStruct
             ? string.Empty
-            : $" : {unionInterface}<{unionType}.Kind>{unityInterface}";
+            : $" : {unionInterface}<{unionType}.Kind>{unityInterface}{equalityInterfaces}";
         sb.AppendLine($"{access}{readonlyModifier}{refModifier}partial {union.DeclarationKeyword} {unionType}{interfaces}{constraints}");
         sb.OpenBrace();
 
@@ -320,6 +326,11 @@ internal static class VariantPayloadEmitter
         foreach (var variant in variants)
             sb.AppendLine($"public readonly bool {IdentifierUtility.Escape("Is" + variant.Name)} => kind == Kind.{IdentifierUtility.Escape(variant.Name)};");
         sb.AppendLine();
+        if (union.DeclarationKeyword == "struct" && !union.IsRefStruct)
+        {
+            EmitEquality(sb, union, variants, layout);
+            sb.AppendLine();
+        }
         EmitToString(sb, union, variants, layout);
         if (union.EmitUnitySerialization)
         {
@@ -359,7 +370,10 @@ internal static class VariantPayloadEmitter
             var variant = variants[index];
             var parameters = string.Join(", ", variant.Fields.Select(field =>
                 $"{field.TypeFullName} {IdentifierUtility.Escape(field.Name)}"));
-            sb.AppendLine($"{Access(variant.AccessibilityKeyword)}static partial {unionType} {IdentifierUtility.Escape(variant.Name)}({parameters})");
+            var factoryAccess = variant.AccessibilityKeyword == "private"
+                ? "private "
+                : Access(variant.AccessibilityKeyword);
+            sb.AppendLine($"{factoryAccess}static partial {unionType} {IdentifierUtility.Escape(variant.Name)}({parameters})");
             sb.OpenBrace();
             var localNames = new LocalNameAllocator(union, variant);
             var arguments = new List<string> { $"Kind.{IdentifierUtility.Escape(variant.Name)}" };
@@ -412,6 +426,170 @@ internal static class VariantPayloadEmitter
                 $"public static implicit operator {unionType}({payloadType} {parameterName}) => " +
                 $"{IdentifierUtility.Escape(variant.Name)}({string.Join(", ", values)});");
         }
+    }
+
+    private static void EmitEquality(
+        SourceBuilder sb,
+        UnionDeclaration union,
+        IReadOnlyList<VariantInfo> variants,
+        StorageLayout layout)
+    {
+        var unionType = IdentifierUtility.Escape(union.TypeName) +
+            DeclarationFormatting.FormatEscapedTypeParameters(union.TypeParameters);
+        var comparerPrefix = "global::System.Collections.Generic.EqualityComparer<";
+        var requiresNullabilitySuppression = variants.Any(layout.RequiresNullabilitySuppression);
+        if (requiresNullabilitySuppression)
+            sb.AppendLine("#pragma warning disable CS8619, CS8620 // Nullable annotations are erased; equality compares direct typed storage.");
+
+        var unionEqualsNames = CreateEqualityNameAllocator(union, variants);
+        var unionOtherName = unionEqualsNames.Next("other");
+        sb.AppendLine($"public readonly bool Equals({unionType} {unionOtherName})");
+        sb.OpenBrace();
+        sb.AppendLine($"if (this.kind != {unionOtherName}.kind)");
+        sb.AppendLine("    return false;");
+        sb.AppendLine("return kind switch");
+        sb.OpenBrace();
+        foreach (var variant in variants)
+        {
+            var comparisons = variant.Fields.Length == 0
+                ? "true"
+                : string.Join(
+                    " && ",
+                    variant.Fields.Select(field =>
+                    {
+                        var comparer = $"{comparerPrefix}{field.TypeFullName}>.Default";
+                        var left = layout.GetFieldExpression(union, variant, field, "this");
+                        var right = layout.GetFieldExpression(union, variant, field, unionOtherName);
+                        return $"{comparer}.Equals({left}, {right})";
+                    }));
+            sb.AppendLine($"Kind.{IdentifierUtility.Escape(variant.Name)} => {comparisons},");
+        }
+        sb.AppendLine("_ => true,");
+        sb.CloseBrace(";");
+        sb.CloseBrace();
+        sb.AppendLine();
+
+        foreach (var variant in variants)
+        {
+            var payloadType = GeneratedAliasEmitter.VariantPayloadReference(union, variant.Name);
+            var payloadEqualsNames = CreateEqualityNameAllocator(union, variants);
+            var payloadOtherName = payloadEqualsNames.Next("other");
+            var comparisons = variant.Fields.Length == 0
+                ? $"this.kind == Kind.{IdentifierUtility.Escape(variant.Name)}"
+                : $"this.kind == Kind.{IdentifierUtility.Escape(variant.Name)} && " + string.Join(
+                    " && ",
+                    variant.Fields.Select(field =>
+                    {
+                        var comparer = $"{comparerPrefix}{field.TypeFullName}>.Default";
+                        var left = layout.GetFieldExpression(union, variant, field, "this");
+                        var right = $"{payloadOtherName}.{IdentifierUtility.Escape(field.Name)}";
+                        return $"{comparer}.Equals({left}, {right})";
+                    }));
+            sb.AppendLine($"public readonly bool Equals({payloadType} {payloadOtherName})");
+            sb.AppendLine($"    => {comparisons};");
+            if (variant != variants[^1])
+                sb.AppendLine();
+        }
+
+        sb.AppendLine();
+        var objectEqualsNames = CreateEqualityNameAllocator(union, variants);
+        var objectName = objectEqualsNames.Next("obj");
+        var objectOtherName = objectEqualsNames.Next("other");
+        sb.AppendLine($"public override readonly bool Equals(object? {objectName})");
+        sb.AppendLine($"    => {objectName} is {unionType} {objectOtherName} && Equals({objectOtherName});");
+        sb.AppendLine();
+        sb.AppendLine("public override readonly int GetHashCode()");
+        sb.OpenBrace();
+        sb.AppendLine("unchecked");
+        sb.OpenBrace();
+        var hashNames = CreateEqualityNameAllocator(union, variants);
+        var hashName = hashNames.Next("hash");
+        sb.AppendLine($"var {hashName} = (int)kind;");
+        sb.AppendLine("switch (kind)");
+        sb.OpenBrace();
+        foreach (var variant in variants)
+        {
+            if (variant.Fields.Length == 0)
+                continue;
+            sb.AppendLine($"case Kind.{IdentifierUtility.Escape(variant.Name)}:");
+            foreach (var field in variant.Fields)
+            {
+                var comparer = $"{comparerPrefix}{field.TypeFullName}>.Default";
+                var value = layout.GetFieldExpression(union, variant, field, "this");
+                value = HashValueExpression(value);
+                sb.AppendLine($"    {hashName} = ({hashName} * 397) ^ {comparer}.GetHashCode({value});");
+            }
+            sb.AppendLine("    break;");
+        }
+        sb.CloseBrace();
+        sb.AppendLine($"return {hashName};");
+        sb.CloseBrace();
+        sb.CloseBrace();
+        sb.AppendLine();
+
+        EmitUnionEqualityOperators(sb, union, variants, unionType);
+        foreach (var variant in variants)
+        {
+            var payloadType = GeneratedAliasEmitter.VariantPayloadReference(union, variant.Name);
+            EmitMixedEqualityOperators(sb, union, variants, unionType, variant, payloadType);
+        }
+
+        if (requiresNullabilitySuppression)
+            sb.AppendLine("#pragma warning restore CS8619, CS8620");
+    }
+
+    private static string HashValueExpression(string value)
+    {
+        if (value.StartsWith("(", StringComparison.Ordinal))
+            return $"({value})!";
+        return value.EndsWith("!", StringComparison.Ordinal) ? value : value + "!";
+    }
+
+    private static void EmitUnionEqualityOperators(
+        SourceBuilder sb,
+        UnionDeclaration union,
+        IReadOnlyList<VariantInfo> variants,
+        string unionType)
+    {
+        var names = CreateEqualityNameAllocator(union, variants);
+        var left = names.Next("left");
+        var right = names.Next("right");
+        sb.AppendLine($"public static bool operator ==({unionType} {left}, {unionType} {right}) => {left}.Equals({right});");
+        sb.AppendLine($"public static bool operator !=({unionType} {left}, {unionType} {right}) => !{left}.Equals({right});");
+    }
+
+    private static void EmitMixedEqualityOperators(
+        SourceBuilder sb,
+        UnionDeclaration union,
+        IReadOnlyList<VariantInfo> variants,
+        string unionType,
+        VariantInfo variant,
+        string payloadType)
+    {
+        var leftUnionNames = CreateEqualityNameAllocator(union, variants);
+        var leftUnion = leftUnionNames.Next("left");
+        var rightPayload = leftUnionNames.Next("right");
+        sb.AppendLine($"public static bool operator ==({unionType} {leftUnion}, {payloadType} {rightPayload}) => {leftUnion}.Equals({rightPayload});");
+        sb.AppendLine($"public static bool operator !=({unionType} {leftUnion}, {payloadType} {rightPayload}) => !{leftUnion}.Equals({rightPayload});");
+
+        var leftPayloadNames = CreateEqualityNameAllocator(union, variants);
+        var leftPayload = leftPayloadNames.Next("left");
+        var rightUnion = leftPayloadNames.Next("right");
+        sb.AppendLine($"public static bool operator ==({payloadType} {leftPayload}, {unionType} {rightUnion}) => {rightUnion}.Equals({leftPayload});");
+        sb.AppendLine($"public static bool operator !=({payloadType} {leftPayload}, {unionType} {rightUnion}) => !{rightUnion}.Equals({leftPayload});");
+    }
+
+    private static LocalNameAllocator CreateEqualityNameAllocator(
+        UnionDeclaration union,
+        IReadOnlyList<VariantInfo> variants)
+    {
+        var names = new LocalNameAllocator(union);
+        foreach (var variant in variants)
+        {
+            foreach (var field in variant.Fields)
+                names.Reserve(field.Name);
+        }
+        return names;
     }
 
     private static string EmitUnmanagedFactoryLocal(
@@ -754,12 +932,17 @@ internal static class VariantPayloadEmitter
             return false;
         }
 
-        internal string GetFieldExpression(UnionDeclaration union, VariantInfo variant, FieldInfo field)
+        internal string GetFieldExpression(
+            UnionDeclaration union,
+            VariantInfo variant,
+            FieldInfo field,
+            string receiver = "")
         {
+            var prefix = string.IsNullOrEmpty(receiver) ? string.Empty : receiver + ".";
             var unmanaged = UnmanagedVariants.FirstOrDefault(item => item.VariantName == variant.Name &&
                 item.Fields.Any(candidate => candidate.Name == field.Name));
             if (unmanaged is not null)
-                return $"__unmanaged.{IdentifierUtility.Escape(unmanaged.FieldName)}.{IdentifierUtility.Escape(field.Name)}";
+                return $"{prefix}__unmanaged.{IdentifierUtility.Escape(unmanaged.FieldName)}.{IdentifierUtility.Escape(field.Name)}";
 
             var slot = Slots.FirstOrDefault(candidate => candidate.FieldsByVariant.TryGetValue(variant.Name, out var value) &&
                 ReferenceEquals(value, field));
@@ -767,7 +950,7 @@ internal static class VariantPayloadEmitter
                 slot = Slots.FirstOrDefault(candidate => candidate.FieldsByVariant.TryGetValue(variant.Name, out var value) && value.Name == field.Name);
             if (slot is null)
                 return "default!";
-            var storage = slot.IsManaged ? $"__managed._s{slot.Index}" : $"_s{slot.Index}";
+            var storage = slot.IsManaged ? $"{prefix}__managed._s{slot.Index}" : $"{prefix}_s{slot.Index}";
             if (!slot.IsShared)
                 return storage;
             if (field.IsReferenceType)
@@ -783,10 +966,8 @@ internal static class VariantPayloadEmitter
     {
         private readonly HashSet<string> _used = new(StringComparer.Ordinal);
 
-        internal LocalNameAllocator(UnionDeclaration union, VariantInfo variant)
+        internal LocalNameAllocator(UnionDeclaration union)
         {
-            foreach (var field in variant.Fields)
-                Reserve(field.Name);
             foreach (var parameter in union.TypeParameters)
                 Reserve(parameter);
             foreach (var containingType in union.ContainingTypes)
@@ -794,6 +975,13 @@ internal static class VariantPayloadEmitter
                 foreach (var parameter in containingType.TypeParameters)
                     Reserve(parameter);
             }
+        }
+
+        internal LocalNameAllocator(UnionDeclaration union, VariantInfo variant)
+            : this(union)
+        {
+            foreach (var field in variant.Fields)
+                Reserve(field.Name);
         }
 
         internal string Next(string baseName)

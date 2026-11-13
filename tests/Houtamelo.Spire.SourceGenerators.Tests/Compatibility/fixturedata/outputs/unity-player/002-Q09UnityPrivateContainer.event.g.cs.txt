@@ -17,7 +17,7 @@ using UnitySerializationPayloadBase = global::Houtamelo.Spire.UnitySerialization
 
 public partial class Q09UnityPrivateContainer {
     [@EnforceInitialization]
-    partial struct @event : global::Houtamelo.Spire.IDiscriminatedUnion<@event.Kind>, ISerializationCallbackReceiver {
+    partial struct @event : global::Houtamelo.Spire.IDiscriminatedUnion<@event.Kind>, ISerializationCallbackReceiver, global::System.IEquatable<@event>, global::System.IEquatable<global::Q09UnityPrivateContainer.eventTypes.Variants.@new>, global::System.IEquatable<global::Q09UnityPrivateContainer.eventTypes.Variants.Empty> {
         [@EnforceExhaustiveness]
         public enum Kind : byte {
             @new,
@@ -72,6 +72,49 @@ public partial class Q09UnityPrivateContainer {
 
         public readonly bool Isnew => kind == Kind.@new;
         public readonly bool IsEmpty => kind == Kind.Empty;
+
+        public readonly bool Equals(@event other) {
+            if (this.kind != other.kind)
+                return false;
+            return kind switch {
+                Kind.@new => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(this.__unmanaged.__new.@class, other.__unmanaged.__new.@class) && global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(this.__managed._s0, other.__managed._s0),
+                Kind.Empty => true,
+                _ => true,
+            };
+        }
+
+        public readonly bool Equals(global::Q09UnityPrivateContainer.eventTypes.Variants.@new other)
+            => this.kind == Kind.@new && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(this.__unmanaged.__new.@class, other.@class) && global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(this.__managed._s0, other.@event);
+
+        public readonly bool Equals(global::Q09UnityPrivateContainer.eventTypes.Variants.Empty other)
+            => this.kind == Kind.Empty;
+
+        public override readonly bool Equals(object? obj)
+            => obj is @event other && Equals(other);
+
+        public override readonly int GetHashCode() {
+            unchecked {
+                var hash = (int)kind;
+                switch (kind) {
+                    case Kind.@new:
+                        hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<int>.Default.GetHashCode(this.__unmanaged.__new.@class!);
+                        hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<string>.Default.GetHashCode(this.__managed._s0!);
+                        break;
+                }
+                return hash;
+            }
+        }
+
+        public static bool operator ==(@event left, @event right) => left.Equals(right);
+        public static bool operator !=(@event left, @event right) => !left.Equals(right);
+        public static bool operator ==(@event left, global::Q09UnityPrivateContainer.eventTypes.Variants.@new right) => left.Equals(right);
+        public static bool operator !=(@event left, global::Q09UnityPrivateContainer.eventTypes.Variants.@new right) => !left.Equals(right);
+        public static bool operator ==(global::Q09UnityPrivateContainer.eventTypes.Variants.@new left, @event right) => right.Equals(left);
+        public static bool operator !=(global::Q09UnityPrivateContainer.eventTypes.Variants.@new left, @event right) => !right.Equals(left);
+        public static bool operator ==(@event left, global::Q09UnityPrivateContainer.eventTypes.Variants.Empty right) => left.Equals(right);
+        public static bool operator !=(@event left, global::Q09UnityPrivateContainer.eventTypes.Variants.Empty right) => !left.Equals(right);
+        public static bool operator ==(global::Q09UnityPrivateContainer.eventTypes.Variants.Empty left, @event right) => right.Equals(left);
+        public static bool operator !=(global::Q09UnityPrivateContainer.eventTypes.Variants.Empty left, @event right) => !right.Equals(left);
 
         public override readonly string ToString() => kind switch {
             Kind.@new => $"new({__unmanaged.__new.@class}, {__managed._s0})",

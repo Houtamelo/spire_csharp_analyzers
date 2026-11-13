@@ -87,13 +87,14 @@ public sealed class GlobalConfigGeneratorTests
     [Fact]
     public void GlobalReferenceStorageSharedUsesObjectSlots()
     {
-        var result = RunWithConfig(ReferenceUnionSource, new Dictionary<string, string>
+        var (result, compilation) = RunWithConfigAndCompilation(ReferenceUnionSource, new Dictionary<string, string>
         {
             ["build_property.Spire_DU_DefaultReferenceStorage"] = "Shared",
         });
-        var source = GetMainGeneratedSource(result);
-        Assert.Contains("object?", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("FieldOffset", source, StringComparison.Ordinal);
+        Assert.Contains(
+            GetStorageFields(compilation, "Message"),
+            field => field.Type.SpecialType == SpecialType.System_Object);
+        Assert.DoesNotContain("FieldOffset", GetMainGeneratedSource(result), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -109,13 +110,13 @@ public sealed class GlobalConfigGeneratorTests
                 [Variant] public static partial Message Tag(object tag);
             }
             """;
-        var result = RunWithConfig(source, new Dictionary<string, string>
+        var (_, compilation) = RunWithConfigAndCompilation(source, new Dictionary<string, string>
         {
             ["build_property.Spire_DU_DefaultReferenceStorage"] = "Shared",
         });
-        var generated = GetMainGeneratedSource(result);
-        Assert.DoesNotContain("object? __s", generated, StringComparison.Ordinal);
-        Assert.Contains("string", generated, StringComparison.Ordinal);
+        var storageFields = GetStorageFields(compilation, "Message");
+        Assert.Contains(storageFields, field => field.Type.SpecialType == SpecialType.System_String);
+        Assert.Contains(storageFields, field => field.Type.SpecialType == SpecialType.System_Object);
     }
 
     [Fact]
@@ -131,11 +132,13 @@ public sealed class GlobalConfigGeneratorTests
                 [Variant] public static partial Message Tag(object tag);
             }
             """;
-        var result = RunWithConfig(source, new Dictionary<string, string>
+        var (_, compilation) = RunWithConfigAndCompilation(source, new Dictionary<string, string>
         {
             ["build_property.Spire_DU_DefaultReferenceStorage"] = "Shared",
         });
-        Assert.Contains("object?", GetMainGeneratedSource(result), StringComparison.Ordinal);
+        Assert.Contains(
+            GetStorageFields(compilation, "Message"),
+            field => field.Type.SpecialType == SpecialType.System_Object);
     }
 
     [Fact]
@@ -178,5 +181,62 @@ public sealed class GlobalConfigGeneratorTests
             ["build_property.Spire_DU_DefaultReferenceStorage"] = "Typed",
         });
         Assert.Contains("void Deconstruct", GetMainGeneratedSource(result), StringComparison.Ordinal);
+    }
+
+    private static IReadOnlyList<IFieldSymbol> GetStorageFields(
+        Compilation compilation,
+        string unionName)
+    {
+        var fields = new List<IFieldSymbol>();
+        var visited = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+
+        void Visit(INamedTypeSymbol type)
+        {
+            if (!visited.Add(type))
+                return;
+
+            fields.AddRange(type.GetMembers().OfType<IFieldSymbol>()
+                .Where(field => !field.IsStatic && !field.IsImplicitlyDeclared));
+            foreach (var nested in type.GetTypeMembers())
+                Visit(nested);
+        }
+
+        var union = compilation.GetTypeByMetadataName(unionName);
+        if (union is null)
+            return fields;
+
+        foreach (var container in AllNamedTypes(compilation)
+            .Where(type => type.Name.StartsWith(union.Name + "Types", StringComparison.Ordinal) &&
+                SymbolEqualityComparer.Default.Equals(type.ContainingSymbol, union.ContainingSymbol)))
+        {
+            var fieldsContainer = container.GetTypeMembers("Fields").SingleOrDefault();
+            if (fieldsContainer is not null)
+                Visit(fieldsContainer);
+        }
+
+        return fields;
+    }
+
+    private static IReadOnlyList<INamedTypeSymbol> AllNamedTypes(Compilation compilation)
+    {
+        var types = new List<INamedTypeSymbol>();
+
+        void VisitNamespace(INamespaceSymbol ns)
+        {
+            foreach (var type in ns.GetTypeMembers())
+                VisitType(type);
+            foreach (var child in ns.GetNamespaceMembers())
+                VisitNamespace(child);
+        }
+
+        void VisitType(INamedTypeSymbol type)
+        {
+            types.Add(type);
+            foreach (var nested in type.GetTypeMembers())
+                VisitType(nested);
+        }
+
+        VisitNamespace(compilation.GlobalNamespace);
+        return types;
     }
 }

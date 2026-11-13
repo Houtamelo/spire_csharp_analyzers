@@ -11,7 +11,7 @@ using Fields = global::Q09.Core.AutoTypes.Fields;
 using Variants = global::Q09.Core.AutoTypes.Variants;
 
 [@EnforceInitialization]
-public partial struct Auto : global::Houtamelo.Spire.IDiscriminatedUnion<Auto.Kind> {
+public partial struct Auto : global::Houtamelo.Spire.IDiscriminatedUnion<Auto.Kind>, global::System.IEquatable<Auto>, global::System.IEquatable<Variants.Array>, global::System.IEquatable<Variants.Text>, global::System.IEquatable<Variants.Empty> {
     [@EnforceExhaustiveness]
     public enum Kind : byte {
         Array,
@@ -75,6 +75,59 @@ public partial struct Auto : global::Houtamelo.Spire.IDiscriminatedUnion<Auto.Ki
     public readonly bool IsArray => kind == Kind.Array;
     public readonly bool IsText => kind == Kind.Text;
     public readonly bool IsEmpty => kind == Kind.Empty;
+
+    public readonly bool Equals(Auto other) {
+        if (this.kind != other.kind)
+            return false;
+        return kind switch {
+            Kind.Array => global::System.Collections.Generic.EqualityComparer<int[]>.Default.Equals((int[])this.__managed._s0!, (int[])other.__managed._s0!),
+            Kind.Text => global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals((string?)this.__managed._s0!, (string?)other.__managed._s0!),
+            Kind.Empty => true,
+            _ => true,
+        };
+    }
+
+    public readonly bool Equals(Variants.Array other)
+        => this.kind == Kind.Array && global::System.Collections.Generic.EqualityComparer<int[]>.Default.Equals((int[])this.__managed._s0!, other.values);
+
+    public readonly bool Equals(Variants.Text other)
+        => this.kind == Kind.Text && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals((string?)this.__managed._s0!, other.text);
+
+    public readonly bool Equals(Variants.Empty other)
+        => this.kind == Kind.Empty;
+
+    public override readonly bool Equals(object? obj)
+        => obj is Auto other && Equals(other);
+
+    public override readonly int GetHashCode() {
+        unchecked {
+            var hash = (int)kind;
+            switch (kind) {
+                case Kind.Array:
+                    hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<int[]>.Default.GetHashCode(((int[])this.__managed._s0!)!);
+                    break;
+                case Kind.Text:
+                    hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<string?>.Default.GetHashCode(((string?)this.__managed._s0!)!);
+                    break;
+            }
+            return hash;
+        }
+    }
+
+    public static bool operator ==(Auto left, Auto right) => left.Equals(right);
+    public static bool operator !=(Auto left, Auto right) => !left.Equals(right);
+    public static bool operator ==(Auto left, Variants.Array right) => left.Equals(right);
+    public static bool operator !=(Auto left, Variants.Array right) => !left.Equals(right);
+    public static bool operator ==(Variants.Array left, Auto right) => right.Equals(left);
+    public static bool operator !=(Variants.Array left, Auto right) => !right.Equals(left);
+    public static bool operator ==(Auto left, Variants.Text right) => left.Equals(right);
+    public static bool operator !=(Auto left, Variants.Text right) => !left.Equals(right);
+    public static bool operator ==(Variants.Text left, Auto right) => right.Equals(left);
+    public static bool operator !=(Variants.Text left, Auto right) => !right.Equals(left);
+    public static bool operator ==(Auto left, Variants.Empty right) => left.Equals(right);
+    public static bool operator !=(Auto left, Variants.Empty right) => !left.Equals(right);
+    public static bool operator ==(Variants.Empty left, Auto right) => right.Equals(left);
+    public static bool operator !=(Variants.Empty left, Auto right) => !right.Equals(left);
 
     public override readonly string ToString() => kind switch {
         Kind.Array => $"Array({(int[])__managed._s0!})",

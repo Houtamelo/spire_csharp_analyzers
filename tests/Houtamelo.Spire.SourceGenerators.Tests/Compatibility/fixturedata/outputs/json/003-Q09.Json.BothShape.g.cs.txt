@@ -13,7 +13,7 @@ using Fields = global::Q09.Json.BothShapeTypes.Fields;
 using Variants = global::Q09.Json.BothShapeTypes.Variants;
 
 [@EnforceInitialization]
-public partial struct BothShape : global::Houtamelo.Spire.IDiscriminatedUnion<BothShape.Kind> {
+public partial struct BothShape : global::Houtamelo.Spire.IDiscriminatedUnion<BothShape.Kind>, global::System.IEquatable<BothShape>, global::System.IEquatable<Variants.Line>, global::System.IEquatable<Variants.Empty> {
     [@EnforceExhaustiveness]
     public enum Kind : byte {
         Line,
@@ -62,6 +62,49 @@ public partial struct BothShape : global::Houtamelo.Spire.IDiscriminatedUnion<Bo
 
     public readonly bool IsLine => kind == Kind.Line;
     public readonly bool IsEmpty => kind == Kind.Empty;
+
+    public readonly bool Equals(BothShape other) {
+        if (this.kind != other.kind)
+            return false;
+        return kind switch {
+            Kind.Line => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(this.__unmanaged.__line.start, other.__unmanaged.__line.start) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(this.__unmanaged.__line.end, other.__unmanaged.__line.end),
+            Kind.Empty => true,
+            _ => true,
+        };
+    }
+
+    public readonly bool Equals(Variants.Line other)
+        => this.kind == Kind.Line && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(this.__unmanaged.__line.start, other.start) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(this.__unmanaged.__line.end, other.end);
+
+    public readonly bool Equals(Variants.Empty other)
+        => this.kind == Kind.Empty;
+
+    public override readonly bool Equals(object? obj)
+        => obj is BothShape other && Equals(other);
+
+    public override readonly int GetHashCode() {
+        unchecked {
+            var hash = (int)kind;
+            switch (kind) {
+                case Kind.Line:
+                    hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<int>.Default.GetHashCode(this.__unmanaged.__line.start!);
+                    hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<int>.Default.GetHashCode(this.__unmanaged.__line.end!);
+                    break;
+            }
+            return hash;
+        }
+    }
+
+    public static bool operator ==(BothShape left, BothShape right) => left.Equals(right);
+    public static bool operator !=(BothShape left, BothShape right) => !left.Equals(right);
+    public static bool operator ==(BothShape left, Variants.Line right) => left.Equals(right);
+    public static bool operator !=(BothShape left, Variants.Line right) => !left.Equals(right);
+    public static bool operator ==(Variants.Line left, BothShape right) => right.Equals(left);
+    public static bool operator !=(Variants.Line left, BothShape right) => !right.Equals(left);
+    public static bool operator ==(BothShape left, Variants.Empty right) => left.Equals(right);
+    public static bool operator !=(BothShape left, Variants.Empty right) => !left.Equals(right);
+    public static bool operator ==(Variants.Empty left, BothShape right) => right.Equals(left);
+    public static bool operator !=(Variants.Empty left, BothShape right) => !right.Equals(left);
 
     public override readonly string ToString() => kind switch {
         Kind.Line => $"Line({__unmanaged.__line.start}, {__unmanaged.__line.end})",

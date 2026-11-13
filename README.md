@@ -109,6 +109,8 @@ The source generator provides:
 
 - `Kind` enum and `kind` property for variant discrimination.
 - Factory methods (`Shape.Circle(5.0)`) and `IsVariant` properties (`shape.IsCircle`).
+- Value equality and hashing for ordinary struct unions, including typed variant
+  comparisons and `==`/`!=` in both operand orders.
 - Property-pattern and `Deconstruct` support for `switch`.
 - Optional JSON serialization (System.Text.Json, Newtonsoft.Json).
 - Exhaustive switch checking (SPIRE009) and field access safety (SPIRE011-014).

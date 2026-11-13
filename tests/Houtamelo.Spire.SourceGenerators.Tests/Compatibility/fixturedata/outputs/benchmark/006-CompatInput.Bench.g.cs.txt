@@ -13,7 +13,7 @@ using Fields = global::Houtamelo.Spire.Benchmarks.Types.CompatInputTypes.Fields;
 using Variants = global::Houtamelo.Spire.Benchmarks.Types.CompatInputTypes.Variants;
 
 [@EnforceInitialization]
-public partial struct CompatInput : global::Houtamelo.Spire.IDiscriminatedUnion<CompatInput.Kind> {
+public partial struct CompatInput : global::Houtamelo.Spire.IDiscriminatedUnion<CompatInput.Kind>, global::System.IEquatable<CompatInput>, global::System.IEquatable<Variants.Empty>, global::System.IEquatable<Variants.Position>, global::System.IEquatable<Variants.Label>, global::System.IEquatable<Variants.Batch> {
     [@EnforceExhaustiveness]
     public enum Kind : byte {
         Empty,
@@ -101,6 +101,72 @@ public partial struct CompatInput : global::Houtamelo.Spire.IDiscriminatedUnion<
     public readonly bool IsPosition => kind == Kind.Position;
     public readonly bool IsLabel => kind == Kind.Label;
     public readonly bool IsBatch => kind == Kind.Batch;
+
+    public readonly bool Equals(CompatInput other) {
+        if (this.kind != other.kind)
+            return false;
+        return kind switch {
+            Kind.Empty => true,
+            Kind.Position => global::System.Collections.Generic.EqualityComparer<float>.Default.Equals(this.__unmanaged.__position.x, other.__unmanaged.__position.x) && global::System.Collections.Generic.EqualityComparer<float>.Default.Equals(this.__unmanaged.__position.y, other.__unmanaged.__position.y),
+            Kind.Label => global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(this.__managed._s0, other.__managed._s0),
+            Kind.Batch => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(this.__unmanaged.__batch.count, other.__unmanaged.__batch.count) && global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(this.__unmanaged.__batch.duration, other.__unmanaged.__batch.duration),
+            _ => true,
+        };
+    }
+
+    public readonly bool Equals(Variants.Empty other)
+        => this.kind == Kind.Empty;
+
+    public readonly bool Equals(Variants.Position other)
+        => this.kind == Kind.Position && global::System.Collections.Generic.EqualityComparer<float>.Default.Equals(this.__unmanaged.__position.x, other.x) && global::System.Collections.Generic.EqualityComparer<float>.Default.Equals(this.__unmanaged.__position.y, other.y);
+
+    public readonly bool Equals(Variants.Label other)
+        => this.kind == Kind.Label && global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(this.__managed._s0, other.text);
+
+    public readonly bool Equals(Variants.Batch other)
+        => this.kind == Kind.Batch && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(this.__unmanaged.__batch.count, other.count) && global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(this.__unmanaged.__batch.duration, other.duration);
+
+    public override readonly bool Equals(object? obj)
+        => obj is CompatInput other && Equals(other);
+
+    public override readonly int GetHashCode() {
+        unchecked {
+            var hash = (int)kind;
+            switch (kind) {
+                case Kind.Position:
+                    hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<float>.Default.GetHashCode(this.__unmanaged.__position.x!);
+                    hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<float>.Default.GetHashCode(this.__unmanaged.__position.y!);
+                    break;
+                case Kind.Label:
+                    hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<string>.Default.GetHashCode(this.__managed._s0!);
+                    break;
+                case Kind.Batch:
+                    hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<int>.Default.GetHashCode(this.__unmanaged.__batch.count!);
+                    hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<double>.Default.GetHashCode(this.__unmanaged.__batch.duration!);
+                    break;
+            }
+            return hash;
+        }
+    }
+
+    public static bool operator ==(CompatInput left, CompatInput right) => left.Equals(right);
+    public static bool operator !=(CompatInput left, CompatInput right) => !left.Equals(right);
+    public static bool operator ==(CompatInput left, Variants.Empty right) => left.Equals(right);
+    public static bool operator !=(CompatInput left, Variants.Empty right) => !left.Equals(right);
+    public static bool operator ==(Variants.Empty left, CompatInput right) => right.Equals(left);
+    public static bool operator !=(Variants.Empty left, CompatInput right) => !right.Equals(left);
+    public static bool operator ==(CompatInput left, Variants.Position right) => left.Equals(right);
+    public static bool operator !=(CompatInput left, Variants.Position right) => !left.Equals(right);
+    public static bool operator ==(Variants.Position left, CompatInput right) => right.Equals(left);
+    public static bool operator !=(Variants.Position left, CompatInput right) => !right.Equals(left);
+    public static bool operator ==(CompatInput left, Variants.Label right) => left.Equals(right);
+    public static bool operator !=(CompatInput left, Variants.Label right) => !left.Equals(right);
+    public static bool operator ==(Variants.Label left, CompatInput right) => right.Equals(left);
+    public static bool operator !=(Variants.Label left, CompatInput right) => !right.Equals(left);
+    public static bool operator ==(CompatInput left, Variants.Batch right) => left.Equals(right);
+    public static bool operator !=(CompatInput left, Variants.Batch right) => !left.Equals(right);
+    public static bool operator ==(Variants.Batch left, CompatInput right) => right.Equals(left);
+    public static bool operator !=(Variants.Batch left, CompatInput right) => !right.Equals(left);
 
     public override readonly string ToString() => kind switch {
         Kind.Empty => "Empty()",

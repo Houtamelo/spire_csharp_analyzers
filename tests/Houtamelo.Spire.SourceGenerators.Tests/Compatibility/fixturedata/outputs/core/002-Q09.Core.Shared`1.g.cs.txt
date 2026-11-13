@@ -10,7 +10,7 @@ using EnforceExhaustiveness = global::Houtamelo.Spire.EnforceExhaustivenessAttri
 using Variants = global::Q09.Core.SharedTypes1.Variants;
 
 [@EnforceInitialization]
-internal partial struct Shared<T> : global::Houtamelo.Spire.IDiscriminatedUnion<Shared<T>.Kind> where T : class {
+internal partial struct Shared<T> : global::Houtamelo.Spire.IDiscriminatedUnion<Shared<T>.Kind>, global::System.IEquatable<Shared<T>>, global::System.IEquatable<Variants.Value<T>>, global::System.IEquatable<Variants.Items<T>>, global::System.IEquatable<Variants.Empty<T>> where T : class {
     [@EnforceExhaustiveness]
     public enum Kind : byte {
         Value,
@@ -79,6 +79,59 @@ internal partial struct Shared<T> : global::Houtamelo.Spire.IDiscriminatedUnion<
     public readonly bool IsValue => kind == Kind.Value;
     public readonly bool IsItems => kind == Kind.Items;
     public readonly bool IsEmpty => kind == Kind.Empty;
+
+    public readonly bool Equals(Shared<T> other) {
+        if (this.kind != other.kind)
+            return false;
+        return kind switch {
+            Kind.Value => global::System.Collections.Generic.EqualityComparer<T>.Default.Equals(this._s0, other._s0),
+            Kind.Items => global::System.Collections.Generic.EqualityComparer<global::System.Collections.Generic.List<T>>.Default.Equals(this._s1, other._s1),
+            Kind.Empty => true,
+            _ => true,
+        };
+    }
+
+    public readonly bool Equals(Variants.Value<T> other)
+        => this.kind == Kind.Value && global::System.Collections.Generic.EqualityComparer<T>.Default.Equals(this._s0, other.value);
+
+    public readonly bool Equals(Variants.Items<T> other)
+        => this.kind == Kind.Items && global::System.Collections.Generic.EqualityComparer<global::System.Collections.Generic.List<T>>.Default.Equals(this._s1, other.values);
+
+    public readonly bool Equals(Variants.Empty<T> other)
+        => this.kind == Kind.Empty;
+
+    public override readonly bool Equals(object? obj)
+        => obj is Shared<T> other && Equals(other);
+
+    public override readonly int GetHashCode() {
+        unchecked {
+            var hash = (int)kind;
+            switch (kind) {
+                case Kind.Value:
+                    hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<T>.Default.GetHashCode(this._s0!);
+                    break;
+                case Kind.Items:
+                    hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<global::System.Collections.Generic.List<T>>.Default.GetHashCode(this._s1!);
+                    break;
+            }
+            return hash;
+        }
+    }
+
+    public static bool operator ==(Shared<T> left, Shared<T> right) => left.Equals(right);
+    public static bool operator !=(Shared<T> left, Shared<T> right) => !left.Equals(right);
+    public static bool operator ==(Shared<T> left, Variants.Value<T> right) => left.Equals(right);
+    public static bool operator !=(Shared<T> left, Variants.Value<T> right) => !left.Equals(right);
+    public static bool operator ==(Variants.Value<T> left, Shared<T> right) => right.Equals(left);
+    public static bool operator !=(Variants.Value<T> left, Shared<T> right) => !right.Equals(left);
+    public static bool operator ==(Shared<T> left, Variants.Items<T> right) => left.Equals(right);
+    public static bool operator !=(Shared<T> left, Variants.Items<T> right) => !left.Equals(right);
+    public static bool operator ==(Variants.Items<T> left, Shared<T> right) => right.Equals(left);
+    public static bool operator !=(Variants.Items<T> left, Shared<T> right) => !right.Equals(left);
+    public static bool operator ==(Shared<T> left, Variants.Empty<T> right) => left.Equals(right);
+    public static bool operator !=(Shared<T> left, Variants.Empty<T> right) => !left.Equals(right);
+    public static bool operator ==(Variants.Empty<T> left, Shared<T> right) => right.Equals(left);
+    public static bool operator !=(Variants.Empty<T> left, Shared<T> right) => !right.Equals(left);
 
     public override readonly string ToString() => kind switch {
         Kind.Value => $"Value({_s0})",

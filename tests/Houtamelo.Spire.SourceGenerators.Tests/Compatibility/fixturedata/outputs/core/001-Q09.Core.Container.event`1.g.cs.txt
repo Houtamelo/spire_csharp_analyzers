@@ -11,7 +11,7 @@ using Variants = global::Q09.Core.Container.eventTypes1.Variants;
 
 public partial class Container {
     [@EnforceInitialization]
-    internal partial struct @event<TInner> : global::Houtamelo.Spire.IDiscriminatedUnion<@event<TInner>.Kind> where TInner : class {
+    internal partial struct @event<TInner> : global::Houtamelo.Spire.IDiscriminatedUnion<@event<TInner>.Kind>, global::System.IEquatable<@event<TInner>>, global::System.IEquatable<Variants.Value<TInner>>, global::System.IEquatable<Variants.Nothing<TInner>> where TInner : class {
         [@EnforceExhaustiveness]
         public enum Kind : byte {
             Value,
@@ -59,6 +59,48 @@ public partial class Container {
 
         public readonly bool IsValue => kind == Kind.Value;
         public readonly bool IsNothing => kind == Kind.Nothing;
+
+        public readonly bool Equals(@event<TInner> other) {
+            if (this.kind != other.kind)
+                return false;
+            return kind switch {
+                Kind.Value => global::System.Collections.Generic.EqualityComparer<TInner>.Default.Equals(this._s0, other._s0),
+                Kind.Nothing => true,
+                _ => true,
+            };
+        }
+
+        public readonly bool Equals(Variants.Value<TInner> other)
+            => this.kind == Kind.Value && global::System.Collections.Generic.EqualityComparer<TInner>.Default.Equals(this._s0, other.inner);
+
+        public readonly bool Equals(Variants.Nothing<TInner> other)
+            => this.kind == Kind.Nothing;
+
+        public override readonly bool Equals(object? obj)
+            => obj is @event<TInner> other && Equals(other);
+
+        public override readonly int GetHashCode() {
+            unchecked {
+                var hash = (int)kind;
+                switch (kind) {
+                    case Kind.Value:
+                        hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<TInner>.Default.GetHashCode(this._s0!);
+                        break;
+                }
+                return hash;
+            }
+        }
+
+        public static bool operator ==(@event<TInner> left, @event<TInner> right) => left.Equals(right);
+        public static bool operator !=(@event<TInner> left, @event<TInner> right) => !left.Equals(right);
+        public static bool operator ==(@event<TInner> left, Variants.Value<TInner> right) => left.Equals(right);
+        public static bool operator !=(@event<TInner> left, Variants.Value<TInner> right) => !left.Equals(right);
+        public static bool operator ==(Variants.Value<TInner> left, @event<TInner> right) => right.Equals(left);
+        public static bool operator !=(Variants.Value<TInner> left, @event<TInner> right) => !right.Equals(left);
+        public static bool operator ==(@event<TInner> left, Variants.Nothing<TInner> right) => left.Equals(right);
+        public static bool operator !=(@event<TInner> left, Variants.Nothing<TInner> right) => !left.Equals(right);
+        public static bool operator ==(Variants.Nothing<TInner> left, @event<TInner> right) => right.Equals(left);
+        public static bool operator !=(Variants.Nothing<TInner> left, @event<TInner> right) => !right.Equals(left);
 
         public override readonly string ToString() => kind switch {
             Kind.Value => $"Value({_s0})",

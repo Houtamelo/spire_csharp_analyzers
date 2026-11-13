@@ -101,6 +101,39 @@ Use `circle: var (radius)` for a one-field payload and
 of deconstruction. `var` captures preserve nulls; a declaration pattern such as
 `string text` excludes null.
 
+## Equality
+
+Ordinary struct unions implement `IEquatable<Union>` and
+`IEquatable<VariantPayload>` for each canonical variant. They generate readonly
+`Equals` overloads, `Equals(object?)`, `GetHashCode()`, and `==`/`!=` for two
+unions or a union and payload in either operand order:
+
+```csharp
+Shape first = Shape.Circle(5.0);
+Shape second = Shape.Circle(5.0);
+var circle = new ShapeTypes.Variants.Circle(5.0);
+bool sameUnion = first == second;
+bool samePayload = first.Equals(circle);
+bool reversed = circle == first;
+```
+
+Equality requires the same variant tag and equal active logical fields. Each
+field uses `EqualityComparer<TField>.Default`; custom field equality is honored,
+nulls are supported, and arrays retain reference equality. Hashing uses the tag
+and those same fields. Serialization payloads/caches, inactive storage, and extra
+user instance fields do not participate. Standard `HashSet<Union>` and
+`Dictionary<Union, TValue>` use this equality without a custom comparer.
+
+`Equals(object?)` accepts only the same union type. Boxed variant payloads and
+serialization-only former-name aliases are distinct types. Payload structs do
+not gain `Equals(Union)` or their own equality operators. Record unions keep
+compiler-generated record equality; ref struct unions retain their existing API.
+
+With multiple variant overloads, an untyped `default` argument can be ambiguous.
+Current SPIRE003 still exempts `==`/`!=` comparisons; `default(Union)` disambiguates
+that syntax. Rejecting default union comparisons is a
+[deferred analyzer change](../plans/2026-11-13-reject-default-union-comparisons.md).
+
 ## Storage
 
 Concrete unmanaged fields are grouped by variant in helpers with the C# compiler's

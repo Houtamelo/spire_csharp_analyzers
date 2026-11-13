@@ -13,7 +13,7 @@ using Fields = global::Q09.Core.TypedTypes.Fields;
 using Variants = global::Q09.Core.TypedTypes.Variants;
 
 [@EnforceInitialization]
-public partial struct Typed : global::Houtamelo.Spire.IDiscriminatedUnion<Typed.Kind> {
+public partial struct Typed : global::Houtamelo.Spire.IDiscriminatedUnion<Typed.Kind>, global::System.IEquatable<Typed>, global::System.IEquatable<Variants.Value>, global::System.IEquatable<Variants.Pair>, global::System.IEquatable<Variants.Empty> {
     [@EnforceExhaustiveness]
     public enum Kind : byte {
         Value,
@@ -83,6 +83,60 @@ public partial struct Typed : global::Houtamelo.Spire.IDiscriminatedUnion<Typed.
     public readonly bool IsValue => kind == Kind.Value;
     public readonly bool IsPair => kind == Kind.Pair;
     public readonly bool IsEmpty => kind == Kind.Empty;
+
+    public readonly bool Equals(Typed other) {
+        if (this.kind != other.kind)
+            return false;
+        return kind switch {
+            Kind.Value => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(this.__unmanaged.__value.value, other.__unmanaged.__value.value) && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals(this.__managed._s0, other.__managed._s0),
+            Kind.Pair => global::System.Collections.Generic.EqualityComparer<(int X, string? Y)>.Default.Equals(this.__managed._s1, other.__managed._s1),
+            Kind.Empty => true,
+            _ => true,
+        };
+    }
+
+    public readonly bool Equals(Variants.Value other)
+        => this.kind == Kind.Value && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(this.__unmanaged.__value.value, other.value) && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals(this.__managed._s0, other.label);
+
+    public readonly bool Equals(Variants.Pair other)
+        => this.kind == Kind.Pair && global::System.Collections.Generic.EqualityComparer<(int X, string? Y)>.Default.Equals(this.__managed._s1, other.pair);
+
+    public readonly bool Equals(Variants.Empty other)
+        => this.kind == Kind.Empty;
+
+    public override readonly bool Equals(object? obj)
+        => obj is Typed other && Equals(other);
+
+    public override readonly int GetHashCode() {
+        unchecked {
+            var hash = (int)kind;
+            switch (kind) {
+                case Kind.Value:
+                    hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<int>.Default.GetHashCode(this.__unmanaged.__value.value!);
+                    hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<string?>.Default.GetHashCode(this.__managed._s0!);
+                    break;
+                case Kind.Pair:
+                    hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<(int X, string? Y)>.Default.GetHashCode(this.__managed._s1!);
+                    break;
+            }
+            return hash;
+        }
+    }
+
+    public static bool operator ==(Typed left, Typed right) => left.Equals(right);
+    public static bool operator !=(Typed left, Typed right) => !left.Equals(right);
+    public static bool operator ==(Typed left, Variants.Value right) => left.Equals(right);
+    public static bool operator !=(Typed left, Variants.Value right) => !left.Equals(right);
+    public static bool operator ==(Variants.Value left, Typed right) => right.Equals(left);
+    public static bool operator !=(Variants.Value left, Typed right) => !right.Equals(left);
+    public static bool operator ==(Typed left, Variants.Pair right) => left.Equals(right);
+    public static bool operator !=(Typed left, Variants.Pair right) => !left.Equals(right);
+    public static bool operator ==(Variants.Pair left, Typed right) => right.Equals(left);
+    public static bool operator !=(Variants.Pair left, Typed right) => !right.Equals(left);
+    public static bool operator ==(Typed left, Variants.Empty right) => left.Equals(right);
+    public static bool operator !=(Typed left, Variants.Empty right) => !left.Equals(right);
+    public static bool operator ==(Variants.Empty left, Typed right) => right.Equals(left);
+    public static bool operator !=(Variants.Empty left, Typed right) => !right.Equals(left);
 
     public override readonly string ToString() => kind switch {
         Kind.Value => $"Value({__unmanaged.__value.value}, {__managed._s0})",

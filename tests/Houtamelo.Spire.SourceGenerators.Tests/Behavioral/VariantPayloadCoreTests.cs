@@ -217,12 +217,12 @@ public sealed class VariantPayloadCoreTests
         var generated = Generate(ReferenceSource("Typed"));
         AssertNoErrors(generated);
 
-        var source = generated.GeneratedSource;
-        Assert.DoesNotContain("object?", source);
-        Assert.DoesNotContain("FieldOffset", source);
+        Assert.DoesNotContain("FieldOffset", generated.GeneratedSource);
 
         var union = generated.OutputCompilation.GetTypeByMetadataName("References")!;
         var storageFields = GetStorageFields(generated.OutputCompilation, "References");
+        Assert.DoesNotContain(storageFields,
+            field => field.Type.SpecialType == SpecialType.System_Object);
         Assert.Contains(storageFields, field => field.Type.SpecialType == SpecialType.System_String);
         Assert.Contains(storageFields, field => field.Type is IArrayTypeSymbol array &&
             array.ElementType.SpecialType == SpecialType.System_Int32);
@@ -234,10 +234,11 @@ public sealed class VariantPayloadCoreTests
         var generated = Generate(ReferenceSource("Shared"));
         AssertNoErrors(generated);
 
-        var source = generated.GeneratedSource;
-        Assert.Contains("object?", source);
-        Assert.DoesNotContain("FieldOffset", source);
+        Assert.DoesNotContain("FieldOffset", generated.GeneratedSource);
 
+        var storageFields = GetStorageFields(generated.OutputCompilation, "References");
+        Assert.Contains(storageFields,
+            field => field.Type.SpecialType == SpecialType.System_Object);
         var assembly = EmitAndLoad(generated.OutputCompilation);
         var union = assembly.GetType("References", throwOnError: true)!;
         var text = union.GetMethod("Text")!.Invoke(null, new object[] { "hello" })!;
@@ -269,9 +270,10 @@ public sealed class VariantPayloadCoreTests
         var generated = Generate(ManagedStructReferenceSource("Typed"));
         AssertNoErrors(generated);
 
-        var source = generated.GeneratedSource;
-        Assert.DoesNotContain("object?", source);
-        Assert.Contains("ManagedPair", source);
+        var storageFields = GetStorageFields(generated.OutputCompilation, "ManagedStructReferences");
+        Assert.DoesNotContain(storageFields,
+            field => field.Type.SpecialType == SpecialType.System_Object);
+        Assert.Contains("ManagedPair", generated.GeneratedSource);
     }
 
     [Fact]
@@ -291,7 +293,9 @@ public sealed class VariantPayloadCoreTests
     {
         var generated = Generate(ManagedStructReferenceSource("Shared"));
         AssertNoErrors(generated);
-        Assert.Contains("object?", generated.GeneratedSource);
+        Assert.Contains(
+            GetStorageFields(generated.OutputCompilation, "ManagedStructReferences"),
+            field => field.Type.SpecialType == SpecialType.System_Object);
 
         var assembly = EmitAndLoad(generated.OutputCompilation);
         var union = assembly.GetType("ManagedStructReferences", throwOnError: true)!;
@@ -372,8 +376,8 @@ public sealed class VariantPayloadCoreTests
         AssertNoErrors(shared);
         AssertNoErrors(typed);
 
-        Assert.Contains("object?", shared.GeneratedSource);
-        Assert.DoesNotContain("object?", typed.GeneratedSource);
+        Assert.True(HasObjectStorage(shared.OutputCompilation, "AutoReferences"));
+        Assert.False(HasObjectStorage(typed.OutputCompilation, "AutoReferences"));
     }
 
     [Fact]
@@ -386,7 +390,7 @@ public sealed class VariantPayloadCoreTests
                 ["build_property.Spire_DU_DefaultReferenceStorage"] = "Typed",
             });
         AssertNoErrors(generated);
-        Assert.Contains("object?", generated.GeneratedSource);
+        Assert.True(HasObjectStorage(generated.OutputCompilation, "AutoReferences"));
     }
 
     [Fact]
@@ -403,8 +407,8 @@ public sealed class VariantPayloadCoreTests
             AssertNoErrors(omitted);
             AssertNoErrors(explicitGlobal);
             Assert.Equal(
-                omitted.GeneratedSource.Contains("object?", StringComparison.Ordinal),
-                explicitGlobal.GeneratedSource.Contains("object?", StringComparison.Ordinal));
+                HasObjectStorage(omitted.OutputCompilation, "References"),
+                HasObjectStorage(explicitGlobal.OutputCompilation, "References"));
         }
     }
 
@@ -413,7 +417,7 @@ public sealed class VariantPayloadCoreTests
     {
         var generated = Generate(NoReferenceSource());
         AssertNoErrors(generated);
-        Assert.DoesNotContain("object?", generated.GeneratedSource);
+        Assert.False(HasObjectStorage(generated.OutputCompilation, "NoReferences"));
     }
 
     [Fact]
@@ -423,8 +427,8 @@ public sealed class VariantPayloadCoreTests
         var over = Generate(AutoJustOverHalfSource());
         AssertNoErrors(exact);
         AssertNoErrors(over);
-        Assert.Contains("object?", exact.GeneratedSource);
-        Assert.DoesNotContain("object?", over.GeneratedSource);
+        Assert.True(HasObjectStorage(exact.OutputCompilation, "AutoExactlyHalf"));
+        Assert.False(HasObjectStorage(over.OutputCompilation, "AutoJustOverHalf"));
     }
 
     [Fact]
@@ -969,6 +973,10 @@ public sealed class VariantPayloadCoreTests
 
         return fields;
     }
+
+    private static bool HasObjectStorage(Compilation compilation, string unionName)
+        => GetStorageFields(compilation, unionName)
+            .Any(field => field.Type.SpecialType == SpecialType.System_Object);
 
     private static IReadOnlyList<INamedTypeSymbol> GetAllNamedTypes(Compilation compilation)
     {

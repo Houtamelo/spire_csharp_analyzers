@@ -10,7 +10,7 @@ using EnforceExhaustiveness = global::Houtamelo.Spire.EnforceExhaustivenessAttri
 using Variants = global::Q09.Json.NsjOptionTypes1.Variants;
 
 [@EnforceInitialization]
-public partial struct NsjOption<T> : global::Houtamelo.Spire.IDiscriminatedUnion<NsjOption<T>.Kind> where T : unmanaged {
+public partial struct NsjOption<T> : global::Houtamelo.Spire.IDiscriminatedUnion<NsjOption<T>.Kind>, global::System.IEquatable<NsjOption<T>>, global::System.IEquatable<Variants.Some<T>>, global::System.IEquatable<Variants.None<T>> where T : unmanaged {
     [@EnforceExhaustiveness]
     public enum Kind : byte {
         Some,
@@ -58,6 +58,48 @@ public partial struct NsjOption<T> : global::Houtamelo.Spire.IDiscriminatedUnion
 
     public readonly bool IsSome => kind == Kind.Some;
     public readonly bool IsNone => kind == Kind.None;
+
+    public readonly bool Equals(NsjOption<T> other) {
+        if (this.kind != other.kind)
+            return false;
+        return kind switch {
+            Kind.Some => global::System.Collections.Generic.EqualityComparer<T>.Default.Equals(this._s0, other._s0),
+            Kind.None => true,
+            _ => true,
+        };
+    }
+
+    public readonly bool Equals(Variants.Some<T> other)
+        => this.kind == Kind.Some && global::System.Collections.Generic.EqualityComparer<T>.Default.Equals(this._s0, other.value);
+
+    public readonly bool Equals(Variants.None<T> other)
+        => this.kind == Kind.None;
+
+    public override readonly bool Equals(object? obj)
+        => obj is NsjOption<T> other && Equals(other);
+
+    public override readonly int GetHashCode() {
+        unchecked {
+            var hash = (int)kind;
+            switch (kind) {
+                case Kind.Some:
+                    hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<T>.Default.GetHashCode(this._s0!);
+                    break;
+            }
+            return hash;
+        }
+    }
+
+    public static bool operator ==(NsjOption<T> left, NsjOption<T> right) => left.Equals(right);
+    public static bool operator !=(NsjOption<T> left, NsjOption<T> right) => !left.Equals(right);
+    public static bool operator ==(NsjOption<T> left, Variants.Some<T> right) => left.Equals(right);
+    public static bool operator !=(NsjOption<T> left, Variants.Some<T> right) => !left.Equals(right);
+    public static bool operator ==(Variants.Some<T> left, NsjOption<T> right) => right.Equals(left);
+    public static bool operator !=(Variants.Some<T> left, NsjOption<T> right) => !right.Equals(left);
+    public static bool operator ==(NsjOption<T> left, Variants.None<T> right) => left.Equals(right);
+    public static bool operator !=(NsjOption<T> left, Variants.None<T> right) => !left.Equals(right);
+    public static bool operator ==(Variants.None<T> left, NsjOption<T> right) => right.Equals(left);
+    public static bool operator !=(Variants.None<T> left, NsjOption<T> right) => !right.Equals(left);
 
     public override readonly string ToString() => kind switch {
         Kind.Some => $"Some({_s0})",

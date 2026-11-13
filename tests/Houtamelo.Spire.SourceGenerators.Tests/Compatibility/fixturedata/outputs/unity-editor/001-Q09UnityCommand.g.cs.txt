@@ -18,7 +18,7 @@ using Fields = global::Q09UnityCommandTypes.Fields;
 using Variants = global::Q09UnityCommandTypes.Variants;
 
 [@EnforceInitialization]
-public partial struct Q09UnityCommand : global::Houtamelo.Spire.IDiscriminatedUnion<Q09UnityCommand.Kind>, ISerializationCallbackReceiver {
+public partial struct Q09UnityCommand : global::Houtamelo.Spire.IDiscriminatedUnion<Q09UnityCommand.Kind>, ISerializationCallbackReceiver, global::System.IEquatable<Q09UnityCommand>, global::System.IEquatable<Variants.Move>, global::System.IEquatable<Variants.ObjectRef>, global::System.IEquatable<Variants.Empty> {
     [@EnforceExhaustiveness]
     public enum Kind : byte {
         Move,
@@ -90,6 +90,60 @@ public partial struct Q09UnityCommand : global::Houtamelo.Spire.IDiscriminatedUn
     public readonly bool IsMove => kind == Kind.Move;
     public readonly bool IsObjectRef => kind == Kind.ObjectRef;
     public readonly bool IsEmpty => kind == Kind.Empty;
+
+    public readonly bool Equals(Q09UnityCommand other) {
+        if (this.kind != other.kind)
+            return false;
+        return kind switch {
+            Kind.Move => global::System.Collections.Generic.EqualityComparer<global::UnityEngine.Vector3>.Default.Equals(this.__unmanaged.__move.position, other.__unmanaged.__move.position) && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals((string?)this.__managed._s0!, (string?)other.__managed._s0!),
+            Kind.ObjectRef => global::System.Collections.Generic.EqualityComparer<global::UnityEngine.Texture2D>.Default.Equals((global::UnityEngine.Texture2D)this.__managed._s0!, (global::UnityEngine.Texture2D)other.__managed._s0!),
+            Kind.Empty => true,
+            _ => true,
+        };
+    }
+
+    public readonly bool Equals(Variants.Move other)
+        => this.kind == Kind.Move && global::System.Collections.Generic.EqualityComparer<global::UnityEngine.Vector3>.Default.Equals(this.__unmanaged.__move.position, other.position) && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals((string?)this.__managed._s0!, other.label);
+
+    public readonly bool Equals(Variants.ObjectRef other)
+        => this.kind == Kind.ObjectRef && global::System.Collections.Generic.EqualityComparer<global::UnityEngine.Texture2D>.Default.Equals((global::UnityEngine.Texture2D)this.__managed._s0!, other.texture);
+
+    public readonly bool Equals(Variants.Empty other)
+        => this.kind == Kind.Empty;
+
+    public override readonly bool Equals(object? obj)
+        => obj is Q09UnityCommand other && Equals(other);
+
+    public override readonly int GetHashCode() {
+        unchecked {
+            var hash = (int)kind;
+            switch (kind) {
+                case Kind.Move:
+                    hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<global::UnityEngine.Vector3>.Default.GetHashCode(this.__unmanaged.__move.position!);
+                    hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<string?>.Default.GetHashCode(((string?)this.__managed._s0!)!);
+                    break;
+                case Kind.ObjectRef:
+                    hash = (hash * 397) ^ global::System.Collections.Generic.EqualityComparer<global::UnityEngine.Texture2D>.Default.GetHashCode(((global::UnityEngine.Texture2D)this.__managed._s0!)!);
+                    break;
+            }
+            return hash;
+        }
+    }
+
+    public static bool operator ==(Q09UnityCommand left, Q09UnityCommand right) => left.Equals(right);
+    public static bool operator !=(Q09UnityCommand left, Q09UnityCommand right) => !left.Equals(right);
+    public static bool operator ==(Q09UnityCommand left, Variants.Move right) => left.Equals(right);
+    public static bool operator !=(Q09UnityCommand left, Variants.Move right) => !left.Equals(right);
+    public static bool operator ==(Variants.Move left, Q09UnityCommand right) => right.Equals(left);
+    public static bool operator !=(Variants.Move left, Q09UnityCommand right) => !right.Equals(left);
+    public static bool operator ==(Q09UnityCommand left, Variants.ObjectRef right) => left.Equals(right);
+    public static bool operator !=(Q09UnityCommand left, Variants.ObjectRef right) => !left.Equals(right);
+    public static bool operator ==(Variants.ObjectRef left, Q09UnityCommand right) => right.Equals(left);
+    public static bool operator !=(Variants.ObjectRef left, Q09UnityCommand right) => !right.Equals(left);
+    public static bool operator ==(Q09UnityCommand left, Variants.Empty right) => left.Equals(right);
+    public static bool operator !=(Q09UnityCommand left, Variants.Empty right) => !left.Equals(right);
+    public static bool operator ==(Variants.Empty left, Q09UnityCommand right) => right.Equals(left);
+    public static bool operator !=(Variants.Empty left, Q09UnityCommand right) => !right.Equals(left);
 
     public override readonly string ToString() => kind switch {
         Kind.Move => $"Move({__unmanaged.__move.position}, {(string?)__managed._s0!})",
