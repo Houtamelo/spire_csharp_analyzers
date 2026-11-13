@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Houtamelo.Spire.Analyzers.SourceGenerators.Analyzers;
 
@@ -23,6 +24,71 @@ internal sealed class UnionTypeInfo
     public ImmutableArray<INamedTypeSymbol> VariantTypes { get; }
     /// For struct unions: the nested Kind enum type (for constant pattern matching).
     public INamedTypeSymbol? KindEnumType { get; }
+
+    /// Returns the positional field symbols for a struct-union variant. Method
+    /// variants use their attributed factory parameters; authored record
+    /// variants use the synthesized positional Deconstruct parameters. Keeping
+    /// this lookup here prevents consumer analyzers from assuming every variant
+    /// has a static factory method.
+    public static ImmutableArray<IParameterSymbol> GetVariantFields(
+        INamedTypeSymbol unionType,
+        string variantName)
+    {
+        var factory = unionType.GetMembers(variantName)
+            .OfType<IMethodSymbol>()
+            .FirstOrDefault(method => method.IsStatic &&
+                method.MethodKind == MethodKind.Ordinary &&
+                HasVariantAttribute(method));
+        if (factory is not null)
+            return factory.Parameters;
+
+        var variantType = unionType.GetTypeMembers(variantName)
+            .FirstOrDefault(type => HasVariantAttribute(type));
+        if (variantType is null)
+            return ImmutableArray<IParameterSymbol>.Empty;
+
+        // The union schema is the record declaration's positional parameter
+        // list. Do not infer it from authored constructors or Deconstruct
+        // overloads: those members may describe additional, unrelated APIs.
+        var declarations = variantType.DeclaringSyntaxReferences
+            .Select(reference => reference.GetSyntax())
+            .OfType<RecordDeclarationSyntax>()
+            .ToArray();
+        // A partial record can have a parameterless/generated declaration
+        // before the user declaration that carries the primary constructor.
+        // Prefer the part with actual positional parameters, then preserve an
+        // explicit empty parameter list as the fieldless declaration.
+        var declaration = declarations.FirstOrDefault(candidate =>
+                candidate.ParameterList?.Parameters.Count > 0)
+            ?? declarations.FirstOrDefault(candidate => candidate.ParameterList is not null);
+        var positionalParameters = declaration?.ParameterList?.Parameters;
+        if (positionalParameters is null || positionalParameters.Value.Count == 0)
+            return ImmutableArray<IParameterSymbol>.Empty;
+
+        var parameterNames = positionalParameters.Value
+            .Select(parameter => parameter.Identifier.ValueText)
+            .ToArray();
+        var constructors = variantType.InstanceConstructors
+            .Where(constructor => constructor.Parameters.Length == parameterNames.Length)
+            .Where(constructor => constructor.Parameters
+                .Select(parameter => parameter.Name)
+                .SequenceEqual(parameterNames, System.StringComparer.Ordinal))
+            .OrderByDescending(constructor => constructor.IsImplicitlyDeclared)
+            .ToArray();
+        return constructors.Length == 0
+            ? ImmutableArray<IParameterSymbol>.Empty
+            : constructors[0].Parameters;
+    }
+
+    public static bool IsRecordVariant(INamedTypeSymbol unionType, string variantName)
+        => unionType.GetTypeMembers(variantName)
+            .Any(type => HasVariantAttribute(type));
+
+    public static INamedTypeSymbol? GetRecordVariantType(
+        INamedTypeSymbol unionType,
+        string variantName)
+        => unionType.GetTypeMembers(variantName)
+            .FirstOrDefault(type => HasVariantAttribute(type));
 
     private UnionTypeInfo(
         bool isStruct,
@@ -107,4 +173,8 @@ internal sealed class UnionTypeInfo
         return type.GetAttributes().Any(a =>
             SymbolEqualityComparer.Default.Equals(a.AttributeClass, attributeType));
     }
+
+    private static bool HasVariantAttribute(ISymbol symbol)
+        => symbol.GetAttributes().Any(attribute =>
+            attribute.AttributeClass?.Name == "VariantAttribute");
 }

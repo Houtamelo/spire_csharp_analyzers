@@ -123,9 +123,7 @@ internal static class SystemTextJsonEmitter
 
             if (variant.Fields.Length == 0)
             {
-                var ctor = IsRecord(union)
-                    ? $"new {unionType}.{variant.Name}()"
-                    : $"{unionType}.{IdentifierUtility.Escape(variant.Name)}()";
+                var ctor = VariantConstruction(union, unionType, variant, string.Empty);
                 sb.AppendLine($"{CSharpStringLiteral.Quote(jsonName)} => {ctor},");
             }
             else
@@ -137,9 +135,7 @@ internal static class SystemTextJsonEmitter
                         return $"root.GetProperty({CSharpStringLiteral.Quote(propName)}).Deserialize<{f.TypeFullName}>(options)!";
                     }));
 
-                var ctor = IsRecord(union)
-                    ? $"new {unionType}.{variant.Name}({args})"
-                    : $"{unionType}.{IdentifierUtility.Escape(variant.Name)}({args})";
+                var ctor = VariantConstruction(union, unionType, variant, args);
                 sb.AppendLine($"{CSharpStringLiteral.Quote(jsonName)} => {ctor},");
             }
         }
@@ -255,6 +251,15 @@ internal static class SystemTextJsonEmitter
 
     private static bool IsRecord(UnionDeclaration union)
         => union.Strategy == EmitStrategy.Record;
+
+    private static string VariantConstruction(
+        UnionDeclaration union,
+        string unionType,
+        VariantInfo variant,
+        string args)
+        => variant.IsRecordStruct || IsRecord(union)
+            ? $"new {unionType}.{IdentifierUtility.Escape(variant.Name)}({args})"
+            : $"{unionType}.{IdentifierUtility.Escape(variant.Name)}({args})";
 
     #endregion
 }

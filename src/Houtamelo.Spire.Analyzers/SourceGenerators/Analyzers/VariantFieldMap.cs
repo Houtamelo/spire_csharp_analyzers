@@ -48,6 +48,19 @@ internal sealed class VariantFieldMap
             if (prop.Name == "kind") continue;
             if (!HasEditorBrowsableNever(prop)) continue;
 
+            // Authored record payloads are exposed directly by the union. Their
+            // type name identifies the owning variant even when accessor naming
+            // has to append `_value` for a factory/type collision.
+            foreach (var variantName in info.VariantNames)
+            {
+                if (prop.Type is INamedTypeSymbol payload &&
+                    (string.Equals(payload.Name, variantName, StringComparison.Ordinal) ||
+                     string.Equals(payload.OriginalDefinition.Name, variantName, StringComparison.Ordinal)))
+                {
+                    Add(map, prop.Name, variantName);
+                }
+            }
+
             // The variant-payload representation exposes one hidden accessor per
             // variant (for example `move` or `run_value`). Its name is derived
             // from the factory name and it owns the entire payload, rather than

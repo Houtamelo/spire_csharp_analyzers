@@ -64,4 +64,21 @@ internal static class AnalyzerDescriptors
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 #pragma warning restore RS1032
+
+    public static readonly DiagnosticDescriptor SPIRE028_RecordVariantSerialization = new(
+        id: "SPIRE028",
+        title: "Record variant needs serialization attributes",
+        messageFormat: "Variant '{0}' needs serialization attributes for serializable union '{1}': {2}",
+        category: "Correctness",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Serializable unions require serializable variant payloads. Add the missing type and positional backing-field attributes, or make the record partial so Spire can supply them.");
+
+    public static readonly DiagnosticDescriptor SPIRE029_RecordVariantReconstruction = new(
+        id: "SPIRE029",
+        title: "Authored positional member participates in payload reconstruction",
+        messageFormat: "Variant '{0}' customizes positional member '{1}'. Union conversion copies its positional values and payload access reconstructs the record; custom initialization or getter behavior can change the reconstructed values.",
+        category: "Correctness",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
 }

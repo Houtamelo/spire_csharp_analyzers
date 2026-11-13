@@ -13,6 +13,10 @@ internal static class UnionParser
 {
     private const string UnitySerializeReferenceAttributeMetadataName =
         "Houtamelo.Spire.UnitySerializeReferenceAttribute";
+    private const string UnitySerializeFieldMetadataName =
+        "UnityEngine.SerializeField";
+    private const string UnitySerializeReferenceMetadataName =
+        "UnityEngine.SerializeReference";
     private const string UnityDebugMetadataName = "UnityEngine.Debug";
 
     public static UnionDeclaration? Parse(
@@ -64,6 +68,7 @@ internal static class UnionParser
 
         var strategy = declKind == "record" ? EmitStrategy.Record : EmitStrategy.VariantPayload;
         UnionDiagnostic? declarationDiagnostic = null;
+        var additionalDiagnostics = new List<UnionDiagnostic>();
         var genericAncestor = NearestGenericContainingType(typeSymbol);
         if (declKind == "struct" && genericAncestor is not null)
         {
@@ -78,11 +83,14 @@ internal static class UnionParser
             ? DiscoverNestedTypeVariants(
                 typeSymbol,
                 isUnitySerializable,
-                unitySerializeReferenceAttribute)
-            : DiscoverMethodVariants(
+                unitySerializeReferenceAttribute,
+                ctx.SemanticModel.Compilation)
+            : DiscoverStructVariants(
                 typeSymbol,
                 includeNullableReferenceTypeModifiers: true,
-                unitySerializeReferenceAttribute);
+                unitySerializeReferenceAttribute,
+                additionalDiagnostics,
+                ctx.SemanticModel.Compilation);
 
         var variants = declKind == "record"
             ? parsedVariants
@@ -128,7 +136,8 @@ internal static class UnionParser
                 HasInitProperties: false,
                 RawConfig: rawConfig,
                 IsGeneric: isGeneric,
-                IsUnitySerializable: isUnitySerializable);
+                IsUnitySerializable: isUnitySerializable,
+                Diagnostics: new EquatableArray<UnionDiagnostic>(additionalDiagnostics.ToImmutableArray()));
         }
 
         // Resolve with built-in defaults (will be re-resolved with global config later)
@@ -192,7 +201,8 @@ internal static class UnionParser
             RawConfig: rawConfig,
             IsGeneric: isGeneric,
             IsUnitySerializable: isUnitySerializable,
-            UseUnityAssertions: useUnityAssertions)
+            UseUnityAssertions: useUnityAssertions,
+            Diagnostics: new EquatableArray<UnionDiagnostic>(additionalDiagnostics.ToImmutableArray()))
         {
             ReferenceStorage = ResolveReferenceStorage(rawConfig.ReferenceStorage),
             TypeParameterConstraints = new EquatableArray<string>(GetTypeParameterConstraints(typeSymbol)),
@@ -391,27 +401,69 @@ internal static class UnionParser
         return null;
     }
 
-    /// Discovers variants from [Variant] static methods (struct path).
-    private static ImmutableArray<VariantInfo> DiscoverMethodVariants(
+    /// Discovers both method and authored record-struct variants from a struct union.
+    /// The symbol member order is deterministic for a compilation and preserves the
+    /// existing method-only order while allowing the forms to be interleaved.
+    private static ImmutableArray<VariantInfo> DiscoverStructVariants(
         INamedTypeSymbol typeSymbol,
         bool includeNullableReferenceTypeModifiers,
-        INamedTypeSymbol? unitySerializeReferenceAttribute)
+        INamedTypeSymbol? unitySerializeReferenceAttribute,
+        List<UnionDiagnostic> diagnostics,
+        Compilation compilation)
     {
-        return typeSymbol.GetMembers()
-            .OfType<IMethodSymbol>()
-            .Where(m => m.IsStatic && HasVariantAttribute(m))
-            .Select(m => ParseMethodVariant(
-                m,
+        var variants = ImmutableArray.CreateBuilder<VariantInfo>();
+        foreach (var member in typeSymbol.GetMembers())
+        {
+            if (member is IMethodSymbol method && method.IsStatic && HasVariantAttribute(method))
+            {
+                variants.Add(ParseMethodVariant(
+                    method,
+                    includeNullableReferenceTypeModifiers,
+                    unitySerializeReferenceAttribute,
+                    compilation));
+                continue;
+            }
+
+            if (member is not INamedTypeSymbol nested || !HasVariantAttribute(nested))
+                continue;
+
+            if (!nested.IsRecord || !nested.IsValueType || nested.DeclaredAccessibility != Accessibility.Public)
+            {
+                diagnostics.Add(CreateDiagnostic(
+                    GetDeclarationLocation(nested),
+                    "SPIRE_DU019",
+                    $"Variant '{nested.Name}' must be a public record struct with no independently declared type parameters.",
+                    isError: true));
+                continue;
+            }
+
+            if (nested.TypeParameters.Length > 0)
+            {
+                diagnostics.Add(CreateDiagnostic(
+                    GetDeclarationLocation(nested),
+                    "SPIRE_DU019",
+                    $"Variant '{nested.Name}' must not declare its own type parameters; use the containing union's type parameters instead.",
+                    isError: true));
+                continue;
+            }
+
+            variants.Add(ParseNestedTypeVariant(
+                nested,
                 includeNullableReferenceTypeModifiers,
-                unitySerializeReferenceAttribute))
-            .ToImmutableArray();
+                unitySerializeReferenceAttribute,
+                compilation,
+                isRecordStruct: true));
+        }
+
+        return variants.ToImmutable();
     }
 
     /// Discovers variants from nested types that inherit from the parent (record path).
     private static ImmutableArray<VariantInfo> DiscoverNestedTypeVariants(
         INamedTypeSymbol typeSymbol,
         bool includeNullableReferenceTypeModifiers,
-        INamedTypeSymbol? unitySerializeReferenceAttribute)
+        INamedTypeSymbol? unitySerializeReferenceAttribute,
+        Compilation compilation)
     {
         return typeSymbol.GetTypeMembers()
             .Where(nested => SymbolEqualityComparer.Default.Equals(
@@ -419,7 +471,8 @@ internal static class UnionParser
             .Select(nested => ParseNestedTypeVariant(
                 nested,
                 includeNullableReferenceTypeModifiers,
-                unitySerializeReferenceAttribute))
+                unitySerializeReferenceAttribute,
+                compilation))
             .ToImmutableArray();
     }
 
@@ -434,14 +487,17 @@ internal static class UnionParser
 
     private static bool HasVariantAttribute(IMethodSymbol method)
     {
-        return method.GetAttributes().Any(a =>
-            a.AttributeClass?.Name == "VariantAttribute");
+        return HasVariantAttribute((ISymbol)method);
     }
+
+    private static bool HasVariantAttribute(ISymbol symbol)
+        => symbol.GetAttributes().Any(a => a.AttributeClass?.Name == "VariantAttribute");
 
     private static VariantInfo ParseMethodVariant(
         IMethodSymbol method,
         bool includeNullableReferenceTypeModifiers,
-        INamedTypeSymbol? unitySerializeReferenceAttribute)
+        INamedTypeSymbol? unitySerializeReferenceAttribute,
+        Compilation compilation)
     {
         var fields = method.Parameters
             .Select(p => new FieldInfo(
@@ -457,8 +513,10 @@ internal static class UnionParser
                 RequiresUnityRuntimeDispatch: UnitySerializationValidation.ContainsTypeParameter(p.Type),
                 IsGenericDependent: UnitySerializationValidation.ContainsTypeParameter(p.Type),
                 IsUnityManagedReference: HasUnitySerializeReferenceAttribute(
+                    method.ContainingType,
                     p,
-                    unitySerializeReferenceAttribute)))
+                    unitySerializeReferenceAttribute,
+                    compilation)))
             .ToImmutableArray();
 
         return new VariantInfo(
@@ -473,13 +531,30 @@ internal static class UnionParser
     private static VariantInfo ParseNestedTypeVariant(
         INamedTypeSymbol nestedType,
         bool includeNullableReferenceTypeModifiers,
-        INamedTypeSymbol? unitySerializeReferenceAttribute)
+        INamedTypeSymbol? unitySerializeReferenceAttribute,
+        Compilation compilation,
+        bool isRecordStruct = false)
     {
-        var primaryCtor = nestedType.Constructors
-            .Where(c => !IsCopyConstructor(c, nestedType))
-            .Where(c => !c.IsImplicitlyDeclared || c.Parameters.Length > 0)
-            .OrderByDescending(c => c.Parameters.Length)
-            .FirstOrDefault();
+        var positionalParameters = nestedType.DeclaringSyntaxReferences
+            .Select(reference => reference.GetSyntax())
+            .OfType<RecordDeclarationSyntax>()
+            .Select(record => record.ParameterList?.Parameters)
+            .FirstOrDefault(parameters => parameters is not null);
+        var primaryCtor = isRecordStruct
+            ? positionalParameters is { Count: > 0 }
+                ? nestedType.Constructors
+                    .Where(c => !IsCopyConstructor(c, nestedType))
+                    .Where(c => c.Parameters.Length == positionalParameters.Value.Count)
+                    .FirstOrDefault(c => c.Parameters.Select(parameter => parameter.Name)
+                        .SequenceEqual(
+                            positionalParameters.Value.Select(parameter => parameter.Identifier.ValueText),
+                            System.StringComparer.Ordinal))
+                : null
+            : nestedType.Constructors
+                .Where(c => !IsCopyConstructor(c, nestedType))
+                .Where(c => !c.IsImplicitlyDeclared || c.Parameters.Length > 0)
+                .OrderByDescending(c => c.Parameters.Length)
+                .FirstOrDefault();
 
         var fields = primaryCtor is null
             ? ImmutableArray<FieldInfo>.Empty
@@ -497,8 +572,14 @@ internal static class UnionParser
                     RequiresUnityRuntimeDispatch: UnitySerializationValidation.ContainsTypeParameter(p.Type),
                     IsGenericDependent: UnitySerializationValidation.ContainsTypeParameter(p.Type),
                     IsUnityManagedReference: HasUnitySerializeReferenceAttribute(
+                        nestedType,
                         p,
-                        unitySerializeReferenceAttribute)))
+                        unitySerializeReferenceAttribute,
+                        compilation),
+                    IsAuthoredField: nestedType.GetMembers(p.Name)
+                        .OfType<IFieldSymbol>()
+                        .Any(field => !field.IsImplicitlyDeclared && field.DeclaringSyntaxReferences
+                            .Any(reference => reference.GetSyntax() is VariableDeclaratorSyntax or FieldDeclarationSyntax))))
             .ToImmutableArray();
 
         return new VariantInfo(
@@ -506,7 +587,126 @@ internal static class UnionParser
             Fields: new EquatableArray<FieldInfo>(fields),
             JsonName: GetJsonName(nestedType),
             AccessibilityKeyword: ExplicitAccessibility(nestedType),
-            FormerlySerializedAs: GetFormerlySerializedAs(nestedType));
+            FormerlySerializedAs: GetFormerlySerializedAs(nestedType),
+            IsRecordStruct: isRecordStruct,
+            IsPartial: IsPartialDeclaration(nestedType),
+            AuthoredPropertyNames: new EquatableArray<string>(
+                fields.Length == 0
+                    ? ImmutableArray<string>.Empty
+                    : fields.Where(field => ShouldSkipGeneratedProperty(nestedType, field.Name, compilation))
+                        .Select(field => field.Name)
+                        .ToImmutableArray()),
+            HasSerializableAttribute: UnitySerializationValidation.HasSerializableAttribute(nestedType),
+            IsReadonly: nestedType.IsReadOnly);
+    }
+
+    private static bool IsPartialDeclaration(INamedTypeSymbol symbol)
+        => symbol.DeclaringSyntaxReferences
+            .Select(reference => reference.GetSyntax())
+            .OfType<TypeDeclarationSyntax>()
+            .Any(syntax => syntax.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.PartialKeyword)));
+
+    private static bool HasPositionalFieldSerializationAttribute(
+        INamedTypeSymbol recordType,
+        string parameterName,
+        Compilation compilation)
+    {
+        var serializeFieldAttribute = compilation.GetTypeByMetadataName(
+            UnitySerializeFieldMetadataName);
+        var serializeReferenceAttribute = compilation.GetTypeByMetadataName(
+            UnitySerializeReferenceMetadataName);
+
+        // Field-targeted attributes on a record positional parameter belong to
+        // the compiler-generated backing field. Resolve that field first so
+        // aliases and fully qualified attribute names are handled by Roslyn's
+        // semantic model rather than by their source spelling.
+        var property = recordType.GetMembers(parameterName)
+            .OfType<IPropertySymbol>()
+            .FirstOrDefault();
+        var associatedField = recordType.GetMembers()
+            .OfType<IFieldSymbol>()
+            .FirstOrDefault(field => field.AssociatedSymbol is IPropertySymbol associated &&
+                SymbolEqualityComparer.Default.Equals(associated, property));
+        if (associatedField is not null &&
+            (HasAttribute(associatedField, serializeFieldAttribute) ||
+             HasAttribute(associatedField, serializeReferenceAttribute)))
+        {
+            return true;
+        }
+
+        foreach (var syntax in recordType.DeclaringSyntaxReferences
+                     .Select(reference => reference.GetSyntax())
+                     .OfType<RecordDeclarationSyntax>())
+        {
+            var parameter = syntax.ParameterList?.Parameters.FirstOrDefault(candidate =>
+                candidate.Identifier.ValueText == parameterName);
+            if (parameter is null)
+                continue;
+
+            if (parameter.AttributeLists.Any(list =>
+                    list.Target?.Identifier.ValueText == "field" &&
+                    list.Attributes.Any(attribute =>
+                        IsAttribute(attribute, compilation, serializeFieldAttribute) ||
+                        IsAttribute(attribute, compilation, serializeReferenceAttribute))))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool ShouldSkipGeneratedProperty(
+        INamedTypeSymbol recordType,
+        string propertyName,
+        Compilation compilation)
+    {
+        if (recordType.GetMembers(propertyName)
+            .OfType<IPropertySymbol>()
+            .Any(property => property.DeclaringSyntaxReferences
+                .Any(reference => reference.GetSyntax() is PropertyDeclarationSyntax)))
+        {
+            return true;
+        }
+
+        if (recordType.GetMembers(propertyName)
+            .OfType<IFieldSymbol>()
+            .Any(field => !field.IsImplicitlyDeclared && field.DeclaringSyntaxReferences
+                .Any(reference => reference.GetSyntax() is VariableDeclaratorSyntax or FieldDeclarationSyntax)))
+        {
+            return true;
+        }
+
+        return HasPositionalFieldSerializationAttribute(recordType, propertyName, compilation);
+    }
+
+    private static bool HasAttribute(ISymbol symbol, INamedTypeSymbol? expectedAttribute)
+        => expectedAttribute is not null &&
+            symbol.GetAttributes().Any(attribute =>
+                attribute.AttributeClass is not null &&
+                SymbolEqualityComparer.Default.Equals(
+                    attribute.AttributeClass,
+                    expectedAttribute));
+
+    private static bool IsAttribute(
+        AttributeSyntax syntax,
+        Compilation compilation,
+        INamedTypeSymbol? expectedAttribute)
+    {
+        if (expectedAttribute is null)
+            return false;
+
+        var semanticModel = compilation.GetSemanticModel(syntax.SyntaxTree);
+        var symbol = semanticModel.GetSymbolInfo(syntax).Symbol ??
+            semanticModel.GetSymbolInfo(syntax.Name).Symbol;
+        var attributeType = symbol switch
+        {
+            IMethodSymbol constructor => constructor.ContainingType,
+            INamedTypeSymbol type => type,
+            _ => semanticModel.GetTypeInfo(syntax).Type as INamedTypeSymbol,
+        };
+        return attributeType is not null &&
+            SymbolEqualityComparer.Default.Equals(attributeType, expectedAttribute);
     }
 
     private static string? GetFormerlySerializedAs(ISymbol symbol)
@@ -530,14 +730,57 @@ internal static class UnionParser
     }
 
     private static bool HasUnitySerializeReferenceAttribute(
+        INamedTypeSymbol? containingType,
         IParameterSymbol parameter,
-        INamedTypeSymbol? expectedAttribute)
-        => expectedAttribute is not null &&
-            parameter.GetAttributes().Any(attribute =>
+        INamedTypeSymbol? expectedAttribute,
+        Compilation compilation)
+    {
+        if (expectedAttribute is null)
+            return false;
+
+        var serializeReferenceAttribute = compilation.GetTypeByMetadataName(
+            UnitySerializeReferenceMetadataName);
+
+        if (parameter.GetAttributes().Any(attribute =>
                 attribute.AttributeClass is not null &&
                 SymbolEqualityComparer.Default.Equals(
                     attribute.AttributeClass,
-                    expectedAttribute));
+                    expectedAttribute)))
+        {
+            return true;
+        }
+
+        // Roslyn versions used by Unity can bind a field-targeted attribute on
+        // a positional parameter as an invalid target and drop it from the
+        // semantic symbol. Preserve the user's explicit intent from syntax so
+        // generated serialization properties still use SerializeReference.
+        var parameterSyntax = parameter.DeclaringSyntaxReferences
+            .Select(reference => reference.GetSyntax())
+            .OfType<ParameterSyntax>()
+            .FirstOrDefault();
+        if (parameterSyntax is not null &&
+            parameterSyntax.AttributeLists.Any(list =>
+                list.Target?.Identifier.ValueText == "field" &&
+                list.Attributes.Any(attribute =>
+                    IsAttribute(attribute, compilation, serializeReferenceAttribute))))
+        {
+            return true;
+        }
+
+        if (containingType is null)
+            return false;
+
+        var property = containingType.GetMembers(parameter.Name)
+            .OfType<IPropertySymbol>()
+            .FirstOrDefault();
+        var associatedField = containingType.GetMembers()
+            .OfType<IFieldSymbol>()
+            .FirstOrDefault(field => field.AssociatedSymbol is IPropertySymbol associated &&
+                SymbolEqualityComparer.Default.Equals(associated, property));
+        return associatedField is not null &&
+            (HasAttribute(associatedField, expectedAttribute) ||
+             HasAttribute(associatedField, serializeReferenceAttribute));
+    }
 
     private static string DisplayFieldType(
         ITypeSymbol type,
@@ -598,6 +841,16 @@ internal static class UnionParser
                     if (!IsUnmanagedAfterGeneration(parameter.Type, visiting))
                         return false;
                 }
+
+                foreach (var nestedVariant in named.GetTypeMembers()
+                             .Where(nested => nested.IsRecord && nested.IsValueType && HasVariantAttribute(nested)))
+                {
+                    foreach (var parameterType in GetRecordPositionalParameterTypes(nestedVariant))
+                    {
+                        if (!IsUnmanagedAfterGeneration(parameterType, visiting))
+                            return false;
+                    }
+                }
             }
 
             return true;
@@ -608,10 +861,39 @@ internal static class UnionParser
         }
     }
 
+    private static IEnumerable<ITypeSymbol> GetRecordPositionalParameterTypes(
+        INamedTypeSymbol recordType)
+    {
+        var parameters = recordType.DeclaringSyntaxReferences
+            .Select(reference => reference.GetSyntax())
+            .OfType<RecordDeclarationSyntax>()
+            .Select(record => record.ParameterList?.Parameters)
+            .FirstOrDefault(parameters => parameters is not null);
+        if (parameters is not { Count: > 0 })
+            yield break;
+
+        var names = parameters.Value.Select(parameter => parameter.Identifier.ValueText).ToArray();
+        var constructor = recordType.Constructors
+            .Where(candidate => !IsCopyConstructor(candidate, recordType))
+            .FirstOrDefault(candidate => candidate.Parameters.Length == names.Length &&
+                candidate.Parameters.Select(parameter => parameter.Name)
+                    .SequenceEqual(names, System.StringComparer.Ordinal));
+        if (constructor is null)
+            yield break;
+
+        foreach (var parameter in constructor.Parameters)
+            yield return parameter.Type;
+    }
+
     private static UnionDiagnostic CreateDiagnostic(
         TypeDeclarationSyntax syntax, string id, string message, bool isError)
     {
-        var location = syntax.Identifier.GetLocation();
+        return CreateDiagnostic(syntax.Identifier.GetLocation(), id, message, isError);
+    }
+
+    private static UnionDiagnostic CreateDiagnostic(
+        Location location, string id, string message, bool isError)
+    {
         var lineSpan = location.GetLineSpan();
         return new UnionDiagnostic(
             Id: id,
@@ -624,6 +906,15 @@ internal static class UnionParser
             StartColumn: lineSpan.StartLinePosition.Character,
             EndLine: lineSpan.EndLinePosition.Line,
             EndColumn: lineSpan.EndLinePosition.Character);
+    }
+
+    private static Location GetDeclarationLocation(INamedTypeSymbol symbol)
+    {
+        var syntax = symbol.DeclaringSyntaxReferences
+            .Select(reference => reference.GetSyntax())
+            .OfType<TypeDeclarationSyntax>()
+            .FirstOrDefault();
+        return syntax?.Identifier.GetLocation() ?? symbol.Locations.FirstOrDefault() ?? Location.None;
     }
 
     private static string AccessibilityToKeyword(Accessibility accessibility)

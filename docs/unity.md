@@ -287,12 +287,21 @@ Concrete unmanaged variant payloads overlap without unsafe code or manual size
 calculations. Generic-dependent fields use typed storage. Reference storage uses
 `ReferenceStorage.Auto`, `Typed`, or `Shared`, with Auto as the project default.
 A union may itself be generic; nesting inside a generic containing type reports
-SPIRE_DU018. Readonly/ref structs, records, and record structs are outside this
-serialization mode.
+SPIRE_DU018. Readonly/ref structs, records, and record structs as the outer union
+are outside this serialization mode.
+
+Nested `[Variant] public record struct` payloads are supported on C# 10 or later.
+Make them `partial` to let Spire add `[Serializable]` and positional backing-field
+attributes. Non-partial records need their own attributes;
+[SPIRE028](rules/SPIRE028.md) reports missing annotations and offers fixes.
+The internal wrappers remain the same, with the authored record as their `value`.
+See the [record payload guide](discriminated-unions.md#authored-record-struct-payloads)
+and [native acceptance fixture](../tests/UnityVariantPayloadCore/Assets/RecordVariantTests/README.md).
 
 Unity stores `_kind` and one active managed-reference wrapper whose public
 `value` field contains the generated payload struct from the union's sibling
-types container (`ResultTypes.Variants.Success`). Each variant has a concrete
+types container (`ResultTypes.Variants.Success`), or the authored nested record
+for a record-declared variant. Each variant has a concrete
 wrapper under `ResultTypes.SerializedPayloads`, inheriting `value` from a shared
 generic base. Wrappers for generic unions remain generic; Unity 2022 cannot
 serialize them. The same wrapper code is generated on all Unity versions.
@@ -300,7 +309,7 @@ Old shared-generic cache objects remain readable and are upgraded when saved;
 resave old assets in a newer supported Editor before moving them to Unity 2022.
 Runtime storage is excluded from
 serialization. A recognized payload identifies the variant even if `_kind`
-disagrees. Generated callbacks rebuild the union through its factories,
+disagrees. Generated callbacks rebuild the union from the active payload's fields,
 and a generated editor drawer displays the `Kind` selector and active fields as siblings
 inside a foldout titled with the serialized field's display name in UI Toolkit
 and IMGUI. Its expansion state follows Unity's serialized property.

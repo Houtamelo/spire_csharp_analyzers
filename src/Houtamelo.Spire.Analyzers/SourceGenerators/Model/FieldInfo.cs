@@ -28,5 +28,7 @@ internal sealed record FieldInfo(
     /// Generic-dependent values cannot enter nongeneric explicit-layout helpers.
     bool IsGenericDependent = false,
     /// Reused typed storage accepts the merged nullable annotations of all users.
-    string? StorageTypeFullName = null
+    string? StorageTypeFullName = null,
+    /// True when an authored record declares a real field with this positional name.
+    bool IsAuthoredField = false
 ) : IEquatable<FieldInfo>;

@@ -1,0 +1,19 @@
+{
+    "name": "Spire.UnityRecordVariantTests",
+    "rootNamespace": "Spire.UnityRecordVariantTests",
+    "references": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_6000_4_OR_NEWER"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": []
+}

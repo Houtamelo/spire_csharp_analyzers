@@ -189,7 +189,7 @@ internal static class UnitySerializationEmitter
             var first = union.Variants[0];
             var fallbackVariable = "fallback_" + Safe(first.Name);
             var defaults = string.Join(", ", first.Fields.Select(field => $"default({field.TypeFullName})!"));
-            sb.AppendLine($"var {fallbackVariable} = {IdentifierUtility.Escape(first.Name)}({defaults});");
+            sb.AppendLine($"var {fallbackVariable} = {VariantConstruction(union, first, defaults)};");
             sb.AppendLine($"{fallbackVariable}._serializedPayload = null;");
             sb.AppendLine($"restored = {fallbackVariable};");
         }
@@ -228,7 +228,7 @@ internal static class UnitySerializationEmitter
         {
             sb.AppendLine($"case (int)Kind.{IdentifierUtility.Escape(variant.Name)}:");
             sb.Indent();
-            sb.AppendLine($"return {IdentifierUtility.Escape(variant.Name)}({string.Join(", ", variant.Fields.Select(field => $"default({field.TypeFullName})!"))});");
+            sb.AppendLine($"return {VariantConstruction(union, variant, string.Join(", ", variant.Fields.Select(field => $"default({field.TypeFullName})!")))};");
             sb.Dedent();
         }
         sb.AppendLine("default:");
@@ -240,7 +240,7 @@ internal static class UnitySerializationEmitter
         else
         {
             var first = union.Variants[0];
-            sb.AppendLine($"return {IdentifierUtility.Escape(first.Name)}({string.Join(", ", first.Fields.Select(field => $"default({field.TypeFullName})!"))});");
+            sb.AppendLine($"return {VariantConstruction(union, first, string.Join(", ", first.Fields.Select(field => $"default({field.TypeFullName})!")))};");
         }
         sb.Dedent();
         sb.CloseBrace();
@@ -314,9 +314,20 @@ internal static class UnitySerializationEmitter
             union,
             field,
             $"{payloadVariable}.value.{IdentifierUtility.Escape(field.Name)}"));
-        sb.AppendLine($"var {restoredVariable} = {IdentifierUtility.Escape(variant.Name)}({string.Join(", ", args)});");
-        sb.AppendLine($"{restoredVariable}._serializedPayload = {payloadVariable};");
-        sb.AppendLine($"restored = {restoredVariable};");
+        if (variant.IsRecordStruct)
+        {
+            var payloadType = GeneratedAliasEmitter.VariantPayloadReference(union, variant.Name);
+            sb.AppendLine($"var {restoredVariable} = new {payloadType}({string.Join(", ", args)});");
+            sb.AppendLine($"restored = ({UnionTypeReference(union)}){restoredVariable};");
+        }
+        else
+        {
+            sb.AppendLine($"var {restoredVariable} = {IdentifierUtility.Escape(variant.Name)}({string.Join(", ", args)});");
+            sb.AppendLine($"{restoredVariable}._serializedPayload = {payloadVariable};");
+            sb.AppendLine($"restored = {restoredVariable};");
+        }
+        if (variant.IsRecordStruct)
+            sb.AppendLine($"restored._serializedPayload = {payloadVariable};");
         sb.AppendLine("return true;");
         sb.Dedent();
     }
@@ -343,6 +354,21 @@ internal static class UnitySerializationEmitter
 
     private static string VariantPayloadType(UnionDeclaration union, string variantName)
         => GeneratedAliasEmitter.VariantPayloadReference(union, variantName);
+
+    private static string VariantConstruction(
+        UnionDeclaration union,
+        VariantInfo variant,
+        string args)
+    {
+        var unionType = UnionTypeReference(union);
+        return variant.IsRecordStruct
+            ? $"({unionType})new {unionType}.{IdentifierUtility.Escape(variant.Name)}({args})"
+            : $"{IdentifierUtility.Escape(variant.Name)}({args})";
+    }
+
+    private static string UnionTypeReference(UnionDeclaration union)
+        => IdentifierUtility.Escape(union.TypeName) +
+            DeclarationFormatting.FormatEscapedTypeParameters(union.TypeParameters);
 
     private static bool HasAlias(VariantInfo variant)
         => variant.HasFormerlySerializedAs;

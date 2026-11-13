@@ -102,6 +102,8 @@ See the [closure inliner guide](docs/rules/SPIRE017-SPIRE027.md).
 | [SPIRE014](docs/rules/SPIRE014.md) | Attempting to access variant data without checking 'kind'                       |
 | [SPIRE015](docs/rules/SPIRE015.md) | Exhaustive enum switch                                                          |
 | [SPIRE016](docs/rules/SPIRE016.md) | Cast to `[EnforceInitialization]` enum may produce invalid variant              |
+| [SPIRE028](docs/rules/SPIRE028.md) | Record variant needs Unity serialization attributes |
+| [SPIRE029](docs/rules/SPIRE029.md) | Authored positional member can change reconstructed values |
 
 ## Discriminated Unions
 
@@ -148,11 +150,19 @@ var area = shape switch
 
 ```
 
-Each accessor returns a payload struct under `ShapeTypes.Variants` with
+For method-declared variants, each accessor returns a payload struct under `ShapeTypes.Variants` with
 getter-only properties and a typed `Deconstruct`. Use `var (field)` for one
 field and `var (first, second)` for multiple fields. Fieldless arms need only
 `IsVariant: true`. Accessors replace flat field properties and union-level
 deconstruction.
+
+On C# 10 or later, a variant can instead be a public nested `record struct`:
+`[Variant] public record struct Circle(double radius);`. Construct it with
+`new Shape.Circle(5.0)` and implicitly convert it to `Shape`. Its accessor returns
+the authored record; methods and records can coexist in one union. The record
+needs no factory or duplicate generated payload. See
+[record-struct variants](docs/discriminated-unions.md#authored-record-struct-payloads)
+for serialization support and declaration restrictions.
 
 Record types are also supported:
 

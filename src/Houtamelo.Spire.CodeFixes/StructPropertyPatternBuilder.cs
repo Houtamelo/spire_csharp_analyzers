@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -50,12 +51,16 @@ internal static class StructPropertyPatternBuilder
                     : BuildKindExpression(kindPrefix, variantName)))
         };
 
-        if (factory is not null)
+        var fields = factory?.Parameters ?? GetRecordPositionalFields(
+            subjectType,
+            variantName,
+            semanticModel);
+        if (!fields.IsDefault)
         {
             var usedNames = CollectEnclosingNames(scope, semanticModel);
             var accessorName = ResolveAccessorName(subjectType, variantName);
             var captureDesignations = new List<VariableDesignationSyntax>();
-            foreach (var parameter in factory.Parameters)
+            foreach (var parameter in fields)
             {
                 var captureName = MakeUniqueName(parameter.Name, usedNames);
                 usedNames.Add(captureName);
@@ -107,7 +112,48 @@ internal static class StructPropertyPatternBuilder
                 NormalizeIdentifier(method.Name),
                 accessorName,
                 StringComparison.Ordinal));
-        return hasFactoryConflict ? accessorName + "_value" : accessorName;
+        var hasRecordTypeConflict = subjectType.GetTypeMembers()
+            .Where(type => type.GetAttributes().Any(attribute =>
+                attribute.AttributeClass?.Name == "VariantAttribute"))
+            .Any(type => string.Equals(
+                NormalizeIdentifier(type.Name),
+                accessorName,
+                StringComparison.Ordinal));
+        return hasFactoryConflict || hasRecordTypeConflict
+            ? accessorName + "_value"
+            : accessorName;
+    }
+
+    private static ImmutableArray<IParameterSymbol> GetRecordPositionalFields(
+        INamedTypeSymbol subjectType,
+        string variantName,
+        SemanticModel semanticModel)
+    {
+        var variantType = subjectType.GetTypeMembers(variantName).FirstOrDefault(type =>
+            type.GetAttributes().Any(attribute =>
+                attribute.AttributeClass?.Name == "VariantAttribute"));
+        if (variantType is null)
+            return default;
+
+        var declaration = variantType.DeclaringSyntaxReferences
+            .Select(reference => reference.GetSyntax())
+            .OfType<RecordDeclarationSyntax>()
+            .FirstOrDefault(candidate => candidate.ParameterList is not null);
+        if (declaration?.ParameterList is null)
+            return ImmutableArray<IParameterSymbol>.Empty;
+
+        var names = declaration.ParameterList.Parameters
+            .Select(parameter => parameter.Identifier.ValueText)
+            .ToArray();
+        var primaryConstructor = variantType.InstanceConstructors
+            .FirstOrDefault(constructor =>
+                constructor.Parameters.Length == names.Length &&
+                constructor.Parameters.Select(parameter => parameter.Name)
+                    .SequenceEqual(names, StringComparer.Ordinal));
+        if (primaryConstructor is not null)
+            return primaryConstructor.Parameters;
+
+        return ImmutableArray<IParameterSymbol>.Empty;
     }
 
     private static bool IsVariantFactory(IMethodSymbol method)

@@ -1,6 +1,6 @@
 # Test Case File Format
 
-Each test case is a self-contained `.cs` file in `tests/Spire.Analyzers.Tests/{RuleId}/cases/`.
+Each test case is a self-contained `.cs` file in `tests/Houtamelo.Spire.Analyzers.Tests/{RuleId}/cases/`.
 Cases are discovered automatically at runtime — **no test runner edits needed**.
 
 ## Compilation model
@@ -62,3 +62,14 @@ Place the marker at the end of the line containing the code that should trigger 
 - Detection cases: `Detect_{NodeType}_{Context}.cs`
 - False-positive cases: `NoReport_{Reason}_{Context}.cs`
 - PascalCase with underscores separating logical parts.
+
+## Generator code-fix cases
+
+`tests/Houtamelo.Spire.SourceGenerators.Tests/CodeFix/cases/{CaseName}/` contains
+`before.cs` and `after.cs`. The runner compares the applied action with `after.cs`.
+Optional markers in `before.cs` select the compilation environment and action:
+
+- `//@ unity` uses installed Unity assembly references and recompiles the fixed
+  source through the generator.
+- `//@ codefix: EquivalenceKey` selects a specific offered action. Without it,
+  the runner applies the first action.

@@ -78,6 +78,9 @@ internal static class Diagnostics
     private static readonly DiagnosticDescriptor GenericContainingType = UnityError(
         "SPIRE_DU018", "Discriminated union cannot be nested in a generic type");
 
+    private static readonly DiagnosticDescriptor InvalidRecordVariant = UnityError(
+        "SPIRE_DU019", "Invalid record variant declaration");
+
     private static DiagnosticDescriptor UnityError(string id, string title) => new(
         id: id,
         title: title,
@@ -100,6 +103,7 @@ internal static class Diagnostics
         ["SPIRE_DU016"] = UnitySerializationReference,
         ["SPIRE_DU017"] = UnitySerializationVariantAlias,
         ["SPIRE_DU018"] = GenericContainingType,
+        ["SPIRE_DU019"] = InvalidRecordVariant,
     };
 
     public static DiagnosticDescriptor GetDescriptor(UnionDiagnostic diag)

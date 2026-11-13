@@ -121,7 +121,7 @@ internal static class UnityPropertyDrawerEmitter
                 AppendIndented(builder, indent + 3, "new[]");
                 AppendIndentedOpenBrace(builder, indent + 3);
                 foreach (var field in variant.Fields)
-                    AppendIndented(builder, indent + 4, Quote(VariantPayloadEmitter.BackingFieldName(field)) + ",");
+                    AppendIndented(builder, indent + 4, Quote(SerializedFieldName(variant, field)) + ",");
                 AppendIndented(builder, indent + 3, "}");
             }
 
@@ -283,6 +283,18 @@ internal static class UnityPropertyDrawerEmitter
 
     private static string PayloadTypeName(UnionDeclaration union, string variantName)
     {
+        var variant = union.Variants.FirstOrDefault(candidate =>
+            string.Equals(candidate.Name, variantName, StringComparison.Ordinal));
+        if (variant?.IsRecordStruct == true)
+        {
+            var parts = union.ContainingTypes
+                .Select(type => MetadataTypeName(type.Name, type.TypeParameters.Length))
+                .ToList();
+            parts.Add(MetadataTypeName(union.TypeName, union.TypeParameters.Length));
+            parts.Add(SerializedName(variantName));
+            return string.Join("+", parts);
+        }
+
         var raw = GeneratedAliasEmitter.TypesName(union) + "+Variants+" + SerializedName(variantName);
         var chars = raw
             .Select(character => char.IsLetterOrDigit(character) || character is '_' or '+' ? character : '_')
@@ -290,6 +302,16 @@ internal static class UnityPropertyDrawerEmitter
         var safe = chars.Length == 0 ? "Value" : new string(chars);
         return safe;
     }
+
+    private static string SerializedFieldName(VariantInfo variant, FieldInfo field)
+        => variant.IsRecordStruct
+            ? field.IsAuthoredField
+                ? SerializedName(field.Name)
+                : "<" + SerializedName(field.Name) + ">k__BackingField"
+            : VariantPayloadEmitter.BackingFieldName(field);
+
+    private static string MetadataTypeName(string name, int arity)
+        => arity == 0 ? SerializedName(name) : SerializedName(name) + "`" + arity;
 
     private static bool HasAlias(VariantInfo variant)
         => variant.HasFormerlySerializedAs;

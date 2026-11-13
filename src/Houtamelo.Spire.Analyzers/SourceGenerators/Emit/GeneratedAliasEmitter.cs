@@ -72,7 +72,36 @@ internal static class GeneratedAliasEmitter
         => ContainerReference(union, "Variants", $"{GlobalTypesPath(union)}.Variants");
 
     internal static string VariantPayloadReference(UnionDeclaration union, string variantName)
-        => $"{VariantsReference(union)}.{IdentifierUtility.Escape(Safe(variantName))}{DeclarationFormatting.FormatEscapedTypeParameters(union.TypeParameters)}";
+    {
+        var variant = union.Variants.FirstOrDefault(candidate =>
+            string.Equals(candidate.Name, variantName, StringComparison.Ordinal));
+        if (variant?.IsRecordStruct == true)
+            return CanonicalRecordPayloadReference(union, variantName);
+
+        return $"{VariantsReference(union)}.{IdentifierUtility.Escape(Safe(variantName))}{DeclarationFormatting.FormatEscapedTypeParameters(union.TypeParameters)}";
+    }
+
+    private static string CanonicalRecordPayloadReference(UnionDeclaration union, string variantName)
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrEmpty(union.Namespace))
+        {
+            parts.AddRange(union.Namespace
+                .Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(IdentifierUtility.Escape));
+        }
+
+        foreach (var containingType in union.ContainingTypes)
+        {
+            parts.Add(IdentifierUtility.Escape(containingType.Name) +
+                DeclarationFormatting.FormatEscapedTypeParameters(containingType.TypeParameters));
+        }
+
+        parts.Add(IdentifierUtility.Escape(union.TypeName) +
+            DeclarationFormatting.FormatEscapedTypeParameters(union.TypeParameters));
+        parts.Add(IdentifierUtility.Escape(Safe(variantName)));
+        return "global::" + string.Join(".", parts);
+    }
 
     private static void AppendAlias(
         SourceBuilder sb,

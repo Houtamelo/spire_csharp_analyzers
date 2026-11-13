@@ -771,6 +771,28 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
         var variantType = subjectType.GetTypeMembers(variantName).FirstOrDefault();
         if (variantType is null) return ImmutableArray<IParameterSymbol>.Empty;
 
+        foreach (var syntaxReference in variantType.DeclaringSyntaxReferences)
+        {
+            if (syntaxReference.GetSyntax() is not RecordDeclarationSyntax declaration ||
+                declaration.ParameterList is null)
+            {
+                continue;
+            }
+
+            // The record's positional schema is represented by its declaration,
+            // not by an arbitrary user Deconstruct overload or constructor.
+            // This helper is called with no semantic model, so retain the
+            // parameter names/types from the bound primary constructor below.
+            var primaryConstructor = variantType.InstanceConstructors
+                .FirstOrDefault(constructor =>
+                    constructor.Parameters.Length == declaration.ParameterList.Parameters.Count &&
+                    constructor.Parameters.All(parameter =>
+                        declaration.ParameterList.Parameters.Any(syntaxParameter =>
+                            string.Equals(syntaxParameter.Identifier.ValueText, parameter.Name, StringComparison.Ordinal))));
+            if (primaryConstructor is not null)
+                return primaryConstructor.Parameters;
+        }
+
         var deconstruct = variantType.GetMembers("Deconstruct")
             .OfType<IMethodSymbol>()
             .Where(m => m.Parameters.All(p => p.RefKind == RefKind.Out))

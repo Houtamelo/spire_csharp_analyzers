@@ -26,7 +26,7 @@ double area = shape switch
 };
 ```
 
-Each variant has a payload struct under the sibling `ShapeTypes.Variants`
+Each method-declared variant has a payload struct under the sibling `ShapeTypes.Variants`
 container: `Circle`, `Rectangle`, and `Point`. Payloads are non-partial structs with private `_`-prefixed fields,
 public getter-only properties, a constructor, and a typed `Deconstruct`.
 Payload getters and `Deconstruct`, along with the union's read-only accessors,
@@ -58,9 +58,50 @@ Non-public factories receive no conversion operator, preserving their constructi
 accessibility. Serialization-only former-name payload aliases receive no operator.
 
 Accessors use camelCase, including leading acronyms (`HTTPRequest` becomes
-`httpRequest`). If that name matches any variant factory, the accessor receives
+`httpRequest`). If that name matches any variant factory or annotated nested record type, the accessor receives
 one `_value` suffix. Generated using aliases are scoped inside the union's named
 namespace when present. Other name collisions use ordinary C# compiler diagnostics.
+
+### Authored record-struct payloads
+
+On C# 10 or later, declare a public nested record struct as a variant. It can
+coexist with method variants and does not need to be partial:
+
+```csharp
+[DiscriminatedUnion]
+public partial struct Customization
+{
+    [Variant] public record struct Slider(int kind, int value);
+    [Variant] public static partial Customization Color(int kind, uint rgb);
+    [Variant] public record struct None;
+}
+
+// At a call site:
+Customization value = new Customization.Slider(1, 42);
+```
+
+`Customization.Slider` is the payload type. Its accessor returns that authored
+type; no `Slider` factory or `CustomizationTypes.Variants.Slider` is generated.
+The union copies positional field values on conversion and reconstructs the
+record on access. Extra record state and the record's own equality do not become
+part of union storage or equality. Records without positional parameters define
+fieldless variants. Both forms follow declaration order for generated kinds.
+Across partial declarations, compilation syntax-tree order determines the order
+of the parts, with source order inside each part. Moving parts or changing the
+compiler's input order can therefore change numeric kind values.
+
+Record variants must be public and declare no type parameters of their own;
+they can use their containing union's type parameters. Record classes and
+ordinary classes/structs are rejected with SPIRE_DU019. The existing inherited
+record-union API is unchanged.
+
+Authored replacements of positional members are permitted with
+[SPIRE029](rules/SPIRE029.md): construction and reconstruction can apply custom
+initializers/getters again. Helper methods and extra computed properties do not
+trigger that warning merely by being present.
+
+For JSON, `[JsonName]` on the record controls the variant name and annotations on
+positional parameters control field names, matching method variants.
 
 Guard an accessor with its corresponding kind or generated `IsVariant` predicate.
 SPIRE013/014 diagnose incorrect or unguarded access. SPIRE009 checks exhaustiveness,
@@ -249,6 +290,19 @@ managed-reference wrapper derived from a shared generic base; its inherited
 and cannot use native Unity serialization on Unity 2022. See [Unity](unity.md) for field
 eligibility, serialization, and Editor behavior.
 
+For authored record variants, making the record `partial` lets the generator add
+`[Serializable]` and supply positional auto-properties with Unity backing-field
+attributes. Existing authored properties are preserved. Non-partial records
+remain supported with authored serialization annotations.
+[SPIRE028](rules/SPIRE028.md) reports missing attributes and offers fixes to add
+the type attribute, annotate positional backing fields, or make the record partial.
+The internal serialization wrappers remain unchanged.
+
+Record parameters accept Spire's `[UnitySerializeReference]` or Unity's
+`[field: SerializeReference]`; either requests managed-reference serialization,
+and both together have the same effect. Existing managed-reference attributes
+are preserved by generation and fixes.
+
 Unity serialization is incompatible with an unmanaged Burst/ECS representation:
 the generated serialization cache is a managed reference even when every variant
 field is unmanaged. If both representations are needed, manually declare a
@@ -264,6 +318,8 @@ supported by Burst; unmanaged alone does not establish Burst compatibility.
 | [SPIRE012](rules/SPIRE012.md) | Payload positional field-count mismatch |
 | [SPIRE013](rules/SPIRE013.md) | Wrong-variant accessor |
 | [SPIRE014](rules/SPIRE014.md) | Unguarded variant accessor |
+| [SPIRE028](rules/SPIRE028.md) | Record variant needs Unity serialization attributes |
+| [SPIRE029](rules/SPIRE029.md) | Authored positional member can change reconstructed values |
 
 Non-record classes are unsupported union declarations. Errors
 are reported independently of source emission; unavailable optional components

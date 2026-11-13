@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Houtamelo.Spire.SourceGenerators.Tests.Unity;
 using Xunit;
 using Xunit.Sdk;
 
@@ -39,7 +40,13 @@ public abstract class CodeFixTestBase
         var afterSource = File.ReadAllText(Path.Combine(caseDir, "after.cs"));
 
         // Preserve source trivia so code fixes can be validated against real comments.
-        GeneratorTestHelper.RunGenerator(beforeSource, out var outputCompilation, out _, path: "case.cs");
+        var usesUnityReferences = beforeSource.Contains("//@ unity", StringComparison.Ordinal);
+        Compilation outputCompilation;
+        var userSourcePath = usesUnityReferences ? "unity-case.cs" : "case.cs";
+        if (usesUnityReferences)
+            outputCompilation = UnityGeneratorTestHarness.Run(beforeSource).OutputCompilation;
+        else
+            GeneratorTestHelper.RunGenerator(beforeSource, out outputCompilation, out _, path: userSourcePath);
 
         // Build a workspace from the output compilation so diagnostics reference workspace documents
         using var workspace = new AdhocWorkspace();
@@ -59,12 +66,12 @@ public abstract class CodeFixTestBase
             var docId = DocumentId.CreateNewId(projectId);
             solution = solution.AddDocument(docId, Path.GetFileName(tree.FilePath), tree.GetText());
 
-            if (tree.FilePath == "case.cs")
+            if (tree.FilePath == userSourcePath)
                 userDocId = docId;
         }
 
         if (userDocId is null)
-            throw new InvalidOperationException("User document 'case.cs' not found in compilation");
+            throw new InvalidOperationException($"User document '{userSourcePath}' not found in compilation");
 
         // Run analyzers on the detached solution without mutating the workspace.
         var project = solution.GetProject(projectId)!;
@@ -80,7 +87,7 @@ public abstract class CodeFixTestBase
 
         var fixableDiags = allDiags
             .Where(d => fixableIds.Contains(d.Id))
-            .Where(d => d.Location.SourceTree?.FilePath?.EndsWith("case.cs") == true)
+            .Where(d => d.Location.SourceTree?.FilePath == userSourcePath)
             .ToList();
 
         if (fixableDiags.Count == 0)
@@ -110,8 +117,18 @@ public abstract class CodeFixTestBase
             throw new XunitException(
                 $"Case '{caseName}': code fix provider registered no actions for {diagnostic.Id}");
 
-        // Apply first code action
-        var operations = await actions[0].GetOperationsAsync(CancellationToken.None);
+        const string actionMarker = "//@ codefix:";
+        var requestedAction = beforeSource.Split('\n')
+            .Select(line => line.Trim())
+            .FirstOrDefault(line => line.StartsWith(actionMarker, StringComparison.Ordinal));
+        var actionKey = requestedAction?.Substring(actionMarker.Length).Trim();
+        var selectedAction = string.IsNullOrEmpty(actionKey)
+            ? actions[0]
+            : actions.SingleOrDefault(action => action.EquivalenceKey == actionKey)
+                ?? throw new XunitException(
+                    $"Case '{caseName}': action '{actionKey}' not offered. Offered: " +
+                    string.Join(", ", actions.Select(action => action.EquivalenceKey)));
+        var operations = await selectedAction.GetOperationsAsync(CancellationToken.None);
         var applyOp = operations.OfType<ApplyChangesOperation>().Single();
 
         // Inspect the code action's immutable result without depending on workspace application.
@@ -130,6 +147,13 @@ public abstract class CodeFixTestBase
                 $"Code fix mismatch for case '{caseName}'.\n\n" +
                 $"=== EXPECTED ===\n{afterSource}\n\n" +
                 $"=== ACTUAL ===\n{modifiedText}");
+        }
+
+        if (usesUnityReferences)
+        {
+            var regenerated = UnityGeneratorTestHarness.Run(modifiedText);
+            UnityGeneratorTestHarness.AssertNoGeneratorErrors(regenerated);
+            UnityGeneratorTestHarness.AssertNoCompilationErrors(regenerated);
         }
     }
 

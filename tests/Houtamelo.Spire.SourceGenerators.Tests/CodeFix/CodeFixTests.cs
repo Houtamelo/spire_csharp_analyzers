@@ -16,10 +16,12 @@ public class CodeFixTests : CodeFixTestBase
             new ExhaustivenessAnalyzer(),
             new CS8509Suppressor(),
             new TypeSafetyAnalyzer(),
-            new SPIRE015ExhaustiveEnumSwitchAnalyzer());
+            new SPIRE015ExhaustiveEnumSwitchAnalyzer(),
+            new RecordVariantDeclarationAnalyzer());
 
     protected override ImmutableArray<CodeFixProvider> GetCodeFixes()
         => ImmutableArray.Create<CodeFixProvider>(
             new AddMissingArmsCodeFix(),
-            new FixFieldTypeCodeFix());
+            new FixFieldTypeCodeFix(),
+            new RecordVariantSerializationCodeFix());
 }

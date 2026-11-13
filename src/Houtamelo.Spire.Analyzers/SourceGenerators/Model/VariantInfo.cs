@@ -14,7 +14,17 @@ internal sealed record VariantInfo(
     /// False when Unity alias validation rejected the former name. The original
     /// value remains available for diagnostics, but emitters must not generate
     /// alias-only declarations or restore branches for it.
-    bool FormerlySerializedAsIsValid = true
+    bool FormerlySerializedAsIsValid = true,
+    /// True when the canonical payload is an authored nested record struct.
+    bool IsRecordStruct = false,
+    /// True when the authored record declaration is partial.
+    bool IsPartial = false,
+    /// Names of positional properties explicitly declared by the user.
+    EquatableArray<string> AuthoredPropertyNames = default,
+    /// True when the authored record already carries SerializableAttribute.
+    bool HasSerializableAttribute = false,
+    /// True when the authored record is readonly.
+    bool IsReadonly = false
 ) : IEquatable<VariantInfo>
 {
     public bool HasFormerlySerializedAs

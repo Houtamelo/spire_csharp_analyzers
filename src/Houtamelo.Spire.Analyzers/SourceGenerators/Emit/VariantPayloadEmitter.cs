@@ -41,6 +41,48 @@ internal static class VariantPayloadEmitter
         return sb.ToString();
     }
 
+    private static void EmitAuthoredRecordDeclarations(
+        SourceBuilder sb,
+        UnionDeclaration union,
+        IReadOnlyList<VariantInfo> variants)
+    {
+        if (!union.EmitUnitySerialization)
+            return;
+
+        foreach (var variant in variants)
+        {
+            if (!variant.IsRecordStruct || !variant.IsPartial)
+                continue;
+
+            if (!variant.HasSerializableAttribute)
+            {
+                var serializable = GeneratedAliasEmitter.AttributeReference(
+                    union,
+                    "Serializable",
+                    "global::System.SerializableAttribute");
+                sb.AppendLine($"[{serializable}]");
+            }
+
+            var readonlyModifier = variant.IsReadonly ? "readonly " : string.Empty;
+            sb.AppendLine($"{Access(variant.AccessibilityKeyword)}partial {readonlyModifier}record struct {IdentifierUtility.Escape(variant.Name)}");
+            sb.OpenBrace();
+            foreach (var field in variant.Fields)
+            {
+                if (variant.AuthoredPropertyNames.Contains(field.Name))
+                    continue;
+
+                var attribute = field.IsUnityManagedReference
+                    ? GeneratedAliasEmitter.AttributeReference(union, "SerializeReference", "global::UnityEngine.SerializeReference")
+                    : GeneratedAliasEmitter.AttributeReference(union, "SerializeField", "global::UnityEngine.SerializeField");
+                var setter = variant.IsReadonly ? "init" : "set";
+                sb.AppendLine($"[field: {attribute}]");
+                sb.AppendLine($"public {field.TypeFullName} {IdentifierUtility.Escape(field.Name)} {{ get; {setter}; }} = {IdentifierUtility.Escape(field.Name)};");
+            }
+            sb.CloseBrace();
+            sb.AppendLine();
+        }
+    }
+
     private static void EmitTypes(
         SourceBuilder sb,
         UnionDeclaration union,
@@ -171,6 +213,12 @@ internal static class VariantPayloadEmitter
         sb.OpenBrace();
         foreach (var variant in variants)
         {
+            if (variant.IsRecordStruct)
+            {
+                if (HasAlias(variant))
+                    EmitPayloadType(sb, union, variant, variant.FormerlySerializedAs!);
+                continue;
+            }
             EmitPayloadType(sb, union, variant, variant.Name);
             if (HasAlias(variant))
                 EmitPayloadType(sb, union, variant, variant.FormerlySerializedAs!);
@@ -191,6 +239,12 @@ internal static class VariantPayloadEmitter
             sb.AppendLine($"[{GeneratedAliasEmitter.AttributeReference(union, "Preserve", "global::UnityEngine.Scripting.PreserveAttribute")}]");
         if (union.IsUnitySerializable)
             sb.AppendLine($"[{GeneratedAliasEmitter.AttributeReference(union, "Serializable", "global::System.SerializableAttribute")}]");
+        if (variant.IsRecordStruct && !string.Equals(variantName, variant.Name, StringComparison.Ordinal))
+        {
+            EmitRecordAliasWithExplicitFields(sb, union, variant, name, typeParams, constraints);
+            return;
+        }
+
         sb.AppendLine($"public struct {IdentifierUtility.Escape(name)}{typeParams}{constraints}");
         sb.OpenBrace();
         for (var index = 0; index < variant.Fields.Length; index++)
@@ -244,6 +298,81 @@ internal static class VariantPayloadEmitter
         sb.AppendLine();
     }
 
+    private static void EmitRecordAliasWithExplicitFields(
+        SourceBuilder sb,
+        UnionDeclaration union,
+        VariantInfo variant,
+        string name,
+        string typeParams,
+        string constraints)
+    {
+        sb.AppendLine($"public record struct {IdentifierUtility.Escape(name)}{typeParams}{constraints}");
+        sb.OpenBrace();
+        foreach (var field in variant.Fields)
+        {
+            var fieldName = IdentifierUtility.Escape(field.Name);
+            var attribute = union.EmitUnitySerialization
+                ? field.IsUnityManagedReference
+                    ? $"[{GeneratedAliasEmitter.AttributeReference(union, "SerializeReference", "global::UnityEngine.SerializeReference")}] "
+                    : $"[{GeneratedAliasEmitter.AttributeReference(union, "SerializeField", "global::UnityEngine.SerializeField")}] "
+                : string.Empty;
+            var formerlySerializedAs = union.EmitUnitySerialization
+                ? "global::UnityEngine.Serialization.FormerlySerializedAsAttribute"
+                : string.Empty;
+            var formerField = string.IsNullOrEmpty(formerlySerializedAs)
+                ? string.Empty
+                : $"[{formerlySerializedAs}(\"_{IdentifierUtility.SerializedName(field.Name)}\")] ";
+            var formerProperty = string.IsNullOrEmpty(formerlySerializedAs)
+                ? string.Empty
+                : $"[field: {formerlySerializedAs}(\"_{IdentifierUtility.SerializedName(field.Name)}\")] ";
+            if (field.IsAuthoredField)
+                sb.AppendLine($"{formerField}{attribute}public {field.TypeFullName} {fieldName};");
+            else
+            {
+                var propertyAttribute = !union.EmitUnitySerialization
+                    ? string.Empty
+                    : field.IsUnityManagedReference
+                        ? GeneratedAliasEmitter.AttributeReference(union, "SerializeReference", "global::UnityEngine.SerializeReference")
+                        : GeneratedAliasEmitter.AttributeReference(union, "SerializeField", "global::UnityEngine.SerializeField");
+                var propertyAttributeText = string.IsNullOrEmpty(propertyAttribute)
+                    ? string.Empty
+                    : $"[field: {propertyAttribute}] ";
+                sb.AppendLine($"{formerProperty}{propertyAttributeText}public {field.TypeFullName} {fieldName} {{ get; set; }}");
+            }
+        }
+
+        var parameters = string.Join(", ", variant.Fields.Select(field =>
+            $"{field.TypeFullName} {IdentifierUtility.Escape(field.Name)}"));
+        sb.AppendLine();
+        sb.AppendLine($"public {IdentifierUtility.Escape(name)}({parameters})");
+        sb.OpenBrace();
+        foreach (var field in variant.Fields)
+        {
+            var fieldName = IdentifierUtility.Escape(field.Name);
+            sb.AppendLine($"this.{fieldName} = {fieldName};");
+        }
+        sb.CloseBrace();
+
+        var deconstructParameters = string.Join(", ", variant.Fields.Select(field =>
+            $"out {field.TypeFullName} {IdentifierUtility.Escape(field.Name)}"));
+        sb.AppendLine();
+        if (variant.Fields.Length == 0)
+            sb.AppendLine("public readonly void Deconstruct() {}");
+        else
+        {
+            sb.AppendLine($"public readonly void Deconstruct({deconstructParameters})");
+            sb.OpenBrace();
+            foreach (var field in variant.Fields)
+            {
+                var fieldName = IdentifierUtility.Escape(field.Name);
+                sb.AppendLine($"{fieldName} = this.{fieldName};");
+            }
+            sb.CloseBrace();
+        }
+        sb.CloseBrace();
+        sb.AppendLine();
+    }
+
     private static void EmitUnion(SourceBuilder sb, UnionDeclaration union, IReadOnlyList<VariantInfo> variants, StorageLayout layout)
     {
         var typeParams = DeclarationFormatting.FormatEscapedTypeParameters(union.TypeParameters);
@@ -268,6 +397,10 @@ internal static class VariantPayloadEmitter
             : $" : {unionInterface}<{unionType}.Kind>{unityInterface}{equalityInterfaces}";
         sb.AppendLine($"{access}{readonlyModifier}{refModifier}partial {union.DeclarationKeyword} {unionType}{interfaces}{constraints}");
         sb.OpenBrace();
+
+        EmitAuthoredRecordDeclarations(sb, union, variants);
+        if (variants.Any(variant => variant.IsRecordStruct && variant.IsPartial && union.EmitUnitySerialization))
+            sb.EnsureBlankLine();
 
         sb.AppendLine($"[{GeneratedAliasEmitter.AttributeReference(union, "EnforceExhaustiveness", "global::Houtamelo.Spire.EnforceExhaustivenessAttribute")}]");
         sb.AppendLine($"public enum Kind : {KindType(variants.Count)}");
@@ -318,7 +451,7 @@ internal static class VariantPayloadEmitter
         if (variants.Any(variant => variant.AccessibilityKeyword == "public"))
         {
             sb.AppendLine();
-            EmitImplicitConversions(sb, union, variants);
+            EmitImplicitConversions(sb, union, variants, layout);
         }
         sb.AppendLine();
         EmitAccessors(sb, union, variants, layout);
@@ -368,6 +501,8 @@ internal static class VariantPayloadEmitter
         for (var index = 0; index < variants.Count; index++)
         {
             var variant = variants[index];
+            if (variant.IsRecordStruct)
+                continue;
             var parameters = string.Join(", ", variant.Fields.Select(field =>
                 $"{field.TypeFullName} {IdentifierUtility.Escape(field.Name)}"));
             var factoryAccess = variant.AccessibilityKeyword == "private"
@@ -407,7 +542,8 @@ internal static class VariantPayloadEmitter
     private static void EmitImplicitConversions(
         SourceBuilder sb,
         UnionDeclaration union,
-        IReadOnlyList<VariantInfo> variants)
+        IReadOnlyList<VariantInfo> variants,
+        StorageLayout layout)
     {
         var unionType = IdentifierUtility.Escape(union.TypeName) +
             DeclarationFormatting.FormatEscapedTypeParameters(union.TypeParameters);
@@ -420,11 +556,36 @@ internal static class VariantPayloadEmitter
             parameterNames.Reserve(variant.Name);
             var parameterName = parameterNames.Next("variant");
             var payloadType = GeneratedAliasEmitter.VariantPayloadReference(union, variant.Name);
-            var values = variant.Fields.Select(field =>
-                $"{parameterName}.{IdentifierUtility.Escape(field.Name)}");
-            sb.AppendLine(
-                $"public static implicit operator {unionType}({payloadType} {parameterName}) => " +
-                $"{IdentifierUtility.Escape(variant.Name)}({string.Join(", ", values)});");
+            if (!variant.IsRecordStruct)
+            {
+                var values = variant.Fields.Select(field =>
+                    $"{parameterName}.{IdentifierUtility.Escape(field.Name)}");
+                sb.AppendLine(
+                    $"public static implicit operator {unionType}({payloadType} {parameterName}) => " +
+                    $"{IdentifierUtility.Escape(variant.Name)}({string.Join(", ", values)});");
+                continue;
+            }
+
+            sb.AppendLine($"public static implicit operator {unionType}({payloadType} {parameterName})");
+            sb.OpenBrace();
+            var localNames = new LocalNameAllocator(union, variant);
+            var arguments = new List<string> { $"Kind.{IdentifierUtility.Escape(variant.Name)}" };
+            var receiver = IdentifierUtility.Escape(parameterName) + ".";
+            if (layout.HasUnmanagedFields)
+                arguments.Add(EmitUnmanagedFactoryLocal(sb, union, variant, layout, localNames, receiver));
+            if (layout.HasManagedFields)
+                arguments.Add(EmitManagedFactoryLocal(sb, union, variant, layout, localNames, receiver));
+            for (var i = 0; i < layout.Slots.Count; i++)
+            {
+                if (layout.Slots[i].IsManaged)
+                    continue;
+                var field = layout.GetFieldForSlot(variant, i);
+                var localName = localNames.Next("storage" + i);
+                EmitTypedSlotLocal(sb, layout.Slots[i], field, localName, receiver);
+                arguments.Add(localName);
+            }
+            sb.AppendLine($"return new {unionType}({string.Join(", ", arguments)});");
+            sb.CloseBrace();
         }
     }
 
@@ -597,7 +758,8 @@ internal static class VariantPayloadEmitter
         UnionDeclaration union,
         VariantInfo variant,
         StorageLayout layout,
-        LocalNameAllocator localNames)
+        LocalNameAllocator localNames,
+        string fieldPrefix = "")
     {
         var entry = layout.UnmanagedVariants.FirstOrDefault(item => item.VariantName == variant.Name);
         var overlayType = $"{FieldsReference(union)}.Unmanaged";
@@ -611,7 +773,7 @@ internal static class VariantPayloadEmitter
         var variantName = localNames.Next(
             FieldNameResolver.CamelCase(IdentifierUtility.SerializedName(variant.Name)) + "Fields");
         var assignments = entry.Fields.Select(field =>
-            $"{IdentifierUtility.Escape(field.Name)} = {IdentifierUtility.Escape(field.Name)}");
+            $"{IdentifierUtility.Escape(field.Name)} = {fieldPrefix}{IdentifierUtility.Escape(field.Name)}");
         sb.AppendLine($"var {variantName} = new {FieldsReference(union)}.Unmanaged.{IdentifierUtility.Escape(entry.TypeName)} {{ {string.Join(", ", assignments)} }};");
         sb.AppendLine($"var {overlayName} = new {overlayType} {{ {IdentifierUtility.Escape(entry.FieldName)} = {variantName} }};");
         return overlayName;
@@ -622,7 +784,8 @@ internal static class VariantPayloadEmitter
         UnionDeclaration union,
         VariantInfo variant,
         StorageLayout layout,
-        LocalNameAllocator localNames)
+        LocalNameAllocator localNames,
+        string fieldPrefix = "")
     {
         var managedName = localNames.Next("managedFields");
         var assignments = layout.Slots
@@ -632,7 +795,7 @@ internal static class VariantPayloadEmitter
                 var field = layout.GetFieldForSlot(variant, slot.Index);
                 if (field is null)
                     return $"_s{slot.Index} = default!";
-                var value = IdentifierUtility.Escape(field.Name);
+                var value = fieldPrefix + IdentifierUtility.Escape(field.Name);
                 return $"_s{slot.Index} = {value}";
             });
         sb.AppendLine($"var {managedName} = new {FieldsReference(union)}.Managed {{ {string.Join(", ", assignments)} }};");
@@ -643,7 +806,8 @@ internal static class VariantPayloadEmitter
         SourceBuilder sb,
         StorageLayout.Slot slot,
         FieldInfo? field,
-        string localName)
+        string localName,
+        string fieldPrefix = "")
     {
         if (field is null)
         {
@@ -651,7 +815,7 @@ internal static class VariantPayloadEmitter
             return;
         }
 
-        sb.AppendLine($"var {localName} = {IdentifierUtility.Escape(field.Name)};");
+        sb.AppendLine($"var {localName} = {fieldPrefix}{IdentifierUtility.Escape(field.Name)};");
     }
 
     private static void EmitAccessors(SourceBuilder sb, UnionDeclaration union, IReadOnlyList<VariantInfo> variants, StorageLayout layout)

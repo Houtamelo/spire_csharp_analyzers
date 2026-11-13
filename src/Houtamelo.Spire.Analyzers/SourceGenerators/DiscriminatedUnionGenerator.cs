@@ -50,6 +50,11 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
             var (((union, _), _), compilation) = pair;
             if (union?.Diagnostic is { } diagnostic)
                 ReportUnionDiagnostic(ctx, diagnostic, compilation);
+            if (union is not null)
+            {
+                foreach (var additional in union.Diagnostics)
+                    ReportUnionDiagnostic(ctx, additional, compilation);
+            }
         });
 
         context.RegisterSourceOutput(combined, static (ctx, pair) =>

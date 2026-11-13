@@ -221,7 +221,7 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
                     propertySubpattern.Pattern,
                     memberType,
                     variantName,
-                    GetPayloadFieldIndex(payloadType, memberName),
+                    GetPayloadFieldIndex(unionType, variantName, memberName),
                     expectedAsVar: true);
             }
 
@@ -229,7 +229,24 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
         }
 
         if (recursive.DeconstructSymbol is not IMethodSymbol deconstruct)
+        {
+            // Roslyn may leave the DeconstructSymbol unset when the source has
+            // the wrong positional arity. The payload schema is still available
+            // from the union declaration, so preserve SPIRE012 for that case.
+            var expectedFields = UnionTypeInfo.GetVariantFields(unionType, variantName);
+            if (UnionTypeInfo.IsRecordVariant(unionType, variantName) &&
+                !recursive.DeconstructionSubpatterns.IsEmpty &&
+                recursive.DeconstructionSubpatterns.Length != expectedFields.Length)
+            {
+                ctx.ReportDiagnostic(Diagnostic.Create(
+                    AnalyzerDescriptors.SPIRE012_FieldCountMismatch,
+                    recursive.Syntax.GetLocation(),
+                    variantName,
+                    expectedFields.Length,
+                    recursive.DeconstructionSubpatterns.Length));
+            }
             return true;
+        }
 
         var subpatterns = recursive.DeconstructionSubpatterns;
         for (var index = 0; index < subpatterns.Length && index < deconstruct.Parameters.Length; index++)
@@ -348,16 +365,15 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
         return false;
     }
 
-    private static int GetPayloadFieldIndex(INamedTypeSymbol payloadType, string memberName)
+    private static int GetPayloadFieldIndex(
+        INamedTypeSymbol unionType,
+        string variantName,
+        string memberName)
     {
-        var properties = payloadType.GetMembers()
-            .OfType<IPropertySymbol>()
-            .Where(property => property.GetMethod is not null &&
-                property.SetMethod is null)
-            .ToArray();
-        for (var index = 0; index < properties.Length; index++)
+        var fields = UnionTypeInfo.GetVariantFields(unionType, variantName);
+        for (var index = 0; index < fields.Length; index++)
         {
-            if (string.Equals(properties[index].Name, memberName.TrimStart('@'), System.StringComparison.Ordinal))
+            if (string.Equals(fields[index].Name, memberName.TrimStart('@'), System.StringComparison.Ordinal))
                 return index;
         }
 
@@ -464,17 +480,9 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
     private static ImmutableArray<ITypeSymbol>? GetVariantFieldTypes(
         INamedTypeSymbol unionType, string variantName)
     {
-        // Look for the static factory method (e.g., `public static partial Shape Circle(double radius)`)
-        var factoryMethod = unionType.GetMembers(variantName)
-            .OfType<IMethodSymbol>()
-            .FirstOrDefault(m => m.IsStatic && m.MethodKind == MethodKind.Ordinary);
-
-        if (factoryMethod is null)
-            return null;
-
-        return factoryMethod.Parameters
-            .Select(p => p.Type)
-            .ToImmutableArray();
+        var fields = UnionTypeInfo.GetVariantFields(unionType, variantName);
+        return fields.IsDefault ? ImmutableArray<ITypeSymbol>.Empty :
+            fields.Select(parameter => parameter.Type).ToImmutableArray();
     }
 
     /// Analyzes a property pattern (e.g., { kind: Shape.Kind.Circle, radius: string bad })
@@ -578,17 +586,11 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
         if (variantName is null || memberName is null)
             return 0;
 
-        var factoryMethod = unionType.GetMembers(variantName)
-            .OfType<IMethodSymbol>()
-            .FirstOrDefault(m => m.IsStatic && m.MethodKind == MethodKind.Ordinary);
-
-        if (factoryMethod is null)
-            return 0;
-
-        for (int i = 0; i < factoryMethod.Parameters.Length; i++)
+        var fields = UnionTypeInfo.GetVariantFields(unionType, variantName);
+        for (int i = 0; i < fields.Length; i++)
         {
-            if (factoryMethod.Parameters[i].Name == memberName ||
-                memberName == FieldNameResolver.CamelCase(variantName) + "_" + factoryMethod.Parameters[i].Name)
+            if (fields[i].Name == memberName ||
+                memberName == FieldNameResolver.CamelCase(variantName) + "_" + fields[i].Name)
                 return i;
         }
 

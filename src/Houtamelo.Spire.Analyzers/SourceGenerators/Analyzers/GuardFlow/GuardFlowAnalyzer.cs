@@ -1603,6 +1603,12 @@ internal static class GuardFlowAnalyzer
             {
                 if (report && !IsInsideNameOf(property))
                     ReportAccess(property, access, state, pattern);
+                if (RequiresOpaqueRecordPayloadConstruction(access.Member))
+                {
+                    state.ApplyOpaqueEffects(new EffectSummary(
+                        mayInvokeEscapedCallbacks: true,
+                        mayWriteShared: true));
+                }
                 return;
             }
 
@@ -3224,6 +3230,18 @@ internal static class GuardFlowAnalyzer
             {
                 return true;
             }
+
+            // A record payload is authored code. Only compiler-synthesized
+            // positional properties or properties emitted in a generated
+            // partial declaration are trusted as pure projections. An
+            // explicitly authored getter may mutate shared union storage even
+            // though it is reached through a generated accessor.
+            if (property.ContainingType is INamedTypeSymbol recordType &&
+                IsAuthoredRecordVariantType(recordType))
+            {
+                return property.IsImplicitlyDeclared || IsGeneratedDeclaration(property);
+            }
+
             return instance is IPropertyReferenceOperation accessor &&
                 TryGetAccessInfo(accessor, _duAttribute, out _, _accessCache);
         }
@@ -3262,15 +3280,126 @@ internal static class GuardFlowAnalyzer
             // payload fields. The surrounding generated accessor is the stable
             // marker; user-defined Deconstruct methods on arbitrary structs are
             // opaque and may mutate shared state.
-            return receiver is IPropertyReferenceOperation property &&
-                IsPureGeneratedProjection(property);
+            if (receiver is not IPropertyReferenceOperation property ||
+                !IsPureGeneratedProjection(property))
+            {
+                return false;
+            }
+
+            if (method.ContainingType is INamedTypeSymbol recordType &&
+                IsAuthoredRecordVariantType(recordType))
+            {
+                return (method.IsImplicitlyDeclared || IsGeneratedDeclaration(method)) &&
+                    AreRecordPositionalMembersPure(recordType);
+            }
+
+            return true;
         }
 
         private bool IsPureGeneratedProjection(IPropertyReferenceOperation property)
-            => TryGetAccessInfo(property, _duAttribute, out _, _accessCache) ||
-               IsGeneratedPureProperty(property.Property, property.Instance) ||
-               property.Instance is IPropertyReferenceOperation accessor &&
-               TryGetAccessInfo(accessor, _duAttribute, out _, _accessCache);
+        {
+            if (TryGetAccessInfo(property, _duAttribute, out _, _accessCache))
+                return true;
+
+            if (property.Property.ContainingType is INamedTypeSymbol recordType &&
+                IsAuthoredRecordVariantType(recordType))
+            {
+                return IsGeneratedPureProperty(property.Property, property.Instance);
+            }
+
+            return IsGeneratedPureProperty(property.Property, property.Instance) ||
+                property.Instance is IPropertyReferenceOperation accessor &&
+                TryGetAccessInfo(accessor, _duAttribute, out _, _accessCache);
+        }
+
+        private bool IsAuthoredRecordVariantType(INamedTypeSymbol type)
+        {
+            if (type.ContainingType is not INamedTypeSymbol unionType ||
+                UnionTypeInfo.TryCreate(unionType, _duAttribute) is not { IsStructUnion: true })
+            {
+                return false;
+            }
+
+            var recordType = UnionTypeInfo.GetRecordVariantType(unionType, type.Name);
+            return recordType is not null &&
+                (SymbolEqualityComparer.Default.Equals(recordType, type) ||
+                 SymbolEqualityComparer.Default.Equals(
+                     recordType.OriginalDefinition,
+                     type.OriginalDefinition));
+        }
+
+        private static bool IsGeneratedDeclaration(ISymbol symbol)
+            => symbol.DeclaringSyntaxReferences.Any(reference =>
+                reference.SyntaxTree.FilePath.EndsWith(
+                    ".g.cs",
+                    StringComparison.OrdinalIgnoreCase));
+
+        private bool AreRecordPositionalMembersPure(INamedTypeSymbol recordType)
+        {
+            if (recordType.ContainingType is not INamedTypeSymbol unionType)
+                return false;
+
+            foreach (var parameter in UnionTypeInfo.GetVariantFields(unionType, recordType.Name))
+            {
+                var property = recordType.GetMembers(parameter.Name)
+                    .OfType<IPropertySymbol>()
+                    .FirstOrDefault(candidate => candidate.GetMethod is not null);
+                if (property is null || !IsGeneratedPureProperty(property, null))
+                    return false;
+            }
+
+            return true;
+        }
+
+        private bool RequiresOpaqueRecordPayloadConstruction(ISymbol payloadAccessor)
+        {
+            if (payloadAccessor is not IPropertySymbol property ||
+                property.Type is not INamedTypeSymbol recordType ||
+                !IsAuthoredRecordVariantType(recordType))
+            {
+                return false;
+            }
+
+            foreach (var reference in recordType.DeclaringSyntaxReferences)
+            {
+                var declaration = reference.GetSyntax() as RecordDeclarationSyntax;
+                if (declaration is null ||
+                    declaration.SyntaxTree.FilePath.EndsWith(
+                        ".g.cs",
+                        StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var isFieldless = recordType.ContainingType is INamedTypeSymbol unionType &&
+                    UnionTypeInfo.GetVariantFields(unionType, recordType.Name).Length == 0;
+
+                foreach (var member in declaration.Members)
+                {
+                    if (isFieldless && member is ConstructorDeclarationSyntax constructor &&
+                        constructor.ParameterList.Parameters.Count == 0 &&
+                        (constructor.Body is not null || constructor.ExpressionBody is not null))
+                    {
+                        return true;
+                    }
+
+                    if (member is PropertyDeclarationSyntax authoredProperty &&
+                        authoredProperty.Initializer is not null)
+                    {
+                        return true;
+                    }
+
+                    if (member is FieldDeclarationSyntax authoredFields &&
+                        !authoredFields.Modifiers.Any(modifier =>
+                            modifier.IsKind(SyntaxKind.StaticKeyword)) &&
+                        authoredFields.Declaration.Variables.Any(variable =>
+                            variable.Initializer is not null))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
 
         private static bool IsIdentityConversion(IConversionOperation conversion)
             => conversion.Conversion.IsIdentity && !conversion.Conversion.IsUserDefined;
@@ -3308,6 +3437,49 @@ internal static class GuardFlowAnalyzer
                 variant = invocation.TargetMethod.Name;
                 return true;
             }
+
+            // Authored record-struct payloads use the generated implicit
+            // payload-to-union conversion instead of a static factory. Treat
+            // that conversion as a known variant construction, but only when
+            // Roslyn binds the conversion operator to the union and the operand
+            // is the canonical authored record type. User-defined conversions
+            // on unrelated types remain opaque.
+            if (instance is IConversionOperation conversion &&
+                conversion.Conversion.IsUserDefined &&
+                conversion.OperatorMethod is IMethodSymbol operatorMethod &&
+                operatorMethod.MethodKind == MethodKind.UserDefinedOperator &&
+                operatorMethod.Name == "op_Implicit" &&
+                info.KindEnumType?.ContainingType is INamedTypeSymbol unionType &&
+                operatorMethod.ContainingType is INamedTypeSymbol operatorOwner &&
+                (SymbolEqualityComparer.Default.Equals(operatorOwner, unionType) ||
+                 SymbolEqualityComparer.Default.Equals(
+                     operatorOwner.OriginalDefinition,
+                     unionType.OriginalDefinition)) &&
+                conversion.Type is INamedTypeSymbol convertedType &&
+                (SymbolEqualityComparer.Default.Equals(convertedType, unionType) ||
+                 SymbolEqualityComparer.Default.Equals(
+                     convertedType.OriginalDefinition,
+                     unionType.OriginalDefinition)))
+            {
+                var operandType = StripIdentityConversions(conversion.Operand).Type as INamedTypeSymbol;
+                if (operandType is not null)
+                {
+                    foreach (var candidate in info.VariantNames)
+                    {
+                        var recordType = UnionTypeInfo.GetRecordVariantType(unionType, candidate);
+                        if (recordType is not null &&
+                            (SymbolEqualityComparer.Default.Equals(operandType, recordType) ||
+                             SymbolEqualityComparer.Default.Equals(
+                                 operandType.OriginalDefinition,
+                                 recordType.OriginalDefinition)))
+                        {
+                            variant = candidate;
+                            return true;
+                        }
+                    }
+                }
+            }
+
             variant = string.Empty;
             return false;
         }
