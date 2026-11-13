@@ -242,6 +242,17 @@ The cover and card are ready for the first release. The publisher is handling
 the demonstration video in a separate session. Use the exhaustive-matching
 workflow above as the opening video demonstration.
 
+## Organic promotion
+
+The publisher selected organic promotion with no initial paid spend. They use
+Discord and are willing to answer questions on Discord and Reddit. The video
+is being produced separately.
+
+[Copy-and-paste material per target](../marketing/outreach/00-start-here.md)
+covers Unity Discussions, r/Unity3D, r/UnityAssets, Discord, YouTube, and three
+creator contacts. Each document separates complete vetting-period copy from
+complete publication copy and uses the publisher-supplied product URL.
+
 ## Submission handoff
 
 The publisher chose a regular price of **20 USD**. A publisher profile already
