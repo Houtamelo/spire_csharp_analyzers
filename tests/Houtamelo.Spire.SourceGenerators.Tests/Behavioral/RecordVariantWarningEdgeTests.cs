@@ -12,6 +12,7 @@ namespace Houtamelo.Spire.SourceGenerators.Tests.Behavioral;
 
 /// Regression coverage for record-variant declaration warnings that depend on
 /// authored syntax rather than generated partial declarations.
+[Trait("Environment", "Unity")]
 public sealed class RecordVariantWarningEdgeTests
 {
     [Fact]

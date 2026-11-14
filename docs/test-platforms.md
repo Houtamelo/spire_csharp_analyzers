@@ -26,6 +26,8 @@ Tests that load installed Unity reference assemblies carry
 `[Trait("Environment", "Unity")]`; mixed tests keep their portable controls
 separate. The CoreCLR entry point excludes only that trait. To verify that no
 Unity installation is consulted, set `SPIRE_UNITY_EDITOR` to a nonexistent path.
+Code-fix fixtures marked `//@ unity` run through the Unity-tagged `VerifyUnity`
+theory; their portable siblings remain in `Verify`.
 
 Run the Unity-reference generator suite with an installed Editor:
 

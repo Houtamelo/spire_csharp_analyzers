@@ -17,6 +17,7 @@ using Xunit;
 
 namespace Houtamelo.Spire.SourceGenerators.Tests.Behavioral;
 
+[Trait("Environment", "Unity")]
 public sealed class RecordVariantSerializationConflictTests
 {
     [Fact]

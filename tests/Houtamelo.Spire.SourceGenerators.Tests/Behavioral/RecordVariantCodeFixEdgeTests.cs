@@ -18,6 +18,7 @@ using Xunit;
 namespace Houtamelo.Spire.SourceGenerators.Tests.Behavioral;
 
 /// Roslyn workspace coverage for authored record-variant serialization fixes.
+[Trait("Environment", "Unity")]
 public sealed class RecordVariantCodeFixEdgeTests
 {
     [Fact]

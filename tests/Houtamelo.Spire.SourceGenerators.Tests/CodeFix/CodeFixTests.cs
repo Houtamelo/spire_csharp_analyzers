@@ -1,15 +1,22 @@
 using System.Collections.Immutable;
+using System.Threading.Tasks;
 using Houtamelo.Spire.Analyzers.Rules;
 using Houtamelo.Spire.Analyzers.SourceGenerators.Analyzers;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Houtamelo.Spire.CodeFixes;
+using Xunit;
 
 namespace Houtamelo.Spire.SourceGenerators.Tests.CodeFix;
 
 public class CodeFixTests : CodeFixTestBase
 {
     protected override string Category => "CodeFix";
+
+    [Theory]
+    [Trait("Environment", "Unity")]
+    [CodeFixCaseDiscovery(requiresUnity: true)]
+    public Task VerifyUnity(string caseName) => VerifyCase(caseName);
 
     protected override ImmutableArray<DiagnosticAnalyzer> GetAnalyzers()
         => ImmutableArray.Create<DiagnosticAnalyzer>(

@@ -28,7 +28,9 @@ public abstract class CodeFixTestBase
 
     [Theory]
     [CodeFixCaseDiscovery]
-    public async Task Verify(string caseName)
+    public Task Verify(string caseName) => VerifyCase(caseName);
+
+    protected async Task VerifyCase(string caseName)
     {
         if (caseName == CodeFixCaseDiscoveryAttribute.NoCasesSentinel)
             return;
@@ -164,6 +166,12 @@ public abstract class CodeFixTestBase
 public sealed class CodeFixCaseDiscoveryAttribute : DataAttribute
 {
     public const string NoCasesSentinel = "__NO_CASES__";
+    private readonly bool requiresUnity;
+
+    public CodeFixCaseDiscoveryAttribute(bool requiresUnity = false)
+    {
+        this.requiresUnity = requiresUnity;
+    }
 
     public override IEnumerable<object[]> GetData(MethodInfo testMethod)
     {
@@ -183,7 +191,9 @@ public sealed class CodeFixCaseDiscoveryAttribute : DataAttribute
         bool found = false;
         foreach (var dir in Directory.GetDirectories(casesDir).OrderBy(d => d))
         {
-            if (File.Exists(Path.Combine(dir, "before.cs")))
+            var beforePath = Path.Combine(dir, "before.cs");
+            if (File.Exists(beforePath) &&
+                File.ReadAllText(beforePath).Contains("//@ unity", StringComparison.Ordinal) == requiresUnity)
             {
                 found = true;
                 yield return new object[] { Path.GetFileName(dir) };
