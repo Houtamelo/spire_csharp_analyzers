@@ -159,7 +159,12 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
     {
         if (type?.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
             return type.TypeArguments[0] as INamedTypeSymbol;
-        return type;
+
+        // Nullable reference annotations belong to the switch subject, not
+        // the union's nested variant type name. Remove only the outer
+        // annotation; annotations on generic arguments remain intact.
+        return type?.WithNullableAnnotation(NullableAnnotation.NotAnnotated)
+            as INamedTypeSymbol;
     }
 
     private static bool IsDiscriminatedUnion(INamedTypeSymbol type)
@@ -608,7 +613,14 @@ public sealed class AddMissingArmsCodeFix : CodeFixProvider
             newArms.Add(arm.WithLeadingTrivia(leadingTrivia));
         }
 
-        var updatedSwitch = switchExpr.AddArms(newArms.ToArray());
+        var updatedSwitch = missingVariants.Any(variant =>
+                string.Equals(variant.Trim(), "null", StringComparison.Ordinal))
+            ? AppendExpressionArms(
+                switchExpr,
+                newArms,
+                GetLineEnding(switchExpr.SyntaxTree.GetText().ToString()),
+                leadingTrivia)
+            : switchExpr.AddArms(newArms.ToArray());
         var newRoot = root.ReplaceNode(switchExpr, updatedSwitch);
         return document.WithSyntaxRoot(newRoot);
     }

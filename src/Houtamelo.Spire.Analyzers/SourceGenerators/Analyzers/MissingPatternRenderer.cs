@@ -67,7 +67,9 @@ internal static class MissingPatternRenderer
 
         canUseVariantTemplates = unionInfo is not null &&
             allWholeRoot &&
-            !rendered.Any(entry => entry.Pattern.Equals("null", StringComparison.Ordinal));
+            // A variant spelled @null shares the flattened diagnostic name
+            // with the nullable root null case, so preserve exact patterns.
+            !unionInfo.VariantNames.Contains("null", StringComparer.Ordinal);
 
         return rendered.Select(entry => entry.Pattern).ToImmutableArray();
     }
@@ -135,6 +137,10 @@ internal static class MissingPatternRenderer
         if (TryRenderNullOnly(root.Remaining, out var isNull) && isNull)
         {
             pattern = "null";
+            // A nullable root null is a complete missing case, just like a
+            // whole variant. This lets the code fix keep payload captures for
+            // the other whole variants in the same nullable switch.
+            isWholeRoot = true;
             return true;
         }
 

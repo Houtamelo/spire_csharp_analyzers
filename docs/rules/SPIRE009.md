@@ -52,6 +52,8 @@ New struct arms use the shorter predicate and deconstruct the variant payload:
 field values. Local names are uniquified against the enclosing scope. Existing
 arms remain in place. Added statement cases end immediately before the closing
 brace, without a trailing blank line; comments and directives are preserved.
+Missing whole variants on nullable union subjects retain these captures and
+receive a separate `null` arm when it is missing.
 
 For restricted payloads and class/interface hierarchies, the fix inserts the
 complete missing patterns computed by the checker, including property paths,

@@ -30,11 +30,14 @@ comma-separated string, because patterns themselves may contain commas.
 
 When a missing region is an entire root DU variant and the existing template
 already produces the approved capture form, `UseVariantTemplates=true` keeps
-the current `AddMissingArms_Property_*` output byte/structure equivalent. For
-restricted payload regions, null, non-DU hierarchies, and any case whose
-capture would be unsound, `UseVariantTemplates=false` and the provider inserts
-the parsed full pattern. SPIRE015 enum members always use exact patterns so an
-enum member named `@null` cannot be confused with nullable `null`.
+the current `AddMissingArms_Property_*` output byte/structure equivalent. A
+missing root `null` may accompany whole-variant templates and is appended as
+a separate literal arm. For restricted payload regions, non-DU hierarchies,
+and any case whose capture would be unsound, `UseVariantTemplates=false` and
+the provider inserts the parsed full pattern. A union variant named `@null`
+also requires exact patterns to distinguish it from the root null case.
+SPIRE015 enum members always use exact patterns so an enum member named
+`@null` cannot be confused with nullable `null`.
 
 The exact pattern metadata must preserve the correlation between the root
 variant and every nested constraint. Flattening all missing enum/bool values
@@ -78,8 +81,26 @@ current fixtures.
 
 The existing `AddMissingArms_Property_*` cases must continue to use their
 legacy `Is{Variant}: true`/capture templates when a whole root variant is the
-missing region. The exact-shape rows above must use `MissingPatternN` because
-substituting a full variant template would erase the payload restriction.
+missing region, including when root `null` is also missing. Restricted payload
+rows must use `MissingPatternN` because substituting a full variant template
+would erase the payload restriction.
+
+### Nullable union payload captures
+
+These regression pairs use the same real-workspace compile, emit, and
+reanalyze checks as the exact-shape cases. Missing whole variants retain
+their payload captures when the root null case is also missing. Restricted
+payload gaps continue to use exact patterns.
+
+| Case name | Required behavior |
+|-----------|-------------------|
+| `SPIRE009_Exact_NullableStructFieldedStatement` | Empty switch statement on a nullable method-based union. Add fieldless and fielded variants in declaration order, capture every positional field, then append `case null:`. Include a nullable reference field. |
+| `SPIRE009_Exact_NullableStructFieldedExpression` | Nullable method-based union with one whole variant already covered. Add only the missing fielded variants, with captures, followed by `null`. |
+| `SPIRE009_Exact_NullableMixedRecordFieldedExpression` | Nullable generic struct union mixing a method variant and a positional record-struct variant. Capture the record's fields in declaration order, preserving the constructed generic type and nullable reference field, and add `null`. |
+| `SPIRE009_Exact_NullableStructNullAlreadyCovered` | Existing `case null:` stays in place. Missing fielded variants still receive captures; no duplicate null case is added. |
+| `SPIRE009_Exact_NullableStructRestrictedPayloadAndNull` | Existing arms cover one boolean value of a variant and all other variants. Add the exact opposite boolean payload pattern and a root `null` arm; do not broaden the payload gap into a whole-variant capture. |
+| `SPIRE009_Exact_NullableStructEscapedNullVariant` | A variant factory named `@null(int value)` and root `null` are both missing. Preserve separate exact `{ Isnull: true }` and `null` patterns; flat variant names cannot distinguish the two. |
+| `SPIRE009_Exact_NullableRecordDUFieldedExpression` | Nullable generic record union `Option<int>?` covers `None` only. Add `Option<int>.Some(int Value)` and a separate `null`, preserving constructed type qualification and positional captures. |
 
 ## Integration assertions
 
