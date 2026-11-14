@@ -1,3 +1,13 @@
+## Release 6.1.0
+
+### New Rules
+
+Rule ID | Category | Severity | Notes
+--------|----------|----------|------
+SPIRE028 | Correctness | Warning | Record variant needs serialization attributes
+SPIRE029 | Correctness | Warning | Authored positional member participates in payload reconstruction
+SPIRE_DU019 | SourceGeneration | Error | Invalid record variant declaration
+
 ## Release 4.7.0
 
 ### New Rules

@@ -1,5 +1,17 @@
 # Changelog
 
+## 6.1.0
+
+- Generate union/union and union/payload equality and hashing from the variant
+  tag and active logical fields, excluding serialization payloads and caches.
+- Allow public nested `[Variant] record struct` payloads alongside method
+  variants. Record-struct syntax requires C# 10 or newer.
+- Add automatic serialization attributes for partial record variants,
+  serialization warnings and fixes (SPIRE028), and a warning for authored
+  positional members that affect reconstruction (SPIRE029).
+- Preserve field captures when adding missing nullable-union switch arms,
+  including a separate missing `null` case.
+
 ## 6.0.0
 
 - Bundle `Houtamelo.Spire.Functional.dll` and its XML documentation alongside

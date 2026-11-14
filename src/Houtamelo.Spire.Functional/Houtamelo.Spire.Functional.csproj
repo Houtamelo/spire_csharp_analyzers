@@ -6,8 +6,8 @@
     <!-- Generated union members do not have XML documentation. -->
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <PackageId>Houtamelo.Spire.Functional</PackageId>
-    <Version>6.0.0</Version>
-    <PackageReleaseNotes>First release: Result and nullable Option helpers for .NET Standard 2.0, with Spire analyzers and source generation supplied through the Houtamelo.Spire dependency. Release notes: https://github.com/Houtamelo/spire_csharp_analyzers/blob/v6.0.0/docs/releases/6.0.0.md</PackageReleaseNotes>
+    <Version>6.1.0</Version>
+    <PackageReleaseNotes>Update the Spire dependency with logical union equality, authored record-struct variants, and nullable-switch code-fix improvements. Release notes: https://github.com/Houtamelo/spire_csharp_analyzers/blob/v6.1.0/docs/releases/6.1.0.md</PackageReleaseNotes>
     <Authors>houtamelo</Authors>
     <Copyright>Copyright (c) 2026 houtamelo</Copyright>
     <Description>Functional programming utilities built on Houtamelo.Spire.</Description>

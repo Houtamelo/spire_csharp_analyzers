@@ -23,8 +23,6 @@ SPIRE013 | Correctness | Error | Attempting to access mismatched variant data
 SPIRE014 | Correctness | Warning | Attempting to access variant data without checking 'kind'
 SPIRE015 | Correctness | Error | Switch does not handle all members of [EnforceExhaustiveness] enum
 SPIRE016 | Correctness | Error | Operation may produce invalid value of [EnforceInitialization] enum
-SPIRE028 | Correctness | Warning | Record variant needs serialization attributes
-SPIRE029 | Correctness | Warning | Authored positional member participates in payload reconstruction
 SPIRE_DU002 | SourceGeneration | Error | ref struct not supported for [DiscriminatedUnion]
 SPIRE_DU003 | SourceGeneration | Warning | No [Variant] functions found
 SPIRE_DU006 | SourceGeneration | Error | System.Text.Json not referenced
@@ -37,4 +35,3 @@ SPIRE_DU015 | SourceGeneration | Error | Member conflicts with generated Unity s
 SPIRE_DU016 | SourceGeneration | Error | Unity serialization requires UnityEngine references
 SPIRE_DU017 | SourceGeneration | Error | Invalid or ambiguous Unity variant serialization alias
 SPIRE_DU018 | SourceGeneration | Error | Discriminated union cannot be nested in a generic type; generated API is retained
-SPIRE_DU019 | SourceGeneration | Error | Invalid record variant declaration
