@@ -81,4 +81,14 @@ internal static class AnalyzerDescriptors
         category: "Correctness",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor SPIRE030_ReadonlyRecordVariantSerialization = new(
+        id: "SPIRE030",
+        title: "Readonly record variant cannot serialize its positional data",
+        messageFormat: "Readonly variant '{0}' cannot serialize its positional data in Unity. Remove 'readonly' from the variant, or remove '[Serializable]' from union '{1}' if serialization is not intended.",
+        category: "Correctness",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Unity does not serialize readonly fields, including the backing fields of readonly record-struct positional properties. Serialization attributes and partial declarations do not remove this restriction.",
+        helpLinkUri: "https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/docs/rules/SPIRE030.md");
 }

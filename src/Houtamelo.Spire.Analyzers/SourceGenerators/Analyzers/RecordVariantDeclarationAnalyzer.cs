@@ -20,7 +20,8 @@ public sealed class RecordVariantDeclarationAnalyzer : DiagnosticAnalyzer
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
         ImmutableArray.Create(
             AnalyzerDescriptors.SPIRE028_RecordVariantSerialization,
-            AnalyzerDescriptors.SPIRE029_RecordVariantReconstruction);
+            AnalyzerDescriptors.SPIRE029_RecordVariantReconstruction,
+            AnalyzerDescriptors.SPIRE030_ReadonlyRecordVariantSerialization);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -90,18 +91,51 @@ public sealed class RecordVariantDeclarationAnalyzer : DiagnosticAnalyzer
         if (isUnitySerialization &&
             HasAttribute(union, serializableAttribute) &&
             !union.IsReadOnly &&
-            !union.IsRefLikeType)
+            !union.IsRefLikeType &&
+            !union.IsRecord)
         {
-            ReportSerializationWarningIfNeeded(
-                context,
-                recordVariant,
-                union,
-                declaration,
-                positionalParameters,
-                serializableAttribute,
-                serializeFieldAttribute,
-                serializeReferenceAttribute);
+            if (recordVariant.IsReadOnly && positionalParameters.Count > 0)
+            {
+                ReportReadonlySerializationWarning(
+                    context,
+                    recordVariant,
+                    union);
+            }
+            else
+            {
+                ReportSerializationWarningIfNeeded(
+                    context,
+                    recordVariant,
+                    union,
+                    declaration,
+                    positionalParameters,
+                    serializableAttribute,
+                    serializeFieldAttribute,
+                    serializeReferenceAttribute);
+            }
         }
+    }
+
+    private static void ReportReadonlySerializationWarning(
+        SymbolAnalysisContext context,
+        INamedTypeSymbol recordVariant,
+        INamedTypeSymbol union)
+    {
+        var readonlyDeclaration = recordVariant.DeclaringSyntaxReferences
+            .Select(reference => reference.GetSyntax())
+            .OfType<RecordDeclarationSyntax>()
+            .Where(declaration => IsUserLocation(declaration.SyntaxTree))
+            .FirstOrDefault(declaration => declaration.Modifiers.Any(SyntaxKind.ReadOnlyKeyword));
+        if (readonlyDeclaration is null)
+            return;
+
+        var readonlyToken = readonlyDeclaration.Modifiers
+            .First(modifier => modifier.IsKind(SyntaxKind.ReadOnlyKeyword));
+        context.ReportDiagnostic(Diagnostic.Create(
+            AnalyzerDescriptors.SPIRE030_ReadonlyRecordVariantSerialization,
+            readonlyToken.GetLocation(),
+            recordVariant.Name,
+            union.Name));
     }
 
     private static void ReportReconstructionWarnings(

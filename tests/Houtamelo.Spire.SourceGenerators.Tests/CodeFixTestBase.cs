@@ -44,11 +44,16 @@ public abstract class CodeFixTestBase
         // Preserve source trivia so code fixes can be validated against real comments.
         var usesUnityReferences = beforeSource.Contains("//@ unity", StringComparison.Ordinal);
         Compilation outputCompilation;
+        ImmutableArray<Microsoft.CodeAnalysis.Diagnostic> generatorDiagnostics;
         var userSourcePath = usesUnityReferences ? "unity-case.cs" : "case.cs";
         if (usesUnityReferences)
-            outputCompilation = UnityGeneratorTestHarness.Run(beforeSource).OutputCompilation;
+        {
+            var generated = UnityGeneratorTestHarness.Run(beforeSource);
+            outputCompilation = generated.OutputCompilation;
+            generatorDiagnostics = generated.GeneratorDiagnostics;
+        }
         else
-            GeneratorTestHelper.RunGenerator(beforeSource, out outputCompilation, out _, path: userSourcePath);
+            GeneratorTestHelper.RunGenerator(beforeSource, out outputCompilation, out generatorDiagnostics, path: userSourcePath);
 
         // Build a workspace from the output compilation so diagnostics reference workspace documents
         using var workspace = new AdhocWorkspace();
@@ -80,7 +85,22 @@ public abstract class CodeFixTestBase
         var compilation = (await project.GetCompilationAsync())!;
 
         var withAnalyzers = compilation.WithAnalyzers(GetAnalyzers());
-        var allDiags = await withAnalyzers.GetAnalyzerDiagnosticsAsync();
+        var analyzerDiagnostics = await withAnalyzers.GetAnalyzerDiagnosticsAsync();
+        var allDiags = analyzerDiagnostics.AddRange(generatorDiagnostics
+            .Where(generatedDiagnostic => generatedDiagnostic.Id == "SPIRE_DU020")
+            .Select(generatedDiagnostic =>
+        {
+            // Generator diagnostics refer to the pre-workspace syntax trees.
+            // Code actions and Fix All need locations in the workspace compilation.
+            var tree = compilation.SyntaxTrees.FirstOrDefault(candidate =>
+                candidate.FilePath == generatedDiagnostic.Location.SourceTree?.FilePath);
+            return tree is not null
+                ? Microsoft.CodeAnalysis.Diagnostic.Create(
+                    generatedDiagnostic.Descriptor,
+                    Location.Create(tree, generatedDiagnostic.Location.SourceSpan),
+                    generatedDiagnostic.Properties)
+                : generatedDiagnostic;
+        }));
 
         // Find fixable diagnostics in the user document
         var fixableIds = GetCodeFixes()
@@ -156,6 +176,16 @@ public abstract class CodeFixTestBase
             var regenerated = UnityGeneratorTestHarness.Run(modifiedText);
             UnityGeneratorTestHarness.AssertNoGeneratorErrors(regenerated);
             UnityGeneratorTestHarness.AssertNoCompilationErrors(regenerated);
+        }
+        else if (diagnostic.Id == "SPIRE_DU020")
+        {
+            GeneratorTestHelper.RunGenerator(
+                modifiedText,
+                out var regeneratedCompilation,
+                out var regeneratedDiagnostics,
+                path: userSourcePath);
+            Assert.DoesNotContain(regeneratedDiagnostics, item => item.Severity == DiagnosticSeverity.Error);
+            GeneratorTestHelper.AssertNoCompilationErrors(regeneratedCompilation);
         }
     }
 

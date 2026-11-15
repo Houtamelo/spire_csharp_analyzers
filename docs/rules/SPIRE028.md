@@ -19,6 +19,10 @@ need their own field annotations. Non-partial records must supply the attributes
 themselves. Fully annotated records and unions outside Unity serialization mode
 do not receive this warning.
 
+Readonly variants with positional data receive [SPIRE030](SPIRE030.md) instead.
+Adding serialization attributes or making the record partial cannot make its
+readonly backing fields serializable by Unity.
+
 A positional `[UnitySerializeReference]` marker requires `[SerializeReference]`
 on its backing field. `[SerializeField]` alone does not satisfy that requirement;
 the field-annotation fix upgrades it while preserving the marker.

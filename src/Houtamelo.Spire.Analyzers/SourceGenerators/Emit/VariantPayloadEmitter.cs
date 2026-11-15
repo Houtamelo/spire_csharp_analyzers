@@ -64,7 +64,7 @@ internal static class VariantPayloadEmitter
             }
 
             var readonlyModifier = variant.IsReadonly ? "readonly " : string.Empty;
-            sb.AppendLine($"{Access(variant.AccessibilityKeyword)}partial {readonlyModifier}record struct {IdentifierUtility.Escape(variant.Name)}");
+            sb.AppendLine($"{Access(variant.AccessibilityKeyword)}{readonlyModifier}partial record struct {IdentifierUtility.Escape(variant.Name)}");
             sb.OpenBrace();
             foreach (var field in variant.Fields)
             {

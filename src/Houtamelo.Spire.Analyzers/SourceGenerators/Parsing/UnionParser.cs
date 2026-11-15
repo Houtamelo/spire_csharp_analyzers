@@ -28,6 +28,41 @@ internal static class UnionParser
 
         var syntax = (TypeDeclarationSyntax)ctx.TargetNode;
         var declKind = GetDeclarationKind(syntax);
+        var recordStructSyntax = FindRecordStructDeclaration(typeSymbol, syntax);
+
+        // Struct-based unions own their representation and generated value
+        // semantics. A record struct would synthesize a competing partial type
+        // surface, so reject the outer declaration before discovering variants
+        // or validating optional Unity/JSON capabilities.
+        if (recordStructSyntax is not null)
+        {
+            return new UnionDeclaration(
+                Namespace: typeSymbol.ContainingNamespace.IsGlobalNamespace
+                    ? ""
+                    : typeSymbol.ContainingNamespace.ToDisplayString(),
+                TypeName: typeSymbol.Name,
+                AccessibilityKeyword: ExplicitAccessibility(
+                    syntax,
+                    typeSymbol.DeclaredAccessibility),
+                DeclarationKeyword: "struct",
+                IsReadonly: typeSymbol.IsReadOnly,
+                IsRefStruct: typeSymbol.IsRefLikeType,
+                Strategy: EmitStrategy.VariantPayload,
+                TypeParameters: new EquatableArray<string>(typeSymbol.TypeParameters
+                    .Select(tp => tp.Name).ToImmutableArray()),
+                Variants: new EquatableArray<VariantInfo>(ImmutableArray<VariantInfo>.Empty),
+                ContainingTypes: new EquatableArray<ContainingTypeInfo>(GetContainingTypes(typeSymbol)),
+                Diagnostic: CreateDiagnostic(
+                    recordStructSyntax.Keyword.GetLocation(),
+                    "SPIRE_DU020",
+                    "Struct-based discriminated unions cannot be records. Remove the 'record' keyword.",
+                    isError: true),
+                Json: JsonLibrary.None,
+                JsonDiscriminator: "kind",
+                HasInitProperties: false,
+                RawConfig: RawAttributeConfig.AllSentinels,
+                IsGeneric: typeSymbol.TypeParameters.Length > 0);
+        }
 
         var rawConfig = ReadAttributeArgs(ctx.Attributes);
         var isGeneric = typeSymbol.TypeParameters.Length > 0;
@@ -327,6 +362,27 @@ internal static class UnionParser
         }
         chain.Reverse(); // outermost first
         return chain.ToImmutableArray();
+    }
+
+    private static RecordDeclarationSyntax? FindRecordStructDeclaration(
+        INamedTypeSymbol typeSymbol,
+        TypeDeclarationSyntax attributedSyntax)
+    {
+        if (attributedSyntax is RecordDeclarationSyntax attributedRecord &&
+            attributedRecord.ClassOrStructKeyword.IsKind(SyntaxKind.StructKeyword))
+        {
+            return attributedRecord;
+        }
+
+        var siblingTypes = typeSymbol.ContainingType is { } containingType
+            ? containingType.GetTypeMembers(typeSymbol.Name, typeSymbol.Arity)
+            : typeSymbol.ContainingNamespace.GetTypeMembers(typeSymbol.Name, typeSymbol.Arity);
+
+        return siblingTypes
+            .SelectMany(candidate => candidate.DeclaringSyntaxReferences)
+            .Select(reference => reference.GetSyntax())
+            .OfType<RecordDeclarationSyntax>()
+            .FirstOrDefault(record => record.ClassOrStructKeyword.IsKind(SyntaxKind.StructKeyword));
     }
 
     /// Returns "struct" or "record". Returns null for unsupported declaration kinds (class).

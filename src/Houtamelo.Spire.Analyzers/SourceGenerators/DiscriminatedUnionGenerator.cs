@@ -62,10 +62,10 @@ public sealed class DiscriminatedUnionGenerator : IIncrementalGenerator
             var ((union, config), compInfo) = pair;
             if (union is null) return;
 
-            // Classes are an explicitly unsupported declaration shape. Keep the
-            // primary diagnostic, but do not invent an empty partial class that
-            // can create CS0260/partial-member cascades for non-partial input.
-            if (union.Diagnostic?.Id == "SPIRE_DU011")
+            // Unsupported outer declarations cannot be augmented with a union
+            // implementation. Keep the primary diagnostic without generating
+            // incompatible partial declarations or secondary compiler errors.
+            if (union.Diagnostic?.Id is "SPIRE_DU011" or "SPIRE_DU020")
                 return;
 
             // Resolve global config sentinels

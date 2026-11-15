@@ -20,7 +20,9 @@ dotnet add package Houtamelo.Spire.Functional
 See the [Functional API guide](src/Houtamelo.Spire.Functional/README.md).
 The Unity distribution includes both runtime libraries and their XML documentation.
 
-See the [6.1.0 release notes](docs/releases/6.1.0.md) for logical union equality,
+See the [6.1.1 release notes](docs/releases/6.1.1.md) for readonly variant
+serialization warnings and union declaration fixes. The
+[6.1.0 release notes](docs/releases/6.1.0.md) cover logical union equality,
 record-struct variants, and nullable-switch code fixes. The
 [6.0.0 release notes](docs/releases/6.0.0.md) cover the Functional package and
 experimental inliner opt-in. Upgrading from 4.x? See the [5.0.0 migration guide](https://github.com/Houtamelo/spire_csharp_analyzers/blob/v5.0.0/docs/releases/5.0.0.md)
@@ -45,7 +47,7 @@ Build an importable `.unitypackage` (requires an installed Unity Editor):
 dotnet run -c Release --project tools/Spire.Tool -- unitypackage
 ```
 
-Import `tmp/unity-package/Spire-6.1.0.unitypackage` through **Assets → Import Package →
+Import `tmp/unity-package/Spire-6.1.1.unitypackage` through **Assets → Import Package →
 Custom Package**. Its files are copied into `Assets/Spire`; the archive and build
 directory can be deleted afterward. See [Unity installation](docs/unity.md#install)
 for Editor selection and UPM installation.
@@ -106,6 +108,8 @@ See the [closure inliner guide](docs/rules/SPIRE017-SPIRE027.md).
 | [SPIRE016](docs/rules/SPIRE016.md) | Cast to `[EnforceInitialization]` enum may produce invalid variant              |
 | [SPIRE028](docs/rules/SPIRE028.md) | Record variant needs Unity serialization attributes |
 | [SPIRE029](docs/rules/SPIRE029.md) | Authored positional member can change reconstructed values |
+| [SPIRE030](docs/rules/SPIRE030.md) | Readonly record variant cannot serialize its positional data in Unity |
+| [SPIRE_DU020](docs/rules/SPIRE_DU020.md) | Remove `record` from a struct-based union declaration |
 
 ## Discriminated Unions
 

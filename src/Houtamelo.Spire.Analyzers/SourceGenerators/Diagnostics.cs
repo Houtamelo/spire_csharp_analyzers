@@ -81,6 +81,15 @@ internal static class Diagnostics
     private static readonly DiagnosticDescriptor InvalidRecordVariant = UnityError(
         "SPIRE_DU019", "Invalid record variant declaration");
 
+    private static readonly DiagnosticDescriptor RecordStructUnionNotSupported = new(
+        id: "SPIRE_DU020",
+        title: "Struct-based discriminated unions cannot be records",
+        messageFormat: "Struct-based discriminated unions cannot be records. Remove the 'record' keyword.",
+        category: "SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        helpLinkUri: "https://github.com/Houtamelo/spire_csharp_analyzers/blob/main/docs/rules/SPIRE_DU020.md");
+
     private static DiagnosticDescriptor UnityError(string id, string title) => new(
         id: id,
         title: title,
@@ -104,6 +113,7 @@ internal static class Diagnostics
         ["SPIRE_DU017"] = UnitySerializationVariantAlias,
         ["SPIRE_DU018"] = GenericContainingType,
         ["SPIRE_DU019"] = InvalidRecordVariant,
+        ["SPIRE_DU020"] = RecordStructUnionNotSupported,
     };
 
     public static DiagnosticDescriptor GetDescriptor(UnionDiagnostic diag)

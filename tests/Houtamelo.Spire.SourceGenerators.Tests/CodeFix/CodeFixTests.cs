@@ -30,5 +30,7 @@ public class CodeFixTests : CodeFixTestBase
         => ImmutableArray.Create<CodeFixProvider>(
             new AddMissingArmsCodeFix(),
             new FixFieldTypeCodeFix(),
-            new RecordVariantSerializationCodeFix());
+            new RecordVariantSerializationCodeFix(),
+            new ReadonlyRecordVariantSerializationCodeFix(),
+            new RemoveRecordFromUnionCodeFix());
 }

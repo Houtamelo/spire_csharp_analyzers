@@ -1,5 +1,14 @@
 # Changelog
 
+## 6.1.1
+
+- Warn when readonly record-struct variants contain positional data that Unity
+  cannot serialize (SPIRE030), with a fix to remove `readonly` across partial
+  declarations. Fieldless variants remain exempt.
+- Reject outer `record struct` union declarations with SPIRE_DU020 and offer
+  to remove `record`, preserving nested record-struct payloads.
+- Fix generated modifier ordering for serializable partial readonly variants.
+
 ## 6.1.0
 
 - Generate union/union and union/payload equality and hashing from the variant

@@ -1,3 +1,12 @@
+## Release 6.1.1
+
+### New Rules
+
+Rule ID | Category | Severity | Notes
+--------|----------|----------|------
+SPIRE030 | Correctness | Warning | Readonly record variant cannot serialize its positional data in Unity
+SPIRE_DU020 | SourceGeneration | Error | Struct-based discriminated unions cannot be records; remove the record keyword
+
 ## Release 6.1.0
 
 ### New Rules

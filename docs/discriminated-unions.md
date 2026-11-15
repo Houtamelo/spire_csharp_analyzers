@@ -4,6 +4,11 @@
 `abstract partial record`. Attributes belong to `Houtamelo.Spire`; the generator
 and analyzers are supplied by `Houtamelo.Spire.Analyzers`.
 
+Struct-based unions must use `struct`, optionally `readonly`. Declaring the
+union itself as a `record struct` reports [SPIRE_DU020](rules/SPIRE_DU020.md)
+and offers to remove `record`. Nested record-struct variant payloads remain
+supported.
+
 ## Struct unions
 
 ```csharp
@@ -298,6 +303,11 @@ remain supported with authored serialization annotations.
 the type attribute, annotate positional backing fields, or make the record partial.
 The internal serialization wrappers remain unchanged.
 
+Readonly record variants remain supported at runtime, but Unity cannot serialize
+their positional backing fields. [SPIRE030](rules/SPIRE030.md) reports this
+instead of SPIRE028 and offers to remove `readonly` from the variant. Fieldless
+readonly variants are exempt.
+
 Record parameters accept Spire's `[UnitySerializeReference]` or Unity's
 `[field: SerializeReference]`; either requests managed-reference serialization,
 and both together have the same effect. Existing managed-reference attributes
@@ -320,8 +330,11 @@ supported by Burst; unmanaged alone does not establish Burst compatibility.
 | [SPIRE014](rules/SPIRE014.md) | Unguarded variant accessor |
 | [SPIRE028](rules/SPIRE028.md) | Record variant needs Unity serialization attributes |
 | [SPIRE029](rules/SPIRE029.md) | Authored positional member can change reconstructed values |
+| [SPIRE030](rules/SPIRE030.md) | Readonly record variant cannot serialize its positional data in Unity |
+| [SPIRE_DU020](rules/SPIRE_DU020.md) | Record struct used as the outer union declaration |
 
-Non-record classes are unsupported union declarations. Errors
+Non-record classes and outer record structs are unsupported union declarations;
+no union implementation is generated for those shapes. Other errors
 are reported independently of source emission; unavailable optional components
 do not suppress an otherwise constructible core API.
 
