@@ -8,8 +8,8 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <DevelopmentDependency>true</DevelopmentDependency>
     <PackageId>Houtamelo.Spire.Analyzers</PackageId>
-    <Version>6.1.1</Version>
-    <PackageReleaseNotes>Add SPIRE030 for readonly variant serialization and SPIRE_DU020 for record-struct union declarations; fix generated readonly partial modifier ordering. Release notes: https://github.com/Houtamelo/spire_csharp_analyzers/blob/v6.1.1/docs/releases/6.1.1.md</PackageReleaseNotes>
+    <Version>6.1.2</Version>
+    <PackageReleaseNotes>Fix exhaustive switch-expression warning suppression in invocation arguments. Release notes: https://github.com/Houtamelo/spire_csharp_analyzers/blob/v6.1.2/docs/releases/6.1.2.md</PackageReleaseNotes>
     <Authors>houtamelo</Authors>
     <Copyright>Copyright (c) 2026 houtamelo</Copyright>
     <Description>Roslyn analyzers and discriminated union source generator for C# struct correctness.</Description>

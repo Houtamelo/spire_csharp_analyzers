@@ -1,5 +1,12 @@
 # Changelog
 
+## 6.1.2
+
+- Fix CS8509/CS8524 suppression for exhaustive switch expressions passed to
+  method or delegate calls, including null-conditional event invocations.
+- Preserve compiler warnings for incomplete, guarded, and missing-null cases,
+  with regression coverage for sibling and nested switches.
+
 ## 6.1.1
 
 - Warn when readonly record-struct variants contain positional data that Unity

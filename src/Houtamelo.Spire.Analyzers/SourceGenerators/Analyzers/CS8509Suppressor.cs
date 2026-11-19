@@ -34,8 +34,14 @@ public sealed class CS8509Suppressor : DiagnosticSuppressor
             var model = context.GetSemanticModel(tree);
 
             var root = tree.GetRoot(context.CancellationToken);
-            var node = root.FindNode(diagnostic.Location.SourceSpan);
 
+            // The compiler reports CS8509/CS8524 on the `switch` keyword. For a
+            // switch used as an invocation argument, the containing ArgumentSyntax
+            // wins the default FindNode tie; request the innermost node so the
+            // switch expression remains associated with its own diagnostic.
+            var node = root.FindNode(
+                diagnostic.Location.SourceSpan,
+                getInnermostNodeForTie: true);
             var switchSyntax = node.AncestorsAndSelf()
                 .OfType<SwitchExpressionSyntax>()
                 .FirstOrDefault();
