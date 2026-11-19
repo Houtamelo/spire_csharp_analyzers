@@ -1,5 +1,12 @@
 # Changelog
 
+## 6.1.3
+
+- Fix generated CS8604 warnings in equality and payload accessors when nullable
+  and nonnullable reference fields share storage.
+- Merge storage annotations from authored record variants and factory methods,
+  preserving public payload annotations and runtime equality behavior.
+
 ## 6.1.2
 
 - Fix CS8509/CS8524 suppression for exhaustive switch expressions passed to

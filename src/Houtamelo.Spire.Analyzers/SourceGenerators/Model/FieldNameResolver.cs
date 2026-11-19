@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Houtamelo.Spire.Analyzers.SourceGenerators.Model;
 
@@ -26,14 +27,20 @@ internal static class FieldNameResolver
         INamedTypeSymbol unionType,
         Compilation compilation)
     {
-        var storageTypes = unionType.GetMembers()
+        var parameterTypes = unionType.GetMembers()
             .OfType<IMethodSymbol>()
             .Where(method => method.IsStatic && HasVariantAttribute(method))
             .SelectMany(method => method.Parameters)
-            .GroupBy(parameter => ConstructorTypeName(parameter.Type), StringComparer.Ordinal)
+            .Select(parameter => parameter.Type)
+            .Concat(unionType.GetTypeMembers()
+                .Where(nested => nested.IsRecord && nested.IsValueType && HasVariantAttribute(nested))
+                .SelectMany(GetRecordPositionalParameterTypes))
+            .ToArray();
+        var storageTypes = parameterTypes
+            .GroupBy(type => ConstructorTypeName(type), StringComparer.Ordinal)
             .ToDictionary(
                 group => group.Key,
-                group => MergeType(group.First().Type, group.Select(parameter => parameter.Type),
+                group => MergeType(group.First(), group,
                     compilation, constructorMerge: true)!.ToDisplayString(TypeDisplayFormat),
                 StringComparer.Ordinal);
 
@@ -48,9 +55,40 @@ internal static class FieldNameResolver
         }).ToImmutableArray());
     }
 
-    private static bool HasVariantAttribute(IMethodSymbol method)
-        => method.GetAttributes().Any(attribute =>
+    private static bool HasVariantAttribute(ISymbol symbol)
+        => symbol.GetAttributes().Any(attribute =>
             attribute.AttributeClass?.Name == "VariantAttribute");
+
+    internal static IEnumerable<ITypeSymbol> GetRecordPositionalParameterTypes(
+        INamedTypeSymbol recordType)
+    {
+        var parameters = recordType.DeclaringSyntaxReferences
+            .Select(reference => reference.GetSyntax())
+            .OfType<RecordDeclarationSyntax>()
+            .Select(record => record.ParameterList?.Parameters)
+            .FirstOrDefault(parameters => parameters is not null);
+        if (parameters is not { Count: > 0 })
+            yield break;
+
+        var names = parameters.Value
+            .Select(parameter => parameter.Identifier.ValueText)
+            .ToArray();
+        var constructor = recordType.Constructors
+            .Where(candidate => !IsCopyConstructor(candidate, recordType))
+            .FirstOrDefault(candidate => candidate.Parameters.Length == names.Length &&
+                candidate.Parameters.Select(parameter => parameter.Name)
+                    .SequenceEqual(names, StringComparer.Ordinal));
+        if (constructor is null)
+            yield break;
+
+        foreach (var parameter in constructor.Parameters)
+            yield return parameter.Type;
+    }
+
+    private static bool IsCopyConstructor(IMethodSymbol constructor, INamedTypeSymbol recordType)
+        => constructor.IsImplicitlyDeclared &&
+            constructor.Parameters.Length == 1 &&
+            SymbolEqualityComparer.Default.Equals(constructor.Parameters[0].Type, recordType);
 
     /// Produces a constructor-only CLR identity while keeping type and
     /// assembly identity in nested generic arguments.

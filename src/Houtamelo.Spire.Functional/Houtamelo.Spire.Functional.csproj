@@ -6,8 +6,8 @@
     <!-- Generated union members do not have XML documentation. -->
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <PackageId>Houtamelo.Spire.Functional</PackageId>
-    <Version>6.1.2</Version>
-    <PackageReleaseNotes>Update the Spire dependency with the switch-expression suppression fix. Release notes: https://github.com/Houtamelo/spire_csharp_analyzers/blob/v6.1.2/docs/releases/6.1.2.md</PackageReleaseNotes>
+    <Version>6.1.3</Version>
+    <PackageReleaseNotes>Update the Spire dependency with the generated reference-storage nullability fix. Release notes: https://github.com/Houtamelo/spire_csharp_analyzers/blob/v6.1.3/docs/releases/6.1.3.md</PackageReleaseNotes>
     <Authors>houtamelo</Authors>
     <Copyright>Copyright (c) 2026 houtamelo</Copyright>
     <Description>Functional programming utilities built on Houtamelo.Spire.</Description>

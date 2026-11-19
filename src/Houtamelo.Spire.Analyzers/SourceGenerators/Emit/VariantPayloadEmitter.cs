@@ -571,6 +571,9 @@ internal static class VariantPayloadEmitter
             var localNames = new LocalNameAllocator(union, variant);
             var arguments = new List<string> { $"Kind.{IdentifierUtility.Escape(variant.Name)}" };
             var receiver = IdentifierUtility.Escape(parameterName) + ".";
+            var suppressNullabilityWarnings = layout.RequiresNullabilitySuppression(variant);
+            if (suppressNullabilityWarnings)
+                sb.AppendLine("#pragma warning disable CS8619, CS8620 // Nullable annotations are erased; this is a direct typed-slot transfer.");
             if (layout.HasUnmanagedFields)
                 arguments.Add(EmitUnmanagedFactoryLocal(sb, union, variant, layout, localNames, receiver));
             if (layout.HasManagedFields)
@@ -585,6 +588,8 @@ internal static class VariantPayloadEmitter
                 arguments.Add(localName);
             }
             sb.AppendLine($"return new {unionType}({string.Join(", ", arguments)});");
+            if (suppressNullabilityWarnings)
+                sb.AppendLine("#pragma warning restore CS8619, CS8620");
             sb.CloseBrace();
         }
     }
@@ -1116,11 +1121,19 @@ internal static class VariantPayloadEmitter
                 return "default!";
             var storage = slot.IsManaged ? $"{prefix}__managed._s{slot.Index}" : $"{prefix}_s{slot.Index}";
             if (!slot.IsShared)
-                return storage;
+                return NeedsNullForgiving(field) ? storage + "!" : storage;
             if (field.IsReferenceType)
                 return $"({field.TypeFullName}){storage}!";
             return $"({storage} is null ? default({field.TypeFullName}) : ({field.TypeFullName}){storage})";
         }
+
+        // Reused typed storage is nullable because another variant can carry null.
+        // The active payload's non-nullable contract is restored at this read site.
+        private static bool NeedsNullForgiving(FieldInfo field)
+            => field.IsReferenceType &&
+                field.StorageTypeFullName is { } storageType &&
+                storageType.EndsWith("?", StringComparison.Ordinal) &&
+                !field.TypeFullName.EndsWith("?", StringComparison.Ordinal);
 
         private sealed record FieldUse(VariantInfo Variant, FieldInfo Field);
         private static string TypeKey(FieldInfo field) => field.ConstructorTypeKey ?? field.TypeFullName.TrimEnd('?');

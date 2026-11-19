@@ -20,7 +20,8 @@ dotnet add package Houtamelo.Spire.Functional
 See the [Functional API guide](src/Houtamelo.Spire.Functional/README.md).
 The Unity distribution includes both runtime libraries and their XML documentation.
 
-See the [6.1.2 release notes](docs/releases/6.1.2.md) for switch-expression warning
+See the [6.1.3 release notes](docs/releases/6.1.3.md) for generated nullable-warning
+fixes when variants share reference storage. The [6.1.2 release notes](docs/releases/6.1.2.md) cover switch-expression warning
 suppression in invocation arguments. The [6.1.1 release notes](docs/releases/6.1.1.md) cover readonly variant
 serialization warnings and union declaration fixes. The
 [6.1.0 release notes](docs/releases/6.1.0.md) cover logical union equality,
@@ -48,7 +49,7 @@ Build an importable `.unitypackage` (requires an installed Unity Editor):
 dotnet run -c Release --project tools/Spire.Tool -- unitypackage
 ```
 
-Import `tmp/unity-package/Spire-6.1.2.unitypackage` through **Assets → Import Package →
+Import `tmp/unity-package/Spire-6.1.3.unitypackage` through **Assets → Import Package →
 Custom Package**. Its files are copied into `Assets/Spire`; the archive and build
 directory can be deleted afterward. See [Unity installation](docs/unity.md#install)
 for Editor selection and UPM installation.

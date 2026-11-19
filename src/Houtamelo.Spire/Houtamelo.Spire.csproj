@@ -5,8 +5,8 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- NuGet package metadata -->
     <PackageId>Houtamelo.Spire</PackageId>
-    <Version>6.1.2</Version>
-    <PackageReleaseNotes>Fix exhaustive switch-expression warning suppression in invocation arguments. Release notes: https://github.com/Houtamelo/spire_csharp_analyzers/blob/v6.1.2/docs/releases/6.1.2.md</PackageReleaseNotes>
+    <Version>6.1.3</Version>
+    <PackageReleaseNotes>Fix generated nullable warnings when variants share reference storage. Release notes: https://github.com/Houtamelo/spire_csharp_analyzers/blob/v6.1.3/docs/releases/6.1.3.md</PackageReleaseNotes>
     <Authors>houtamelo</Authors>
     <Copyright>Copyright (c) 2026 houtamelo</Copyright>
     <Description>Spire: attributes, utilities, analyzers, source generator, and code fixes for C# struct correctness.</Description>

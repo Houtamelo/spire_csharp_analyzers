@@ -901,7 +901,7 @@ internal static class UnionParser
                 foreach (var nestedVariant in named.GetTypeMembers()
                              .Where(nested => nested.IsRecord && nested.IsValueType && HasVariantAttribute(nested)))
                 {
-                    foreach (var parameterType in GetRecordPositionalParameterTypes(nestedVariant))
+                    foreach (var parameterType in FieldNameResolver.GetRecordPositionalParameterTypes(nestedVariant))
                     {
                         if (!IsUnmanagedAfterGeneration(parameterType, visiting))
                             return false;
@@ -915,30 +915,6 @@ internal static class UnionParser
         {
             visiting.Remove(type);
         }
-    }
-
-    private static IEnumerable<ITypeSymbol> GetRecordPositionalParameterTypes(
-        INamedTypeSymbol recordType)
-    {
-        var parameters = recordType.DeclaringSyntaxReferences
-            .Select(reference => reference.GetSyntax())
-            .OfType<RecordDeclarationSyntax>()
-            .Select(record => record.ParameterList?.Parameters)
-            .FirstOrDefault(parameters => parameters is not null);
-        if (parameters is not { Count: > 0 })
-            yield break;
-
-        var names = parameters.Value.Select(parameter => parameter.Identifier.ValueText).ToArray();
-        var constructor = recordType.Constructors
-            .Where(candidate => !IsCopyConstructor(candidate, recordType))
-            .FirstOrDefault(candidate => candidate.Parameters.Length == names.Length &&
-                candidate.Parameters.Select(parameter => parameter.Name)
-                    .SequenceEqual(names, System.StringComparer.Ordinal));
-        if (constructor is null)
-            yield break;
-
-        foreach (var parameter in constructor.Parameters)
-            yield return parameter.Type;
     }
 
     private static UnionDiagnostic CreateDiagnostic(
